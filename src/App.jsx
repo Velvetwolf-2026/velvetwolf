@@ -398,7 +398,7 @@ const ProductImage = ({ product, height = 280 }) => {
 };
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-export default function App() {
+export default function VelvetWolf() {
   const [page, setPage] = useState("home");
   const [adminPage, setAdminPage] = useState("dashboard");
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
