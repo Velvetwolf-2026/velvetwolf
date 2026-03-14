@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { FAQPage, PrivacyPolicy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder } from "./index";
+import MosaicCarousel from "./velvetwolf/components/MosaicCarousel";
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GlobalStyles = () => (
@@ -634,7 +635,7 @@ function HomePage() {
       <div style={{ background: "var(--gold)", padding: "12px 0", overflow: "hidden" }}>
         <div className="marquee-container">
           <div className="marquee-inner" style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 4, color: "var(--obsidian)" }}>
-            {Array(4).fill("✦ FREE SHIPPING ABOVE ₹1999 &nbsp;&nbsp;&nbsp; LUXURY STREETWEAR &nbsp;&nbsp;&nbsp; MADE IN INDIA &nbsp;&nbsp;&nbsp; PREMIUM 220 GSM COTTON &nbsp;&nbsp;&nbsp; 30 DAY RETURNS &nbsp;&nbsp;&nbsp;").join("")}
+            {Array(3).fill("✦  VELVET WOLF   ✦   LUXURY STREETWEAR   ✦   PREMIUM 220 GSM COTTON   ✦   MADE IN INDIA   ✦   FREE SHIPPING ABOVE ₹1999   ✦   30 DAY EASY RETURNS ").join("")}
           </div>
         </div>
       </div>
@@ -651,6 +652,13 @@ function HomePage() {
         </div>
       </section>
 
+      {/* MOSAIC CAROUSEL */}
+<MosaicCarousel
+  onCategoryClick={(cat) => {
+    setActiveCollection(cat.id);
+    setPage("collection");
+  }}
+/>
       {/* COLLECTIONS GRID */}
       <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
