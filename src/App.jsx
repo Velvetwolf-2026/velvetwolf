@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, createContext, useContext } from "react";
-import { FAQPage, PrivacyPolicy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder } from "./index";
-import MosaicCarousel from "./velvetwolf/components/MosaicCarousel";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel } from "./index";
+// import MosaicCarousel from "./velvetwolf/components/MosaicCarousel";
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GlobalStyles = () => (
@@ -491,7 +491,7 @@ export default function VelvetWolf() {
           {page === "bulk" && <BulkOrderPage />}
           {page === "contactus" && <ContactPage />}
           {page === "faq" && <FAQPage />}
-          {page === "privacypolicy" && <PrivacyPolicy />}
+          {page === "privacypolicy" && <Policy />}
           {page === "shoppingpolicy" && <ShoppingPolicy />}
           {page === "termspage" && <TermsPage />}
           {page === "returnspage" && <ReturnsPage />}
@@ -548,7 +548,7 @@ function Navbar() {
           {[["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]].map(([label, pg]) => (
             <button key={pg} onClick={() => setPage(pg)} style={{
               background: "none", border: "none", color: "var(--ash)", cursor: "pointer",
-              fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3,
+              fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3,
               transition: "color 0.3s", padding: "4px 0", position: "relative"
             }}
               onMouseEnter={e => { e.target.style.color = "var(--gold)"; }}
@@ -566,15 +566,15 @@ function Navbar() {
         {/* Icons */}
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
           <button onClick={() => setWishlistOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
-            <Icon name="heart" size={18} />
+            <Icon name="heart" size={22} />
             {wishlist.length > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--wolf-red)", color: "#fff", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8 }}>{wishlist.length}</span>}
           </button>
           <button onClick={() => setCartOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
-            <Icon name="cart" size={18} />
+            <Icon name="cart" size={22} />
             {cartCount > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--gold)", color: "var(--obsidian)", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: "bold" }}>{cartCount}</span>}
           </button>
           <button onClick={() => user ? setPage("account") : setAuthModal("login")} style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}>
-            <Icon name="user" size={18} />
+            <Icon name="user" size={22} />
           </button>
         </div>
       </div>
@@ -600,21 +600,21 @@ function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section style={{ height: "100vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden" }}>
+      <section style={{ height: "70vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }}/>
         {/* Geometric accents */}
-        <div style={{ position: "absolute", top: "10%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
-        <div style={{ position: "absolute", bottom: "15%", left: "8%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }}/>
-        <div style={{ position: "absolute", top: "30%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
+        <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
+        <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }}/>
+        <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
 
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
           <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>✦ NEW COLLECTION 2025 ✦</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>✦ NEW COLLECTION 2026 ✦</div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
+            <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
               <button className="btn-gold" onClick={() => { setActiveCollection(slide.collection); setPage("collection"); }}>
                 EXPLORE COLLECTION
@@ -653,12 +653,12 @@ function HomePage() {
       </section>
 
       {/* MOSAIC CAROUSEL */}
-<MosaicCarousel
-  onCategoryClick={(cat) => {
-    setActiveCollection(cat.id);
-    setPage("collection");
-  }}
-/>
+      <MosaicCarousel
+        onCategoryClick={(cat) => {
+          setActiveCollection(cat.id);
+          setPage("collection");
+        }}
+      />
       {/* COLLECTIONS GRID */}
       <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
