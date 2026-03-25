@@ -1,7 +1,12 @@
 
-import { useState, useEffect, useRef, createContext, useContext } from "react";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel } from "./index";
-// import MosaicCarousel from "./velvetwolf/components/MosaicCarousel";
+import { useState, useEffect, useContext } from "react";
+import { AppContext } from "./velvetwolf/pages/AppContext";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
+import { supabase } from './velvetwolf/utils/supabase';
+import { getProfile } from './velvetwolf/utils/auth';
+import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';
+import { toggleWishlistDB, loadWishlistFromDB } from './velvetwolf/utils/wishlist';
+import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GlobalStyles = () => (
@@ -264,7 +269,7 @@ const GlobalStyles = () => (
 );
 
 // ─── CONTEXT ─────────────────────────────────────────────────────────────────
-const AppContext = createContext();
+// AppContext is imported from ./AppContext.js — shared with Login, Signup, ForgetPassword
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const COLLECTIONS = [
@@ -433,35 +438,218 @@ export default function VelvetWolf() {
     setTimeout(() => setToast(null), 3200);
   };
 
-  const addToCart = (product, size, color, qty = 1) => {
-    setCart(prev => {
-      const existing = prev.find(i => i.id === product.id && i.size === size && i.color === color);
-      if (existing) return prev.map(i => i.id === product.id && i.size === size ? { ...i, qty: i.qty + qty } : i);
-      return [...prev, { ...product, size, color, qty }];
-    });
-    showToast("Added to cart ✓");
+  const getLocalWishlistKey = (email) => `vw_wishlist_${(email || "guest").toLowerCase()}`;
+  const getGuestCart = () => JSON.parse(localStorage.getItem("vw_guest_cart") || "[]");
+
+  const getStoredUser = () => {
+    try {
+      const raw = localStorage.getItem("user");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
   };
 
-  const removeFromCart = (id, size, color) => {
-    setCart(prev => prev.filter(i => !(i.id === id && i.size === size && i.color === color)));
+  const parseBackendToken = (token) => {
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return null;
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const decoded = window.atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
+      return JSON.parse(decoded);
+    } catch {
+      return null;
+    }
   };
 
-  const updateCartQty = (id, size, color, qty) => {
-    if (qty < 1) { removeFromCart(id, size, color); return; }
-    setCart(prev => prev.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
+  const loadLocalWishlist = (email) => {
+    try {
+      return JSON.parse(localStorage.getItem(getLocalWishlistKey(email)) || "[]");
+    } catch {
+      return [];
+    }
   };
 
-  const toggleWishlist = (product) => {
-    setWishlist(prev => {
-      const exists = prev.find(i => i.id === product.id);
-      if (exists) { showToast("Removed from wishlist", "info"); return prev.filter(i => i.id !== product.id); }
-      showToast("Added to wishlist ♥");
-      return [...prev, product];
-    });
+  const saveLocalWishlist = (email, items) => {
+    localStorage.setItem(getLocalWishlistKey(email), JSON.stringify(items));
+    setWishlist(items);
   };
 
-  const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+  const buildUserState = async (authUser) => {
+    const storedUser = getStoredUser();
+
+    if (!authUser?.id) {
+      return {
+        ...storedUser,
+        ...authUser,
+        email: authUser.email || storedUser?.email,
+        name: authUser.name || storedUser?.name || authUser.email?.split("@")[0],
+        full_name: authUser.full_name || authUser.name || storedUser?.full_name || storedUser?.name,
+        authSource: authUser.authSource || storedUser?.authSource || "backend",
+        isAdmin: storedUser?.isAdmin || false,
+      };
+    }
+
+    try {
+      const profile = await getProfile(authUser.id);
+      return {
+        ...storedUser,
+        ...authUser,
+        ...profile,
+        name: profile.full_name || storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
+        isAdmin: profile.is_admin,
+      };
+    } catch (err) {
+      console.warn("[buildUserState]", err.message);
+      return {
+        ...storedUser,
+        ...authUser,
+        name: storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
+        full_name: storedUser?.full_name || authUser.user_metadata?.full_name,
+        isAdmin: storedUser?.isAdmin || false,
+      };
+    }
+  };
+
+  // ── syncCartFromDB: loads DB cart into React state ──────────────────────────
+  // Defined first — addToCart/removeFromCart below both call it
+  const syncCartFromDB = async (userId) => {
+    try {
+      const items = await loadCartFromDB(userId);
+      setCart(items);
+    } catch (err) {
+      console.error('[syncCartFromDB]', err.message);
+    }
+  };
+
+  const addToCart = async (product, size, color, qty = 1) => {
+    try {
+      if (user?.id) {
+        await addCartItemDB(user.id, product, size, color, qty);
+        await syncCartFromDB(user.id);
+      } else {
+        // Guest: save to localStorage
+        const guest = getGuestCart();
+        const idx = guest.findIndex(i => i.id === product.id && i.size === size && i.color === color);
+        if (idx > -1) guest[idx].qty += qty;
+        else guest.push({ ...product, size, color, qty });
+        localStorage.setItem('vw_guest_cart', JSON.stringify(guest));
+        setCart(guest);
+      }
+      showToast('Added to cart ✓');
+    } catch (err) {
+      showToast('Could not add to cart. Please try again.', 'error');
+      console.error('[addToCart]', err.message);
+    }
+  };
+
+  const removeFromCart = async (id, size, color) => {
+    try {
+      if (user?.id) {
+        const item = cart.find(i => i.id === id && i.size === size && i.color === color);
+        if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
+        await syncCartFromDB(user.id);
+      } else {
+        setCart(prev => prev.filter(i => !(i.id === id && i.size === size && i.color === color)));
+      }
+    } catch (err) {
+      showToast('Could not remove item.', 'error');
+      console.error('[removeFromCart]', err.message);
+    }
+  };
+
+  const updateCartQty = async (id, size, color, qty) => {
+    if (user?.id) {
+      // For DB-backed cart: find the cart_item_id, update via DB
+      const item = cart.find(i => i.id === id && i.size === size && i.color === color);
+      if (item?.cart_item_id) {
+        if (qty < 1) {
+          await removeCartItemDB(item.cart_item_id);
+        } else {
+          await updateCartQtyDB(item.cart_item_id, qty);
+        }
+        await syncCartFromDB(user.id);
+      }
+    } else {
+      // Guest cart: update local state
+      if (qty < 1) {
+        setCart(prev => prev.filter(i => !(i.id === id && i.size === size && i.color === color)));
+      } else {
+        setCart(prev => prev.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
+      }
+    }
+  };
+
+  // merge guest localStorage cart into DB on login
+  const mergeGuestCartToDB = async (userId) => {
+    try {
+      await mergeGuestCart(userId);
+    } catch (err) {
+      console.error('[mergeGuestCartToDB]', err.message);
+    }
+  };
+
+  const syncWishlistFromDB = async (userId) => {
+    try {
+      const items = await loadWishlistFromDB(userId);
+      setWishlist(items);
+    } catch (err) {
+      console.error('[syncWishlistFromDB]', err.message);
+    }
+  };
+
+  const toggleLocalWishlist = (product) => {
+    const current = loadLocalWishlist(user?.email);
+    const exists = current.some(item => item.id === product.id);
+    const nextWishlist = exists
+      ? current.filter(item => item.id !== product.id)
+      : [...current, product];
+    saveLocalWishlist(user?.email, nextWishlist);
+    return !exists;
+  };
+
+  const toggleWishlist = async (product) => {
+    if (!user) {
+      setPage('login');
+      showToast('Sign in to save items', 'info');
+      return;
+    }
+    if (!user?.id) {
+      const added = toggleLocalWishlist(product);
+      showToast(added ? 'Added to wishlist â™¥' : 'Removed from wishlist', added ? 'success' : 'info');
+      return;
+    }
+    try {
+      const added = await toggleWishlistDB(user.id, product);
+      await syncWishlistFromDB(user.id);
+      showToast(added ? 'Added to wishlist ♥' : 'Removed from wishlist', added ? 'success' : 'info');
+    } catch (err) {
+      showToast('Could not update wishlist', 'error');
+      console.error('[toggleWishlist]', err.message);
+    }
+  };
+
+  const signOutUser = async () => {
+    try {
+      if (user?.id) {
+        await supabase.auth.signOut();
+      }
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+      setWishlist([]);
+      setCart([]);
+      setPage("home");
+      showToast("Signed out successfully", "info");
+    } catch (err) {
+      console.error("[signOutUser]", err.message);
+      showToast("Sign out failed", "error");
+    }
+  };
+
+  // Coerce to numbers — Supabase returns numeric columns as strings via JS client
+  const cartTotal = cart.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
+  const cartCount = cart.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
 
   const ctx = {
     page, setPage, adminPage, setAdminPage,
@@ -471,8 +659,102 @@ export default function VelvetWolf() {
     authModal, setAuthModal, selectedProduct, setSelectedProduct,
     activeCollection, setActiveCollection, searchQuery, setSearchQuery,
     orders, customers, cartTotal, cartCount,
-    addToCart, removeFromCart, updateCartQty, toggleWishlist, showToast,
+    addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast,
   };
+
+  // ── Scroll to top on every page change ──────────────────────────────────────
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [page]);
+
+  // ── Session init + auth state listener ──────────────────────────────────────
+  useEffect(() => {
+    const applySignedInUser = async (authUser, mergeGuestCart = false) => {
+      const nextUser = await buildUserState(authUser);
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
+
+      if (mergeGuestCart && authUser?.id) {
+        await mergeGuestCartToDB(authUser.id);
+      }
+
+      if (authUser?.id) {
+        await syncCartFromDB(authUser.id);
+        await syncWishlistFromDB(authUser.id);
+      } else {
+        setCart(getGuestCart());
+        setWishlist(loadLocalWishlist(nextUser.email));
+      }
+    };
+
+    const clearSignedInUser = () => {
+      setUser(null);
+      setCart([]);
+      setWishlist([]);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    };
+
+    const query = new URLSearchParams(window.location.search);
+    const backendToken = query.get("token");
+    if (backendToken) {
+      const decoded = parseBackendToken(backendToken);
+      if (decoded?.email) {
+        const backendUser = {
+          ...decoded,
+          full_name: decoded.name,
+          authSource: "google",
+        };
+        localStorage.setItem("token", backendToken);
+        localStorage.setItem("user", JSON.stringify(backendUser));
+        setUser(backendUser);
+        setWishlist(loadLocalWishlist(backendUser.email));
+        setCart(getGuestCart());
+        setPage("account");
+      }
+      query.delete("token");
+      const nextQuery = query.toString();
+      const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", nextUrl);
+    }
+
+    const storedUser = getStoredUser();
+    if (storedUser?.email) {
+      setUser(storedUser);
+      if (!storedUser?.id) {
+        setWishlist(loadLocalWishlist(storedUser.email));
+        setCart(getGuestCart());
+      }
+    }
+
+    // 1. Get session on first load (handles page refresh)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        await applySignedInUser(session.user);
+      } else if (!storedUser?.email) {
+        clearSignedInUser();
+      }
+    });
+
+    // 2. Listen for login/logout/token refresh events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") && session?.user) {
+          await applySignedInUser(session.user, event === "SIGNED_IN");
+        }
+        if (event === "SIGNED_OUT") {
+          clearSignedInUser();
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, []);     
+
+  useEffect(() => {
+    if (user && ["login", "signup", "forgetpassword"].includes(page)) {
+      setPage("account");
+    }
+  }, [page, user]);
 
   return (
     <AppContext.Provider value={ctx}>
@@ -481,24 +763,33 @@ export default function VelvetWolf() {
 
       {page === "admin" ? <AdminLayout /> : (
         <>
-          <Navbar />
-          {page === "home" && <HomePage />}
-          {page === "shop" && <ShopPage />}
-          {page === "collection" && <CollectionPage />}
-          {page === "account" && <AccountPage />}
-          {page === "checkout" && <CheckoutPage />}
-          {page === "custom" && <CustomDesignPage />}
-          {page === "bulk" && <BulkOrderPage />}
-          {page === "contactus" && <ContactPage />}
-          {page === "faq" && <FAQPage />}
-          {page === "privacypolicy" && <Policy />}
-          {page === "shoppingpolicy" && <ShoppingPolicy />}
-          {page === "termspage" && <TermsPage />}
-          {page === "returnspage" && <ReturnsPage />}
-          {page === "sizeguide" && <SizeGuide />}
-          {page === "returnspage" && <ReturnsPage />}
-          {page === "trackorder" && <TrackOrder />}
-          <Footer />
+          {/* ── Auth pages: standalone, no Navbar / Footer ── */}
+          {page === "login"           && <Login />}
+          {page === "signup"          && <Signup />}
+          {page === "forgetpassword"  && <ForgetPassword />}
+
+          {/* ── All other pages: wrapped with Navbar + Footer ── */}
+          {!["login", "signup", "forgetpassword"].includes(page) && (
+            <>
+              <Navbar />
+              {page === "home"           && <HomePage />}
+              {page === "shop"           && <ShopPage />}
+              {page === "collection"     && <CollectionPage />}
+              {page === "account"        && <AccountPage />}
+              {page === "checkout"       && <CheckoutPage />}
+              {page === "custom"         && <CustomDesignPage />}
+              {page === "bulk"           && <BulkOrderPage />}
+              {page === "contactus"      && <ContactPage />}
+              {page === "faq"            && <FAQPage />}
+              {page === "privacypolicy"  && <Policy />}
+              {page === "shoppingpolicy" && <ShoppingPolicy />}
+              {page === "termspage"      && <TermsPage />}
+              {page === "returnspage"    && <ReturnsPage />}
+              {page === "sizeguide"      && <SizeGuide />}
+              {page === "trackorder"     && <TrackOrder />}
+              <Footer />
+            </>
+          )}
         </>
       )}
 
@@ -512,9 +803,10 @@ export default function VelvetWolf() {
 
 // ─── NAVBAR ──────────────────────────────────────────────────────────────────
 function Navbar() {
-  const { setPage, setCartOpen, setWishlistOpen, setAuthModal, user, setUser, cartCount, wishlist, showToast } = useContext(AppContext);
+  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser } = useContext(AppContext);
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
+  const greetingName = displayName ? displayName.split(" ")[0] : "";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -565,7 +857,7 @@ function Navbar() {
 
         {/* Icons */}
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <button onClick={() => setWishlistOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
+          <button onClick={() => user ? setWishlistOpen(true) : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
             <Icon name="heart" size={22} />
             {wishlist.length > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--wolf-red)", color: "#fff", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8 }}>{wishlist.length}</span>}
           </button>
@@ -573,7 +865,23 @@ function Navbar() {
             <Icon name="cart" size={22} />
             {cartCount > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--gold)", color: "var(--obsidian)", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: "bold" }}>{cartCount}</span>}
           </button>
-          <button onClick={() => user ? setPage("account") : setAuthModal("login")} style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}>
+          {greetingName && (
+            <button
+              onClick={() => setPage("account")}
+              style={{ background: "none", border: "1px solid rgba(201,168,76,0.35)", color: "var(--gold)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1.5, padding: "8px 12px", textTransform: "none" }}
+            >
+              {`Hi ${greetingName}`}
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={signOutUser}
+              style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--ash)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, padding: "8px 12px" }}
+            >
+              SIGN OUT
+            </button>
+          )}
+          <button onClick={() => user ? setPage("account") : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}>
             <Icon name="user" size={22} />
           </button>
         </div>
@@ -793,7 +1101,7 @@ function ProductCard({ product }) {
 
 // ─── SHOP PAGE ────────────────────────────────────────────────────────────────
 function ShopPage() {
-  const { products, activeCollection, setActiveCollection } = useContext(AppContext);
+  const { products, activeCollection, setActiveCollection, searchQuery } = useContext(AppContext);
   const [sort, setSort] = useState("featured");
   const [priceRange, setPriceRange] = useState([0, 5000]);
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -801,12 +1109,22 @@ function ShopPage() {
 
   const filtered = products
     .filter(p => !activeCollection || p.collection === activeCollection)
-    .filter(p => p.price >= priceRange[0] && p.price <= priceRange[1])
+    .filter(p => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.collection?.toLowerCase().includes(q) ||
+        p.tag?.toLowerCase().includes(q)
+      );
+    })
+    .filter(p => Number(p.price) >= priceRange[0] && Number(p.price) <= priceRange[1])
     .filter(p => selectedSizes.length === 0 || p.sizes.some(s => selectedSizes.includes(s)))
     .sort((a, b) => {
-      if (sort === "price-asc") return a.price - b.price;
-      if (sort === "price-desc") return b.price - a.price;
-      if (sort === "rating") return b.rating - a.rating;
+      if (sort === "price-asc") return Number(a.price) - Number(b.price);
+      if (sort === "price-desc") return Number(b.price) - Number(a.price);
+      if (sort === "rating") return Number(b.rating) - Number(a.rating);
       return 0;
     });
 
@@ -1068,7 +1386,13 @@ function WishlistSidebar() {
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 1, marginBottom: 6 }}>{item.name}</h4>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", marginBottom: 10 }}>₹{item.price.toLocaleString()}</div>
-                <button className="btn-gold" style={{ padding: "8px 16px", fontSize: 9 }} onClick={() => { addToCart(item, item.sizes[0], item.colors[0]); }}>ADD TO CART</button>
+                <button className="btn-gold" style={{ padding: "8px 16px", fontSize: 9 }} onClick={async () => {
+                  try {
+                    await addToCart(item, item.sizes?.[0] || "M", item.colors?.[0] || "#0a0a0a");
+                  } catch (err) {
+                    console.error('[WishlistSidebar addToCart]', err.message);
+                  }
+                }}>ADD TO CART</button>
               </div>
               <button onClick={() => toggleWishlist(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={14}/></button>
             </div>
@@ -1079,337 +1403,168 @@ function WishlistSidebar() {
   );
 }
 
-// ─── AUTH MODAL ───────────────────────────────────────────────────────────────
-function AuthModal() {
-  const { authModal, setAuthModal, setUser, showToast } = useContext(AppContext);
-  const [mode, setMode] = useState(authModal);
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
-  const [loading, setLoading] = useState(false);
+// // ─── CHECKOUT PAGE ────────────────────────────────────────────────────────────
+// function CheckoutPage() {
+//   const { cart, cartTotal, setCart, setPage, user, showToast } = useContext(AppContext);
+//   const [step, setStep] = useState(1);
+//   const [address, setAddress] = useState({ name: user?.full_name || user?.name || "", phone: user?.phone || "", address: "", city: "", state: "", pincode: "" });
+//   const [paymentMethod, setPaymentMethod] = useState("card");
+//   const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
+//   const [processing, setProcessing] = useState(false);
 
-  const handleSubmit = () => {
-    setLoading(true);
-    setTimeout(() => {
-      if (mode === "login") {
-        if (form.email === "admin@velvetwolf.com" && form.password === "admin123") {
-          setUser({ name: "Admin Wolf", email: form.email, isAdmin: true });
-          showToast("Welcome back, Admin!");
-        } else if (form.email && form.password) {
-          setUser({ name: form.email.split("@")[0], email: form.email, isAdmin: false });
-          showToast("Welcome back!");
-        }
-      } else {
-        setUser({ name: form.name, email: form.email, isAdmin: false });
-        showToast("Account created! Welcome to VelvetWolf.");
-      }
-      setLoading(false);
-      setAuthModal(null);
-    }, 1000);
-  };
+//   const shipping = cartTotal >= 1999 ? 0 : 149;
+//   const tax = Math.round(cartTotal * 0.18);
+//   const total = cartTotal + shipping + tax;
 
-  return (
-    <div className="modal-overlay" onClick={() => setAuthModal(null)}>
-      <div className="modal-box" style={{ padding: 48 }} onClick={e => e.stopPropagation()}>
-        <button onClick={() => setAuthModal(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={18}/></button>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 6, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 3 }}>
-            {mode === "login" ? "SIGN IN" : "JOIN THE PACK"}
-          </h2>
-          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)", fontSize: 14, marginTop: 8 }}>
-            {mode === "login" ? "Welcome back, wolf." : "Create your VelvetWolf account"}
-          </p>
-        </div>
+//   const handleOrder = async () => {
+//     setProcessing(true);
+//   try {
+//     const order = await placeOrder(user.id, {
+//       cart, address, paymentMethod, cartTotal,
+//     });
+//     setCart([]);
+//     showToast(`🎉 Order ${order.order_number} placed!`);
+//     setPage('account');
+//   } catch (err) {
+//     showToast(err.message, 'error');
+//   } finally {
+//     setProcessing(false);
+//   }
+//   };
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {mode === "signup" && (
-            <input className="input-dark" placeholder="FULL NAME" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}/>
-          )}
-          <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}/>
-          <input className="input-dark" type="password" placeholder="PASSWORD" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}/>
-          {mode === "signup" && (
-            <input className="input-dark" type="password" placeholder="CONFIRM PASSWORD" value={form.confirm} onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}/>
-          )}
-        </div>
+//   if (!user) return (
+//     <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+//       <div style={{ textAlign: "center" }}>
+//         <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, marginBottom: 20 }}>SIGN IN TO CHECKOUT</h2>
+//         <button className="btn-gold" onClick={() => setPage("login")}>SIGN IN</button>
+//       </div>
+//     </div>
+//   );
 
-        {mode === "login" && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1, margin: "12px 0", opacity: 0.6 }}>
-            Admin: admin@velvetwolf.com / admin123
-          </div>
-        )}
+//   return (
+//     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
+//       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 40px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 48 }}>
+//         {/* Left */}
+//         <div>
+//           <div style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3, marginBottom: 40 }}>CHECKOUT</div>
+//           {/* Steps */}
+//           <div style={{ display: "flex", gap: 0, marginBottom: 40 }}>
+//             {["DELIVERY", "PAYMENT", "REVIEW"].map((s, i) => (
+//               <div key={s} style={{ flex: 1, textAlign: "center" }}>
+//                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)", color: step >= i + 1 ? "var(--obsidian)" : "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, margin: "0 auto 8px", fontWeight: "bold" }}>
+//                   {step > i + 1 ? "✓" : i + 1}
+//                 </div>
+//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)" }}>{s}</div>
+//               </div>
+//             ))}
+//           </div>
 
-        <button className="btn-gold" style={{ width: "100%", marginTop: 24, padding: "16px", fontSize: 12, opacity: loading ? 0.7 : 1 }} onClick={handleSubmit} disabled={loading}>
-          {loading ? "AUTHENTICATING..." : mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
-        </button>
+//           {step === 1 && (
+//             <div>
+//               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>DELIVERY ADDRESS</h3>
+//               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+//                 <input className="input-dark" placeholder="FULL NAME *" value={address.name} onChange={e => setAddress(a => ({ ...a, name: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
+//                 <input className="input-dark" placeholder="PHONE NUMBER *" value={address.phone} onChange={e => setAddress(a => ({ ...a, phone: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
+//                 <input className="input-dark" placeholder="ADDRESS LINE *" value={address.address} onChange={e => setAddress(a => ({ ...a, address: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
+//                 <input className="input-dark" placeholder="CITY *" value={address.city} onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}/>
+//                 <input className="input-dark" placeholder="STATE *" value={address.state} onChange={e => setAddress(a => ({ ...a, state: e.target.value }))}/>
+//                 <input className="input-dark" placeholder="PINCODE *" value={address.pincode} onChange={e => setAddress(a => ({ ...a, pincode: e.target.value }))} maxLength={6}/>
+//               </div>
+//               <button className="btn-gold" style={{ marginTop: 28, padding: "14px 40px" }} onClick={() => {
+//                 const { name, phone, address: addr, city, state, pincode } = address;
+//                 if (!name.trim())       { showToast("Please enter your full name.", "error"); return; }
+//                 if (!/^[6-9]\d{9}$/.test(phone)) { showToast("Enter a valid 10-digit mobile number.", "error"); return; }
+//                 if (!addr.trim())       { showToast("Please enter your address.", "error"); return; }
+//                 if (!city.trim())       { showToast("Please enter your city.", "error"); return; }
+//                 if (!state.trim())      { showToast("Please enter your state.", "error"); return; }
+//                 if (!/^\d{6}$/.test(pincode)) { showToast("Enter a valid 6-digit pincode.", "error"); return; }
+//                 setStep(2);
+//               }}>CONTINUE TO PAYMENT</button>
+//             </div>
+//           )}
 
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1 }}>
-            {mode === "login" ? "New here? " : "Already a wolf? "}
-          </span>
-          <button onClick={() => setMode(mode === "login" ? "signup" : "login")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
-            {mode === "login" ? "CREATE ACCOUNT" : "SIGN IN"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+//           {step === 2 && (
+//             <div>
+//               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
+//               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+//                 {[["card", "💳 Credit / Debit Card"], ["upi", "📱 UPI (GPay, PhonePe, Paytm)"], ["cod", "💵 Cash on Delivery"], ["emi", "📆 EMI (0% for 3 months)"]].map(([val, label]) => (
+//                   <label key={val} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
+//                     <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }}/>
+//                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
+//                   </label>
+//                 ))}
+//               </div>
 
-// ─── ACCOUNT PAGE ─────────────────────────────────────────────────────────────
-function AccountPage() {
-  const { user, setUser, setPage, setAuthModal, orders, wishlist, cart } = useContext(AppContext);
-  const [tab, setTab] = useState("overview");
+//               {paymentMethod === "card" && (
+//                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+//                   <input className="input-dark" placeholder="CARD NUMBER" value={card.number} onChange={e => setCard(c => ({ ...c, number: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
+//                   <input className="input-dark" placeholder="CARDHOLDER NAME" value={card.name} onChange={e => setCard(c => ({ ...c, name: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
+//                   <input className="input-dark" placeholder="MM/YY" value={card.expiry} onChange={e => setCard(c => ({ ...c, expiry: e.target.value }))}/>
+//                   <input className="input-dark" placeholder="CVV" value={card.cvv} onChange={e => setCard(c => ({ ...c, cvv: e.target.value }))} type="password"/>
+//                 </div>
+//               )}
+//               {paymentMethod === "upi" && (
+//                 <input className="input-dark" placeholder="YOUR UPI ID (e.g. name@upi)" style={{ marginTop: 8 }}/>
+//               )}
 
-  if (!user) {
-    return (
-      <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, marginBottom: 20 }}>SIGN IN REQUIRED</h2>
-          <button className="btn-gold" onClick={() => setAuthModal("login")}>SIGN IN</button>
-        </div>
-      </div>
-    );
-  }
+//               <div style={{ display: "flex", gap: 12, marginTop: 28 }}>
+//                 <button className="btn-ghost" onClick={() => setStep(1)}>BACK</button>
+//                 <button className="btn-gold" style={{ flex: 1 }} onClick={() => setStep(3)}>REVIEW ORDER</button>
+//               </div>
+//             </div>
+//           )}
 
-  return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40 }}>
-            <div style={{ width: 72, height: 72, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 28, color: "var(--obsidian)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>
-              {user.name[0].toUpperCase()}
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 6 }}>{user.isAdmin ? "ADMIN WOLF" : "WOLF PACK MEMBER"}</div>
-              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2 }}>{user.name.toUpperCase()}</h1>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 4 }}>{user.email}</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 0 }}>
-            {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"]].map(([t, label]) => (
-              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, padding: "12px 24px", cursor: "pointer" }}>{label}</button>
-            ))}
-          </div>
-        </div>
-      </div>
+//           {step === 3 && (
+//             <div>
+//               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>ORDER REVIEW</h3>
+//               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 20 }}>
+//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>DELIVERY TO</div>
+//                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.name} · {address.phone}</div>
+//                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.address}, {address.city}, {address.state} - {address.pincode}</div>
+//               </div>
+//               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 28 }}>
+//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>PAYMENT</div>
+//                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{paymentMethod === "card" ? `Card ending in ${card.number.slice(-4) || "****"}` : paymentMethod === "upi" ? "UPI Payment" : paymentMethod === "cod" ? "Cash on Delivery" : "EMI - 3 months 0%"}</div>
+//               </div>
+//               <div style={{ display: "flex", gap: 12 }}>
+//                 <button className="btn-ghost" onClick={() => setStep(2)}>BACK</button>
+//                 <button className="btn-gold" style={{ flex: 1, opacity: processing ? 0.7 : 1 }} onClick={handleOrder} disabled={processing}>
+//                   {processing ? "PROCESSING..." : `PLACE ORDER · ₹${total.toLocaleString()}`}
+//                 </button>
+//               </div>
+//             </div>
+//           )}
+//         </div>
 
-      <div style={{ maxWidth: 1200, margin: "40px auto", padding: "0 40px" }}>
-        {tab === "overview" && (
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 40 }}>
-              {[["ORDERS", orders.length], ["WISHLIST", wishlist.length], ["CART ITEMS", cart.length]].map(([label, val]) => (
-                <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)" }}>{val}</div>
-                </div>
-              ))}
-            </div>
-            {user.isAdmin && (
-              <div style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
-                  <p style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>
-                </div>
-                <button className="btn-gold" onClick={() => setPage("admin")}>ADMIN DASHBOARD</button>
-              </div>
-            )}
-          </div>
-        )}
-        {tab === "orders" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>ORDER HISTORY</h2>
-            {orders.map(order => (
-              <div key={order.id} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", letterSpacing: 2, marginBottom: 6 }}>{order.id}</div>
-                  <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)", fontSize: 13 }}>{order.date} · {order.items} items</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginBottom: 6 }}>₹{order.total.toLocaleString()}</div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, padding: "3px 10px", background: order.status === "Delivered" ? "rgba(129,199,132,0.2)" : order.status === "Shipped" ? "rgba(79,195,247,0.2)" : "rgba(201,168,76,0.2)", color: order.status === "Delivered" ? "#81c784" : order.status === "Shipped" ? "#4fc3f7" : "var(--gold)" }}>
-                    {order.status.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {tab === "wishlist" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>SAVED PIECES</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
-              {wishlist.map(p => <ProductCard key={p.id} product={p}/>)}
-            </div>
-            {wishlist.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "var(--silver)", fontFamily: "var(--font-serif)", fontStyle: "italic" }}>Your wishlist is empty</div>}
-          </div>
-        )}
-        {tab === "settings" && (
-          <div style={{ maxWidth: 500 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 32 }}>ACCOUNT SETTINGS</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
-              <input className="input-dark" defaultValue={user.name} placeholder="FULL NAME"/>
-              <input className="input-dark" type="email" defaultValue={user.email} placeholder="EMAIL"/>
-              <input className="input-dark" type="tel" placeholder="PHONE NUMBER"/>
-            </div>
-            <button className="btn-gold" style={{ marginBottom: 16 }}>SAVE CHANGES</button>
-            <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 24, marginTop: 24 }}>
-              <button className="btn-ghost" onClick={() => { setUser(null); setPage("home"); }}>
-                <Icon name="logout" size={14}/> SIGN OUT
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── CHECKOUT PAGE ────────────────────────────────────────────────────────────
-function CheckoutPage() {
-  const { cart, cartTotal, setCart, setPage, user, setAuthModal, showToast } = useContext(AppContext);
-  const [step, setStep] = useState(1);
-  const [address, setAddress] = useState({ name: user?.name || "", phone: "", address: "", city: "", state: "", pincode: "" });
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
-  const [processing, setProcessing] = useState(false);
-
-  const shipping = cartTotal >= 1999 ? 0 : 149;
-  const tax = Math.round(cartTotal * 0.18);
-  const total = cartTotal + shipping + tax;
-
-  const handleOrder = () => {
-    setProcessing(true);
-    setTimeout(() => {
-      setCart([]);
-      setProcessing(false);
-      showToast("🎉 Order placed successfully!");
-      setPage("account");
-    }, 2000);
-  };
-
-  if (!user) return (
-    <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ textAlign: "center" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, marginBottom: 20 }}>SIGN IN TO CHECKOUT</h2>
-        <button className="btn-gold" onClick={() => setAuthModal("login")}>SIGN IN</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 40px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 48 }}>
-        {/* Left */}
-        <div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3, marginBottom: 40 }}>CHECKOUT</div>
-          {/* Steps */}
-          <div style={{ display: "flex", gap: 0, marginBottom: 40 }}>
-            {["DELIVERY", "PAYMENT", "REVIEW"].map((s, i) => (
-              <div key={s} style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)", color: step >= i + 1 ? "var(--obsidian)" : "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, margin: "0 auto 8px", fontWeight: "bold" }}>
-                  {step > i + 1 ? "✓" : i + 1}
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)" }}>{s}</div>
-              </div>
-            ))}
-          </div>
-
-          {step === 1 && (
-            <div>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>DELIVERY ADDRESS</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <input className="input-dark" placeholder="FULL NAME" value={address.name} onChange={e => setAddress(a => ({ ...a, name: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-                <input className="input-dark" placeholder="PHONE NUMBER" value={address.phone} onChange={e => setAddress(a => ({ ...a, phone: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-                <input className="input-dark" placeholder="ADDRESS LINE" value={address.address} onChange={e => setAddress(a => ({ ...a, address: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-                <input className="input-dark" placeholder="CITY" value={address.city} onChange={e => setAddress(a => ({ ...a, city: e.target.value }))}/>
-                <input className="input-dark" placeholder="STATE" value={address.state} onChange={e => setAddress(a => ({ ...a, state: e.target.value }))}/>
-                <input className="input-dark" placeholder="PINCODE" value={address.pincode} onChange={e => setAddress(a => ({ ...a, pincode: e.target.value }))}/>
-              </div>
-              <button className="btn-gold" style={{ marginTop: 28, padding: "14px 40px" }} onClick={() => setStep(2)}>CONTINUE TO PAYMENT</button>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-                {[["card", "💳 Credit / Debit Card"], ["upi", "📱 UPI (GPay, PhonePe, Paytm)"], ["cod", "💵 Cash on Delivery"], ["emi", "📆 EMI (0% for 3 months)"]].map(([val, label]) => (
-                  <label key={val} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
-                    <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }}/>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {paymentMethod === "card" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  <input className="input-dark" placeholder="CARD NUMBER" value={card.number} onChange={e => setCard(c => ({ ...c, number: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-                  <input className="input-dark" placeholder="CARDHOLDER NAME" value={card.name} onChange={e => setCard(c => ({ ...c, name: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-                  <input className="input-dark" placeholder="MM/YY" value={card.expiry} onChange={e => setCard(c => ({ ...c, expiry: e.target.value }))}/>
-                  <input className="input-dark" placeholder="CVV" value={card.cvv} onChange={e => setCard(c => ({ ...c, cvv: e.target.value }))} type="password"/>
-                </div>
-              )}
-              {paymentMethod === "upi" && (
-                <input className="input-dark" placeholder="YOUR UPI ID (e.g. name@upi)" style={{ marginTop: 8 }}/>
-              )}
-
-              <div style={{ display: "flex", gap: 12, marginTop: 28 }}>
-                <button className="btn-ghost" onClick={() => setStep(1)}>BACK</button>
-                <button className="btn-gold" style={{ flex: 1 }} onClick={() => setStep(3)}>REVIEW ORDER</button>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>ORDER REVIEW</h3>
-              <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 20 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>DELIVERY TO</div>
-                <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.name} · {address.phone}</div>
-                <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.address}, {address.city}, {address.state} - {address.pincode}</div>
-              </div>
-              <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 28 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>PAYMENT</div>
-                <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{paymentMethod === "card" ? `Card ending in ${card.number.slice(-4) || "****"}` : paymentMethod === "upi" ? "UPI Payment" : paymentMethod === "cod" ? "Cash on Delivery" : "EMI - 3 months 0%"}</div>
-              </div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button className="btn-ghost" onClick={() => setStep(2)}>BACK</button>
-                <button className="btn-gold" style={{ flex: 1, opacity: processing ? 0.7 : 1 }} onClick={handleOrder} disabled={processing}>
-                  {processing ? "PROCESSING..." : `PLACE ORDER · ₹${total.toLocaleString()}`}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right - Order Summary */}
-        <div>
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", position: "sticky", top: 90 }}>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 2, marginBottom: 20, borderBottom: "1px solid var(--smoke)", paddingBottom: 16 }}>ORDER SUMMARY</h3>
-            {cart.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, padding: "8px 0", borderBottom: "1px solid var(--smoke)" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ivory)", letterSpacing: 1 }}>{item.name}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>Sz: {item.size} · Qty: {item.qty}</div>
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>₹{(item.price * item.qty).toLocaleString()}</div>
-              </div>
-            ))}
-            <div style={{ marginTop: 16 }}>
-              {[["Subtotal", `₹${cartTotal.toLocaleString()}`], ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`], ["GST (18%)", `₹${tax.toLocaleString()}`]].map(([label, val]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>
-                  <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : "var(--ash)" }}>{val}</span>
-                </div>
-              ))}
-              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--gold)" }}>
-                <span>TOTAL</span><span style={{ color: "var(--gold)" }}>₹{total.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+//         {/* Right - Order Summary */}
+//         <div>
+//           <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", position: "sticky", top: 90 }}>
+//             <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 2, marginBottom: 20, borderBottom: "1px solid var(--smoke)", paddingBottom: 16 }}>ORDER SUMMARY</h3>
+//             {cart.map((item, i) => (
+//               <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, padding: "8px 0", borderBottom: "1px solid var(--smoke)" }}>
+//                 <div>
+//                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ivory)", letterSpacing: 1 }}>{item.name}</div>
+//                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>Sz: {item.size} · Qty: {item.qty}</div>
+//                 </div>
+//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>₹{(item.price * item.qty).toLocaleString()}</div>
+//               </div>
+//             ))}
+//             <div style={{ marginTop: 16 }}>
+//               {[["Subtotal", `₹${cartTotal.toLocaleString()}`], ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`], ["GST (18%)", `₹${tax.toLocaleString()}`]].map(([label, val]) => (
+//                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>
+//                   <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : "var(--ash)" }}>{val}</span>
+//                 </div>
+//               ))}
+//               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--gold)" }}>
+//                 <span>TOTAL</span><span style={{ color: "var(--gold)" }}>₹{total.toLocaleString()}</span>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 // ─── CUSTOM DESIGN PAGE ───────────────────────────────────────────────────────
 function CustomDesignPage() {
@@ -1553,7 +1708,7 @@ function BulkOrderPage() {
 
 // ─── ADMIN LAYOUT ─────────────────────────────────────────────────────────────
 function AdminLayout() {
-  const { setPage, adminPage, setAdminPage, user } = useContext(AppContext);
+  const { setPage, adminPage, setAdminPage } = useContext(AppContext);
 
   const navItems = [
     ["dashboard", "DASHBOARD", "chart"],
@@ -1608,14 +1763,21 @@ function AdminLayout() {
 
 // ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 function AdminDashboard() {
-  const { orders, customers, products, cart } = useContext(AppContext);
-  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const { orders, customers, products } = useContext(AppContext);
+
+  // Handle both mock (o.total) and Supabase (o.total_amount) field names
+  const revenue = orders.reduce((s, o) => s + Number(o.total_amount || o.total || 0), 0);
+
+  // Case-insensitive status comparison for both mock ("Processing") and Supabase ("confirmed")
+  const processingCount = orders.filter(o =>
+    ["processing", "confirmed", "in_production"].includes((o.status || "").toLowerCase())
+  ).length;
 
   const stats = [
     { label: "TOTAL REVENUE", value: `₹${revenue.toLocaleString()}`, sub: "+23% vs last month", color: "var(--gold)" },
-    { label: "TOTAL ORDERS", value: orders.length, sub: `${orders.filter(o => o.status === "Processing").length} processing`, color: "#4fc3f7" },
+    { label: "TOTAL ORDERS", value: orders.length, sub: `${processingCount} processing`, color: "#4fc3f7" },
     { label: "CUSTOMERS", value: customers.length, sub: "2 new this week", color: "#81c784" },
-    { label: "PRODUCTS", value: products.length, sub: `${products.filter(p => p.stock < 20).length} low stock`, color: "#ff8a65" },
+    { label: "PRODUCTS", value: products.length, sub: `${products.filter(p => (p.stock || 0) < 20).length} low stock`, color: "#ff8a65" },
   ];
 
   const recentOrders = orders.slice(0, 4);
@@ -1682,13 +1844,19 @@ function AdminDashboard() {
           <tbody>
             {recentOrders.map(o => (
               <tr key={o.id}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", padding: "12px 0" }}>{o.id}</td>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ash)", padding: "12px 0" }}>{o.customer}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "12px 0" }}>{o.date}</td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ivory)", padding: "12px 0" }}>₹{o.total.toLocaleString()}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", padding: "12px 0" }}>{o.order_number || o.id}</td>
+                <td style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ash)", padding: "12px 0" }}>{o.profiles?.full_name || o.customer || "—"}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "12px 0" }}>
+                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "—"}
+                </td>
+                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ivory)", padding: "12px 0" }}>
+                  ₹{Number(o.total_amount || o.total || 0).toLocaleString()}
+                </td>
                 <td style={{ padding: "12px 0" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px", background: o.status === "Delivered" ? "rgba(129,199,132,0.2)" : o.status === "Shipped" ? "rgba(79,195,247,0.2)" : o.status === "Processing" ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.1)", color: o.status === "Delivered" ? "#81c784" : o.status === "Shipped" ? "#4fc3f7" : "var(--gold)" }}>
-                    {o.status.toUpperCase()}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px",
+                    background: ["delivered"].includes((o.status||"").toLowerCase()) ? "rgba(129,199,132,0.2)" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "rgba(79,195,247,0.2)" : "rgba(201,168,76,0.2)",
+                    color: ["delivered"].includes((o.status||"").toLowerCase()) ? "#81c784" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "#4fc3f7" : "var(--gold)" }}>
+                    {(o.status || "PENDING").toUpperCase()}
                   </span>
                 </td>
               </tr>
@@ -1716,6 +1884,10 @@ function AdminProducts() {
   };
 
   const handleAdd = () => {
+    if (!newProd.name.trim()) { showToast("Product name is required.", "error"); return; }
+    if (!newProd.price || Number(newProd.price) <= 0) { showToast("Enter a valid price.", "error"); return; }
+    if (!newProd.originalPrice || Number(newProd.originalPrice) <= 0) { showToast("Enter a valid original price.", "error"); return; }
+    if (Number(newProd.originalPrice) < Number(newProd.price)) { showToast("Original price must be ≥ sale price.", "error"); return; }
     const p = { ...newProd, id: Date.now(), rating: 4.5, reviews: 0, price: Number(newProd.price), originalPrice: Number(newProd.originalPrice) };
     setProducts(prev => [...prev, p]);
     setAdding(false);
@@ -1831,7 +2003,9 @@ function AdminOrders() {
   const { orders } = useContext(AppContext);
   const [filter, setFilter] = useState("all");
 
-  const filtered = filter === "all" ? orders : orders.filter(o => o.status.toLowerCase() === filter);
+  const filtered = filter === "all"
+    ? orders
+    : orders.filter(o => (o.status || "").toLowerCase() === filter);
 
   return (
     <div>
@@ -1841,7 +2015,7 @@ function AdminOrders() {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-        {["all", "pending", "processing", "shipped", "delivered"].map(s => (
+        {["all", "pending", "confirmed", "dispatched", "delivered"].map(s => (
           <button key={s} onClick={() => setFilter(s)} style={{ background: filter === s ? "var(--gold)" : "transparent", border: "1px solid", borderColor: filter === s ? "var(--gold)" : "var(--smoke)", color: filter === s ? "var(--obsidian)" : "var(--silver)", padding: "6px 16px", fontFamily: "var(--font-mono)", fontSize: 9, cursor: "pointer", letterSpacing: 2 }}>
             {s.toUpperCase()}
           </button>
@@ -1858,16 +2032,34 @@ function AdminOrders() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(o => (
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: "40px 16px", textAlign: "center", fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>
+                  No orders found
+                </td>
+              </tr>
+            ) : filtered.map(o => (
               <tr key={o.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", padding: "14px 16px", letterSpacing: 1 }}>{o.id}</td>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ash)", padding: "14px 16px" }}>{o.customer}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", padding: "14px 16px" }}>{o.date}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", padding: "14px 16px" }}>{o.items}</td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", padding: "14px 16px" }}>₹{o.total.toLocaleString()}</td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", padding: "14px 16px", letterSpacing: 1 }}>
+                  {o.order_number || o.id}
+                </td>
+                <td style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ash)", padding: "14px 16px" }}>
+                  {o.profiles?.full_name || o.customer || "—"}
+                </td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", padding: "14px 16px" }}>
+                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "—"}
+                </td>
+                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", padding: "14px 16px" }}>
+                  {o.order_items?.length ?? o.items ?? "—"}
+                </td>
+                <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", padding: "14px 16px" }}>
+                  ₹{Number(o.total_amount || o.total || 0).toLocaleString()}
+                </td>
                 <td style={{ padding: "14px 16px" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "4px 12px", background: o.status === "Delivered" ? "rgba(129,199,132,0.2)" : o.status === "Shipped" ? "rgba(79,195,247,0.2)" : o.status === "Processing" ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.1)", color: o.status === "Delivered" ? "#81c784" : o.status === "Shipped" ? "#4fc3f7" : o.status === "Processing" ? "var(--gold)" : "var(--silver)" }}>
-                    {o.status.toUpperCase()}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "4px 12px",
+                    background: ["delivered"].includes((o.status||"").toLowerCase()) ? "rgba(129,199,132,0.2)" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "rgba(79,195,247,0.2)" : ["confirmed","processing","in_production"].includes((o.status||"").toLowerCase()) ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.1)",
+                    color: ["delivered"].includes((o.status||"").toLowerCase()) ? "#81c784" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "#4fc3f7" : ["confirmed","processing","in_production"].includes((o.status||"").toLowerCase()) ? "var(--gold)" : "var(--silver)" }}>
+                    {(o.status || "PENDING").toUpperCase()}
                   </span>
                 </td>
               </tr>
@@ -2026,7 +2218,7 @@ function AdminSettings() {
 
 // ─── FOOTER ───────────────────────────────────────────────────────────────────
 function Footer() {
-  const { setPage, setActiveCollection } = useContext(AppContext);
+  const { setPage } = useContext(AppContext);
   return (
     <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>

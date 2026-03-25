@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -17,4 +16,9 @@ The React Compiler is not enabled on this template because of its impact on dev 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 =======
 # velvetwolf
->>>>>>> 3b23ea52cf620a7c9214c0b76065154cac7fea70
+
+# Requirements
+npm install express cors dotenv aws-sdk bcrypt jsonwebtoken passport passport-google-oauth20
+npm install express-rate-limit
+npm install react-router-dom
+npm init -y
