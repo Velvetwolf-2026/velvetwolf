@@ -6,6 +6,18 @@
 //   import { MosaicCarousel, FAQPage, Navbar } from "./velvetwolf";
 // ─────────────────────────────────────────────
 
+//Login and signup pages
+export { ForgetPassword } from "./velvetwolf/pages/ForgetPassword";
+export { Login } from "./velvetwolf/pages/Login";
+export { Signup } from "./velvetwolf/pages/Signup";
+export { AccountPage } from "./velvetwolf/pages/AccountPage";
+
+
+// Authentication
+// export { getProfile} from "./velvetwolf/utils/auth";
+// export { Ratelimit } from "./velvetwolf/utils/ratelimt";
+// export { supabase } from "./velvetwolf/utils/supabase";
+
 // ── Layout Components ──
 export { default as Navbar       } from "./velvetwolf/components/Navbar";
 export { default as Footer       } from "./velvetwolf/components/Footer";
