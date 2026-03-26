@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: VelvetWolf backend migration stack for running auth APIs on AWS Lambda.
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  VelvetwolfBackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handler.handler
+      Events:
+        Root:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: GET
+        Signup:
+          Type: HttpApi
+          Properties:
+            Path: /auth/signup
+            Method: POST
+        Login:
+          Type: HttpApi
+          Properties:
+            Path: /auth/login
+            Method: POST
+        ResendOtp:
+          Type: HttpApi
+          Properties:
+            Path: /auth/resend-otp
+            Method: POST
+        ForgotPassword:
+          Type: HttpApi
+          Properties:
+            Path: /auth/forgot-password
+            Method: POST
+        VerifyOtp:
+          Type: HttpApi
+          Properties:
+            Path: /auth/verify-otp
+            Method: POST

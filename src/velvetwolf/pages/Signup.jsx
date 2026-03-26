@@ -4,6 +4,7 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import { apiUrl, googleAuthUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function strengthScore(pw) {
@@ -93,7 +94,7 @@ export function Signup() {
     if (!validateDetails()) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/auth/signup", {
+      const res = await fetch(apiUrl("/auth/signup"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -150,7 +151,7 @@ export function Signup() {
       //   token: code,
       //   type:  "signup",
       // });
-      const res = await fetch("http://localhost:5000/auth/verify-otp", {
+      const res = await fetch(apiUrl("/auth/verify-otp"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -214,7 +215,7 @@ export function Signup() {
     setOtp(["", "", "", "", "", ""]);
     
     try {
-      const res = await fetch("http://localhost:5000/auth/resend-otp", {
+      const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email })
@@ -252,11 +253,8 @@ export function Signup() {
   };
 
   const handleGoogle = async () => {
-    try {
-      window.location.href = "http://localhost:5000/auth/google";
-    } catch (err) {
-      setError("Google sign-up failed. Please try again.");
-    }
+    setError("");
+    window.location.href = googleAuthUrl("signup");
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -409,3 +407,8 @@ export function Signup() {
     </div>
   );
 }
+
+
+
+
+
