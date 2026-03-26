@@ -4,6 +4,7 @@ import { useState, useContext } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import { apiUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function strengthScore(pw) {
@@ -76,7 +77,7 @@ export function ForgetPassword() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/auth/forgot-password", {
+      const res = await fetch(apiUrl("/auth/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() })
@@ -170,7 +171,7 @@ export function ForgetPassword() {
     setOtp(["", "", "", "", "", ""]);
     
     try {
-      const res = await fetch("http://localhost:5000/auth/resend-otp", {
+      const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() })

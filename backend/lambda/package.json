@@ -1,0 +1,15 @@
+{
+  "name": "velvetwolf-lambda-backend",
+  "private": true,
+  "type": "module",
+  "main": "src/handler.js",
+  "scripts": {
+    "dev": "node dev-server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.3",
+    "aws-sdk": "^2.1693.0",
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

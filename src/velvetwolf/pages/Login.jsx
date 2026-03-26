@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import { apiUrl, googleAuthUrl } from "../utils/api";
 
 function GoogleIcon() {
   return (
@@ -101,7 +102,7 @@ export function Login() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/auth/login", {
+      const res = await fetch(apiUrl("/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,7 +184,7 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/auth/verify-otp", {
+      const res = await fetch(apiUrl("/auth/verify-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -220,7 +221,7 @@ export function Login() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/auth/resend-otp", {
+      const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email.toLowerCase().trim() }),
@@ -266,12 +267,7 @@ export function Login() {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     setError("");
-    try {
-      window.location.href = "http://localhost:5000/auth/google";
-    } catch (err) {
-      setError("Google sign-in failed. Please try again.");
-      setGoogleLoading(false);
-    }
+    window.location.href = googleAuthUrl("login");
   };
 
   return (
@@ -461,3 +457,8 @@ export function Login() {
     </div>
   );
 }
+
+
+
+
+
