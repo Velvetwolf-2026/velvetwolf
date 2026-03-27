@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { loadBackendEnv } from "./config/env.js";
+import { normalizeOtpKind } from "./config/otp-email-template.js";
 import { sendOTP } from "./config/ses.js";
 import { supabaseAdmin } from "./config/supabase.js";
 import { ApiError, logError, logInfo, logWarn } from "./http.js";
@@ -99,6 +100,18 @@ function createOtpMetadata(type) {
   const otp = Math.floor(100000 + Math.random() * 900000);
   const expiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000).toISOString();
   return { otp, expiresAt, type };
+}
+
+function getOtpMetadataType(kind) {
+  if (kind === "signup") {
+    return "Signup-OTP";
+  }
+
+  if (kind === "forgot") {
+    return "Forget password-OTP";
+  }
+
+  return "Login-OTP";
 }
 
 function decodeState(stateRaw) {
@@ -347,7 +360,7 @@ export async function signup({ name, email, password }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp);
+    await sendOTP(normalizedEmail, otp, "signup");
     logInfo("Signup OTP sent", authLogContext({ email: normalizedEmail, type, expiresAt }));
 
     await recordRateAttempt(`signup:${normalizedEmail}`);
@@ -408,7 +421,7 @@ export async function login({ email, password }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp);
+    await sendOTP(normalizedEmail, otp, "login");
     logInfo("Login OTP sent", authLogContext({ email: normalizedEmail, userId: user.id, expiresAt }));
 
     return {
@@ -427,10 +440,11 @@ export async function login({ email, password }) {
   }
 }
 
-export async function resendOtp({ email }) {
+export async function resendOtp({ email, kind, type }) {
   const normalizedEmail = normalizeEmail(email);
+  const otpKind = normalizeOtpKind(kind || type);
 
-  logInfo("Resend OTP requested", authLogContext({ email: normalizedEmail }));
+  logInfo("Resend OTP requested", authLogContext({ email: normalizedEmail, otpKind }));
 
   try {
     await checkRateLimit(`resend:${normalizedEmail}`);
@@ -446,7 +460,7 @@ export async function resendOtp({ email }) {
       throw new ApiError(404, "User not registered. Please complete registration first.");
     }
 
-    const { otp, expiresAt, type } = createOtpMetadata("Resend-OTP");
+    const { otp, expiresAt, type: otpType } = createOtpMetadata(getOtpMetadataType(otpKind));
 
     await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
 
@@ -454,21 +468,21 @@ export async function resendOtp({ email }) {
       email: normalizedEmail,
       otp,
       expires_at: expiresAt,
-      type,
+      type: otpType,
     });
 
     if (otpInsertError) {
-      logError("Resend OTP insert failed", authLogContext({ email: normalizedEmail, type, expiresAt, error: otpInsertError }));
+      logError("Resend OTP insert failed", authLogContext({ email: normalizedEmail, type: otpType, otpKind, expiresAt, error: otpInsertError }));
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp);
+    await sendOTP(normalizedEmail, otp, otpKind);
     await recordRateAttempt(`resend:${normalizedEmail}`);
 
-    logInfo("Resend OTP completed", authLogContext({ email: normalizedEmail, userId: user.id, expiresAt }));
+    logInfo("Resend OTP completed", authLogContext({ email: normalizedEmail, userId: user.id, otpKind, expiresAt }));
     return { message: "New OTP sent" };
   } catch (error) {
-    logError("Resend OTP failed", authLogContext({ email: normalizedEmail, error }));
+    logError("Resend OTP failed", authLogContext({ email: normalizedEmail, otpKind, error }));
     throw error;
   }
 }
@@ -508,7 +522,7 @@ export async function forgotPassword({ email }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp);
+    await sendOTP(normalizedEmail, otp, "forgot");
     await recordRateAttempt(`forgot:${normalizedEmail}`);
 
     logInfo("Forgot password OTP sent", authLogContext({ email: normalizedEmail, userId: user.id, expiresAt }));

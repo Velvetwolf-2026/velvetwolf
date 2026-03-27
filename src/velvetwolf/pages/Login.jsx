@@ -224,7 +224,7 @@ export function Login() {
       const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email.toLowerCase().trim() }),
+        body: JSON.stringify({ email: form.email.toLowerCase().trim(), kind: "login" }),
       });
 
       const data = await res.json();

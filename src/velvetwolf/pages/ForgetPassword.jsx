@@ -174,7 +174,7 @@ export function ForgetPassword() {
       const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.toLowerCase().trim() })
+        body: JSON.stringify({ email: email.toLowerCase().trim(), kind: "forgot" })
       });
       
       if (!res.ok) {

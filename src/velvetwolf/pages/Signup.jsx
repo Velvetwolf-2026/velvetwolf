@@ -218,7 +218,7 @@ export function Signup() {
       const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email })
+        body: JSON.stringify({ email: form.email, kind: "signup" })
       });
       const data = await res.json();
       if (data.message) {
