@@ -1,5 +1,5 @@
 import http from "http";
-import { handler } from "./index.js";
+import { handler } from "./src/handler.js";
 
 const port = Number.parseInt(process.env.LAMBDA_PORT || process.env.PORT || "5001", 10);
 
@@ -55,4 +55,3 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`Lambda migration server listening on port ${port}`);
 });
-
