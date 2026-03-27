@@ -1,6 +1,7 @@
 # VelvetWolf
+# React + Vite
 
-Frontend is powered by Vite and React.
+Frontend is powered by Vite and React.      
 
 ## Scripts
 - `npm run dev` starts the frontend dev server
