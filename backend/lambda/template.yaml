@@ -9,39 +9,73 @@ Globals:
     MemorySize: 512
 
 Resources:
+  VelvetwolfHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - https://develop.d2xmob7nneg6g3.amplifyapp.com
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+          - PUT
+        MaxAge: 600
+
   VelvetwolfBackendFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: src/handler.handler
+      Handler: index.handler
       Events:
         Root:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /
+            Method: GET
+        GoogleAuth:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /auth/google
+            Method: GET
+        GoogleCallback:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /auth/google/callback
             Method: GET
         Signup:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/signup
             Method: POST
         Login:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/login
             Method: POST
         ResendOtp:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/resend-otp
             Method: POST
         ForgotPassword:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/forgot-password
             Method: POST
         VerifyOtp:
           Type: HttpApi
           Properties:
+            ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/verify-otp
             Method: POST
