@@ -841,6 +841,7 @@ function Navbar() {
             <button key={pg} onClick={() => setPage(pg)} style={{
               background: "none", border: "none", color: "var(--ash)", cursor: "pointer",
               fontFamily: "var(--font-mono)", fontSize: 17, letterSpacing: 3,
+              fontFamily: "var(--font-mono)", fontSize: 17, letterSpacing: 3,
               transition: "color 0.3s", padding: "4px 0", position: "relative"
             }}
               onMouseEnter={e => { e.target.style.color = "var(--gold)"; }}
@@ -1596,6 +1597,7 @@ function CustomDesignPage() {
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
                 <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
+                <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
               ))}
             </div>
           </div>
@@ -1637,7 +1639,9 @@ function CustomDesignPage() {
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
               </div>
               <button className="btn-gold" onClick={() => showToast("Custom order request submitted!")}>SUBMIT ORDER REQUEST</button>
