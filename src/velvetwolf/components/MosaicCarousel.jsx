@@ -191,7 +191,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
         <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.04),transparent 60%)",pointerEvents:"none" }}/>
           <div style={{ position:"relative" }}>
-            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:5, color:gold, marginBottom:10, display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:5, color:gold, marginBottom:10, display:"flex", alignItems:"center", gap:10 }}>
               <div style={{ width:22, height:1, background:gold }}/>SHOP BY VIBE<div style={{ width:22, height:1, background:gold }}/>
             </div>
             <h2 style={{ fontFamily:"'Bebas Neue',cursive", fontSize:"clamp(36px,5vw,62px)", letterSpacing:7, color:"#f5f0e8", lineHeight:1, margin:0 }}>
@@ -201,7 +201,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
           <div style={{ display:"flex", alignItems:"center", gap:10, position:"relative" }}>
             <div style={{ display:"flex", alignItems:"center", gap:7, marginRight:6 }}>
               <div style={{ width:5, height:5, borderRadius:"50%", background:gold, animation:"vwmc-blink 2.2s infinite" }}/>
-              <span style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:"rgba(255,255,255,0.2)" }}>5 CATEGORIES</span>
+              <span style={{ fontFamily:"'Space Mono',monospace", fontSize:11, letterSpacing:3, color:"rgba(255, 255, 255, 0.63)" }}>5 CATEGORIES</span>
             </div>
             <button className="vwmc-btn" onClick={() => scrollBy(-1)}>‹</button>
             <button className="vwmc-btn" onClick={() => scrollBy(1)}>›</button>
@@ -244,7 +244,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
           ))}
         </div>
 
-        <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:4, color:"rgba(255,255,255,0.12)", paddingBottom:32 }}>
+        <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Space Mono',monospace", fontSize:10, letterSpacing:4, color:"rgba(255, 255, 255, 0.47)", paddingBottom:32 }}>
           DRAG · CLICK · EXPLORE
         </div>
       </section>

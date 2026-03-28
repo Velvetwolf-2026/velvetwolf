@@ -81,7 +81,7 @@ const GlobalStyles = () => (
       border: none;
       padding: 14px 32px;
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
@@ -100,7 +100,7 @@ const GlobalStyles = () => (
       border: 1px solid var(--gold);
       padding: 12px 28px;
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
@@ -831,7 +831,7 @@ function Navbar() {
           </div>
           <div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.8 }}>LUXURY STREETWEAR</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", opacity: 0.8 }}>LUXURY STREETWEAR</div>
           </div>
         </div>
 
@@ -840,7 +840,7 @@ function Navbar() {
           {[["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]].map(([label, pg]) => (
             <button key={pg} onClick={() => setPage(pg)} style={{
               background: "none", border: "none", color: "var(--ash)", cursor: "pointer",
-              fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3,
+              fontFamily: "var(--font-mono)", fontSize: 17, letterSpacing: 3,
               transition: "color 0.3s", padding: "4px 0", position: "relative"
             }}
               onMouseEnter={e => { e.target.style.color = "var(--gold)"; }}
@@ -908,7 +908,7 @@ function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section style={{ height: "70vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden" }}>
+      <section style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px"}}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }}/>
         {/* Geometric accents */}
         <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
@@ -954,7 +954,7 @@ function HomePage() {
           {[["10,000+", "Happy Wolves"], ["220 GSM", "Premium Cotton"], ["48hr", "Dispatch"], ["100%", "India Made"]].map(([num, label]) => (
             <div key={label}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)", letterSpacing: 2 }}>{num}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>{label}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -970,7 +970,7 @@ function HomePage() {
       {/* COLLECTIONS GRID */}
       <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR UNIVERSE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR UNIVERSE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, letterSpacing: 4, color: "var(--ivory)" }}>COLLECTIONS</h2>
           <div className="divider"/>
         </div>
@@ -984,7 +984,7 @@ function HomePage() {
               onMouseEnter={e => { e.currentTarget.style.borderColor = col.color; e.currentTarget.style.transform = "translateY(-4px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.transform = ""; }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{col.icon}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", lineHeight: 1.4 }}>{col.name.toUpperCase()}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--ash)", lineHeight: 1.4 }}>{col.name.toUpperCase()}</div>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: col.color, opacity: 0, transition: "opacity 0.3s" }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = 1; }}/>
             </div>
@@ -997,7 +997,7 @@ function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
             </div>
             <button className="btn-outline" onClick={() => setPage("shop")}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
@@ -1011,7 +1011,7 @@ function HomePage() {
       {/* WHY VELVETWOLF */}
       <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider"/>
         </div>
@@ -1024,7 +1024,7 @@ function HomePage() {
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 16 }}>{title}</h3>
-              <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
+              <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
               <div style={{ position: "absolute", top: 0, left: 0, width: 2, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
             </div>
           ))}
@@ -1035,11 +1035,11 @@ function HomePage() {
       <section style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
         <div style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>✦ DESIGN YOUR IDENTITY ✦</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>✦ DESIGN YOUR IDENTITY ✦</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, lineHeight: 0.95, letterSpacing: 2, marginBottom: 24 }}>
             UPLOAD YOUR<br/><span className="gold-text">OWN DESIGN</span>
           </h2>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: 19, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
             Your vision. Our premium canvas. Upload your artwork and we'll bring it to life on luxury-grade fabric.
           </p>
           <button className="btn-gold" onClick={() => setPage("custom")} style={{ fontSize: 12, padding: "16px 40px" }}>
@@ -1133,11 +1133,11 @@ function ShopPage() {
       {/* Header */}
       <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
             {activeCollection ? COLLECTIONS.find(c => c.id === activeCollection)?.name?.toUpperCase() : "ALL PRODUCTS"}
           </h1>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
         </div>
       </div>
 
@@ -1147,7 +1147,7 @@ function ShopPage() {
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>COLLECTIONS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
+              <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
               {COLLECTIONS.map(col => (
                 <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
                   <span>{col.icon}</span>{col.name}
@@ -1159,7 +1159,7 @@ function ShopPage() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>SIZE</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {["XS","S","M","L","XL","XXL"].map(size => (
-                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid", borderColor: selectedSizes.includes(size) ? "var(--gold)" : "var(--smoke)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--silver)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 9, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
+                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid", borderColor: selectedSizes.includes(size) ? "var(--gold)" : "var(--smoke)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--silver)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
               ))}
             </div>
           </div>
@@ -1213,7 +1213,7 @@ function CollectionPage() {
               <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }}/>
               <div style={{ fontSize: 48, marginBottom: 20 }}>{col.icon}</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12 }}>{col.name.toUpperCase()}</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2 }}>
                 EXPLORE <Icon name="arrowRight" size={12} color={col.color}/>
               </div>
             </div>
@@ -1595,7 +1595,7 @@ function CustomDesignPage() {
             </div>
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
-                <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
+                <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
               ))}
             </div>
           </div>
@@ -1636,9 +1636,9 @@ function CustomDesignPage() {
                 <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
               </div>
               <button className="btn-gold" onClick={() => showToast("Custom order request submitted!")}>SUBMIT ORDER REQUEST</button>
             </div>
@@ -1676,7 +1676,7 @@ function BulkOrderPage() {
           ))}
           <div style={{ marginTop: 32 }}>
             {["✦ Custom logo embroidery/print", "✦ Pantone color matching", "✦ Individual name printing", "✦ Dedicated account manager", "✦ Net-30 payment terms available"].map(t => (
-              <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
+              <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
             ))}
           </div>
         </div>
