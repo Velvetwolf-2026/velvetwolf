@@ -299,11 +299,11 @@ export function Login() {
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
             <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--obsidian)" }}>VW</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 12, color: "var(--obsidian)" }}>VW</span>
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
             </div>
           </div>
         </div>
@@ -312,14 +312,14 @@ export function Login() {
           {step === 1 && (
             <>
               <div style={{ marginBottom: 26 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
                   <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
                 </div>
                 <h1 style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: 4, color: "var(--ivory)", margin: 0, lineHeight: 1 }}>SIGN IN</h1>
               </div>
 
               {error && (
-                <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 10, marginBottom: 18, letterSpacing: 0.5 }}>
+                <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 12, marginBottom: 18, letterSpacing: 0.5 }}>
                   ✕ {error}
                 </div>
               )}
@@ -328,7 +328,7 @@ export function Login() {
                 type="button"
                 onClick={handleGoogle}
                 disabled={googleLoading || loading}
-                style={{ width: "100%", background: "transparent", border: "1px solid var(--smoke)", color: "var(--ash)", padding: "12px 16px", cursor: googleLoading ? "not-allowed" : "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18, transition: "all 0.25s", opacity: googleLoading ? 0.6 : 1 }}
+                style={{ width: "100%", background: "transparent", border: "1px solid var(--smoke)", color: "var(--ash)", padding: "12px 16px", cursor: googleLoading ? "not-allowed" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18, transition: "all 0.25s", opacity: googleLoading ? 0.6 : 1 }}
                 onMouseEnter={e => { if (!googleLoading) { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.color = "var(--gold)"; }}}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.color = "var(--ash)"; }}
               >
@@ -338,13 +338,13 @@ export function Login() {
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
                 <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)" }}>OR</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)" }}>OR</span>
                 <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
               </div>
 
               <form onSubmit={handleLogin} noValidate>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
                   <input
                     className="input-dark"
                     type="email"
@@ -357,7 +357,7 @@ export function Login() {
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
                   <div style={{ position: "relative" }}>
                     <input
                       className="input-dark"
@@ -383,11 +383,11 @@ export function Login() {
                   <div style={{ height: "100%", width: `${(strengthScore / 5) * 100}%`, background: getColor(), borderRadius: 5, transition: "0.3s" }} />
                 </div>
 
-                <p style={{ textAlign: "left", marginTop: 18, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
+                <p style={{ textAlign: "left", marginTop: 18, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
                   Strength: {getStrength()}
                 </p>
 
-                <ul style={{ textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
+                <ul style={{ textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
                   <li style={{ color: checks.uppercase ? "green" : "gray" }}>Uppercase letter (A-Z)</li>
                   <li style={{ color: checks.lowercase ? "green" : "gray" }}>Lowercase letter (a-z)</li>
                   <li style={{ color: checks.number ? "green" : "gray" }}>Number (0-9)</li>
@@ -399,7 +399,7 @@ export function Login() {
                   <button
                     type="button"
                     onClick={() => setPage("forgetpassword")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)" }}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)" }}
                   >
                     FORGOT PASSWORD?
                   </button>
@@ -415,7 +415,7 @@ export function Login() {
                 </button>
               </form>
 
-              <div style={{ marginTop: 22, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)" }}>
+              <div style={{ marginTop: 22, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)" }}>
                 Don't have an account?{" "}
                 <button
                   type="button"
