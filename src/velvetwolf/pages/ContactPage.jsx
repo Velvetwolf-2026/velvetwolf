@@ -44,17 +44,17 @@ export default function ContactPage() {
               <div key={i} style={{ display:"flex", gap:14, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${border}` }}>
                 <span style={{ fontSize:18, flexShrink:0, marginTop:2 }}>{c.icon}</span>
                 <div>
-                  <div style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:muted, marginBottom:3 }}>{c.label}</div>
-                  <div style={{ fontSize:13, color:gold }}>{c.val}</div>
+                  <div style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:3, color:muted, marginBottom:3 }}>{c.label}</div>
+                  <div style={{ fontSize:15, color:gold }}>{c.val}</div>
                 </div>
               </div>
             ))}
 
             <div style={{ marginTop:8 }}>
-              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:muted, marginBottom:10 }}>FOLLOW US</div>
+              <div style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:3, color:muted, marginBottom:10 }}>FOLLOW US</div>
               <div style={{ display:"flex", gap:8 }}>
                 {["INSTAGRAM","TWITTER","PINTEREST"].map(s => (
-                  <div key={s} style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:2, padding:"5px 10px", border:`1px solid ${border}`, color:muted, cursor:"pointer", transition:"all 0.2s" }}
+                  <div key={s} style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:2, padding:"5px 10px", border:`1px solid ${border}`, color:muted, cursor:"pointer", transition:"all 0.2s" }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor=gold; e.currentTarget.style.color=gold; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor=border; e.currentTarget.style.color=muted; }}
                   >{s}</div>
@@ -63,9 +63,9 @@ export default function ContactPage() {
             </div>
 
             <div style={{ marginTop:28, background:surface, border:`1px solid ${border}`, padding:"18px 16px" }}>
-              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:gold, marginBottom:8 }}>RESPONSE TIMES</div>
+              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:10, letterSpacing:3, color:gold, marginBottom:8 }}>RESPONSE TIMES</div>
               {[["Email","Within 4 hours"],["WhatsApp","Within 2 hours"],["Instagram DM","Within 6 hours"],["Phone","Mon–Sat, 11AM–5PM"]].map((r,i) => (
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:muted, marginBottom:6 }}>
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:14, color:muted, marginBottom:6 }}>
                   <span>{r[0]}</span><span style={{color:"#81c784"}}>{r[1]}</span>
                 </div>
               ))}
@@ -90,7 +90,7 @@ export default function ContactPage() {
                     { label:"EMAIL ADDRESS",  key:"email", placeholder:"your@email.com"  },
                   ].map(f => (
                     <div key={f.key}>
-                      <label style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>{f.label}</label>
+                      <label style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>{f.label}</label>
                       <input value={form[f.key]} onChange={e => update(f.key, e.target.value)} placeholder={f.placeholder}
                         style={inputStyle}
                         onFocus={e => e.target.style.borderColor=gold}
@@ -101,7 +101,7 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ marginBottom:14 }}>
-                  <label style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>SUBJECT</label>
+                  <label style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>SUBJECT</label>
                   <select value={form.subject} onChange={e => update("subject", e.target.value)}
                     style={{ ...inputStyle, cursor:"pointer", appearance:"none" }}
                     onFocus={e => e.target.style.borderColor=gold}
@@ -113,7 +113,7 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ marginBottom:20 }}>
-                  <label style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>MESSAGE</label>
+                  <label style={{ fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>MESSAGE</label>
                   <textarea value={form.message} onChange={e => update("message", e.target.value)}
                     placeholder="Tell us how we can help you..." rows={6}
                     style={{ ...inputStyle, resize:"vertical", lineHeight:1.7 }}
@@ -129,7 +129,7 @@ export default function ContactPage() {
                     onMouseEnter={e => e.currentTarget.style.background=goldLight}
                     onMouseLeave={e => e.currentTarget.style.background=gold}
                   >SEND MESSAGE →</button>
-                  <span style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:1, color:muted }}>Reply within 4 hours</span>
+                  <span style={{ fontFamily:"'Roboto', sans-serif", fontSize:12, letterSpacing:1, color:muted }}>Reply within 4 hours</span>
                 </div>
               </>
             )}
@@ -144,8 +144,8 @@ export default function ContactPage() {
             { label:"GSTIN",        lines:["33AAAAA0000A1Z5","For B2B invoice requests","bulk@velvetwolf.in"] },
           ].map((b,i) => (
             <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"18px 16px" }}>
-              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:gold, marginBottom:10 }}>{b.label}</div>
-              {b.lines.map((l,j) => <p key={j} style={{ ...S.p, marginBottom:3, fontSize:12 }}>{l}</p>)}
+              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:gold, marginBottom:10 }}>{b.label}</div>
+              {b.lines.map((l,j) => <p key={j} style={{ ...S.p, marginBottom:3, fontSize:14 }}>{l}</p>)}
             </div>
           ))}
         </div>

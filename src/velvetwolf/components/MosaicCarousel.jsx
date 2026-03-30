@@ -201,7 +201,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
           <div style={{ display:"flex", alignItems:"center", gap:10, position:"relative" }}>
             <div style={{ display:"flex", alignItems:"center", gap:7, marginRight:6 }}>
               <div style={{ width:5, height:5, borderRadius:"50%", background:gold, animation:"vwmc-blink 2.2s infinite" }}/>
-              <span style={{ fontFamily:"'Space Mono',monospace", fontSize:11, letterSpacing:3, color:"rgba(255, 255, 255, 0.63)" }}>5 CATEGORIES</span>
+              <span style={{ fontFamily: "'Roboto', sans-serif", fontSize:11, letterSpacing:3, color:"rgba(255, 255, 255, 0.63)" }}>5 CATEGORIES</span>
             </div>
             <button className="vwmc-btn" onClick={() => scrollBy(-1)}>‹</button>
             <button className="vwmc-btn" onClick={() => scrollBy(1)}>›</button>
@@ -244,7 +244,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
           ))}
         </div>
 
-        <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Space Mono',monospace", fontSize:10, letterSpacing:4, color:"rgba(255, 255, 255, 0.47)", paddingBottom:32 }}>
+        <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:4, color:"rgba(255, 255, 255, 0.47)", paddingBottom:32 }}>
           DRAG · CLICK · EXPLORE
         </div>
       </section>
