@@ -35,8 +35,8 @@ export default function SizeGuide() {
       <div style={{ ...S.wrap, maxWidth: 960 }}>
         <PageHeader eyebrow="SIZING" title="SIZE GUIDE" sub="Find your perfect fit · Measurements in inches unless noted" />
 
-        <div style={{ background:"rgba(201,168,76,0.06)", border:`1px solid ${gold}33`, borderLeft:`3px solid ${gold}`, padding:"16px 20px", marginBottom:36, fontSize:13, color:"#bbb" }}>
-          <strong style={{ fontFamily:"'Space Mono',monospace", fontSize:9, letterSpacing:2, color:gold }}>PRO TIP</strong><br/>
+        <div style={{ background:"rgba(201,168,76,0.06)", border:`1px solid ${gold}33`, borderLeft:`3px solid ${gold}`, padding:"16px 20px", marginBottom:36, fontSize:15, color:"#bbb" }}>
+          <strong style={{ fontFamily:"'Roboto', sans-serif", fontSize:11, letterSpacing:2, color:gold }}>PRO TIP</strong><br/>
           When between sizes, size up for an oversized streetwear look, or size down for a fitted silhouette. All VelvetWolf tees are pre-washed to minimise shrinkage.
         </div>
 
@@ -51,9 +51,9 @@ export default function SizeGuide() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))", gap:14, marginBottom:24 }}>
             {HOW_TO.map((m, i) => (
               <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"20px 18px" }}>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:9, letterSpacing:3, color:gold, marginBottom:8 }}>{m.name}</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:gold, marginBottom:8 }}>{m.name}</div>
                 <p style={{ ...S.p, marginBottom:8 }}>{m.how}</p>
-                <p style={{ fontFamily:"'Space Mono',monospace", fontSize:9, color:"rgba(255,255,255,0.38)", marginBottom:0 }}>💡 {m.tip}</p>
+                <p style={{ fontFamily:"'Space Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.38)", marginBottom:0 }}>💡 {m.tip}</p>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function SizeGuide() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:12 }}>
             {FIT_TYPES.map((f, i) => (
               <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"18px 16px", borderTop:`2px solid ${gold}` }}>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:gold, marginBottom:8 }}>{f.fit}</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:gold, marginBottom:8 }}>{f.fit}</div>
                 <p style={{ ...S.p, marginBottom:0, fontSize:13 }}>{f.desc}</p>
               </div>
             ))}

@@ -33,7 +33,7 @@ function FAQItem({ faq, isOpen, onToggle }) {
         style={{ all:"unset", width:"100%", padding:"16px 20px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", boxSizing:"border-box" }}
       >
         <span style={{ fontFamily:"'Space Mono',monospace", fontSize:11, letterSpacing:1, color:isOpen?gold:text }}>{faq.q}</span>
-        <span style={{ color:gold, fontSize:18, transform:isOpen?"rotate(45deg)":"rotate(0)", transition:"transform 0.3s", flexShrink:0, marginLeft:16 }}>+</span>
+        <span style={{ color:gold, fontSize:20, transform:isOpen?"rotate(45deg)":"rotate(0)", transition:"transform 0.3s", flexShrink:0, marginLeft:16 }}>+</span>
       </button>
       {isOpen && (
         <div style={{ padding:"0 20px 18px", borderTop:`1px solid ${border}` }}>
@@ -77,7 +77,7 @@ export default function FAQPage() {
           <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
             {[{ label:"EMAIL SUPPORT", val:"support@velvetwolf.in" },{ label:"WHATSAPP", val:"+91 98765 43210" }].map((c,i) => (
               <div key={i} style={{ border:`1px solid ${gold}55`, padding:"10px 20px", textAlign:"left" }}>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:3, color:muted, marginBottom:2 }}>{c.label}</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:muted, marginBottom:2 }}>{c.label}</div>
                 <div style={{ fontSize:13, color:gold }}>{c.val}</div>
               </div>
             ))}

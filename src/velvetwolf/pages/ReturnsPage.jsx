@@ -30,9 +30,9 @@ export default function ReturnsPage() {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:44 }}>
           {STAT_CARDS.map((c, i) => (
             <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"20px", textAlign:"center", borderBottom:`2px solid ${gold}` }}>
-              <div style={{ fontFamily:"'Bebas Neue',cursive", fontSize:28, color:gold, marginBottom:4 }}>{c.icon}</div>
-              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:text, marginBottom:4 }}>{c.label}</div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.38)" }}>{c.desc}</div>
+              <div style={{ fontFamily:"'Bebas Neue',cursive", fontSize:30, color:gold, marginBottom:4 }}>{c.icon}</div>
+              <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:text, marginBottom:4 }}>{c.label}</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.38)" }}>{c.desc}</div>
             </div>
           ))}
         </div>
@@ -50,7 +50,7 @@ export default function ReturnsPage() {
             <div key={i} style={{ display:"flex", gap:20, marginBottom:24, alignItems:"flex-start" }}>
               <div style={{ fontFamily:"'Bebas Neue',cursive", fontSize:28, color:gold, opacity:.5, lineHeight:1, flexShrink:0, width:36 }}>{s.step}</div>
               <div>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:10, letterSpacing:2, color:text, marginBottom:4 }}>{s.title}</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:2, color:text, marginBottom:4 }}>{s.title}</div>
                 <p style={{ ...S.p, marginBottom:0 }}>{s.desc}</p>
               </div>
             </div>

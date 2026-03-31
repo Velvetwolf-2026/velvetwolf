@@ -52,7 +52,7 @@ export default function TrackOrder() {
               { label:"EMAIL ADDRESS", placeholder:"you@email.com",  val:email,   set:setEmail   },
             ].map((f, i) => (
               <div key={i}>
-                <label style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>{f.label}</label>
+                <label style={{ fontFamily:"'Roboto', sans-serif", fontSize:12, letterSpacing:3, color:muted, display:"block", marginBottom:8 }}>{f.label}</label>
                 <input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = gold}
@@ -74,7 +74,7 @@ export default function TrackOrder() {
           <div style={{ border:`1px solid ${gold}44`, padding:"28px 28px 32px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28, flexWrap:"wrap", gap:12 }}>
               <div>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:8, letterSpacing:3, color:muted, marginBottom:4 }}>ORDER ID</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:14, letterSpacing:3, color:muted, marginBottom:4 }}>ORDER ID</div>
                 <div style={{ fontFamily:"'Bebas Neue',cursive", fontSize:22, letterSpacing:3, color:gold }}>VW-2025-{orderId||"00123"}</div>
               </div>
               <div style={{ background:"rgba(76,175,80,0.1)", border:"1px solid rgba(76,175,80,0.3)", padding:"6px 16px", fontFamily:"'Space Mono',monospace", fontSize:9, letterSpacing:2, color:"#81c784" }}>
@@ -122,8 +122,8 @@ export default function TrackOrder() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:10 }}>
             {STATUS_GUIDE.map((s, i) => (
               <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"16px 14px" }}>
-                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:7, letterSpacing:2, color:gold, marginBottom:6 }}>{s.status}</div>
-                <p style={{ ...S.p, marginBottom:0, fontSize:12 }}>{s.desc}</p>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:11, letterSpacing:2, color:gold, marginBottom:6 }}>{s.status}</div>
+                <p style={{ ...S.p, marginBottom:0, fontSize:15 }}>{s.desc}</p>
               </div>
             ))}
           </div>

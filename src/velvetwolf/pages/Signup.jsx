@@ -274,8 +274,8 @@ export function Signup() {
               <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 60, height: 60, objectFit: "contain" }} />
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
             </div>
           </div>
         </div>
@@ -288,7 +288,7 @@ export function Signup() {
                 <div style={{ width: 22, height: 22, borderRadius: "50%", border: `1px solid ${step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)"}`, background: step > i + 1 ? "var(--gold)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, color: step > i + 1 ? "var(--obsidian)" : step === i + 1 ? "var(--gold)" : "var(--silver)", transition: "all 0.3s" }}>
                   {step > i + 1 ? "✓" : i + 1}
                 </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)", whiteSpace: "nowrap" }}>{label}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)", whiteSpace: "nowrap" }}>{label}</span>
               </div>
               {i === 0 && <div style={{ width: 40, height: 1, background: step > 1 ? "var(--gold)" : "var(--smoke)", margin: "0 8px 12px", transition: "background 0.3s" }}/>}
             </div>
@@ -301,7 +301,7 @@ export function Signup() {
           {step === 1 && (
             <>
               <div style={{ marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 5, color: "var(--gold)", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 5, color: "var(--gold)", marginBottom: 6 }}>
                   <div style={{ width: 14, height: 1, background: "var(--gold)" }}/>JOIN THE PACK<div style={{ width: 14, height: 1, background: "var(--gold)" }}/>
                 </div>
                 <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 4, color: "var(--ivory)", margin: 0, lineHeight: 1 }}>CREATE ACCOUNT</h1>
@@ -309,14 +309,14 @@ export function Signup() {
 
               {error && <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 10, marginBottom: 16, letterSpacing: 0.5 }}>✕ {error}</div>}
 
-              <button type="button" onClick={handleGoogle} style={{ width: "100%", background: "transparent", border: "1px solid var(--smoke)", color: "var(--ash)", padding: "12px", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16, transition: "all 0.25s" }}
+              <button type="button" onClick={handleGoogle} style={{ width: "100%", background: "transparent", border: "1px solid var(--smoke)", color: "var(--ash)", padding: "12px", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16, transition: "all 0.25s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.color = "var(--gold)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.color = "var(--ash)"; }}>
                 <GoogleIcon/> SIGN UP WITH GOOGLE
               </button>
 
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/><span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)" }}>OR</span><div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
+                <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/><span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)" }}>OR</span><div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
               </div>
 
               <form onSubmit={handleSubmitDetails} noValidate>
@@ -325,14 +325,14 @@ export function Signup() {
                   { label: "EMAIL ADDRESS",   key: "email",   type: "email",    placeholder: "you@email.com",   ac: "email" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom: 13 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>{f.label}</label>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>{f.label}</label>
                     <input className="input-dark" type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => update(f.key, e.target.value)} autoComplete={f.ac} disabled={loading}/>
                   </div>
                 ))}
 
                 {/* Password + strength */}
                 <div style={{ marginBottom: 13 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
                   <div style={{ position: "relative" }}>
                     <input className="input-dark" type={showPw ? "text" : "password"} placeholder="Min. 8 characters" value={form.password} onChange={e => update("password", e.target.value)} style={{ paddingRight: 44 }} autoComplete="new-password" disabled={loading}/>
                     <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}><EyeIcon visible={showPw}/></button>
@@ -349,7 +349,7 @@ export function Signup() {
 
                 {/* Confirm password */}
                 <div style={{ marginBottom: 18 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>CONFIRM PASSWORD</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>CONFIRM PASSWORD</label>
                   <div style={{ position: "relative" }}>
                     <input className="input-dark" type={showConfirm ? "text" : "password"} placeholder="Repeat password" value={form.confirm} onChange={e => update("confirm", e.target.value)} style={{ paddingRight: 44, borderColor: pwNoMatch ? "rgba(192,57,43,0.5)" : undefined }} autoComplete="new-password" disabled={loading}/>
                     <button type="button" onClick={() => setShowConfirm(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}><EyeIcon visible={showConfirm}/></button>
@@ -363,7 +363,7 @@ export function Signup() {
                   <div onClick={() => setAgree(v => !v)} style={{ width: 16, height: 16, flexShrink: 0, marginTop: 2, cursor: "pointer", border: `1px solid ${agree ? "var(--gold)" : "var(--smoke)"}`, background: agree ? "var(--gold)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                     {agree && <span style={{ color: "var(--obsidian)", fontSize: 9, fontWeight: "bold" }}>✓</span>}
                   </div>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", margin: 0, lineHeight: 1.6 }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", margin: 0, lineHeight: 1.6 }}>
                     I agree to VelvetWolf's{" "}
                     <button type="button" onClick={() => setPage("termspage")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>Terms</button>
                     {" & "}
@@ -376,7 +376,7 @@ export function Signup() {
                 </button>
               </form>
 
-              <div style={{ marginTop: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)" }}>
+              <div style={{ marginTop: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)" }}>
                 Already have an account?{" "}
                 <button type="button" onClick={() => setPage("login")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>SIGN IN</button>
               </div>

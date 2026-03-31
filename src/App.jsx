@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage, Footer } from "./index";
@@ -11,6 +10,8 @@ import { getProfile } from './velvetwolf/utils/auth';
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';
 import { toggleWishlistDB, loadWishlistFromDB } from './velvetwolf/utils/wishlist';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
+import Navbar from "./velvetwolf/components/Navbar";
+import Footer from "./velvetwolf/components/Footer";
 
 const GlobalStyles = () => (
   <style>{`
@@ -83,8 +84,8 @@ const GlobalStyles = () => (
       color: var(--obsidian);
       border: none;
       padding: 14px 32px;
-      font-family: var(--font-mono);
-      font-size: 11px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
@@ -103,7 +104,7 @@ const GlobalStyles = () => (
       border: 1px solid var(--gold);
       padding: 12px 28px;
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
       cursor: pointer;
@@ -134,7 +135,7 @@ const GlobalStyles = () => (
       border: 1px solid var(--smoke);
       color: var(--ivory);
       padding: 12px 16px;
-      font-family: var(--font-mono);
+      font-family: 'Roboto', sans-serif;
       font-size: 12px;
       width: 100%;
       outline: none;
@@ -763,7 +764,7 @@ export default function VelvetWolf() {
           {/* â”€â”€ All other pages: wrapped with Navbar + Footer â”€â”€ */}
           {!["login", "signup", "forgetpassword"].includes(page) && (
             <>
-              <SharedNavbar activePage={page} onNavigate={setPage} />
+              <Navbar activePage={page} />
               {page === "home"           && <HomePage />}
               {page === "shop"           && <ShopPage />}
               {page === "collection"     && <CollectionsPage />}
@@ -793,7 +794,101 @@ export default function VelvetWolf() {
   );
 }
 
-// â”€â”€â”€ NAVBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── NAVBAR ──────────────────────────────────────────────────────────────────
+// function Navbar() {
+//   const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser } = useContext(AppContext);
+//   const [scrolled, setScrolled] = useState(false);
+//   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
+//   const greetingName = displayName ? displayName.split(" ")[0] : "";
+
+//   useEffect(() => {
+//     const onScroll = () => setScrolled(window.scrollY > 50);
+//     window.addEventListener("scroll", onScroll);
+//     return () => window.removeEventListener("scroll", onScroll);
+//   }, []);
+
+//   return (
+//     <nav style={{
+//       position: "fixed", top: 0, left: 0, right: 0, zIndex: 800,
+//       background: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
+//       backdropFilter: scrolled ? "blur(20px)" : "none",
+//       borderBottom: scrolled ? "1px solid rgba(201,168,76,0.2)" : "none",
+//       transition: "all 0.4s ease",
+//       padding: "0 40px",
+//     }}>
+//       <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 70 }}>
+//         {/* Logo */}
+//         <div onClick={() => setPage("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+//           <div style={{ width: 36, height: 36, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+//             <span style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "var(--obsidian)" }}>VW</span>
+//           </div>
+//           <div>
+//             <div style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+//             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", opacity: 0.8 }}>LUXURY STREETWEAR</div>
+//           </div>
+//         </div>
+
+//         {/* Nav links */}
+//         <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+//           {[["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]].map(([label, pg]) => (
+//             <button key={pg} onClick={() => setPage(pg)} style={{
+//               background: "none", border: "none", color: "var(--ash)", cursor: "pointer",
+//               fontFamily: "'Roboto', sans-serif", fontSize: 18, letterSpacing: 3, fontWeight : 500, 
+//               transition: "color 0.3s, transform 0.3s", padding: "4px 0", position: "relative"
+//             }}
+//             onMouseEnter={e => {e.target.style.color = "var(--gold)";
+//               e.target.style.transform = "scale(1.1)"; // 👈 zoom
+//             }}
+//             onMouseLeave={e => { e.target.style.color = "var(--ash)";
+//               e.target.style.transform = "scale(1)"; // 👈 normal
+//             }}
+//             >{label}</button>
+//           ))}
+//           {user?.isAdmin && (
+//             <button onClick={() => setPage("admin")} style={{
+//               background: "none", border: "1px solid var(--gold)", color: "var(--gold)", cursor: "pointer",
+//               fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, padding: "4px 12px"
+//             }}
+//             >ADMIN</button>
+//           )}
+//         </div>
+
+//         {/* Icons */}
+//         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+//           <button onClick={() => user ? setWishlistOpen(true) : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
+//             <Icon name="heart" size={22} />
+//             {wishlist.length > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--wolf-red)", color: "#fff", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8 }}>{wishlist.length}</span>}
+//           </button>
+//           <button onClick={() => setCartOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
+//             <Icon name="cart" size={22} />
+//             {cartCount > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--gold)", color: "var(--obsidian)", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: "bold" }}>{cartCount}</span>}
+//           </button>
+//           {greetingName && (
+//             <button
+//               onClick={() => setPage("account")}
+//               style={{ background: "none", border: "1px solid rgba(201,168,76,0.35)", color: "var(--gold)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1.5, padding: "8px 12px", textTransform: "none" }}
+//             >
+//               {`Hi ${greetingName}`}
+//             </button>
+//           )}
+//           {user && (
+//             <button
+//               onClick={signOutUser}
+//               style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--ash)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, padding: "8px 12px" }}
+//             >
+//               SIGN OUT
+//             </button>
+//           )}
+//           <button onClick={() => user ? setPage("account") : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}>
+//             <Icon name="user" size={22} />
+//           </button>
+//         </div>
+//       </div>
+//     </nav>
+//   );
+// }
+
+// ─── HOME PAGE ────────────────────────────────────────────────────────────────
 function HomePage() {
   const { setPage, setActiveCollection, products, addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
   const [heroIndex, setHeroIndex] = useState(0);
@@ -811,7 +906,7 @@ function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section style={{ height: "70vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden" }}>
+      <section style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px"}}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }}/>
         {/* Geometric accents */}
         <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
@@ -825,7 +920,7 @@ function HomePage() {
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
+            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
               <button className="btn-gold" onClick={() => { setActiveCollection(slide.collection); setPage("shop"); }}>
                 EXPLORE COLLECTION
@@ -857,7 +952,7 @@ function HomePage() {
           {[["10,000+", "Happy Wolves"], ["220 GSM", "Premium Cotton"], ["48hr", "Dispatch"], ["100%", "India Made"]].map(([num, label]) => (
             <div key={label}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)", letterSpacing: 2 }}>{num}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>{label}</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -887,7 +982,7 @@ function HomePage() {
       {/* COLLECTIONS GRID */}
       {/* <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR UNIVERSE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR UNIVERSE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, letterSpacing: 4, color: "var(--ivory)" }}>COLLECTIONS</h2>
           <div className="divider"/>
         </div>
@@ -901,7 +996,7 @@ function HomePage() {
               onMouseEnter={e => { e.currentTarget.style.borderColor = col.color; e.currentTarget.style.transform = "translateY(-4px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.transform = ""; }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{col.icon}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", lineHeight: 1.4 }}>{col.name.toUpperCase()}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--ash)", lineHeight: 1.4 }}>{col.name.toUpperCase()}</div>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: col.color, opacity: 0, transition: "opacity 0.3s" }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = 1; }}/>
             </div>
@@ -932,7 +1027,7 @@ function HomePage() {
       {/* WHY VELVETWOLF */}
       <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider"/>
         </div>
@@ -945,7 +1040,7 @@ function HomePage() {
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 16 }}>{title}</h3>
-              <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
+              <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 16, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
               <div style={{ position: "absolute", top: 0, left: 0, width: 2, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
             </div>
           ))}
@@ -1136,11 +1231,11 @@ function ShopPage() {
       {/* Header */}
       <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
             {activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : "ALL PRODUCTS"}
           </h1>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
+          <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 16, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
         </div>
       </div>
 
@@ -1150,19 +1245,19 @@ function ShopPage() {
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>COLLECTIONS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
+              <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
               {COLLECTIONS.map(col => (
-                <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "var(--silver)", fontFamily: "'Roboto', sans-serif", fontSize: 11, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
                   <span>{col.icon}</span>{col.name}
                 </button>
               ))}
             </div>
           </div>
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>SIZE</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>SIZE</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {["XS","S","M","L","XL","XXL"].map(size => (
-                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid", borderColor: selectedSizes.includes(size) ? "var(--gold)" : "var(--smoke)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--silver)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 9, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
+                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{background: selectedSizes.includes(size) ? "var(--gold)": "transparent",border: "1px solid var(--gold)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--gold)", padding: "6px 10px",fontFamily: "var(--font-mono)",fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
               ))}
             </div>
           </div>
@@ -1171,7 +1266,7 @@ function ShopPage() {
         {/* Products grid */}
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>{filtered.length} RESULTS</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>{filtered.length} RESULTS</div>
             <select className="input-dark" value={sort} onChange={e => setSort(e.target.value)} style={{ width: "auto", padding: "8px 16px" }}>
               <option value="featured">FEATURED</option>
               <option value="price-asc">PRICE: LOW TO HIGH</option>
@@ -1551,9 +1646,9 @@ function CustomDesignPage() {
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>MAKE IT YOURS</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>MAKE IT YOURS</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br/>DESIGN</h1>
-        <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
+        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
       </div>
 
       <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px" }}>
@@ -1564,14 +1659,14 @@ function CustomDesignPage() {
             <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
               onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
               <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
-                {uploaded ? "DESIGN UPLOADED \u2713" : "CLICK TO UPLOAD"}
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
+                {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG {"\u00b7"} MAX 50MB</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
             </div>
             <div style={{ marginTop: 20 }}>
-              {["\u2726 DTG Printing (all colors)", "\u2726 Screen Printing (bulk)", "\u2726 Embroidery (luxury tier)"].map(t => (
-                <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
+              {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
+                <div key={t} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
               ))}
             </div>
           </div>
@@ -1581,7 +1676,7 @@ function CustomDesignPage() {
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>CUSTOMIZE</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>FABRIC</label>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>FABRIC</label>
                 <select className="input-dark" value={form.fabric} onChange={e => setForm(f => ({ ...f, fabric: e.target.value }))}>
                   <option value="220gsm">220 GSM Egyptian Cotton (+{"\u20b9"}0)</option>
                   <option value="240gsm">240 GSM Heavyweight (+{"\u20b9"}200)</option>
@@ -1590,7 +1685,7 @@ function CustomDesignPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["#0a0a0a", "#faf9f7", "#1a2a3a", "#1a0a0a", "#0a1a0a", "#2a2a2a"].map(c => (
                     <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }}/>
@@ -1598,23 +1693,23 @@ function CustomDesignPage() {
                 </div>
               </div>
               <div>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SIZE</label>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SIZE</label>
                 <select className="input-dark" value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))}>
                   {["XS","S","M","L","XL","XXL"].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
                 <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))}/>
               </div>
               <div>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
                 <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{"\u20b9"}{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", marginTop: 4 }}>Per piece {"\u00b7"} Delivery in 7-10 days</div>
+                <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
+                <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
               </div>
               <button className="btn-gold" onClick={() => showToast("Custom order request submitted!")}>SUBMIT ORDER REQUEST</button>
             </div>
@@ -1633,9 +1728,9 @@ function BulkOrderPage() {
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
-        <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
+        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
       </div>
 
       <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
@@ -1645,7 +1740,7 @@ function BulkOrderPage() {
             <div key={qty} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--smoke)" }}>
               <div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, color: "var(--ivory)" }}>{qty}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1, marginTop: 4 }}>{label}</div>
+                <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginTop: 4 }}>{label}</div>
               </div>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>{disc}</span>
             </div>
@@ -1661,7 +1756,7 @@ function BulkOrderPage() {
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>REQUEST A QUOTE</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>ORDER TYPE</label>
+              <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>ORDER TYPE</label>
               <select className="input-dark" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
                 <option value="bulk">BULK ORDER</option>
                 <option value="corporate">CORPORATE BRANDING</option>
@@ -2191,3 +2286,58 @@ function AdminSettings() {
     </div>
   );
 }
+
+// ─── FOOTER ───────────────────────────────────────────────────────────────────
+// function Footer() {
+//   const { setPage } = useContext(AppContext);
+//   return (
+//     <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
+//       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+//         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
+//           <div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>VELVETWOLF</div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2025</div>
+//             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", lineHeight: 1.8, fontStyle: "italic" }}>
+//               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
+//             </p>
+//             <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
+//               {["📸 Instagram", "𝕏 Twitter", "▶ YouTube"].map(s => (
+//                 <span key={s} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{s}</span>
+//               ))}
+//             </div>
+//           </div>
+//           <div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20, fontWeight: 700 }}>SHOP</div>
+//             {[["All Products", "shop"], ["Custom Design", "custom"], ["Bulk Orders", "bulk"], ["Collections", "collection"]].map(([label, pg]) => (
+//               <div key={label} onClick={() => setPage(pg)} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 19, color: "var(--silver)", cursor: "pointer", marginBottom: 10 }}>{label}</div>
+//             ))}
+//           </div>
+//           <div>
+//             <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20, fontWeight: 700 }}>SUPPORT</div>
+//             {[["Size Guide","sizeguide"],["Track Order","trackorder"],["Returns & Exchange","returnspage"],["FAQ","faq"], ["Contact Us","contactus"]].map(([l,pg]) => (
+//               <div key={l} onClick={() => setPage(pg)} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 19, color: "var(--silver)", cursor: "pointer", marginBottom: 10 }}>{l}</div>
+//             ))}
+//           </div>
+//           <div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20, fontWeight: 700 }}>NEWSLETTER</div>
+//             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 19, color: "var(--silver)", marginBottom: 16, lineHeight: 1.6 }}>New drops, exclusive offers — for wolves only.</p>
+//             <input className="input-dark" placeholder="YOUR EMAIL" style={{ marginBottom: 10 }}/>
+//             <button className="btn-gold" style={{ width: "100%", padding: "10px" }}>JOIN THE PACK</button>
+//           </div>
+//         </div>
+
+//         <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+//           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
+//           <div style={{ display: "flex", gap: 20 }}>
+//             {[["Privacy Policy","privacypolicy"], ["Terms","termspage"], ["Shipping Policy","shoppingpolicy"]].map(([l,pg]) => (
+//               <span key={l} onClick={() => setPage(pg)} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{l}</span>
+//             ))}
+//           </div>
+//           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+//             {["🔒", "💳", "📱"].map(i => <span key={i} style={{ fontSize: 18 }}>{i}</span>)}
+//           </div>
+//         </div>
+//       </div>
+//     </footer>
+//   );
+// }
