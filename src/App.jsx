@@ -1,14 +1,17 @@
 
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage, Footer } from "./index";
+import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
+import CartPage from "./velvetwolf/pages/CartPage";
+import WishlistPage from "./velvetwolf/pages/WishlistPage";
+import SharedNavbar from "./velvetwolf/components/Navbar";
 import { supabase } from './velvetwolf/utils/supabase';
 import { getProfile } from './velvetwolf/utils/auth';
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';
 import { toggleWishlistDB, loadWishlistFromDB } from './velvetwolf/utils/wishlist';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 
-// ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap');
@@ -268,38 +271,8 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-// ─── CONTEXT ─────────────────────────────────────────────────────────────────
-// AppContext is imported from ./AppContext.js — shared with Login, Signup, ForgetPassword
-
-// ─── DATA ────────────────────────────────────────────────────────────────────
-const COLLECTIONS = [
-  { id: "ai-tech", name: "AI & Tech Humor", icon: "⚡", color: "#4fc3f7" },
-  { id: "anime", name: "Anime Anarchy", icon: "⛩", color: "#f06292" },
-  { id: "xp-mode", name: "XP Mode: Activated", icon: "🖥", color: "#81c784" },
-  { id: "beast-mode", name: "Beast Mode Grind", icon: "🔥", color: "#ff8a65" },
-  { id: "mind-mayhem", name: "Mind Over Mayhem", icon: "🧠", color: "#ce93d8" },
-  { id: "silent-luxury", name: "Silent Luxury", icon: "◆", color: "#c9a84c" },
-  { id: "savage-quotes", name: "Savage Quotes", icon: "💬", color: "#ef5350" },
-  { id: "founder", name: "Founder Energy", icon: "🚀", color: "#ffd54f" },
-  { id: "trending", name: "Trending Now", icon: "📈", color: "#80cbc4" },
-  { id: "limited", name: "Limited Edition", icon: "🏷", color: "#ffab91" },
-  { id: "most-loved", name: "Most Loved", icon: "♥", color: "#f48fb1" },
-  { id: "budget", name: "Under ₹999", icon: "◎", color: "#a5d6a7" },
-  { id: "custom", name: "Upload Your Design", icon: "✦", color: "#b0bec5" },
-  { id: "bulk", name: "Bulk Orders", icon: "📦", color: "#bcaaa4" },
-  { id: "corporate", name: "Corporate Orders", icon: "🏢", color: "#90caf9" },
-];
-
-const INITIAL_PRODUCTS = [
-  { id: 1, name: "Neural Network Tee", collection: "ai-tech", price: 1299, originalPrice: 1899, image: null, sizes: ["XS","S","M","L","XL","XXL"], colors: ["#0a0a0a","#1a1a2e","#f0ede8"], rating: 4.8, reviews: 234, tag: "BESTSELLER", description: "Minimal circuit-board motif. 100% Egyptian cotton, 220 GSM.", stock: 45 },
-  { id: 2, name: "Silent Predator", collection: "silent-luxury", price: 2499, originalPrice: 3200, image: null, sizes: ["S","M","L","XL"], colors: ["#0a0a0a","#2c2c2c"], rating: 4.9, reviews: 189, tag: "LIMITED", description: "Embossed wolf crest. Supima cotton, hand-stitched details.", stock: 12 },
-  { id: 3, name: "Founder's Mindset", collection: "founder", price: 1599, originalPrice: 1999, image: null, sizes: ["XS","S","M","L","XL","XXL"], colors: ["#0a0a0a","#1a1a1a","#faf9f7"], rating: 4.7, reviews: 312, tag: "NEW", description: "Bold motivational typography. Heavyweight fleece blend.", stock: 78 },
-  { id: 4, name: "Demon Mode Activated", collection: "anime", price: 899, originalPrice: 1299, image: null, sizes: ["S","M","L","XL"], colors: ["#0a0a0a","#1a0010"], rating: 4.6, reviews: 445, tag: "TRENDING", description: "Anime-inspired demon slayer aesthetic. Oversized drop cut.", stock: 33 },
-  { id: 5, name: "100 Days of Grind", collection: "beast-mode", price: 1199, originalPrice: 1499, image: null, sizes: ["M","L","XL","XXL"], colors: ["#0a0a0a","#111111"], rating: 4.8, reviews: 267, tag: "HOT", description: "Motivational beast-mode print. Moisture-wicking fabric.", stock: 56 },
-  { id: 6, name: "Error 404: Sleep", collection: "ai-tech", price: 799, originalPrice: 999, image: null, sizes: ["XS","S","M","L","XL","XXL"], colors: ["#0a0a0a","#0a1628","#faf9f7"], rating: 4.5, reviews: 523, tag: "MOST LOVED", description: "Geek humor meets streetwear. Ultra-soft jersey.", stock: 120 },
-  { id: 7, name: "Wolf Among Sheep", collection: "savage-quotes", price: 1399, originalPrice: 1799, image: null, sizes: ["S","M","L","XL"], colors: ["#0a0a0a","#2a0a0a"], rating: 4.9, reviews: 198, tag: "SIGNATURE", description: "Signature VelvetWolf statement piece. Garment-dyed.", stock: 29 },
-  { id: 8, name: "Mind Palace Tee", collection: "mind-mayhem", price: 1699, originalPrice: 2199, image: null, sizes: ["XS","S","M","L","XL"], colors: ["#0a0a0a","#0a0a1a","#1a0a0a"], rating: 4.7, reviews: 143, tag: "NEW", description: "Surrealist brain artwork. Artist collaboration piece.", stock: 41 },
-];
+// â”€â”€â”€ CONTEXT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// AppContext is imported from ./AppContext.js â€” shared with Login, Signup, ForgetPassword
 
 const TAG_COLORS = {
   "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
@@ -311,7 +284,7 @@ const TAG_COLORS = {
   "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
 };
 
-// ─── ICONS ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ ICONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
     wolf: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2L8 6H4l3 3-1 5 6-3 6 3-1-5 3-3h-4L12 2zm0 8a2 2 0 100 4 2 2 0 000-4z"/></svg>,
@@ -342,21 +315,21 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
   return icons[name] || null;
 };
 
-// ─── TOAST ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Toast = ({ message, type = "success", onClose }) => {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
   const colors = { success: "#c9a84c", error: "#c0392b", info: "#4fc3f7" };
   return (
     <div className="toast" style={{ borderColor: colors[type] }}>
       <span style={{ color: colors[type] }}>
-        {type === "success" ? "✓" : type === "error" ? "✕" : "i"}
+        {type === "success" ? "\u2713" : type === "error" ? "\u2715" : "i"}
       </span>
       {message}
     </div>
   );
 };
 
-// ─── PRODUCT IMAGE PLACEHOLDER ────────────────────────────────────────────────
+// â”€â”€â”€ PRODUCT IMAGE PLACEHOLDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ProductImage = ({ product, height = 280 }) => {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
@@ -404,11 +377,11 @@ const ProductImage = ({ product, height = 280 }) => {
   );
 };
 
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function VelvetWolf() {
   const [page, setPage] = useState("home");
   const [adminPage, setAdminPage] = useState("dashboard");
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState(INITIAL_COLLECTION_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [user, setUser] = useState(null);
@@ -440,6 +413,10 @@ export default function VelvetWolf() {
 
   const getLocalWishlistKey = (email) => `vw_wishlist_${(email || "guest").toLowerCase()}`;
   const getGuestCart = () => JSON.parse(localStorage.getItem("vw_guest_cart") || "[]");
+  const saveGuestCart = (items) => {
+    localStorage.setItem("vw_guest_cart", JSON.stringify(items));
+    setCart(items);
+  };
 
   const getStoredUser = () => {
     try {
@@ -475,13 +452,20 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
+  const getDatabaseUserId = (value) => value?.auth_user_id || value?.id || null;
+
   const buildUserState = async (authUser) => {
     const storedUser = getStoredUser();
+    const backendToken = localStorage.getItem("token");
+    const tokenUser = backendToken ? parseBackendToken(backendToken) : null;
+    const appUserId = storedUser?.id || tokenUser?.id || null;
 
     if (!authUser?.id) {
       return {
         ...storedUser,
         ...authUser,
+        id: appUserId,
+        auth_user_id: storedUser?.auth_user_id || tokenUser?.auth_user_id,
         email: authUser.email || storedUser?.email,
         name: authUser.name || storedUser?.name || authUser.email?.split("@")[0],
         full_name: authUser.full_name || authUser.name || storedUser?.full_name || storedUser?.name,
@@ -491,11 +475,13 @@ export default function VelvetWolf() {
     }
 
     try {
-      const profile = await getProfile(authUser.id);
+      const profile = appUserId ? await getProfile(appUserId) : null;
       return {
         ...storedUser,
         ...authUser,
         ...profile,
+        id: appUserId || authUser.id,
+        auth_user_id: authUser.id,
         name: profile.full_name || storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
         isAdmin: profile.is_admin,
       };
@@ -504,6 +490,8 @@ export default function VelvetWolf() {
       return {
         ...storedUser,
         ...authUser,
+        id: appUserId || authUser.id,
+        auth_user_id: authUser.id,
         name: storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
         full_name: storedUser?.full_name || authUser.user_metadata?.full_name,
         isAdmin: storedUser?.isAdmin || false,
@@ -511,8 +499,8 @@ export default function VelvetWolf() {
     }
   };
 
-  // ── syncCartFromDB: loads DB cart into React state ──────────────────────────
-  // Defined first — addToCart/removeFromCart below both call it
+  // â”€â”€ syncCartFromDB: loads DB cart into React state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Defined first â€” addToCart/removeFromCart below both call it
   const syncCartFromDB = async (userId) => {
     try {
       const items = await loadCartFromDB(userId);
@@ -524,19 +512,19 @@ export default function VelvetWolf() {
 
   const addToCart = async (product, size, color, qty = 1) => {
     try {
-      if (user?.id) {
-        await addCartItemDB(user.id, product, size, color, qty);
-        await syncCartFromDB(user.id);
+      const databaseUserId = getDatabaseUserId(user);
+      if (databaseUserId) {
+        await addCartItemDB(databaseUserId, product, qty);
+        await syncCartFromDB(databaseUserId);
       } else {
         // Guest: save to localStorage
         const guest = getGuestCart();
         const idx = guest.findIndex(i => i.id === product.id && i.size === size && i.color === color);
         if (idx > -1) guest[idx].qty += qty;
         else guest.push({ ...product, size, color, qty });
-        localStorage.setItem('vw_guest_cart', JSON.stringify(guest));
-        setCart(guest);
+        saveGuestCart(guest);
       }
-      showToast('Added to cart ✓');
+      showToast("Added to cart \u2713");
     } catch (err) {
       showToast('Could not add to cart. Please try again.', 'error');
       console.error('[addToCart]', err.message);
@@ -545,12 +533,13 @@ export default function VelvetWolf() {
 
   const removeFromCart = async (id, size, color) => {
     try {
-      if (user?.id) {
+      const databaseUserId = getDatabaseUserId(user);
+      if (databaseUserId) {
         const item = cart.find(i => i.id === id && i.size === size && i.color === color);
         if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
-        await syncCartFromDB(user.id);
+        await syncCartFromDB(databaseUserId);
       } else {
-        setCart(prev => prev.filter(i => !(i.id === id && i.size === size && i.color === color)));
+        saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       }
     } catch (err) {
       showToast('Could not remove item.', 'error');
@@ -559,7 +548,8 @@ export default function VelvetWolf() {
   };
 
   const updateCartQty = async (id, size, color, qty) => {
-    if (user?.id) {
+    const databaseUserId = getDatabaseUserId(user);
+    if (databaseUserId) {
       // For DB-backed cart: find the cart_item_id, update via DB
       const item = cart.find(i => i.id === id && i.size === size && i.color === color);
       if (item?.cart_item_id) {
@@ -568,14 +558,14 @@ export default function VelvetWolf() {
         } else {
           await updateCartQtyDB(item.cart_item_id, qty);
         }
-        await syncCartFromDB(user.id);
+        await syncCartFromDB(databaseUserId);
       }
     } else {
       // Guest cart: update local state
       if (qty < 1) {
-        setCart(prev => prev.filter(i => !(i.id === id && i.size === size && i.color === color)));
+        saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       } else {
-        setCart(prev => prev.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
+        saveGuestCart(cart.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
       }
     }
   };
@@ -614,15 +604,16 @@ export default function VelvetWolf() {
       showToast('Sign in to save items', 'info');
       return;
     }
-    if (!user?.id) {
+    const databaseUserId = getDatabaseUserId(user);
+    if (!databaseUserId) {
       const added = toggleLocalWishlist(product);
-      showToast(added ? 'Added to wishlist â™¥' : 'Removed from wishlist', added ? 'success' : 'info');
+      showToast(added ? "Added to wishlist \u2665" : "Removed from wishlist", added ? "success" : "info");
       return;
     }
     try {
-      const added = await toggleWishlistDB(user.id, product);
-      await syncWishlistFromDB(user.id);
-      showToast(added ? 'Added to wishlist ♥' : 'Removed from wishlist', added ? 'success' : 'info');
+      const added = await toggleWishlistDB(databaseUserId, product);
+      await syncWishlistFromDB(databaseUserId);
+      showToast(added ? "Added to wishlist \u2665" : "Removed from wishlist", added ? "success" : "info");
     } catch (err) {
       showToast('Could not update wishlist', 'error');
       console.error('[toggleWishlist]', err.message);
@@ -647,7 +638,7 @@ export default function VelvetWolf() {
     }
   };
 
-  // Coerce to numbers — Supabase returns numeric columns as strings via JS client
+  // Coerce to numbers â€” Supabase returns numeric columns as strings via JS client
   const cartTotal = cart.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
   const cartCount = cart.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
 
@@ -662,25 +653,26 @@ export default function VelvetWolf() {
     addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast,
   };
 
-  // ── Scroll to top on every page change ──────────────────────────────────────
+  // â”€â”€ Scroll to top on every page change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [page]);
 
-  // ── Session init + auth state listener ──────────────────────────────────────
+  // â”€â”€ Session init + auth state listener â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const applySignedInUser = async (authUser, mergeGuestCart = false) => {
       const nextUser = await buildUserState(authUser);
+      const databaseUserId = getDatabaseUserId(nextUser);
       setUser(nextUser);
       localStorage.setItem("user", JSON.stringify(nextUser));
 
-      if (mergeGuestCart && authUser?.id) {
-        await mergeGuestCartToDB(authUser.id);
+      if (mergeGuestCart && databaseUserId) {
+        await mergeGuestCartToDB(databaseUserId);
       }
 
-      if (authUser?.id) {
-        await syncCartFromDB(authUser.id);
-        await syncWishlistFromDB(authUser.id);
+      if (databaseUserId) {
+        await syncCartFromDB(databaseUserId);
+        await syncWishlistFromDB(databaseUserId);
       } else {
         setCart(getGuestCart());
         setWishlist(loadLocalWishlist(nextUser.email));
@@ -710,7 +702,7 @@ export default function VelvetWolf() {
         setUser(backendUser);
         setWishlist(loadLocalWishlist(backendUser.email));
         setCart(getGuestCart());
-        setPage("account");
+        setPage("home");
       }
       query.delete("token");
       const nextQuery = query.toString();
@@ -763,18 +755,20 @@ export default function VelvetWolf() {
 
       {page === "admin" ? <AdminLayout /> : (
         <>
-          {/* ── Auth pages: standalone, no Navbar / Footer ── */}
+          {/* â”€â”€ Auth pages: standalone, no Navbar / Footer â”€â”€ */}
           {page === "login"           && <Login />}
           {page === "signup"          && <Signup />}
           {page === "forgetpassword"  && <ForgetPassword />}
 
-          {/* ── All other pages: wrapped with Navbar + Footer ── */}
+          {/* â”€â”€ All other pages: wrapped with Navbar + Footer â”€â”€ */}
           {!["login", "signup", "forgetpassword"].includes(page) && (
             <>
-              <Navbar />
+              <SharedNavbar activePage={page} onNavigate={setPage} />
               {page === "home"           && <HomePage />}
               {page === "shop"           && <ShopPage />}
-              {page === "collection"     && <CollectionPage />}
+              {page === "collection"     && <CollectionsPage />}
+              {page === "cart"           && <CartPage />}
+              {page === "wishlist"       && <WishlistPage />}
               {page === "account"        && <AccountPage />}
               {page === "checkout"       && <CheckoutPage />}
               {page === "custom"         && <CustomDesignPage />}
@@ -787,122 +781,31 @@ export default function VelvetWolf() {
               {page === "returnspage"    && <ReturnsPage />}
               {page === "sizeguide"      && <SizeGuide />}
               {page === "trackorder"     && <TrackOrder />}
-              <Footer />
+              <Footer onNavigate={setPage} />
             </>
           )}
         </>
       )}
 
-      {cartOpen && <CartSidebar />}
-      {wishlistOpen && <WishlistSidebar />}
       {authModal && <AuthModal />}
       {selectedProduct && <ProductModal />}
     </AppContext.Provider>
   );
 }
 
-// ─── NAVBAR ──────────────────────────────────────────────────────────────────
-function Navbar() {
-  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser } = useContext(AppContext);
-  const [scrolled, setScrolled] = useState(false);
-  const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
-  const greetingName = displayName ? displayName.split(" ")[0] : "";
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <nav style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 800,
-      background: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
-      backdropFilter: scrolled ? "blur(20px)" : "none",
-      borderBottom: scrolled ? "1px solid rgba(201,168,76,0.2)" : "none",
-      transition: "all 0.4s ease",
-      padding: "0 40px",
-    }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 70 }}>
-        {/* Logo */}
-        <div onClick={() => setPage("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "var(--obsidian)" }}>VW</span>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.8 }}>LUXURY STREETWEAR</div>
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {[["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]].map(([label, pg]) => (
-            <button key={pg} onClick={() => setPage(pg)} style={{
-              background: "none", border: "none", color: "var(--ash)", cursor: "pointer",
-              fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3,
-              transition: "color 0.3s", padding: "4px 0", position: "relative"
-            }}
-              onMouseEnter={e => { e.target.style.color = "var(--gold)"; }}
-              onMouseLeave={e => { e.target.style.color = "var(--ash)"; }}
-            >{label}</button>
-          ))}
-          {user?.isAdmin && (
-            <button onClick={() => setPage("admin")} style={{
-              background: "none", border: "1px solid var(--gold)", color: "var(--gold)", cursor: "pointer",
-              fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, padding: "4px 12px"
-            }}>ADMIN</button>
-          )}
-        </div>
-
-        {/* Icons */}
-        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <button onClick={() => user ? setWishlistOpen(true) : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
-            <Icon name="heart" size={22} />
-            {wishlist.length > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--wolf-red)", color: "#fff", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8 }}>{wishlist.length}</span>}
-          </button>
-          <button onClick={() => setCartOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}>
-            <Icon name="cart" size={22} />
-            {cartCount > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: "var(--gold)", color: "var(--obsidian)", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: "bold" }}>{cartCount}</span>}
-          </button>
-          {greetingName && (
-            <button
-              onClick={() => setPage("account")}
-              style={{ background: "none", border: "1px solid rgba(201,168,76,0.35)", color: "var(--gold)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1.5, padding: "8px 12px", textTransform: "none" }}
-            >
-              {`Hi ${greetingName}`}
-            </button>
-          )}
-          {user && (
-            <button
-              onClick={signOutUser}
-              style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--ash)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, padding: "8px 12px" }}
-            >
-              SIGN OUT
-            </button>
-          )}
-          <button onClick={() => user ? setPage("account") : setPage("login")} style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}>
-            <Icon name="user" size={22} />
-          </button>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-// ─── HOME PAGE ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ NAVBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HomePage() {
   const { setPage, setActiveCollection, products, addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
   const [heroIndex, setHeroIndex] = useState(0);
   const heroSlides = [
-    { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection — AW 2024", collection: "silent-luxury" },
+    { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2024", collection: "silent-luxury" },
     { headline: "BEAST", accent: "MODE ON", sub: "Grind. Hustle. Dominate.", collection: "beast-mode" },
     { headline: "FOUNDER'S", accent: "MINDSET", sub: "Built for builders. Worn by wolves.", collection: "founder" },
   ];
   useEffect(() => { const t = setInterval(() => setHeroIndex(i => (i + 1) % heroSlides.length), 5000); return () => clearInterval(t); }, []);
 
   const slide = heroSlides[heroIndex];
-  const featured = products.slice(0, 4);
+  const featured = products.slice(0, 7);
   const trending = products.filter(p => p.tag === "TRENDING" || p.tag === "HOT" || p.tag === "MOST LOVED");
 
   return (
@@ -917,14 +820,14 @@ function HomePage() {
 
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
           <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>✦ NEW COLLECTION 2026 ✦</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
             <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" onClick={() => { setActiveCollection(slide.collection); setPage("collection"); }}>
+              <button className="btn-gold" onClick={() => { setActiveCollection(slide.collection); setPage("shop"); }}>
                 EXPLORE COLLECTION
               </button>
               <button className="btn-outline" onClick={() => setPage("shop")}>SHOP ALL</button>
@@ -943,7 +846,7 @@ function HomePage() {
       <div style={{ background: "var(--gold)", padding: "12px 0", overflow: "hidden" }}>
         <div className="marquee-container">
           <div className="marquee-inner" style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 4, color: "var(--obsidian)" }}>
-            {Array(3).fill("✦  VELVET WOLF   ✦   LUXURY STREETWEAR   ✦   PREMIUM 220 GSM COTTON   ✦   MADE IN INDIA   ✦   FREE SHIPPING ABOVE ₹1999   ✦   30 DAY EASY RETURNS ").join("")}
+            {Array(3).fill("\u2726  VELVET WOLF   \u2726   LUXURY STREETWEAR   \u2726   PREMIUM 220 GSM COTTON   \u2726   MADE IN INDIA   \u2726   FREE SHIPPING ABOVE \u20b91999   \u2726   30 DAY EASY RETURNS ").join("")}
           </div>
         </div>
       </div>
@@ -960,23 +863,37 @@ function HomePage() {
         </div>
       </section>
 
+ {/* FEATURED PRODUCTS */}
+      <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
+            </div>
+            <button className="btn-outline" onClick={() => setPage("shop")}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
+          </div>
+          <FeaturedCoverflow products={featured} />
+        </div>
+      </section>
+      
       {/* MOSAIC CAROUSEL */}
       <MosaicCarousel
         onCategoryClick={(cat) => {
           setActiveCollection(cat.id);
-          setPage("collection");
+          setPage("shop");
         }}
       />
       {/* COLLECTIONS GRID */}
-      <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
+      {/* <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR UNIVERSE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, letterSpacing: 4, color: "var(--ivory)" }}>COLLECTIONS</h2>
           <div className="divider"/>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
-          {COLLECTIONS.map(col => (
-            <div key={col.id} onClick={() => { setActiveCollection(col.id); setPage("collection"); }}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 240px))", justifyContent: "center", gap: 16 }}>
+          {HOME_COLLECTIONS.map(col => (
+            <div key={col.id} onClick={() => { setActiveCollection(col.id); setPage("shop"); }}
               style={{
                 background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 20px",
                 cursor: "pointer", transition: "all 0.3s ease", textAlign: "center", position: "relative", overflow: "hidden"
@@ -990,21 +907,25 @@ function HomePage() {
             </div>
           ))}
         </div>
-      </section>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+          <button className="btn-outline" onClick={() => setPage("collection")}>EXPLORE ALL COLLECTIONS <Icon name="arrowRight" size={12}/></button>
+        </div>
+      </section> */}
 
-      {/* FEATURED PRODUCTS */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
-            </div>
-            <button className="btn-outline" onClick={() => setPage("shop")}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 24 }}>
-            {featured.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
+      {/* CTA BAND */}
+      <section style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
+        <div style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 DESIGN YOUR IDENTITY \u2726"}</div>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, lineHeight: 0.95, letterSpacing: 2, marginBottom: 24 }}>
+            UPLOAD YOUR<br/><span className="gold-text">OWN DESIGN</span>
+          </h2>
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
+            Your vision. Our premium canvas. Upload your artwork and we'll bring it to life on luxury-grade fabric.
+          </p>
+          <button className="btn-gold" onClick={() => setPage("custom")} style={{ fontSize: 12, padding: "16px 40px" }}>
+            START DESIGNING
+          </button>
         </div>
       </section>
 
@@ -1017,9 +938,9 @@ function HomePage() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
-            ["◆", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
-            ["⚡", "Culture-First Design", "Every drop is rooted in real youth culture — tech humor, anime, hustle, philosophy. Not trend-chasing."],
-            ["✦", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
+            ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
+            ["\u26a1", "Culture-First Design", "Every drop is rooted in real youth culture - tech humor, anime, hustle, philosophy. Not trend-chasing."],
+            ["\u2726", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
           ].map(([icon, title, desc]) => (
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
@@ -1030,28 +951,110 @@ function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* CTA BAND */}
-      <section style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
-        <div style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>✦ DESIGN YOUR IDENTITY ✦</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, lineHeight: 0.95, letterSpacing: 2, marginBottom: 24 }}>
-            UPLOAD YOUR<br/><span className="gold-text">OWN DESIGN</span>
-          </h2>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
-            Your vision. Our premium canvas. Upload your artwork and we'll bring it to life on luxury-grade fabric.
-          </p>
-          <button className="btn-gold" onClick={() => setPage("custom")} style={{ fontSize: 12, padding: "16px 40px" }}>
-            START DESIGNING
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
 
-// ─── PRODUCT CARD ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ PRODUCT CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function FeaturedCoverflow({ products }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (!products.length) return;
+    setActiveIndex((current) => Math.min(current, products.length - 1));
+  }, [products.length]);
+
+  useEffect(() => {
+    if (products.length < 2 || isHovered) return;
+    const timer = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % products.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isHovered, products.length]);
+
+  if (!products.length) return null;
+
+  const getOffset = (index) => {
+    const total = products.length;
+    let offset = index - activeIndex;
+    if (offset > total / 2) offset -= total;
+    if (offset < -total / 2) offset += total;
+    return offset;
+  };
+
+  return (
+    <div style={{ position: "relative", padding: "20px 0 8px" }}>
+      <div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{ position: "relative", height: 560, overflow: "hidden" }}
+      >
+        {products.map((product, index) => {
+          const offset = getOffset(index);
+          const distance = Math.abs(offset);
+          const isActive = offset === 0;
+          const translateX = offset * 250;
+          const scale = isActive ? 1 : Math.max(0.72, 0.88 - distance * 0.12);
+          const opacity = distance > 2 ? 0 : Math.max(0.24, 1 - distance * 0.28);
+          const rotateY = offset * -18;
+
+          return (
+            <div
+              key={product.id}
+              onClick={() => setActiveIndex(index)}
+              style={{
+                position: "absolute",
+                top: 12,
+                left: "50%",
+                width: 340,
+                cursor: "pointer",
+                zIndex: 20 - distance,
+                opacity,
+                transform: `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1400px) rotateY(${rotateY}deg)`,
+                transformOrigin: "center center",
+                transition: "transform 0.55s ease, opacity 0.45s ease",
+                filter: isActive ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))" : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
+                pointerEvents: distance > 2 ? "none" : "auto",
+              }}
+            >
+              <ProductCard product={product} />
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 12 }}>
+        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current - 1 + products.length) % products.length)} style={{ padding: "10px 16px" }}>
+          <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
+            <Icon name="arrowRight" size={12} color="currentColor" />
+          </span>
+        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {products.map((product, index) => (
+            <button
+              key={product.id}
+              onClick={() => setActiveIndex(index)}
+              style={{
+                width: index === activeIndex ? 34 : 10,
+                height: 3,
+                border: "none",
+                background: index === activeIndex ? "var(--gold)" : "var(--smoke)",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                padding: 0,
+              }}
+            />
+          ))}
+        </div>
+        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current + 1) % products.length)} style={{ padding: "10px 16px" }}>
+          <Icon name="arrowRight" size={12} color="currentColor" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProductCard({ product }) {
   const { addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
   const inWishlist = wishlist.find(i => i.id === product.id);
@@ -1083,7 +1086,7 @@ function ProductCard({ product }) {
       </div>
       <div style={{ padding: "20px 20px 24px" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 6 }}>
-          {COLLECTIONS.find(c => c.id === product.collection)?.name?.toUpperCase()}
+          {getCollectionById(product.collection)?.name?.toUpperCase()}
         </div>
         <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
         <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
@@ -1091,15 +1094,15 @@ function ProductCard({ product }) {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginLeft: 4 }}>({product.reviews})</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>₹{product.price.toLocaleString()}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", textDecoration: "line-through" }}>₹{product.originalPrice.toLocaleString()}</span>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── SHOP PAGE ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ SHOP PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ShopPage() {
   const { products, activeCollection, setActiveCollection, searchQuery } = useContext(AppContext);
   const [sort, setSort] = useState("featured");
@@ -1135,7 +1138,7 @@ function ShopPage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
-            {activeCollection ? COLLECTIONS.find(c => c.id === activeCollection)?.name?.toUpperCase() : "ALL PRODUCTS"}
+            {activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : "ALL PRODUCTS"}
           </h1>
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
         </div>
@@ -1192,39 +1195,9 @@ function ShopPage() {
   );
 }
 
-// ─── COLLECTION PAGE ──────────────────────────────────────────────────────────
-function CollectionPage() {
-  const { setPage, setActiveCollection } = useContext(AppContext);
-  return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
-        </div>
-      </div>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
-          {COLLECTIONS.map(col => (
-            <div key={col.id} onClick={() => { setActiveCollection(col.id); setPage("shop"); }}
-              style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "48px 32px", cursor: "pointer", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = col.color; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.querySelector(".col-bg").style.opacity = 1; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.transform = ""; e.currentTarget.querySelector(".col-bg").style.opacity = 0; }}>
-              <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }}/>
-              <div style={{ fontSize: 48, marginBottom: 20 }}>{col.icon}</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12 }}>{col.name.toUpperCase()}</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2 }}>
-                EXPLORE <Icon name="arrowRight" size={12} color={col.color}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ─── PRODUCT MODAL ────────────────────────────────────────────────────────────
+// â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const [size, setSize] = useState(p.sizes[0]);
@@ -1241,7 +1214,7 @@ function ProductModal() {
         <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
           <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20}/></button>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
-            {COLLECTIONS.find(c => c.id === p.collection)?.name?.toUpperCase()}
+            {getCollectionById(p.collection)?.name?.toUpperCase()}
           </div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 12 }}>{p.name}</h2>
           <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
@@ -1249,8 +1222,8 @@ function ProductModal() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginLeft: 6 }}>{p.rating} ({p.reviews} reviews)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{p.price.toLocaleString()}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--silver)", textDecoration: "line-through" }}>₹{p.originalPrice.toLocaleString()}</span>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{"\u20b9"}{p.price.toLocaleString()}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--silver)", textDecoration: "line-through" }}>{"\u20b9"}{p.originalPrice.toLocaleString()}</span>
           </div>
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.7, marginBottom: 24 }}>{p.description}</p>
 
@@ -1291,7 +1264,7 @@ function ProductModal() {
             </button>
           </div>
           <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
-            {["🔒 Secure Payment", "🚚 Free Ship ₹1999+", "↩ 30-Day Returns"].map(t => (
+            {["Secure Payment", "Free Ship \u20b91999+", "30-Day Returns"].map(t => (
               <span key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", letterSpacing: 1 }}>{t}</span>
             ))}
           </div>
@@ -1301,7 +1274,7 @@ function ProductModal() {
   );
 }
 
-// ─── CART SIDEBAR ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ CART SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CartSidebar() {
   const { cart, setCartOpen, removeFromCart, updateCartQty, cartTotal, setPage } = useContext(AppContext);
   return (
@@ -1336,7 +1309,7 @@ function CartSidebar() {
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 10px" }}>{item.qty}</span>
                     <button onClick={() => updateCartQty(item.id, item.size, item.color, item.qty + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "4px 10px" }}><Icon name="plus" size={12}/></button>
                   </div>
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--gold)" }}>₹{(item.price * item.qty).toLocaleString()}</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--gold)" }}>{"\u20b9"}{(item.price * item.qty).toLocaleString()}</span>
                 </div>
               </div>
               <button onClick={() => removeFromCart(item.id, item.size, item.color)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", alignSelf: "flex-start" }}><Icon name="trash" size={14}/></button>
@@ -1348,9 +1321,9 @@ function CartSidebar() {
           <div style={{ padding: "24px 28px", borderTop: "1px solid var(--smoke)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>SUBTOTAL</span>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)" }}>₹{cartTotal.toLocaleString()}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)" }}>{"\u20b9"}{cartTotal.toLocaleString()}</span>
             </div>
-            {cartTotal >= 1999 && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#81c784", letterSpacing: 1, marginBottom: 16 }}>✓ FREE SHIPPING UNLOCKED</div>}
+            {cartTotal >= 1999 && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#81c784", letterSpacing: 1, marginBottom: 16 }}>{"\u2713 FREE SHIPPING UNLOCKED"}</div>}
             <button className="btn-gold" style={{ width: "100%", marginBottom: 10 }} onClick={() => { setCartOpen(false); setPage("checkout"); }}>PROCEED TO CHECKOUT</button>
             <button className="btn-ghost" style={{ width: "100%" }} onClick={() => setCartOpen(false)}>CONTINUE SHOPPING</button>
           </div>
@@ -1360,7 +1333,7 @@ function CartSidebar() {
   );
 }
 
-// ─── WISHLIST SIDEBAR ─────────────────────────────────────────────────────────
+// â”€â”€â”€ WISHLIST SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function WishlistSidebar() {
   const { wishlist, setWishlistOpen, toggleWishlist, addToCart } = useContext(AppContext);
   return (
@@ -1385,7 +1358,7 @@ function WishlistSidebar() {
               <div style={{ width: 70, flexShrink: 0 }}><ProductImage product={item} height={80}/></div>
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 1, marginBottom: 6 }}>{item.name}</h4>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", marginBottom: 10 }}>₹{item.price.toLocaleString()}</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", marginBottom: 10 }}>{"\u20b9"}{item.price.toLocaleString()}</div>
                 <button className="btn-gold" style={{ padding: "8px 16px", fontSize: 9 }} onClick={async () => {
                   try {
                     await addToCart(item, item.sizes?.[0] || "M", item.colors?.[0] || "#0a0a0a");
@@ -1403,7 +1376,10 @@ function WishlistSidebar() {
   );
 }
 
-// // ─── CHECKOUT PAGE ────────────────────────────────────────────────────────────
+// // â”€â”€â”€ CHECKOUT PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+void CartSidebar;
+void WishlistSidebar;
+
 // function CheckoutPage() {
 //   const { cart, cartTotal, setCart, setPage, user, showToast } = useContext(AppContext);
 //   const [step, setStep] = useState(1);
@@ -1423,7 +1399,7 @@ function WishlistSidebar() {
 //       cart, address, paymentMethod, cartTotal,
 //     });
 //     setCart([]);
-//     showToast(`🎉 Order ${order.order_number} placed!`);
+//     showToast(`ðŸŽ‰ Order ${order.order_number} placed!`);
 //     setPage('account');
 //   } catch (err) {
 //     showToast(err.message, 'error');
@@ -1452,7 +1428,7 @@ function WishlistSidebar() {
 //             {["DELIVERY", "PAYMENT", "REVIEW"].map((s, i) => (
 //               <div key={s} style={{ flex: 1, textAlign: "center" }}>
 //                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)", color: step >= i + 1 ? "var(--obsidian)" : "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, margin: "0 auto 8px", fontWeight: "bold" }}>
-//                   {step > i + 1 ? "✓" : i + 1}
+//                   {step > i + 1 ? "âœ“" : i + 1}
 //                 </div>
 //                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)" }}>{s}</div>
 //               </div>
@@ -1487,7 +1463,7 @@ function WishlistSidebar() {
 //             <div>
 //               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
 //               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-//                 {[["card", "💳 Credit / Debit Card"], ["upi", "📱 UPI (GPay, PhonePe, Paytm)"], ["cod", "💵 Cash on Delivery"], ["emi", "📆 EMI (0% for 3 months)"]].map(([val, label]) => (
+//                 {[["card", "ðŸ’³ Credit / Debit Card"], ["upi", "ðŸ“± UPI (GPay, PhonePe, Paytm)"], ["cod", "ðŸ’µ Cash on Delivery"], ["emi", "ðŸ“† EMI (0% for 3 months)"]].map(([val, label]) => (
 //                   <label key={val} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
 //                     <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }}/>
 //                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
@@ -1519,7 +1495,7 @@ function WishlistSidebar() {
 //               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>ORDER REVIEW</h3>
 //               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 20 }}>
 //                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>DELIVERY TO</div>
-//                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.name} · {address.phone}</div>
+//                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.name} Â· {address.phone}</div>
 //                 <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>{address.address}, {address.city}, {address.state} - {address.pincode}</div>
 //               </div>
 //               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px", marginBottom: 28 }}>
@@ -1529,7 +1505,7 @@ function WishlistSidebar() {
 //               <div style={{ display: "flex", gap: 12 }}>
 //                 <button className="btn-ghost" onClick={() => setStep(2)}>BACK</button>
 //                 <button className="btn-gold" style={{ flex: 1, opacity: processing ? 0.7 : 1 }} onClick={handleOrder} disabled={processing}>
-//                   {processing ? "PROCESSING..." : `PLACE ORDER · ₹${total.toLocaleString()}`}
+//                   {processing ? "PROCESSING..." : `PLACE ORDER Â· â‚¹${total.toLocaleString()}`}
 //                 </button>
 //               </div>
 //             </div>
@@ -1544,19 +1520,19 @@ function WishlistSidebar() {
 //               <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, padding: "8px 0", borderBottom: "1px solid var(--smoke)" }}>
 //                 <div>
 //                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ivory)", letterSpacing: 1 }}>{item.name}</div>
-//                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>Sz: {item.size} · Qty: {item.qty}</div>
+//                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>Sz: {item.size} Â· Qty: {item.qty}</div>
 //                 </div>
-//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>₹{(item.price * item.qty).toLocaleString()}</div>
+//                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>â‚¹{(item.price * item.qty).toLocaleString()}</div>
 //               </div>
 //             ))}
 //             <div style={{ marginTop: 16 }}>
-//               {[["Subtotal", `₹${cartTotal.toLocaleString()}`], ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`], ["GST (18%)", `₹${tax.toLocaleString()}`]].map(([label, val]) => (
+//               {[["Subtotal", `â‚¹${cartTotal.toLocaleString()}`], ["Shipping", shipping === 0 ? "FREE" : `â‚¹${shipping}`], ["GST (18%)", `â‚¹${tax.toLocaleString()}`]].map(([label, val]) => (
 //                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>
 //                   <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : "var(--ash)" }}>{val}</span>
 //                 </div>
 //               ))}
 //               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--gold)" }}>
-//                 <span>TOTAL</span><span style={{ color: "var(--gold)" }}>₹{total.toLocaleString()}</span>
+//                 <span>TOTAL</span><span style={{ color: "var(--gold)" }}>â‚¹{total.toLocaleString()}</span>
 //               </div>
 //             </div>
 //           </div>
@@ -1566,7 +1542,7 @@ function WishlistSidebar() {
 //   );
 // }
 
-// ─── CUSTOM DESIGN PAGE ───────────────────────────────────────────────────────
+// â”€â”€â”€ CUSTOM DESIGN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CustomDesignPage() {
   const { showToast } = useContext(AppContext);
   const [uploaded, setUploaded] = useState(false);
@@ -1589,12 +1565,12 @@ function CustomDesignPage() {
               onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
               <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
-                {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
+                {uploaded ? "DESIGN UPLOADED \u2713" : "CLICK TO UPLOAD"}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG {"\u00b7"} MAX 50MB</div>
             </div>
             <div style={{ marginTop: 20 }}>
-              {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
+              {["\u2726 DTG Printing (all colors)", "\u2726 Screen Printing (bulk)", "\u2726 Embroidery (luxury tier)"].map(t => (
                 <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
               ))}
             </div>
@@ -1607,10 +1583,10 @@ function CustomDesignPage() {
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>FABRIC</label>
                 <select className="input-dark" value={form.fabric} onChange={e => setForm(f => ({ ...f, fabric: e.target.value }))}>
-                  <option value="220gsm">220 GSM Egyptian Cotton (+₹0)</option>
-                  <option value="240gsm">240 GSM Heavyweight (+₹200)</option>
-                  <option value="180gsm">180 GSM Everyday (+₹0)</option>
-                  <option value="bamboo">Bamboo Organic (+₹400)</option>
+                  <option value="220gsm">220 GSM Egyptian Cotton (+{"\u20b9"}0)</option>
+                  <option value="240gsm">240 GSM Heavyweight (+{"\u20b9"}200)</option>
+                  <option value="180gsm">180 GSM Everyday (+{"\u20b9"}0)</option>
+                  <option value="bamboo">Bamboo Organic (+{"\u20b9"}400)</option>
                 </select>
               </div>
               <div>
@@ -1637,8 +1613,8 @@ function CustomDesignPage() {
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{"\u20b9"}{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", marginTop: 4 }}>Per piece {"\u00b7"} Delivery in 7-10 days</div>
               </div>
               <button className="btn-gold" onClick={() => showToast("Custom order request submitted!")}>SUBMIT ORDER REQUEST</button>
             </div>
@@ -1649,7 +1625,7 @@ function CustomDesignPage() {
   );
 }
 
-// ─── BULK ORDER PAGE ──────────────────────────────────────────────────────────
+// â”€â”€â”€ BULK ORDER PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BulkOrderPage() {
   const { showToast } = useContext(AppContext);
   const [form, setForm] = useState({ type: "corporate", qty: 50, product: "", message: "", org: "", contact: "", email: "" });
@@ -1675,7 +1651,7 @@ function BulkOrderPage() {
             </div>
           ))}
           <div style={{ marginTop: 32 }}>
-            {["✦ Custom logo embroidery/print", "✦ Pantone color matching", "✦ Individual name printing", "✦ Dedicated account manager", "✦ Net-30 payment terms available"].map(t => (
+            {["\u2726 Custom logo embroidery/print", "\u2726 Pantone color matching", "\u2726 Individual name printing", "\u2726 Dedicated account manager", "\u2726 Net-30 payment terms available"].map(t => (
               <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
             ))}
           </div>
@@ -1706,7 +1682,7 @@ function BulkOrderPage() {
   );
 }
 
-// ─── ADMIN LAYOUT ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminLayout() {
   const { setPage, adminPage, setAdminPage } = useContext(AppContext);
 
@@ -1761,7 +1737,7 @@ function AdminLayout() {
   );
 }
 
-// ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminDashboard() {
   const { orders, customers, products } = useContext(AppContext);
 
@@ -1774,7 +1750,7 @@ function AdminDashboard() {
   ).length;
 
   const stats = [
-    { label: "TOTAL REVENUE", value: `₹${revenue.toLocaleString()}`, sub: "+23% vs last month", color: "var(--gold)" },
+    { label: "TOTAL REVENUE", value: `\u20b9${revenue.toLocaleString()}`, sub: "+23% vs last month", color: "var(--gold)" },
     { label: "TOTAL ORDERS", value: orders.length, sub: `${processingCount} processing`, color: "#4fc3f7" },
     { label: "CUSTOMERS", value: customers.length, sub: "2 new this week", color: "#81c784" },
     { label: "PRODUCTS", value: products.length, sub: `${products.filter(p => (p.stock || 0) < 20).length} low stock`, color: "#ff8a65" },
@@ -1845,12 +1821,12 @@ function AdminDashboard() {
             {recentOrders.map(o => (
               <tr key={o.id}>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", padding: "12px 0" }}>{o.order_number || o.id}</td>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ash)", padding: "12px 0" }}>{o.profiles?.full_name || o.customer || "—"}</td>
+                <td style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ash)", padding: "12px 0" }}>{o.profiles?.full_name || o.customer || "-"}</td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "12px 0" }}>
-                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "—"}
+                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "-"}
                 </td>
                 <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ivory)", padding: "12px 0" }}>
-                  ₹{Number(o.total_amount || o.total || 0).toLocaleString()}
+                  {"\u20b9"}{Number(o.total_amount || o.total || 0).toLocaleString()}
                 </td>
                 <td style={{ padding: "12px 0" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px",
@@ -1868,7 +1844,7 @@ function AdminDashboard() {
   );
 }
 
-// ─── ADMIN PRODUCTS ────────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN PRODUCTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminProducts() {
   const { products, setProducts, showToast } = useContext(AppContext);
   const [editProduct, setEditProduct] = useState(null);
@@ -1887,7 +1863,7 @@ function AdminProducts() {
     if (!newProd.name.trim()) { showToast("Product name is required.", "error"); return; }
     if (!newProd.price || Number(newProd.price) <= 0) { showToast("Enter a valid price.", "error"); return; }
     if (!newProd.originalPrice || Number(newProd.originalPrice) <= 0) { showToast("Enter a valid original price.", "error"); return; }
-    if (Number(newProd.originalPrice) < Number(newProd.price)) { showToast("Original price must be ≥ sale price.", "error"); return; }
+    if (Number(newProd.originalPrice) < Number(newProd.price)) { showToast("Original price must be â‰¥ sale price.", "error"); return; }
     const p = { ...newProd, id: Date.now(), rating: 4.5, reviews: 0, price: Number(newProd.price), originalPrice: Number(newProd.originalPrice) };
     setProducts(prev => [...prev, p]);
     setAdding(false);
@@ -1922,8 +1898,8 @@ function AdminProducts() {
             <select className="input-dark" value={newProd.tag} onChange={e => setNewProd(p => ({ ...p, tag: e.target.value }))}>
               {Object.keys(TAG_COLORS).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input className="input-dark" placeholder="PRICE (₹)" type="number" value={newProd.price} onChange={e => setNewProd(p => ({ ...p, price: e.target.value }))}/>
-            <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={newProd.originalPrice} onChange={e => setNewProd(p => ({ ...p, originalPrice: e.target.value }))}/>
+            <input className="input-dark" placeholder="PRICE (\u20b9)" type="number" value={newProd.price} onChange={e => setNewProd(p => ({ ...p, price: e.target.value }))}/>
+            <input className="input-dark" placeholder="ORIGINAL PRICE (\u20b9)" type="number" value={newProd.originalPrice} onChange={e => setNewProd(p => ({ ...p, originalPrice: e.target.value }))}/>
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={newProd.stock} onChange={e => setNewProd(p => ({ ...p, stock: e.target.value }))}/>
             <textarea className="input-dark" placeholder="DESCRIPTION" value={newProd.description} onChange={e => setNewProd(p => ({ ...p, description: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
           </div>
@@ -1961,7 +1937,7 @@ function AdminProducts() {
                   {editProduct?.id === p.id ? (
                     <input className="input-dark" type="number" value={editProduct.price} onChange={e => setEditProduct(ep => ({ ...ep, price: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 11, width: 90 }}/>
                   ) : (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)" }}>₹{p.price.toLocaleString()}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)" }}>{"\u20b9"}{p.price.toLocaleString()}</span>
                   )}
                 </td>
                 <td style={{ padding: "14px 16px" }}>
@@ -1998,7 +1974,7 @@ function AdminProducts() {
   );
 }
 
-// ─── ADMIN ORDERS ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN ORDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminOrders() {
   const { orders } = useContext(AppContext);
   const [filter, setFilter] = useState("all");
@@ -2044,16 +2020,16 @@ function AdminOrders() {
                   {o.order_number || o.id}
                 </td>
                 <td style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ash)", padding: "14px 16px" }}>
-                  {o.profiles?.full_name || o.customer || "—"}
+                  {o.profiles?.full_name || o.customer || "-"}
                 </td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", padding: "14px 16px" }}>
-                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "—"}
+                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "-"}
                 </td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", padding: "14px 16px" }}>
-                  {o.order_items?.length ?? o.items ?? "—"}
+                  {o.order_items?.length ?? o.items ?? "-"}
                 </td>
                 <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", padding: "14px 16px" }}>
-                  ₹{Number(o.total_amount || o.total || 0).toLocaleString()}
+                  {"\u20b9"}{Number(o.total_amount || o.total || 0).toLocaleString()}
                 </td>
                 <td style={{ padding: "14px 16px" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "4px 12px",
@@ -2071,7 +2047,7 @@ function AdminOrders() {
   );
 }
 
-// ─── ADMIN CUSTOMERS ──────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN CUSTOMERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminCustomers() {
   const { customers } = useContext(AppContext);
   const tierColors = { Platinum: "#e5e4e2", Gold: "#c9a84c", Silver: "#c0c0c0", Bronze: "#cd7f32" };
@@ -2084,7 +2060,7 @@ function AdminCustomers() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
-        {[["TOTAL", customers.length], ["PLATINUM", customers.filter(c => c.tier === "Platinum").length], ["GOLD", customers.filter(c => c.tier === "Gold").length], ["AVG SPEND", `₹${Math.round(customers.reduce((s,c) => s+c.spent, 0) / customers.length).toLocaleString()}`]].map(([label, val]) => (
+        {[ ["TOTAL", customers.length], ["PLATINUM", customers.filter(c => c.tier === "Platinum").length], ["GOLD", customers.filter(c => c.tier === "Gold").length], ["AVG SPEND", `\u20b9${Math.round(customers.reduce((s,c) => s+c.spent, 0) / customers.length).toLocaleString()}`] ].map(([label, val]) => (
           <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 8 }}>{label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{val}</div>
@@ -2107,7 +2083,7 @@ function AdminCustomers() {
                 <td style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ivory)", padding: "14px 16px" }}>{c.name}</td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.email}</td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)", padding: "14px 16px" }}>{c.orders}</td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", padding: "14px 16px" }}>₹{c.spent.toLocaleString()}</td>
+                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", padding: "14px 16px" }}>{"\u20b9"}{c.spent.toLocaleString()}</td>
                 <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.joined}</td>
                 <td style={{ padding: "14px 16px" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px", background: "transparent", border: `1px solid ${tierColors[c.tier]}`, color: tierColors[c.tier] }}>{c.tier.toUpperCase()}</span>
@@ -2121,7 +2097,7 @@ function AdminCustomers() {
   );
 }
 
-// ─── ADMIN ANALYTICS ──────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN ANALYTICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminAnalytics() {
   return (
     <div>
@@ -2137,7 +2113,7 @@ function AdminAnalytics() {
           <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 160 }}>
             {[{ day: "MON", val: 65 }, { day: "TUE", val: 80 }, { day: "WED", val: 55 }, { day: "THU", val: 90 }, { day: "FRI", val: 100 }, { day: "SAT", val: 85 }, { day: "SUN", val: 70 }].map(d => (
               <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>₹{d.val * 120}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>{"\u20b9"}{d.val * 120}</div>
                 <div style={{ width: "100%", height: `${d.val}%`, background: d.day === "FRI" ? "var(--gold)" : "rgba(201,168,76,0.35)", position: "relative" }}/>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>{d.day}</div>
               </div>
@@ -2179,7 +2155,7 @@ function AdminAnalytics() {
   );
 }
 
-// ─── ADMIN SETTINGS ────────────────────────────────────────────────────────────
+// â”€â”€â”€ ADMIN SETTINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminSettings() {
   const { showToast } = useContext(AppContext);
   return (
@@ -2192,7 +2168,7 @@ function AdminSettings() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         {[
           { title: "STORE SETTINGS", fields: [["Store Name", "VelvetWolf"], ["Tagline", "Luxury Streetwear"], ["Email", "hello@velvetwolf.in"], ["Phone", "+91 98765 43210"]] },
-          { title: "SHIPPING", fields: [["Free Shipping Above (₹)", "1999"], ["Flat Shipping Rate (₹)", "149"], ["Dispatch Time (days)", "2"], ["Return Window (days)", "30"]] },
+          { title: "SHIPPING", fields: [["Free Shipping Above (\u20b9)", "1999"], ["Flat Shipping Rate (\u20b9)", "149"], ["Dispatch Time (days)", "2"], ["Return Window (days)", "30"]] },
           { title: "PAYMENT GATEWAYS", fields: [["Razorpay Key", "rzp_test_xxxxx"], ["UPI Handle", "velvetwolf@upi"], ["GST Number", "27XXXXX1234X1ZX"], ["PAN", "XXXXX0000X"]] },
           { title: "NOTIFICATIONS", fields: [["Order Email", "orders@velvetwolf.in"], ["Alert Email", "alerts@velvetwolf.in"], ["SMS Provider", "Twilio"], ["WhatsApp", "+91 98765 43210"]] },
         ].map(section => (
@@ -2213,60 +2189,5 @@ function AdminSettings() {
         <button className="btn-gold" onClick={() => showToast("Settings saved successfully!")}>SAVE ALL SETTINGS</button>
       </div>
     </div>
-  );
-}
-
-// ─── FOOTER ───────────────────────────────────────────────────────────────────
-function Footer() {
-  const { setPage } = useContext(AppContext);
-  return (
-    <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 6, marginBottom: 4 }}>VELVETWOLF</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2025</div>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", lineHeight: 1.8, fontStyle: "italic" }}>
-              Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
-            </p>
-            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
-              {["📸 Instagram", "𝕏 Twitter", "▶ YouTube"].map(s => (
-                <span key={s} style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{s}</span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20 }}>SHOP</div>
-            {[["All Products", "shop"], ["Custom Design", "custom"], ["Bulk Orders", "bulk"], ["Collections", "collection"]].map(([label, pg]) => (
-              <div key={label} onClick={() => setPage(pg)} style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", cursor: "pointer", marginBottom: 10 }}>{label}</div>
-            ))}
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20 }}>SUPPORT</div>
-            {[["Size Guide","sizeguide"],["Track Order","trackorder"],["Returns & Exchange","returnspage"],["FAQ","faq"], ["Contact Us","contactus"]].map(([l,pg]) => (
-              <div key={l} onClick={() => setPage(pg)} style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", cursor: "pointer", marginBottom: 10 }}>{l}</div>
-            ))}
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, letterSpacing: 3, color: "var(--gold)", marginBottom: 20 }}>NEWSLETTER</div>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--silver)", marginBottom: 16, lineHeight: 1.6 }}>New drops, exclusive offers — for wolves only.</p>
-            <input className="input-dark" placeholder="YOUR EMAIL" style={{ marginBottom: 10 }}/>
-            <button className="btn-gold" style={{ width: "100%", padding: "10px" }}>JOIN THE PACK</button>
-          </div>
-        </div>
-
-        <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
-          <div style={{ display: "flex", gap: 20 }}>
-            {[["Privacy Policy","privacypolicy"], ["Terms","termspage"], ["Shipping Policy","shoppingpolicy"]].map(([l,pg]) => (
-              <span key={l} onClick={() => setPage(pg)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{l}</span>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {["🔒", "💳", "📱"].map(i => <span key={i} style={{ fontSize: 18 }}>{i}</span>)}
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }

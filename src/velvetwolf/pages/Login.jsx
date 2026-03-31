@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
 function GoogleIcon() {
@@ -160,11 +161,14 @@ export function Login() {
       console.warn("Supabase session sync failed, falling back to backend user:", signInErr.message);
       setUser(data.user || pendingUser);
     } else if (authData?.user) {
+      const backendUser = data.user || pendingUser || {};
       setUser({
-        ...(data.user || pendingUser),
+        ...backendUser,
         ...authData.user,
-        name: data.user?.name || pendingUser?.name || authData.user.user_metadata?.full_name || authData.user.email?.split("@")[0],
-        full_name: authData.user.user_metadata?.full_name || data.user?.name || pendingUser?.name,
+        id: backendUser.id,
+        auth_user_id: authData.user.id,
+        name: backendUser.name || authData.user.user_metadata?.full_name || authData.user.email?.split("@")[0],
+        full_name: authData.user.user_metadata?.full_name || backendUser.name,
       });
     }
 
@@ -271,13 +275,15 @@ export function Login() {
   };
 
   return (
+    <>
+    <Navbar activePage="" onNavigate={setPage} />
     <div style={{
       minHeight: "100vh",
       background: "var(--obsidian)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "80px 20px 60px",
+      padding: "110px 20px 60px",
       position: "relative",
       overflow: "hidden",
     }}>
@@ -296,18 +302,6 @@ export function Login() {
       <div style={{ position: "absolute", bottom: "12%", left: "6%", width: 140, height: 140, border: "1px solid rgba(201,168,76,0.07)", transform: "rotate(20deg)", pointerEvents: "none", animation: "float 4s ease-in-out infinite reverse" }}/>
 
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-            <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--obsidian)" }}>VW</span>
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
-            </div>
-          </div>
-        </div>
-
         <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
           {step === 1 && (
             <>
@@ -455,9 +449,9 @@ export function Login() {
         </div>
       </div>
     </div>
+    </>
   );
 }
-
 
 
 

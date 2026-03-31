@@ -4,6 +4,7 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -165,11 +166,9 @@ export function Signup() {
       const data = await res.json();
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify({
-          email: form.email.toLowerCase().trim(),
-          name: form.name,
-          full_name: form.name,
-        }));
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
         
         // Sync with Supabase session for App.jsx context
         const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
@@ -180,13 +179,18 @@ export function Signup() {
         if (signInErr) {
           console.warn("Supabase sync failed, but backend auth succeeded:", signInErr.message);
           setUser({
+            id: data.user?.id,
             email: form.email.toLowerCase().trim(),
             name: form.name,
             full_name: form.name,
           });
         } else if (authData?.user) {
+          const backendUser = data.user || {};
           setUser({
+            ...backendUser,
             ...authData.user,
+            id: backendUser.id,
+            auth_user_id: authData.user.id,
             name: form.name,
             full_name: authData.user.user_metadata?.full_name || form.name,
           });
@@ -259,23 +263,12 @@ export function Signup() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px 60px", position: "relative", overflow: "hidden" }}>
+    <>
+    <Navbar activePage="" onNavigate={setPage} />
+    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "110px 20px 60px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 500, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", pointerEvents: "none" }}/>
 
       <div style={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--obsidian)" }}>VW</span>
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
-            </div>
-          </div>
-        </div>
 
         {/* Step bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 24 }}>
@@ -396,7 +389,7 @@ export function Signup() {
                 onOtpPaste={handleOtpPaste}
                 onResend={handleResend}
                 onBack={() => { setStep(1); setError(""); setOtp(["","","","","",""]); }}
-                submitLabel="VERIFY & CONTINUE →’"
+                submitLabel="VERIFY & CONTINUE →"
                 loadingLabel="VERIFYING..."
                 idPrefix="otp-su"
               />
@@ -405,10 +398,9 @@ export function Signup() {
         </div>
       </div>
     </div>
+    </>
   );
 }
-
-
 
 
 

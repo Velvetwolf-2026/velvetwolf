@@ -4,6 +4,7 @@ import { useState, useContext } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import Navbar from "../components/Navbar";
 import { apiUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -216,23 +217,12 @@ export function ForgetPassword() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px 60px", position: "relative", overflow: "hidden" }}>
+    <>
+    <Navbar activePage="" onNavigate={setPage} />
+    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "110px 20px 60px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 500, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", pointerEvents: "none" }}/>
 
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-            <div style={{ width: 30, height: 30, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--obsidian)" }}>VW</span>
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 6, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
-            </div>
-          </div>
-        </div>
 
         {step < 4 && <StepBar step={step} />}
 
@@ -385,5 +375,6 @@ export function ForgetPassword() {
         )} */}
       </div>
     </div>
+    </>
   );
 }
