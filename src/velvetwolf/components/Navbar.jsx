@@ -79,9 +79,8 @@ export default function Navbar({ activePage }) {
               justifyContent: "center",
             }}
           >
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "var(--obsidian)" }}>
-              VW
-            </span>
+            <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
+
           </div>
 
           <div>

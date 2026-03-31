@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { checkRateLimit, recordAttempt } from './ratelimit';
+import { apiUrl } from './api';
 
 const ADMIN_EMAIL = 'velvetwolfofficial@gmail.com';
 
@@ -162,17 +163,14 @@ export async function signOut() {
 // GET PROFILE
 export async function getProfile(userId) {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const res = await fetch(`${apiUrl('/profile')}?id=${encodeURIComponent(userId)}`);
+    const payload = await res.json();
 
-    if (error) {
-      throw createControlledError(error, 'Failed to load profile');
+    if (!res.ok) {
+      throw createControlledError(payload, 'Failed to load profile');
     }
 
-    return data;
+    return payload.profile || null;
   } catch (err) {
     console.error('GET PROFILE ERROR:', err);
     throw createControlledError(err, 'Failed to load profile');

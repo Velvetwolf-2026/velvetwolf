@@ -7,7 +7,10 @@ import {
   signup,
   verifyOtp,
 } from "./shared/auth-service.js";
+import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
 import { loadBackendEnv } from "./shared/config/env.js";
+import { getProfileById } from "./shared/profile-service.js";
+import { getWishlistByUserId, toggleWishlistByUserId } from "./shared/wishlist-service.js";
 import {
   ApiError,
   jsonResponse,
@@ -103,6 +106,39 @@ async function dispatch(method, route, body, query, requestId, event) {
   if (method === "GET" && route.endsWith("/auth/google/callback")) {
     const location = await googleCallback({ code: query.code, state: query.state });
     return redirectResponse(location, 302, {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/profile")) {
+    return jsonResponse(200, { profile: await getProfileById(query.id) }, {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/wishlist")) {
+    return jsonResponse(200, { items: await getWishlistByUserId(query.userId) }, {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/wishlist/toggle")) {
+    return jsonResponse(200, await toggleWishlistByUserId(body.userId, body.productId), {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/cart")) {
+    return jsonResponse(200, { items: await getCartByUserId(query.userId) }, {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/cart/add")) {
+    return jsonResponse(
+      200,
+      await addCartItemByUserId(body.userId, body.productId, body.quantity),
+      {},
+      event
+    );
+  }
+
+  if (method === "POST" && route.endsWith("/cart/update")) {
+    return jsonResponse(200, await updateCartItemQuantity(body.cartItemId, body.quantity), {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/cart/remove")) {
+    return jsonResponse(200, await removeCartItemById(body.cartItemId), {}, event);
   }
 
   if (method === "POST" && route.endsWith("/auth/signup")) {

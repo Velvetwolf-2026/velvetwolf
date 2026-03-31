@@ -12,7 +12,7 @@ export function loadBackendEnv() {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const rootDir = path.resolve(currentDir, "../../../../");
   const candidates = [
-    path.join(rootDir, ".env.local"),
+    path.join(rootDir, "backend", "lambda",".env.local"),
     path.join(rootDir, ".env"),
     path.join(rootDir, "backend", "lambda", ".env"),
   ];
