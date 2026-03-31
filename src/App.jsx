@@ -1,10 +1,9 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage, Footer } from "./index";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
 import CartPage from "./velvetwolf/pages/CartPage";
 import WishlistPage from "./velvetwolf/pages/WishlistPage";
-import SharedNavbar from "./velvetwolf/components/Navbar";
 import { supabase } from './velvetwolf/utils/supabase';
 import { getProfile } from './velvetwolf/utils/auth';
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';

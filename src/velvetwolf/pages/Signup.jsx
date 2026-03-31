@@ -271,7 +271,7 @@ export function Signup() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
             <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 60, height: 60, objectFit: "contain" }} />
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
