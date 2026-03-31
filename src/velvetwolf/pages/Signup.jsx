@@ -4,7 +4,6 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
-import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -263,12 +262,23 @@ export function Signup() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <>
-    <Navbar activePage="" onNavigate={setPage} />
-    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "110px 20px 60px", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px 60px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 500, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", pointerEvents: "none" }}/>
 
       <div style={{ width: "100%", maxWidth: 440, position: "relative", zIndex: 1 }}>
+
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 60, height: 60, objectFit: "contain" }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+            </div>
+          </div>
+        </div>
 
         {/* Step bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, marginBottom: 24 }}>
@@ -398,9 +408,9 @@ export function Signup() {
         </div>
       </div>
     </div>
-    </>
   );
 }
+
 
 
 
