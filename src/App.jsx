@@ -641,6 +641,10 @@ export default function VelvetWolf() {
   // Coerce to numbers â€” Supabase returns numeric columns as strings via JS client
   const cartTotal = cart.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
   const cartCount = cart.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+  const openShop = (collection = null) => {
+    setActiveCollection(collection);
+    setPage("shop");
+  };
 
   const ctx = {
     page, setPage, adminPage, setAdminPage,
@@ -650,7 +654,7 @@ export default function VelvetWolf() {
     authModal, setAuthModal, selectedProduct, setSelectedProduct,
     activeCollection, setActiveCollection, searchQuery, setSearchQuery,
     orders, customers, cartTotal, cartCount,
-    addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast,
+    addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast, openShop,
   };
 
   // â”€â”€ Scroll to top on every page change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -889,7 +893,7 @@ export default function VelvetWolf() {
 
 // ─── HOME PAGE ────────────────────────────────────────────────────────────────
 function HomePage() {
-  const { setPage, setActiveCollection, products, addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
+  const { setPage, setActiveCollection, products, openShop } = useContext(AppContext);
   const [heroIndex, setHeroIndex] = useState(0);
   const heroSlides = [
     { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2024", collection: "silent-luxury" },
@@ -921,10 +925,10 @@ function HomePage() {
             </h1>
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" onClick={() => { setActiveCollection(slide.collection); setPage("shop"); }}>
+              <button className="btn-gold" onClick={() => openShop(slide.collection)}>
                 EXPLORE COLLECTION
               </button>
-              <button className="btn-outline" onClick={() => setPage("shop")}>SHOP ALL</button>
+              <button className="btn-outline" onClick={() => openShop()}>SHOP ALL</button>
             </div>
           </div>
           {/* Hero slide indicators */}
@@ -965,7 +969,7 @@ function HomePage() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
             </div>
-            <button className="btn-outline" onClick={() => setPage("shop")}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
+            <button className="btn-outline" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
           </div>
           <FeaturedCoverflow products={featured} />
         </div>
@@ -1033,7 +1037,7 @@ function HomePage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
-            ["\u26a1", "Culture-First Design", "Every drop is rooted in real youth culture - tech humor, anime, hustle, philosophy. Not trend-chasing."],
+            ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],
             ["\u2726", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
           ].map(([icon, title, desc]) => (
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
@@ -1154,22 +1158,19 @@ function ProductCard({ product }) {
   const inWishlist = wishlist.find(i => i.id === product.id);
   const tagStyle = TAG_COLORS[product.tag] || { bg: "var(--smoke)", color: "var(--ash)" };
   const discount = Math.round((1 - product.price / product.originalPrice) * 100);
+  const defaultSize = product.sizes?.[0];
+  const defaultColor = product.colors?.[0];
 
   return (
     <div className="product-card" style={{ display: "flex", flexDirection: "column" }}>
       <div style={{ position: "relative" }}>
-        <ProductImage product={product} />
-        {/* Overlay actions */}
-        <div style={{
-          position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
-          opacity: 0, transition: "opacity 0.3s"
-        }} className="card-overlay"
-          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-          onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-          <button className="btn-gold" onClick={() => setSelectedProduct(product)} style={{ padding: "10px 24px", fontSize: 10 }}>QUICK VIEW</button>
-          <button className="btn-ghost" onClick={() => addToCart(product, product.sizes[0], product.colors[0])} style={{ padding: "10px 24px" }}>ADD TO CART</button>
-        </div>
+        <button
+          onClick={() => setSelectedProduct(product)}
+          style={{ background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", display: "block", textAlign: "left" }}
+          aria-label={`Quick view ${product.name}`}
+        >
+          <ProductImage product={product} />
+        </button>
         <div style={{ position: "absolute", top: 12, left: 12 }}>
           <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color }}>{product.tag}</span>
         </div>
@@ -1190,6 +1191,14 @@ function ProductCard({ product }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
+          <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
+            QUICK VIEW
+          </button>
+          <button className="btn-gold" onClick={() => addToCart(product, defaultSize, defaultColor)} style={{ width: "100%", padding: "12px 16px" }}>
+            ADD TO CART
+          </button>
         </div>
       </div>
     </div>

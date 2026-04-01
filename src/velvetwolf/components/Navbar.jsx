@@ -27,7 +27,7 @@ function Icon({ name, size = 18, color = "currentColor" }) {
 }
 
 export default function Navbar({ activePage }) {
-  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser } = useContext(AppContext);
+  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop } = useContext(AppContext);
   const [scrolled, setScrolled] = useState(false);
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
   const greetingName = displayName ? displayName.split(" ")[0] : "";
@@ -115,7 +115,7 @@ export default function Navbar({ activePage }) {
             ([label, pg]) => (
               <button
                 key={pg}
-                onClick={() => setPage(pg)}
+                onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                 style={{
                   background: "none",
                   border: "none",

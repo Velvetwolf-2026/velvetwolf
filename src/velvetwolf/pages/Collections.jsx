@@ -50,7 +50,7 @@ function ArrowIcon({ color = "currentColor", size = 12 }) {
 }
 
 export default function CollectionsPage() {
-  const { setPage, setActiveCollection } = useContext(AppContext);
+  const { openShop } = useContext(AppContext);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -67,8 +67,7 @@ export default function CollectionsPage() {
             <div
               key={col.id}
               onClick={() => {
-                setActiveCollection(col.id);
-                setPage("shop");
+                openShop(col.id);
               }}
               style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "48px 32px", cursor: "pointer", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
               onMouseEnter={(e) => {

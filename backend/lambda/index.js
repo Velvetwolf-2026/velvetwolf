@@ -9,6 +9,7 @@ import {
 } from "./shared/auth-service.js";
 import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
 import { loadBackendEnv } from "./shared/config/env.js";
+import { sendContactMessage } from "./shared/contact-service.js";
 import { getProfileById } from "./shared/profile-service.js";
 import { getWishlistByUserId, toggleWishlistByUserId } from "./shared/wishlist-service.js";
 import {
@@ -161,6 +162,10 @@ async function dispatch(method, route, body, query, requestId, event) {
     return jsonResponse(200, await verifyOtp(body), {}, event);
   }
 
+  if (method === "POST" && route.endsWith("/contact/send")) {
+    return jsonResponse(200, await sendContactMessage(body), {}, event);
+  }
+
   logWarn("No backend route matched request", { requestId, method, route, query });
   return jsonResponse(404, { error: "Route not found" }, {}, event);
 }
@@ -218,3 +223,6 @@ export async function handler(event) {
     return jsonResponse(500, { error: "Internal server error" }, {}, event);
   }
 }
+
+
+
