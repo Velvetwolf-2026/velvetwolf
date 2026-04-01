@@ -235,14 +235,14 @@ export default function MosaicCarousel({ onCategoryClick }) {
         />
 
         {/* Dot nav */}
-        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:7, marginTop:18, paddingBottom:4 }}>
+        {/* <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:7, marginTop:18, paddingBottom:4 }}>
           {CATEGORIES.map(cat => (
             <div key={cat.id} title={cat.name}
               onClick={() => setActive(active?.id === cat.id ? null : cat)}
               style={{ width:active?.id===cat.id?26:5, height:3, borderRadius:2, background:active?.id===cat.id?cat.accent:"rgba(255,255,255,0.12)", cursor:"pointer", transition:"all 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}
             />
           ))}
-        </div>
+        </div> */}
 
         <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:4, color:"rgba(255, 255, 255, 0.47)", paddingBottom:32 }}>
           DRAG · CLICK · EXPLORE
