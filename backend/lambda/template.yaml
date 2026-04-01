@@ -49,6 +49,48 @@ Resources:
             ApiId: !Ref VelvetwolfHttpApi
             Path: /auth/google/callback
             Method: GET
+        Profile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /profile
+            Method: GET
+        Wishlist:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /wishlist
+            Method: GET
+        WishlistToggle:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /wishlist/toggle
+            Method: POST
+        Cart:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /cart
+            Method: GET
+        CartAdd:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /cart/add
+            Method: POST
+        CartUpdate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /cart/update
+            Method: POST
+        CartRemove:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /cart/remove
+            Method: POST
         Signup:
           Type: HttpApi
           Properties:

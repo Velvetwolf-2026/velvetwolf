@@ -4,6 +4,7 @@ import { useState, useContext } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import Navbar from "../components/Navbar";
 import { apiUrl } from "../utils/api";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ function StepBar({ step }) {
             <div style={{ width: 22, height: 22, borderRadius: "50%", border: `1px solid ${step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)"}`, background: step > i + 1 ? "var(--gold)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, color: step > i + 1 ? "var(--obsidian)" : step === i + 1 ? "var(--gold)" : "var(--silver)", transition: "all 0.3s" }}>
               {step > i + 1 ? "✓" : i + 1}
             </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)", whiteSpace: "nowrap" }}>{label}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)", whiteSpace: "nowrap" }}>{label}</span>
           </div>
           {i < 2 && <div style={{ width: 36, height: 1, background: step > i + 1 ? "var(--gold)" : "var(--smoke)", margin: "11px 6px 0", transition: "background 0.3s" }}/>}
         </div>
@@ -216,7 +217,9 @@ export function ForgetPassword() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px 60px", position: "relative", overflow: "hidden" }}>
+    <>
+    <Navbar activePage="" onNavigate={setPage} />
+    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center", padding: "110px 20px 60px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: 500, height: 300, background: "radial-gradient(ellipse, rgba(201,168,76,0.05) 0%, transparent 70%)", pointerEvents: "none" }}/>
 
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
@@ -225,11 +228,11 @@ export function ForgetPassword() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
             <div style={{ width: 30, height: 30, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--obsidian)" }}>VW</span>
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 6, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
             </div>
           </div>
         </div>
@@ -242,23 +245,23 @@ export function ForgetPassword() {
           {step === 1 && (
             <>
               <div style={{ marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
                   <div style={{ width: 14, height: 1, background: "var(--gold)" }}/>ACCOUNT RECOVERY<div style={{ width: 14, height: 1, background: "var(--gold)" }}/>
                 </div>
                 <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 4, color: "var(--ivory)", margin: "0 0 8px", lineHeight: 1 }}>FORGOT PASSWORD?</h1>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", lineHeight: 1.7 }}>Enter your registered email — we'll send a reset code.</p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", lineHeight: 1.7 }}>Enter your registered email — we'll send a reset code.</p>
               </div>
               {error && <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 10, marginBottom: 16, letterSpacing: 0.5 }}>✕ {error}</div>}
               <form onSubmit={handleRequestOtp}>
                 <div style={{ marginBottom: 22 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
                   <input className="input-dark" type="email" placeholder="you@email.com" value={email} onChange={e => { setEmailVal(e.target.value); setError(""); }} autoComplete="email" disabled={loading}/>
                 </div>
                 <button type="submit" className="btn-gold" disabled={loading} style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
                   {loading ? "SENDING..." : "SEND RESET CODE →"}
                 </button>
               </form>
-              <div style={{ marginTop: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)" }}>
+              <div style={{ marginTop: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)" }}>
                 Remembered it?{" "}<button type="button" onClick={() => setPage("login")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>SIGN IN</button>
               </div>
             </>
@@ -385,5 +388,6 @@ export function ForgetPassword() {
         )} */}
       </div>
     </div>
+    </>
   );
 }

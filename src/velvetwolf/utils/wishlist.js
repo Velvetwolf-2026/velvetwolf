@@ -1,24 +1,34 @@
-import { supabase } from './supabase';
+import { apiUrl } from './api';
 
 export async function loadWishlistFromDB(userId) {
-  const { data, error } = await supabase
-    .from('wishlist_items')
-    .select('product_id, products(*)')
-    .eq('user_id', userId);
-  if (error) throw error;
-  return data.map(w => w.products);
+  const response = await fetch(
+    `${apiUrl('/wishlist')}?userId=${encodeURIComponent(userId)}`
+  );
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to load wishlist.');
+  }
+
+  return Array.isArray(payload.items) ? payload.items : [];
 }
 
 export async function toggleWishlistDB(userId, product) {
-  const { data: existing } = await supabase
-    .from('wishlist_items').select('id')
-    .eq('user_id', userId).eq('product_id', product.id).single();
+  const response = await fetch(apiUrl('/wishlist/toggle'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      productId: product?.id,
+    }),
+  });
 
-  if (existing) {
-    await supabase.from('wishlist_items').delete().eq('id', existing.id);
-    return false; // removed
-  } else {
-    await supabase.from('wishlist_items').insert({ user_id: userId, product_id: product.id });
-    return true; // added
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to update wishlist.');
   }
+
+  return Boolean(payload.added);
 }

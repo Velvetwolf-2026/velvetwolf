@@ -1,54 +1,74 @@
-import { supabase } from './supabase';
+import { apiUrl } from './api';
 
-// ── Load cart from DB → return as App.jsx cart array ────
 export async function loadCartFromDB(userId) {
-  const { data, error } = await supabase
-    .from('cart_items')
-    .select('*, products(*)')
-    .eq('user_id', userId);
-  if (error) throw error;
-  // Shape matches App.jsx cart items
-  return data.map(item => ({
-    ...item.products,
-    size: item.size,
-    color: item.color,
-    qty: item.quantity,
-    cart_item_id: item.id,
-  }));
+  const response = await fetch(
+    `${apiUrl('/cart')}?userId=${encodeURIComponent(userId)}`
+  );
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to load cart.');
+  }
+
+  return Array.isArray(payload.items) ? payload.items : [];
 }
 
-// ── Add item (upsert — handles duplicate size+color) ────
-export async function addCartItemDB(userId, product, size, color, qty = 1) {
-  const { error } = await supabase.from('cart_items').upsert({
-    user_id:    userId,
-    product_id: product.id,
-    size, color,
-    quantity:   qty,
-  }, {
-    onConflict: 'user_id,product_id,size,color',
-    ignoreDuplicates: false,
+export async function addCartItemDB(userId, product, qty = 1) {
+  const response = await fetch(apiUrl('/cart/add'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      productId: product?.id,
+      quantity: qty,
+    }),
   });
-  if (error) throw error;
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to add cart item.');
+  }
 }
 
-// ── Update quantity ──────────────────────────────────────
 export async function updateCartQtyDB(cartItemId, qty) {
-  if (qty < 1) { await removeCartItemDB(cartItemId); return; }
-  const { error } = await supabase
-    .from('cart_items').update({ quantity: qty }).eq('id', cartItemId);
-  if (error) throw error;
+  const response = await fetch(apiUrl('/cart/update'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cartItemId,
+      quantity: qty,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to update cart item.');
+  }
 }
 
-// ── Remove item ─────────────────────────────────────────
 export async function removeCartItemDB(cartItemId) {
-  await supabase.from('cart_items').delete().eq('id', cartItemId);
+  const response = await fetch(apiUrl('/cart/remove'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cartItemId }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to remove cart item.');
+  }
 }
 
-// ── Merge guest cart (localStorage) → DB on login ───────
 export async function mergeGuestCart(userId) {
   const guestCart = JSON.parse(localStorage.getItem('vw_guest_cart') || '[]');
+
   for (const item of guestCart) {
-    await addCartItemDB(userId, item, item.size, item.color, item.qty);
+    await addCartItemDB(userId, item, item.qty);
   }
+
   localStorage.removeItem('vw_guest_cart');
 }

@@ -13,7 +13,7 @@ export const S = {
   wrapWide:{ maxWidth: 1060, margin: "0 auto", padding: "60px 32px 100px" },
 
   eyebrow: {
-    fontFamily: "'Space Mono',monospace", fontSize: 9, letterSpacing: 5,
+    fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 5,
     color: gold, marginBottom: 12, display: "flex", alignItems: "center", gap: 10,
   },
   h1: {
@@ -21,7 +21,7 @@ export const S = {
     fontSize: "clamp(42px,6vw,72px)", letterSpacing: 6,
     color: "#f5f0e8", lineHeight: 1, margin: "0 0 8px",
   },
-  sub:  { fontFamily: "'Space Mono',monospace", fontSize: 9, letterSpacing: 2, color: muted, marginBottom: 48 },
+  sub:  { fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: muted, marginBottom: 48 },
   h2:   { fontFamily: "'Bebas Neue',cursive", fontSize: 26, letterSpacing: 4, color: gold,  marginBottom: 10, marginTop: 44 },
   h3:   { fontFamily: "'Space Mono',monospace", fontSize: 11, letterSpacing: 2, color: "#f5f0e8", marginBottom: 8, marginTop: 24 },
   p:    { fontSize: 14, lineHeight: 1.85, color: "#bbb", marginBottom: 14 },
@@ -62,7 +62,7 @@ export function Ul({ items }) {
       {items.map((it, i) => (
         <li key={i} style={{ display: "flex", gap: 10, ...S.li }}>
           <span style={{ color: gold, marginTop: 2, flexShrink: 0 }}>◆</span>
-          <span>{it}</span>
+          <span style={{ fontSize: "14px" }}>{it}</span>
         </li>
       ))}
     </ul>
@@ -77,7 +77,7 @@ export function DataTable({ headers, rows }) {
         <thead>
           <tr style={{ background: "#161616" }}>
             {headers.map(h => (
-              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontFamily: "'Space Mono',monospace", fontSize: 8, letterSpacing: 2, color: gold, border: `1px solid ${border}` }}>
+              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 2, color: gold, border: `1px solid ${border}` }}>
                 {h}
               </th>
             ))}
