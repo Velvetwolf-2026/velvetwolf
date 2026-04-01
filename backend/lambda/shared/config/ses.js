@@ -29,3 +29,25 @@ export async function sendOTP(email, otp, kind = "login") {
 
   return ses.sendEmail(params).promise();
 }
+
+export async function sendEmail({ to, subject, html, text, replyTo }) {
+  const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
+
+  const params = {
+    Source: process.env.EMAIL_FROM,
+    Destination: { ToAddresses: recipients },
+    Message: {
+      Subject: { Data: subject, Charset: "UTF-8" },
+      Body: {
+        Html: { Data: html, Charset: "UTF-8" },
+        Text: { Data: text, Charset: "UTF-8" },
+      },
+    },
+  };
+
+  if (replyTo) {
+    params.ReplyToAddresses = [replyTo];
+  }
+
+  return ses.sendEmail(params).promise();
+}
