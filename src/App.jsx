@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import { supabase } from './velvetwolf/utils/supabase';
@@ -1577,6 +1577,7 @@ function CustomDesignPage() {
   const { showToast } = useContext(AppContext);
   const [uploaded, setUploaded] = useState(false);
   const [form, setForm] = useState({ fabric: "220gsm", color: "#0a0a0a", size: "M", qty: 1, note: "" });
+  const fileInputRef = useRef(null);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -1591,14 +1592,41 @@ function CustomDesignPage() {
           {/* Upload zone */}
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
-            <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
-              onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
-              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
+
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.svg"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setUploaded(true);
+                  showToast("Design uploaded!");
+                }
+              }}
+            />
+
+            <div
+              style={{
+                border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`,
+                padding: "60px 40px",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: uploaded ? "rgba(201,168,76,0.05)" : "transparent"
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"} />
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
                 {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
               </div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>
+                PNG, JPG, SVG · MAX 50MB
+              </div>
             </div>
+
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
                 <div key={t} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
@@ -1623,7 +1651,7 @@ function CustomDesignPage() {
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["#0a0a0a", "#faf9f7", "#1a2a3a", "#1a0a0a", "#0a1a0a", "#2a2a2a"].map(c => (
-                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }}/>
+                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }} />
                   ))}
                 </div>
               </div>
@@ -1635,11 +1663,17 @@ function CustomDesignPage() {
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
-                <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))}/>
+                <input className="input-dark" type="number" min="1" value={form.qty} onChange={(e) => {
+                    let value = parseInt(e.target.value);
+                    if (value < 1 || isNaN(value)) {
+                      value = 1;
+                    }
+                    setForm(f => ({ ...f, qty: value }));
+                }} />
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
-                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
+                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
@@ -1654,6 +1688,7 @@ function CustomDesignPage() {
     </div>
   );
 }
+
 
 // ─── BULK ORDER PAGE ──────────────────────────────────────────────────────────
 function BulkOrderPage() {

@@ -77,7 +77,7 @@ export function DataTable({ headers, rows }) {
         <thead>
           <tr style={{ background: "#161616" }}>
             {headers.map(h => (
-              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 2, color: gold, border: `1px solid ${border}` }}>
+              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: gold, border: `1px solid ${border}` }}>
                 {h}
               </th>
             ))}
@@ -87,7 +87,7 @@ export function DataTable({ headers, rows }) {
           {rows.map((row, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "#0d0d0d" }}>
               {row.map((cell, j) => (
-                <td key={j} style={{ padding: "10px 14px", color: "#bbb", border: `1px solid ${border}` }}>{cell}</td>
+                <td key={j} style={{ padding: "10px 14px", color: "#bbb", border: `1px solid ${border}`, fontFamily: "'Roboto', sans-serif"}}>{cell}</td>
               ))}
             </tr>
           ))}
