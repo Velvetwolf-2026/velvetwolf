@@ -38,6 +38,7 @@ export { default as TrackOrder     } from "./velvetwolf/pages/TrackOrder";
 export { default as ReturnsPage    } from "./velvetwolf/pages/ReturnsPage";
 export { default as FAQPage        } from "./velvetwolf/pages/FAQPage";
 export { default as ContactPage    } from "./velvetwolf/pages/ContactPage";
+export { default as CollectionsPage } from "./velvetwolf/pages/Collections";
 
 // ── Shared Style Helpers ──
 export { S, PageHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";

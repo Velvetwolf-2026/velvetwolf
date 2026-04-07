@@ -3,7 +3,7 @@ import { AppContext } from "../pages/AppContext";
 import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 
 export default function Footer() {
-  const { setPage } = useContext(AppContext);
+  const { setPage, openShop } = useContext(AppContext);
 
   const socialLinkStyle = {
     fontFamily: "'Roboto', sans-serif",
@@ -90,7 +90,7 @@ export default function Footer() {
               ([label, pg]) => (
                 <div
                   key={label}
-                  onClick={() => setPage(pg)}
+                  onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
                     fontSize: 19,

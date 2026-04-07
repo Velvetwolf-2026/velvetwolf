@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
+import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
 function GoogleIcon() {
@@ -160,11 +161,14 @@ export function Login() {
       console.warn("Supabase session sync failed, falling back to backend user:", signInErr.message);
       setUser(data.user || pendingUser);
     } else if (authData?.user) {
+      const backendUser = data.user || pendingUser || {};
       setUser({
-        ...(data.user || pendingUser),
+        ...backendUser,
         ...authData.user,
-        name: data.user?.name || pendingUser?.name || authData.user.user_metadata?.full_name || authData.user.email?.split("@")[0],
-        full_name: authData.user.user_metadata?.full_name || data.user?.name || pendingUser?.name,
+        id: backendUser.id,
+        auth_user_id: authData.user.id,
+        name: backendUser.name || authData.user.user_metadata?.full_name || authData.user.email?.split("@")[0],
+        full_name: authData.user.user_metadata?.full_name || backendUser.name,
       });
     }
 
@@ -271,13 +275,15 @@ export function Login() {
   };
 
   return (
+    <>
+    <Navbar activePage="" onNavigate={setPage} />
     <div style={{
       minHeight: "100vh",
       background: "var(--obsidian)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "80px 20px 60px",
+      padding: "110px 20px 60px",
       position: "relative",
       overflow: "hidden",
     }}>
@@ -299,7 +305,7 @@ export function Login() {
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
             <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 12, color: "var(--obsidian)" }}>VW</span>
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
@@ -455,9 +461,9 @@ export function Login() {
         </div>
       </div>
     </div>
+    </>
   );
 }
-
 
 
 

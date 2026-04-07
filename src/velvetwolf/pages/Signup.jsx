@@ -165,11 +165,9 @@ export function Signup() {
       const data = await res.json();
       if (data.token) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify({
-          email: form.email.toLowerCase().trim(),
-          name: form.name,
-          full_name: form.name,
-        }));
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
         
         // Sync with Supabase session for App.jsx context
         const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
@@ -180,13 +178,18 @@ export function Signup() {
         if (signInErr) {
           console.warn("Supabase sync failed, but backend auth succeeded:", signInErr.message);
           setUser({
+            id: data.user?.id,
             email: form.email.toLowerCase().trim(),
             name: form.name,
             full_name: form.name,
           });
         } else if (authData?.user) {
+          const backendUser = data.user || {};
           setUser({
+            ...backendUser,
             ...authData.user,
+            id: backendUser.id,
+            auth_user_id: authData.user.id,
             name: form.name,
             full_name: authData.user.user_metadata?.full_name || form.name,
           });
@@ -268,7 +271,7 @@ export function Signup() {
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
             <div style={{ width: 32, height: 32, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 12, color: "var(--obsidian)" }}>VW</span>
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
@@ -396,7 +399,7 @@ export function Signup() {
                 onOtpPaste={handleOtpPaste}
                 onResend={handleResend}
                 onBack={() => { setStep(1); setError(""); setOtp(["","","","","",""]); }}
-                submitLabel="VERIFY & CONTINUE →’"
+                submitLabel="VERIFY & CONTINUE →"
                 loadingLabel="VERIFYING..."
                 idPrefix="otp-su"
               />
@@ -407,7 +410,6 @@ export function Signup() {
     </div>
   );
 }
-
 
 
 

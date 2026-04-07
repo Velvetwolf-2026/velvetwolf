@@ -8,20 +8,21 @@ export function AccountPage() {
   const [tab, setTab] = useState("overview");
   const [userOrders, setUserOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const databaseUserId = user?.auth_user_id || user?.id || null;
 
   useEffect(() => {
-    if (!user || tab !== "orders") return;
+    if (!databaseUserId || tab !== "orders") return;
     setOrdersLoading(true);
-    getUserOrders(user.id)
+    getUserOrders(databaseUserId)
       .then(data => setUserOrders(data || []))
       .catch(err => console.error('[getUserOrders]', err.message))
       .finally(() => setOrdersLoading(false));
 
     const channel = supabase
-      .channel(`orders:${user.id}`)
+      .channel(`orders:${databaseUserId}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'orders',
-        filter: `user_id=eq.${user.id}`,
+        filter: `user_id=eq.${databaseUserId}`,
       }, payload => {
         setUserOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
         showToast(`Order ${payload.new.order_number}: ${payload.new.status}`, 'info');
@@ -29,7 +30,7 @@ export function AccountPage() {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [user, tab]);
+  }, [databaseUserId, showToast, tab]);
 
   const handleSignOut = async () => {
     await signOutUser();
