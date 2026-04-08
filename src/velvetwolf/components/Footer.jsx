@@ -91,7 +91,6 @@ export default function Footer() {
                 <div
                   key={label}
                   onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
-                  onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
                     fontSize: 19,
