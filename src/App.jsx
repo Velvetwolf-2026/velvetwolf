@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
@@ -23,7 +23,7 @@ const GlobalStyles = () => (
       --onyx: #111111;
       --graphite: #1a1a1a;
       --smoke: #2a2a2a;
-      --silver: #888888;
+      --silver: #888181;
       --ash: #c8c8c8;
       --pearl: #f0ede8;
       --ivory: #faf9f7;
@@ -273,7 +273,6 @@ const GlobalStyles = () => (
 
 // â”€â”€â”€ CONTEXT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // AppContext is imported from ./AppContext.js â€” shared with Login, Signup, ForgetPassword
-
 const TAG_COLORS = {
   "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
   "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
@@ -453,13 +452,11 @@ export default function VelvetWolf() {
   };
 
   const getDatabaseUserId = (value) => value?.auth_user_id || value?.id || null;
-
   const buildUserState = async (authUser) => {
     const storedUser = getStoredUser();
     const backendToken = localStorage.getItem("token");
     const tokenUser = backendToken ? parseBackendToken(backendToken) : null;
     const appUserId = storedUser?.id || tokenUser?.id || null;
-
     if (!authUser?.id) {
       return {
         ...storedUser,
@@ -966,7 +963,7 @@ function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
             </div>
             <button className="btn-outline" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
@@ -1014,11 +1011,11 @@ function HomePage() {
       <section style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
         <div style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 DESIGN YOUR IDENTITY \u2726"}</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 DESIGN YOUR IDENTITY \u2726"}</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 64, lineHeight: 0.95, letterSpacing: 2, marginBottom: 24 }}>
             UPLOAD YOUR<br/><span className="gold-text">OWN DESIGN</span>
           </h2>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
+          <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
             Your vision. Our premium canvas. Upload your artwork and we'll bring it to life on luxury-grade fabric.
           </p>
           <button className="btn-gold" onClick={() => setPage("custom")} style={{ fontSize: 12, padding: "16px 40px" }}>
@@ -1068,6 +1065,7 @@ function FeaturedCoverflow({ products }) {
     const timer = setInterval(() => {
       setActiveIndex((current) => (current + 1) % products.length);
     }, 4500);
+
     return () => clearInterval(timer);
   }, [isHovered, products.length]);
 
@@ -1076,8 +1074,10 @@ function FeaturedCoverflow({ products }) {
   const getOffset = (index) => {
     const total = products.length;
     let offset = index - activeIndex;
+
     if (offset > total / 2) offset -= total;
     if (offset < -total / 2) offset += total;
+
     return offset;
   };
 
@@ -1112,7 +1112,9 @@ function FeaturedCoverflow({ products }) {
                 transform: `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1400px) rotateY(${rotateY}deg)`,
                 transformOrigin: "center center",
                 transition: "transform 0.55s ease, opacity 0.45s ease",
-                filter: isActive ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))" : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
+                filter: isActive
+                  ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))"
+                  : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
                 pointerEvents: distance > 2 ? "none" : "auto",
               }}
             >
@@ -1122,12 +1124,27 @@ function FeaturedCoverflow({ products }) {
         })}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 12 }}>
-        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current - 1 + products.length) % products.length)} style={{ padding: "10px 16px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 16,
+          marginTop: 12,
+        }}
+      >
+        <button
+          className="btn-ghost"
+          onClick={() =>
+            setActiveIndex((current) => (current - 1 + products.length) % products.length)
+          }
+          style={{ padding: "10px 16px" }}
+        >
           <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
             <Icon name="arrowRight" size={12} color="currentColor" />
           </span>
         </button>
+
         <div style={{ display: "flex", gap: 8 }}>
           {products.map((product, index) => (
             <button
@@ -1145,7 +1162,14 @@ function FeaturedCoverflow({ products }) {
             />
           ))}
         </div>
-        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current + 1) % products.length)} style={{ padding: "10px 16px" }}>
+
+        <button
+          className="btn-ghost"
+          onClick={() =>
+            setActiveIndex((current) => (current + 1) % products.length)
+          }
+          style={{ padding: "10px 16px" }}
+        >
           <Icon name="arrowRight" size={12} color="currentColor" />
         </button>
       </div>
@@ -1251,7 +1275,7 @@ function ShopPage() {
         {/* Sidebar filters */}
         <div style={{ width: 220, flexShrink: 0 }}>
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>COLLECTIONS</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>COLLECTIONS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
               {COLLECTIONS.map(col => (
@@ -1298,9 +1322,8 @@ function ShopPage() {
   );
 }
 
-// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 // â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const [size, setSize] = useState(p.sizes[0]);
@@ -1650,6 +1673,7 @@ function CustomDesignPage() {
   const { showToast } = useContext(AppContext);
   const [uploaded, setUploaded] = useState(false);
   const [form, setForm] = useState({ fabric: "220gsm", color: "#0a0a0a", size: "M", qty: 1, note: "" });
+  const fileInputRef = useRef(null);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -1664,14 +1688,41 @@ function CustomDesignPage() {
           {/* Upload zone */}
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
-            <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
-              onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
-              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
+
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.svg"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setUploaded(true);
+                  showToast("Design uploaded!");
+                }
+              }}
+            />
+
+            <div
+              style={{
+                border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`,
+                padding: "60px 40px",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: uploaded ? "rgba(201,168,76,0.05)" : "transparent"
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"} />
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
                 {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
               </div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>
+                PNG, JPG, SVG · MAX 50MB
+              </div>
             </div>
+
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
                 <div key={t} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
@@ -1696,7 +1747,7 @@ function CustomDesignPage() {
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["#0a0a0a", "#faf9f7", "#1a2a3a", "#1a0a0a", "#0a1a0a", "#2a2a2a"].map(c => (
-                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }}/>
+                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }} />
                   ))}
                 </div>
               </div>
@@ -1708,11 +1759,17 @@ function CustomDesignPage() {
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
-                <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))}/>
+                <input className="input-dark" type="number" min="1" value={form.qty} onChange={(e) => {
+                    let value = parseInt(e.target.value);
+                    if (value < 1 || isNaN(value)) {
+                      value = 1;
+                    }
+                    setForm(f => ({ ...f, qty: value }));
+                }} />
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
-                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
+                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
@@ -1731,19 +1788,52 @@ function CustomDesignPage() {
 // â”€â”€â”€ BULK ORDER PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BulkOrderPage() {
   const { showToast } = useContext(AppContext);
-  const [form, setForm] = useState({ type: "corporate", qty: 50, product: "", message: "", org: "", contact: "", email: "" });
+  const [form, setForm] = useState({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const updateField = (key, value) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    setErrorMessage("");
+  };
+
+  const validateForm = () => {
+    if (!form.org.trim()) return "Please enter organization name.";
+    if (!form.contact.trim()) return "Please enter contact person name.";
+    if (!form.email.trim()) return "Please enter email address.";
+    if (!emailRegex.test(form.email.trim())) return "Please enter a valid email address.";
+    if (form.qty === "" || form.qty === null) return "Please enter quantity.";
+    if (Number(form.qty) < 5) return "Minimum quantity should be 5.";
+    if (!form.message.trim()) return "Please enter product requirements.";
+    return "";
+  };
+
+  const handleSubmit = () => {
+    const validationMessage = validateForm();
+
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
+      return;
+    }
+
+    showToast("Quote request sent! We'll contact you within 24hrs.");
+    setErrorMessage("");
+    setForm({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
+  };
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br />CORPORATE</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
       </div>
 
       <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
         <div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>PRICING TIERS</h2>
+
           {[["10-49 pcs", "5% OFF", "Team orders"], ["50-99 pcs", "12% OFF", "Department orders"], ["100-499 pcs", "20% OFF", "Corporate branding"], ["500+ pcs", "30% OFF + Custom", "Enterprise bulk"]].map(([qty, disc, label]) => (
             <div key={qty} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--smoke)" }}>
               <div>
@@ -1753,6 +1843,7 @@ function BulkOrderPage() {
               <span style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>{disc}</span>
             </div>
           ))}
+
           <div style={{ marginTop: 32 }}>
             {["\u2726 Custom logo embroidery/print", "\u2726 Pantone color matching", "\u2726 Individual name printing", "\u2726 Dedicated account manager", "\u2726 Net-30 payment terms available"].map(t => (
               <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
@@ -1762,28 +1853,38 @@ function BulkOrderPage() {
 
         <div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>REQUEST A QUOTE</h2>
+
+          {errorMessage && (
+            <div style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
+              ✕ {errorMessage}
+            </div>
+          )}
+
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>ORDER TYPE</label>
-              <select className="input-dark" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+              <select className="input-dark" value={form.type} onChange={e => updateField("type", e.target.value)}>
                 <option value="bulk">BULK ORDER</option>
                 <option value="corporate">CORPORATE BRANDING</option>
                 <option value="event">EVENT MERCHANDISE</option>
                 <option value="startup">STARTUP KIT</option>
               </select>
             </div>
-            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => setForm(f => ({ ...f, org: e.target.value }))}/>
-            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))}/>
-            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}/>
-            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} min="10"/>
-            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} style={{ minHeight: 120 }}/>
-            <button className="btn-gold" style={{ padding: "16px" }} onClick={() => showToast("Quote request sent! We'll contact you within 24hrs.")}>REQUEST QUOTE</button>
+
+            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => updateField("org", e.target.value)} />
+            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => updateField("contact", e.target.value)} />
+            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => updateField("email", e.target.value)} />
+            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} min="5" onChange={e => updateField("qty", e.target.value === "" ? "" : Number(e.target.value))} />
+            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => updateField("message", e.target.value)} style={{ minHeight: 120 }} />
+
+            <button className="btn-gold" style={{ padding: "16px" }} onClick={handleSubmit}>REQUEST QUOTE</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 // â”€â”€â”€ ADMIN LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AdminLayout() {
@@ -2349,3 +2450,4 @@ function AdminSettings() {
 //     </footer>
 //   );
 // }
+

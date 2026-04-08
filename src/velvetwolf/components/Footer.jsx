@@ -1,8 +1,21 @@
 import { useContext } from "react";
 import { AppContext } from "../pages/AppContext";
+import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 
 export default function Footer() {
   const { setPage, openShop } = useContext(AppContext);
+
+  const socialLinkStyle = {
+    fontFamily: "'Roboto', sans-serif",
+    fontSize: 20,
+    color: "var(--silver)",
+    cursor: "pointer",
+    letterSpacing: 1,
+    textDecoration: "none",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  };
 
   return (
     <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
@@ -36,20 +49,27 @@ export default function Footer() {
             </p>
 
             <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
-              {["📸 Instagram", "𝕏 Twitter", "▶ YouTube"].map((s) => (
-                <span
-                  key={s}
-                  style={{
-                    fontFamily: "'Roboto', sans-serif",
-                    fontSize: 20,
-                    color: "var(--silver)",
-                    cursor: "pointer",
-                    letterSpacing: 1,
-                  }}
-                >
-                  {s}
-                </span>
-              ))}
+              <a
+                href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
+                target="_blank"
+                rel="noopener noreferrer"
+                style={socialLinkStyle}
+              >
+                <FaInstagram /> Instagram
+              </a>
+
+              <a
+                href="https://www.facebook.com/profile.php?id=61577839378533"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={socialLinkStyle}
+              >
+                <FaFacebook /> Facebook
+              </a>
+
+              <span style={socialLinkStyle}>
+                <FaYoutube /> YouTube
+              </span>
             </div>
           </div>
 
@@ -193,3 +213,4 @@ export default function Footer() {
     </footer>
   );
 }
+
