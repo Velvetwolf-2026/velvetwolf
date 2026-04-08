@@ -273,7 +273,6 @@ const GlobalStyles = () => (
 
 // â”€â”€â”€ CONTEXT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // AppContext is imported from ./AppContext.js â€” shared with Login, Signup, ForgetPassword
-
 const TAG_COLORS = {
   "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
   "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
@@ -453,13 +452,11 @@ export default function VelvetWolf() {
   };
 
   const getDatabaseUserId = (value) => value?.auth_user_id || value?.id || null;
-
   const buildUserState = async (authUser) => {
     const storedUser = getStoredUser();
     const backendToken = localStorage.getItem("token");
     const tokenUser = backendToken ? parseBackendToken(backendToken) : null;
     const appUserId = storedUser?.id || tokenUser?.id || null;
-
     if (!authUser?.id) {
       return {
         ...storedUser,
@@ -1068,6 +1065,7 @@ function FeaturedCoverflow({ products }) {
     const timer = setInterval(() => {
       setActiveIndex((current) => (current + 1) % products.length);
     }, 4500);
+
     return () => clearInterval(timer);
   }, [isHovered, products.length]);
 
@@ -1076,8 +1074,10 @@ function FeaturedCoverflow({ products }) {
   const getOffset = (index) => {
     const total = products.length;
     let offset = index - activeIndex;
+
     if (offset > total / 2) offset -= total;
     if (offset < -total / 2) offset += total;
+
     return offset;
   };
 
@@ -1112,7 +1112,9 @@ function FeaturedCoverflow({ products }) {
                 transform: `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1400px) rotateY(${rotateY}deg)`,
                 transformOrigin: "center center",
                 transition: "transform 0.55s ease, opacity 0.45s ease",
-                filter: isActive ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))" : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
+                filter: isActive
+                  ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))"
+                  : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
                 pointerEvents: distance > 2 ? "none" : "auto",
               }}
             >
@@ -1122,12 +1124,27 @@ function FeaturedCoverflow({ products }) {
         })}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 12 }}>
-        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current - 1 + products.length) % products.length)} style={{ padding: "10px 16px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 16,
+          marginTop: 12,
+        }}
+      >
+        <button
+          className="btn-ghost"
+          onClick={() =>
+            setActiveIndex((current) => (current - 1 + products.length) % products.length)
+          }
+          style={{ padding: "10px 16px" }}
+        >
           <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
             <Icon name="arrowRight" size={12} color="currentColor" />
           </span>
         </button>
+
         <div style={{ display: "flex", gap: 8 }}>
           {products.map((product, index) => (
             <button
@@ -1145,7 +1162,14 @@ function FeaturedCoverflow({ products }) {
             />
           ))}
         </div>
-        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current + 1) % products.length)} style={{ padding: "10px 16px" }}>
+
+        <button
+          className="btn-ghost"
+          onClick={() =>
+            setActiveIndex((current) => (current + 1) % products.length)
+          }
+          style={{ padding: "10px 16px" }}
+        >
           <Icon name="arrowRight" size={12} color="currentColor" />
         </button>
       </div>
@@ -1298,9 +1322,8 @@ function ShopPage() {
   );
 }
 
-// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 // â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const [size, setSize] = useState(p.sizes[0]);
@@ -1822,8 +1845,8 @@ function BulkOrderPage() {
           ))}
 
           <div style={{ marginTop: 32 }}>
-            {["✦ Custom logo embroidery/print", "✦ Pantone color matching", "✦ Individual name printing", "✦ Dedicated account manager", "✦ Net-30 payment terms available"].map(t => (
-              <div key={t} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
+            {["\u2726 Custom logo embroidery/print", "\u2726 Pantone color matching", "\u2726 Individual name printing", "\u2726 Dedicated account manager", "\u2726 Net-30 payment terms available"].map(t => (
+              <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
             ))}
           </div>
         </div>
@@ -2427,3 +2450,4 @@ function AdminSettings() {
 //     </footer>
 //   );
 // }
+

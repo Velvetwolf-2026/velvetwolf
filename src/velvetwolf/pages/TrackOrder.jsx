@@ -24,13 +24,16 @@ const STATUS_GUIDE = [
   { status: "OUT FOR DELIVERY", desc: "Your delivery agent is on the way." },
   { status: "DELIVERED", desc: "Your order has been delivered. Enjoy!" },
   { status: "RETURN INITIATED", desc: "Your return request is being processed." },
+  
 ];
 
 export default function TrackOrder() {
   const [orderId, setOrderId] = useState("");
   const [email, setEmail] = useState("");
+
   const [tracked, setTracked] = useState(false);
   const [errors, setErrors] = useState({});
+
 
   const inputStyle = {
     width: "100%",
