@@ -64,7 +64,12 @@ async function dispatch(method, route, body, query) {
   }
 
   if (method === "GET" && route === "/auth/google/callback") {
-    const location = await googleCallback({ code: query.code, state: query.state });
+    const location = await googleCallback({
+      code: query.code,
+      state: query.state,
+      error: query.error,
+      errorDescription: query.error_description,
+    });
     return redirectResponse(location, 302);
   }
 
@@ -116,3 +121,4 @@ export async function handler(event) {
     return jsonResponse(500, { error: "Internal server error" });
   }
 }
+

@@ -105,7 +105,12 @@ async function dispatch(method, route, body, query, requestId, event) {
   }
 
   if (method === "GET" && route.endsWith("/auth/google/callback")) {
-    const location = await googleCallback({ code: query.code, state: query.state });
+    const location = await googleCallback({
+      code: query.code,
+      state: query.state,
+      error: query.error,
+      errorDescription: query.error_description,
+    });
     return redirectResponse(location, 302, {}, event);
   }
 
@@ -223,6 +228,7 @@ export async function handler(event) {
     return jsonResponse(500, { error: "Internal server error" }, {}, event);
   }
 }
+
 
 
 

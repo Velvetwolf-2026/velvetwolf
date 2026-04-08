@@ -14,9 +14,6 @@ export const COLLECTIONS = [
   { id: "limited", name: "Limited Edition", icon: "🏷", color: "#ffab91" },
   { id: "most-loved", name: "Most Loved", icon: "♥", color: "#f48fb1" },
   { id: "budget", name: "Under ₹999", icon: "◎", color: "#a5d6a7" },
-  { id: "custom", name: "Upload Your Design", icon: "✦", color: "#b0bec5" },
-  { id: "bulk", name: "Bulk Orders", icon: "📦", color: "#bcaaa4" },
-  { id: "corporate", name: "Corporate Orders", icon: "🏢", color: "#90caf9" },
 ];
 
 export const INITIAL_COLLECTION_PRODUCTS = [
@@ -34,7 +31,7 @@ export const HOME_COLLECTION_IDS = ["trending", "beast-mode", "anime", "ai-tech"
 export const HOME_COLLECTIONS = HOME_COLLECTION_IDS
   .map((id) => COLLECTIONS.find((col) => col.id === id))
   .filter(Boolean);
-export const BROWSE_COLLECTIONS = COLLECTIONS.filter((col) => !["custom", "bulk"].includes(col.id));
+export const BROWSE_COLLECTIONS = COLLECTIONS;
 
 export function getCollectionById(id) {
   return COLLECTIONS.find((col) => col.id === id) || null;
