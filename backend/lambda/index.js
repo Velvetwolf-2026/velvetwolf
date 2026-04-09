@@ -8,6 +8,7 @@ import {
   verifyOtp,
 } from "./shared/auth-service.js";
 import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
+import { getProducts } from "./shared/product-service.js";
 import { loadBackendEnv } from "./shared/config/env.js";
 import { sendContactMessage } from "./shared/contact-service.js";
 import { getProfileById } from "./shared/profile-service.js";
@@ -112,6 +113,15 @@ async function dispatch(method, route, body, query, requestId, event) {
       errorDescription: query.error_description,
     });
     return redirectResponse(location, 302, {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/products")) {
+    return jsonResponse(
+      200,
+      { products: await getProducts({ collection: query.collection, search: query.search }) },
+      {},
+      event
+    );
   }
 
   if (method === "GET" && route.endsWith("/profile")) {

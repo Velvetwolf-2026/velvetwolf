@@ -8,6 +8,7 @@ import { supabase } from './velvetwolf/utils/supabase';
 import { getProfile } from './velvetwolf/utils/auth';
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';
 import { toggleWishlistDB, loadWishlistFromDB } from './velvetwolf/utils/wishlist';
+import { loadProductsFromAPI } from './velvetwolf/utils/products';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 import Navbar from "./velvetwolf/components/Navbar";
 import Footer from "./velvetwolf/components/Footer";
@@ -328,48 +329,73 @@ const Toast = ({ message, type = "success", onClose }) => {
   );
 };
 
-// â”€â”€â”€ PRODUCT IMAGE PLACEHOLDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const ProductImage = ({ product, height = 280 }) => {
-  const collectionColors = {
-    "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
-    "anime": ["#1a0010", "#2a0020", "#f06292"],
-    "silent-luxury": ["#1a1a0a", "#2a2a1a", "#c9a84c"],
-    "founder": ["#0a1a0a", "#1a2a1a", "#ffd54f"],
-    "beast-mode": ["#1a0a00", "#2a1a00", "#ff8a65"],
-    "mind-mayhem": ["#0a001a", "#1a0a2a", "#ce93d8"],
-    "savage-quotes": ["#1a0a0a", "#2a0000", "#ef5350"],
-    "xp-mode": ["#001a00", "#0a2a0a", "#81c784"],
-  };
-  const cols = collectionColors[product.collection] || ["#111","#1a1a1a","#888"];
+// ─── COLLECTION COLOURS (used by placeholder + overlay) ──────────────────────
+const COLLECTION_COLORS = {
+  “ai-tech”:        [“#0a1628”, “#1a2a4a”, “#4fc3f7”],
+  “anime”:          [“#1a0010”, “#2a0020”, “#f06292”],
+  “silent-luxury”:  [“#1a1a0a”, “#2a2a1a”, “#c9a84c”],
+  “founder”:        [“#0a1a0a”, “#1a2a1a”, “#ffd54f”],
+  “beast-mode”:     [“#1a0a00”, “#2a1a00”, “#ff8a65”],
+  “mind-mayhem”:    [“#0a001a”, “#1a0a2a”, “#ce93d8”],
+  “savage-quotes”:  [“#1a0a0a”, “#2a0000”, “#ef5350”],
+  “xp-mode”:        [“#001a00”, “#0a2a0a”, “#81c784”],
+};
+
+// ─── PRODUCT IMAGE PLACEHOLDER ────────────────────────────────────────────────
+function ProductImagePlaceholder({ product, height, cols }) {
   return (
     <div style={{
       height, background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      position: "relative", overflow: "hidden"
+      display: “flex”, alignItems: “center”, justifyContent: “center”,
+      position: “relative”, overflow: “hidden”
     }}>
       <div style={{
-        position: "absolute", inset: 0,
+        position: “absolute”, inset: 0,
         background: `radial-gradient(circle at 50% 50%, ${cols[2]}22, transparent 70%)`
       }}/>
       <div style={{
-        fontFamily: "var(--font-display)", fontSize: 72, color: cols[2],
-        opacity: 0.15, userSelect: "none", letterSpacing: 4,
-        position: "absolute"
+        fontFamily: “var(--font-display)”, fontSize: 72, color: cols[2],
+        opacity: 0.15, userSelect: “none”, letterSpacing: 4,
+        position: “absolute”
       }}>VW</div>
-      <div style={{ textAlign: "center", zIndex: 1 }}>
+      <div style={{ textAlign: “center”, zIndex: 1 }}>
         <div style={{
-          fontFamily: "var(--font-display)", fontSize: 22, color: cols[2],
+          fontFamily: “var(--font-display)”, fontSize: 22, color: cols[2],
           letterSpacing: 3, lineHeight: 1.2
         }}>
-          {product.name.split(" ").map((w, i) => <div key={i}>{w}</div>)}
+          {product.name.split(“ “).map((w, i) => <div key={i}>{w}</div>)}
         </div>
         <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, color: cols[2],
+          fontFamily: “var(--font-mono)”, fontSize: 9, color: cols[2],
           opacity: 0.6, letterSpacing: 2, marginTop: 10
         }}>VELVETWOLF</div>
       </div>
       <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
+        position: “absolute”, bottom: 0, left: 0, right: 0,
+        height: 60, background: `linear-gradient(transparent, ${cols[0]}88)`
+      }}/>
+    </div>
+  );
+}
+
+const ProductImage = ({ product, height = 280 }) => {
+  const [imgError, setImgError] = useState(false);
+  const cols = COLLECTION_COLORS[product.collection] || [“#111”, “#1a1a1a”, “#888”];
+
+  if (!product.image || imgError) {
+    return <ProductImagePlaceholder product={product} height={height} cols={cols} />;
+  }
+
+  return (
+    <div style={{ height, position: “relative”, overflow: “hidden”, background: cols[0] }}>
+      <img
+        src={product.image}
+        alt={product.name}
+        onError={() => setImgError(true)}
+        style={{ width: “100%”, height: “100%”, objectFit: “cover”, display: “block” }}
+      />
+      <div style={{
+        position: “absolute”, bottom: 0, left: 0, right: 0,
         height: 60, background: `linear-gradient(transparent, ${cols[0]}88)`
       }}/>
     </div>
@@ -754,6 +780,14 @@ export default function VelvetWolf() {
     );
     return () => subscription.unsubscribe();
   }, []);     
+
+  useEffect(() => {
+    loadProductsFromAPI()
+      .then((fetched) => {
+        if (fetched.length > 0) setProducts(fetched);
+      })
+      .catch((err) => console.error('[loadProducts]', err.message));
+  }, []);
 
   useEffect(() => {
     if (user && ["login", "signup", "forgetpassword"].includes(page)) {
