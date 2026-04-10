@@ -44,12 +44,6 @@ function FAQAnswer({ faq, formatText }) {
       </p>
     );
   }
-
-  return (
-    <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-      {formatText(faq.a)}
-    </p>
-  );
 }
 
 function FAQItem({ faq, isOpen, onToggle, formatText }) {

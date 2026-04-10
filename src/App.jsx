@@ -8,6 +8,7 @@ import { supabase } from './velvetwolf/utils/supabase';
 import { getProfile } from './velvetwolf/utils/auth';
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from './velvetwolf/utils/cart';
 import { toggleWishlistDB, loadWishlistFromDB } from './velvetwolf/utils/wishlist';
+import { loadProductsFromAPI } from './velvetwolf/utils/products';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 import Navbar from "./velvetwolf/components/Navbar";
 import Footer from "./velvetwolf/components/Footer";
@@ -329,7 +330,6 @@ const Toast = ({ message, type = "success", onClose }) => {
   );
 };
 
-// â”€â”€â”€ PRODUCT IMAGE PLACEHOLDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ProductImage = ({ product, height = 280 }) => {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
@@ -341,38 +341,78 @@ const ProductImage = ({ product, height = 280 }) => {
     "savage-quotes": ["#1a0a0a", "#2a0000", "#ef5350"],
     "xp-mode": ["#001a00", "#0a2a0a", "#81c784"],
   };
-  const cols = collectionColors[product.collection] || ["#111","#1a1a1a","#888"];
+
+  const cols = collectionColors[product.collection] || ["#111", "#1a1a1a", "#888"];
+
   return (
-    <div style={{
-      height, background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      position: "relative", overflow: "hidden"
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `radial-gradient(circle at 50% 50%, ${cols[2]}22, transparent 70%)`
-      }}/>
-      <div style={{
-        fontFamily: "var(--font-display)", fontSize: 72, color: cols[2],
-        opacity: 0.15, userSelect: "none", letterSpacing: 4,
-        position: "absolute"
-      }}>VW</div>
-      <div style={{ textAlign: "center", zIndex: 1 }}>
-        <div style={{
-          fontFamily: "var(--font-display)", fontSize: 22, color: cols[2],
-          letterSpacing: 3, lineHeight: 1.2
-        }}>
-          {product.name.split(" ").map((w, i) => <div key={i}>{w}</div>)}
-        </div>
-        <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, color: cols[2],
-          opacity: 0.6, letterSpacing: 2, marginTop: 10
-        }}>VELVETWOLF</div>
+    <div
+      style={{
+        height,
+        background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(circle at 50% 50%, ${cols[2]}22, transparent 70%)`,
+        }}
+      />
+      <div
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 72,
+          color: cols[2],
+          opacity: 0.15,
+          userSelect: "none",
+          letterSpacing: 4,
+          position: "absolute",
+        }}
+      >
+        VW
       </div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        height: 60, background: `linear-gradient(transparent, ${cols[0]}88)`
-      }}/>
+      <div style={{ textAlign: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 22,
+            color: cols[2],
+            letterSpacing: 3,
+            lineHeight: 1.2,
+          }}
+        >
+          {product.name.split(" ").map((w, i) => (
+            <div key={i}>{w}</div>
+          ))}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: cols[2],
+            opacity: 0.6,
+            letterSpacing: 2,
+            marginTop: 10,
+          }}
+        >
+          VELVETWOLF
+        </div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 60,
+          background: `linear-gradient(transparent, ${cols[0]}88)`,
+        }}
+      />
     </div>
   );
 };
@@ -452,13 +492,14 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
-  const getDatabaseUserId = (value) => value?.auth_user_id || value?.id || null;
+  const getBackendUserId = (value) => value?.id || null;
 
   const buildUserState = async (authUser) => {
     const storedUser = getStoredUser();
     const backendToken = localStorage.getItem("token");
     const tokenUser = backendToken ? parseBackendToken(backendToken) : null;
     const appUserId = storedUser?.id || tokenUser?.id || null;
+    const profileUserId = authUser?.id || storedUser?.auth_user_id || null;
 
     if (!authUser?.id) {
       return {
@@ -475,7 +516,7 @@ export default function VelvetWolf() {
     }
 
     try {
-      const profile = appUserId ? await getProfile(appUserId) : null;
+      const profile = profileUserId ? await getProfile(profileUserId) : null;
       return {
         ...storedUser,
         ...authUser,
@@ -512,10 +553,10 @@ export default function VelvetWolf() {
 
   const addToCart = async (product, size, color, qty = 1) => {
     try {
-      const databaseUserId = getDatabaseUserId(user);
-      if (databaseUserId) {
-        await addCartItemDB(databaseUserId, product, qty);
-        await syncCartFromDB(databaseUserId);
+      const backendUserId = getBackendUserId(user);
+      if (backendUserId) {
+        await addCartItemDB(backendUserId, product, qty);
+        await syncCartFromDB(backendUserId);
       } else {
         // Guest: save to localStorage
         const guest = getGuestCart();
@@ -533,11 +574,11 @@ export default function VelvetWolf() {
 
   const removeFromCart = async (id, size, color) => {
     try {
-      const databaseUserId = getDatabaseUserId(user);
-      if (databaseUserId) {
+      const backendUserId = getBackendUserId(user);
+      if (backendUserId) {
         const item = cart.find(i => i.id === id && i.size === size && i.color === color);
         if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
-        await syncCartFromDB(databaseUserId);
+        await syncCartFromDB(backendUserId);
       } else {
         saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       }
@@ -548,8 +589,8 @@ export default function VelvetWolf() {
   };
 
   const updateCartQty = async (id, size, color, qty) => {
-    const databaseUserId = getDatabaseUserId(user);
-    if (databaseUserId) {
+    const backendUserId = getBackendUserId(user);
+    if (backendUserId) {
       // For DB-backed cart: find the cart_item_id, update via DB
       const item = cart.find(i => i.id === id && i.size === size && i.color === color);
       if (item?.cart_item_id) {
@@ -558,7 +599,7 @@ export default function VelvetWolf() {
         } else {
           await updateCartQtyDB(item.cart_item_id, qty);
         }
-        await syncCartFromDB(databaseUserId);
+        await syncCartFromDB(backendUserId);
       }
     } else {
       // Guest cart: update local state
@@ -604,15 +645,15 @@ export default function VelvetWolf() {
       showToast('Sign in to save items', 'info');
       return;
     }
-    const databaseUserId = getDatabaseUserId(user);
-    if (!databaseUserId) {
+    const backendUserId = getBackendUserId(user);
+    if (!backendUserId) {
       const added = toggleLocalWishlist(product);
       showToast(added ? "Added to wishlist \u2665" : "Removed from wishlist", added ? "success" : "info");
       return;
     }
     try {
-      const added = await toggleWishlistDB(databaseUserId, product);
-      await syncWishlistFromDB(databaseUserId);
+      const added = await toggleWishlistDB(backendUserId, product);
+      await syncWishlistFromDB(backendUserId);
       showToast(added ? "Added to wishlist \u2665" : "Removed from wishlist", added ? "success" : "info");
     } catch (err) {
       showToast('Could not update wishlist', 'error');
@@ -666,17 +707,17 @@ export default function VelvetWolf() {
   useEffect(() => {
     const applySignedInUser = async (authUser, mergeGuestCart = false) => {
       const nextUser = await buildUserState(authUser);
-      const databaseUserId = getDatabaseUserId(nextUser);
+      const backendUserId = getBackendUserId(nextUser);
       setUser(nextUser);
       localStorage.setItem("user", JSON.stringify(nextUser));
 
-      if (mergeGuestCart && databaseUserId) {
-        await mergeGuestCartToDB(databaseUserId);
+      if (mergeGuestCart && backendUserId) {
+        await mergeGuestCartToDB(backendUserId);
       }
 
-      if (databaseUserId) {
-        await syncCartFromDB(databaseUserId);
-        await syncWishlistFromDB(databaseUserId);
+      if (backendUserId) {
+        await syncCartFromDB(backendUserId);
+        await syncWishlistFromDB(backendUserId);
       } else {
         setCart(getGuestCart());
         setWishlist(loadLocalWishlist(nextUser.email));
@@ -693,6 +734,8 @@ export default function VelvetWolf() {
 
     const query = new URLSearchParams(window.location.search);
     const backendToken = query.get("token");
+    const authError = query.get("auth_error");
+    const authMode = query.get("mode");
     if (backendToken) {
       const decoded = parseBackendToken(backendToken);
       if (decoded?.email) {
@@ -708,7 +751,16 @@ export default function VelvetWolf() {
         setCart(getGuestCart());
         setPage("home");
       }
+    } else if (authError) {
+      showToast(decodeURIComponent(authError), "info");
+      setPage(authMode === "signup" ? "signup" : "login");
+    }
+
+    if (backendToken || authError) {
       query.delete("token");
+      query.delete("provider");
+      query.delete("mode");
+      query.delete("auth_error");
       const nextQuery = query.toString();
       const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", nextUrl);
@@ -745,6 +797,14 @@ export default function VelvetWolf() {
     );
     return () => subscription.unsubscribe();
   }, []);     
+
+  useEffect(() => {
+    loadProductsFromAPI()
+      .then((fetched) => {
+        if (fetched.length > 0) setProducts(fetched);
+      })
+      .catch((err) => console.error('[loadProducts]', err.message));
+  }, []);
 
   useEffect(() => {
     if (user && ["login", "signup", "forgetpassword"].includes(page)) {
@@ -793,6 +853,8 @@ export default function VelvetWolf() {
 
       {authModal && <AuthModal />}
       {selectedProduct && <ProductModal />}
+      {cartOpen && <CartSidebar />}
+      {wishlistOpen && <WishlistSidebar />}
     </AppContext.Provider>
   );
 }
@@ -1647,9 +1709,20 @@ void WishlistSidebar;
 
 // â”€â”€â”€ CUSTOM DESIGN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CustomDesignPage() {
-  const { showToast } = useContext(AppContext);
+  const { user, setPage, showToast } = useContext(AppContext);
   const [uploaded, setUploaded] = useState(false);
   const [form, setForm] = useState({ fabric: "220gsm", color: "#0a0a0a", size: "M", qty: 1, note: "" });
+  const fileInputRef = useRef(null);
+
+  const handleSubmitOrderRequest = () => {
+    if (!user) {
+      showToast("Please sign in to place a custom order.", "info");
+      setPage("login");
+      return;
+    }
+
+    showToast("Custom order request submitted!");
+  };
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -1719,7 +1792,7 @@ function CustomDesignPage() {
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>₹{(1499 + (form.fabric === "240gsm" ? 200 : form.fabric === "bamboo" ? 400 : 0)).toLocaleString()}</div>
                 <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, color: "var(--silver)", marginTop: 4 }}>Per piece · Delivery in 7-10 days</div>
               </div>
-              <button className="btn-gold" onClick={() => showToast("Custom order request submitted!")}>SUBMIT ORDER REQUEST</button>
+              <button className="btn-gold" onClick={handleSubmitOrderRequest}>SUBMIT ORDER REQUEST</button>
             </div>
           </div>
         </div>
