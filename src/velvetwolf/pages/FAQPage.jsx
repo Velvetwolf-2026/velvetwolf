@@ -45,28 +45,6 @@ function FAQAnswer({ faq }) {
   return <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>;
 }
 
-function FAQAnswer({ faq }) {
-  const { setPage } = useContext(AppContext);
-
-  if (faq.type === "orders-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Orders can be modified or cancelled within 1 hour by emailing <a href="mailto:orders@velvetwolf.in" style={{ color: gold }}>orders@velvetwolf.in</a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
-      </p>
-    );
-  }
-
-  if (faq.type === "shipping-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Contact us at <a href="mailto:support@velvetwolf.in" style={{ color: gold }}>support@velvetwolf.in</a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within 4 hours.
-      </p>
-    );
-  }
-
-  return <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>;
-}
-
 function FAQItem({ faq, isOpen, onToggle }) {
   return (
     <div style={{ border: `1px solid ${isOpen ? gold + "55" : border}`, marginBottom: 8, transition: "border-color 0.3s" }}>
@@ -79,7 +57,7 @@ function FAQItem({ faq, isOpen, onToggle }) {
       </button>
       {isOpen && (
         <div style={{ padding: "0 20px 18px", borderTop: `1px solid ${border}` }}>
-          <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>
+          <FAQAnswer faq={faq} />
         </div>
       )}
     </div>

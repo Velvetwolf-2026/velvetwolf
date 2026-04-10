@@ -2,12 +2,15 @@ import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { getUserOrders } from "../utils/order";
+import { updateProfile } from "../utils/profile";
 
 export function AccountPage() {
-  const { user, setPage, orders, wishlist, cart, signOutUser, showToast } = useContext(AppContext);
+  const { user, setUser, setPage, wishlist, cart, signOutUser, showToast } = useContext(AppContext);
   const [tab, setTab] = useState("overview");
   const [userOrders, setUserOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
+  const [savingSettings, setSavingSettings] = useState(false);
   const databaseUserId = user?.auth_user_id || user?.id || null;
 
   useEffect(() => {
@@ -38,6 +41,48 @@ export function AccountPage() {
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
   const displayInitial = displayName[0].toUpperCase();
+  const profileUserId = user?.auth_user_id || user?.id || null;
+
+  useEffect(() => {
+    setSettings({
+      fullName: displayName,
+      email: user?.email || "",
+      phone: user?.phone || "",
+    });
+  }, [displayName, user?.email, user?.phone]);
+
+  const handleSaveSettings = async () => {
+    if (!profileUserId) {
+      showToast("Could not find your profile.", "error");
+      return;
+    }
+
+    setSavingSettings(true);
+    try {
+      const profile = await updateProfile(profileUserId, {
+        fullName: settings.fullName.trim(),
+        phone: settings.phone.trim(),
+        gender: user?.gender ?? null,
+        dob: user?.date_of_birth ?? null,
+      });
+
+      const nextUser = {
+        ...user,
+        ...profile,
+        full_name: profile?.full_name || settings.fullName.trim(),
+        name: profile?.full_name || settings.fullName.trim(),
+        phone: profile?.phone || settings.phone.trim(),
+      };
+
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      showToast("Profile updated successfully.");
+    } catch (err) {
+      showToast(err.message || "Could not save changes.", "error");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -147,11 +192,31 @@ export function AccountPage() {
           <div style={{ maxWidth: 500 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 32 }}>ACCOUNT SETTINGS</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
-              <input className="input-dark" defaultValue={displayName} placeholder="FULL NAME"/>
-              <input className="input-dark" type="email" defaultValue={user.email} placeholder="EMAIL"/>
-              <input className="input-dark" type="tel" placeholder="PHONE NUMBER"/>
+              <input
+                className="input-dark"
+                value={settings.fullName}
+                onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value }))}
+                placeholder="FULL NAME"
+              />
+              <input
+                className="input-dark"
+                type="email"
+                value={settings.email}
+                readOnly
+                placeholder="EMAIL"
+                style={{ opacity: 0.75, cursor: "not-allowed" }}
+              />
+              <input
+                className="input-dark"
+                type="tel"
+                value={settings.phone}
+                onChange={(e) => setSettings((prev) => ({ ...prev, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 10) }))}
+                placeholder="PHONE NUMBER"
+              />
             </div>
-            <button className="btn-gold" style={{ marginBottom: 16 }}>SAVE CHANGES</button>
+            <button className="btn-gold" style={{ marginBottom: 16, opacity: savingSettings ? 0.7 : 1, cursor: savingSettings ? "not-allowed" : "pointer" }} onClick={handleSaveSettings} disabled={savingSettings}>
+              {savingSettings ? "SAVING..." : "SAVE CHANGES"}
+            </button>
             <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 24, marginTop: 24 }}>
               <button className="btn-ghost" onClick={handleSignOut}>
                 SIGN OUT

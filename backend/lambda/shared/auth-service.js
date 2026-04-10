@@ -137,6 +137,16 @@ function createState(mode = "login") {
   ).toString("base64url");
 }
 
+function buildGoogleErrorRedirect(mode, message) {
+  const redirectQuery = new URLSearchParams({
+    provider: "google",
+    mode,
+    auth_error: message,
+  });
+
+  return `${getFrontendUrl().replace(/\/$/, "")}?${redirectQuery.toString()}`;
+}
+
 async function exchangeGoogleCodeForTokens(code) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -278,16 +288,23 @@ export function getGoogleAuthRedirect({ mode } = {}) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${query.toString()}`;
 }
 
-export async function googleCallback({ code, state }) {
+export async function googleCallback({ code, state, error, errorDescription }) {
   const stateData = decodeState(state);
   const mode = stateData.mode === "signup" ? "signup" : "login";
 
   logInfo("Processing Google callback", authLogContext({ mode, hasCode: Boolean(code), hasState: Boolean(state) }));
 
   try {
+    if (error) {
+      const message = error === "access_denied"
+        ? "Google sign-in was cancelled."
+        : (errorDescription || "Google sign-in could not be completed.");
+      return buildGoogleErrorRedirect(mode, message);
+    }
+
     if (!code) {
       logWarn("Google callback missing authorization code", authLogContext({ mode }));
-      throw new ApiError(400, "Missing Google authorization code.");
+      return buildGoogleErrorRedirect(mode, "Google sign-in could not be completed.");
     }
 
     const tokenData = await exchangeGoogleCodeForTokens(code);
