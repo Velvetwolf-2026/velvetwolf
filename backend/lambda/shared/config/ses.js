@@ -1,39 +1,34 @@
-import AWS from "aws-sdk";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { loadBackendEnv } from "./env.js";
 import { buildOtpEmail } from "./otp-email-template.js";
 
 loadBackendEnv();
 
-AWS.config.update({
-  accessKeyId: process.env.ACCESS_KEY,
-  secretAccessKey: process.env.SECRET_KEY,
-  region: process.env.REGION,
-});
+function getSesConfig() {
+  const region = process.env.AWS_REGION || process.env.REGION;
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.ACCESS_KEY;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.SECRET_KEY;
+  const sessionToken = process.env.AWS_SESSION_TOKEN;
 
-const ses = new AWS.SES();
+  const config = { region };
 
-export async function sendOTP(email, otp, kind = "login") {
-  const emailContent = buildOtpEmail({ otp, kind });
+  if (accessKeyId && secretAccessKey) {
+    config.credentials = {
+      accessKeyId,
+      secretAccessKey,
+      ...(sessionToken ? { sessionToken } : {}),
+    };
+  }
 
-  const params = {
-    Source: process.env.EMAIL_FROM,
-    Destination: { ToAddresses: [email] },
-    Message: {
-      Subject: { Data: emailContent.subject, Charset: "UTF-8" },
-      Body: {
-        Html: { Data: emailContent.html, Charset: "UTF-8" },
-        Text: { Data: emailContent.text, Charset: "UTF-8" },
-      },
-    },
-  };
-
-  return ses.sendEmail(params).promise();
+  return config;
 }
 
-export async function sendEmail({ to, subject, html, text, replyTo }) {
+const ses = new SESClient(getSesConfig());
+
+function buildSendParams({ to, subject, html, text, replyTo }) {
   const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
 
-  const params = {
+  return {
     Source: process.env.EMAIL_FROM,
     Destination: { ToAddresses: recipients },
     Message: {
@@ -43,11 +38,25 @@ export async function sendEmail({ to, subject, html, text, replyTo }) {
         Text: { Data: text, Charset: "UTF-8" },
       },
     },
+    ...(replyTo && { ReplyToAddresses: [replyTo] }),
+    ...(process.env.SES_CONFIGURATION_SET && { ConfigurationSetName: process.env.SES_CONFIGURATION_SET }),
   };
+}
 
-  if (replyTo) {
-    params.ReplyToAddresses = [replyTo];
-  }
+export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
+  const emailContent = buildOtpEmail({ otp, kind, verifyUrl });
 
-  return ses.sendEmail(params).promise();
+  const params = buildSendParams({
+    to: email,
+    subject: emailContent.subject,
+    html: emailContent.html,
+    text: emailContent.text,
+  });
+
+  return ses.send(new SendEmailCommand(params));
+}
+
+export async function sendEmail({ to, subject, html, text, replyTo }) {
+  const params = buildSendParams({ to, subject, html, text, replyTo });
+  return ses.send(new SendEmailCommand(params));
 }

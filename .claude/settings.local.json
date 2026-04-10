@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ':*)",
+      "Bash(npm run:*)",
+      "Bash(node dev-server.js)",
+      "Bash(curl -s http://localhost:5000/)",
+      "Read(//v/Coding/velvetwolf/**)"
+    ]
+  }
+}

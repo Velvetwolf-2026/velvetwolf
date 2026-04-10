@@ -2,7 +2,6 @@
 // ─── FIX: Import AppContext from shared file ──────────────────────────────────
 import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
-import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
@@ -105,34 +104,25 @@ export function Signup() {
           password: form.password
         })
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json();
-        if (data.error && data.error.includes("already exists")) {
-          setError(data.error);
-          setLoading(false);
-          return;
+        const message = data.error || "";
+        if (message.includes("already exists")) {
+          setError("Account with this email already exists. Please login or use a different email.");
+        } else if (res.status >= 500) {
+          setError("The server is unavailable right now. Please try again in a moment.");
+        } else {
+          setError(message || "Failed to create account. Please try again.");
         }
-        throw new Error(data.error || "Request failed");
+        return;
       }
-      const data = await res.json();
       if (data.message) {
         setStep(2);
+        showToast("Verification code sent to your email.");
       }
       startResendTimer();
     } catch (err) {
-      const data = err;  
-      if (!data || typeof data !== 'object') {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const msg = data.error || data.message || "";
-      if (msg.includes("not registered") || msg.includes("not registered")) {
-        setError("An account with this email already exists. Try signing in.");
-      } else if (msg.includes("over_email_send_rate_limit") || msg.includes("Too many")) {
-        setError("Too many requests. Please wait a few minutes and try again.");
-      } else {
-        setError(msg || "Failed to create account. Please try again.");
-      }
+      setError("Unable to reach the server. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -146,11 +136,6 @@ export function Signup() {
     setError("");
     setLoading(true);
     try {
-      // const { error: verifyErr } = await supabase.auth.verifyOtp({
-      //   email: form.email.toLowerCase().trim(),
-      //   token: code,
-      //   type:  "signup",
-      // });
       const res = await fetch(apiUrl("/auth/verify-otp"), {
         method: "POST",
         headers: {
@@ -162,41 +147,26 @@ export function Signup() {
           type:  "signup"
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Verification failed");
+      }
       if (data.token) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
-        
-        // Sync with Supabase session for App.jsx context
-        const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
+        const nextUser = {
+          ...(data.user || {}),
           email: form.email.toLowerCase().trim(),
-          password: form.password
-        });
-        
-        if (signInErr) {
-          console.warn("Supabase sync failed, but backend auth succeeded:", signInErr.message);
-          setUser({
-            id: data.user?.id,
-            email: form.email.toLowerCase().trim(),
-            name: form.name,
-            full_name: form.name,
-          });
-        } else if (authData?.user) {
-          const backendUser = data.user || {};
-          setUser({
-            ...backendUser,
-            ...authData.user,
-            id: backendUser.id,
-            auth_user_id: authData.user.id,
-            name: form.name,
-            full_name: authData.user.user_metadata?.full_name || form.name,
-          });
-        }
-        
+          name: data.user?.name || form.name,
+          full_name: data.user?.full_name || data.user?.name || form.name,
+          role: data.user?.role || "customer",
+          isAdmin: (data.user?.role || "customer") === "admin",
+          authSource: "backend",
+        };
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        setUser(nextUser);
         showToast("Account created! Welcome to the pack ◆");
-        setPage("account"); // SPA navigation
+        setPage("account");
       }
     } catch (err) {
       const msg = err.message || "";
@@ -223,13 +193,12 @@ export function Signup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, kind: "signup" })
       });
-      const data = await res.json();
-      if (data.message) {
-        showToast("New code sent ✓");
-        startResendTimer();
-      } else {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
         throw new Error(data.error || "Resend failed");
       }
+      showToast("New code sent ✓");
+      startResendTimer();
     } catch (err) {
       setError(err.message || "Could not resend code. Please try again.");
     }
@@ -257,7 +226,7 @@ export function Signup() {
 
   const handleGoogle = async () => {
     setError("");
-    window.location.href = googleAuthUrl("signup");
+    window.location.replace(googleAuthUrl("signup"));
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -410,6 +379,8 @@ export function Signup() {
     </div>
   );
 }
+
+
 
 
 

@@ -4,8 +4,10 @@ import {
   getGoogleAuthRedirect,
   login,
   resendOtp,
+  resetPassword,
   signup,
   verifyOtp,
+  verifyOtpLink,
 } from "./shared/auth-service.js";
 import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
 import { getProducts } from "./shared/product-service.js";
@@ -175,6 +177,15 @@ async function dispatch(method, route, body, query, requestId, event) {
 
   if (method === "POST" && route.endsWith("/auth/verify-otp")) {
     return jsonResponse(200, await verifyOtp(body), {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/auth/verify-otp-link")) {
+    const result = await verifyOtpLink(query.t);
+    return redirectResponse(result.redirect, 302, {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/auth/reset-password")) {
+    return jsonResponse(200, await resetPassword(body), {}, event);
   }
 
   if (method === "POST" && route.endsWith("/contact/send")) {

@@ -60,7 +60,7 @@ export function normalizeOtpKind(kind) {
   return "login";
 }
 
-export function buildOtpEmail({ otp, kind }) {
+export function buildOtpEmail({ otp, kind, verifyUrl = null }) {
   const normalizedKind = normalizeOtpKind(kind);
   const content = OTP_EMAIL_VARIANTS[normalizedKind];
   const safeOtp = escapeHtml(otp);
@@ -97,7 +97,10 @@ export function buildOtpEmail({ otp, kind }) {
           ${escapeHtml(content.expiryText)}
         </div>
         <div style="margin-top:28px;">
-          <span style="display:inline-block;padding:14px 28px;background:linear-gradient(90deg, #d7b85a, #f0d37a);color:#0a0a0a;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(content.actionText)}</span>
+          ${verifyUrl
+            ? `<a href="${verifyUrl}" style="display:inline-block;padding:14px 28px;background:linear-gradient(90deg, #d7b85a, #f0d37a);color:#0a0a0a;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(content.actionText)}</a>`
+            : `<span style="display:inline-block;padding:14px 28px;background:linear-gradient(90deg, #d7b85a, #f0d37a);color:#0a0a0a;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(content.actionText)}</span>`
+          }
         </div>
       </div>
       <div style="padding:22px 32px 30px;border-top:1px solid rgba(215,184,90,0.12);font-size:12px;line-height:1.8;color:#888888;">

@@ -35,7 +35,7 @@ function createJwt(user) {
   }
 
   return jwt.sign(
-    { id: user.id, email: user.email, name: user.name },
+    { id: user.id, email: user.email, name: user.name, role: user.role || "customer" },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -169,7 +169,7 @@ async function upsertGoogleUser(profile) {
 
   const { data: existingUser, error: existingUserError } = await supabaseAdmin
     .from("users")
-    .select("id, email, name")
+    .select("id, email, name, role")
     .eq("email", email)
     .single();
 
@@ -187,6 +187,7 @@ async function upsertGoogleUser(profile) {
       id: existingUser.id,
       email: existingUser.email,
       name,
+      role: existingUser.role || "customer",
     };
   }
 
@@ -198,10 +199,11 @@ async function upsertGoogleUser(profile) {
       name,
       email,
       password_hash: googlePasswordHash,
+      role: "customer",
       type: "Google",
       last_login: new Date().toISOString(),
     })
-    .select("id, email, name")
+    .select("id, email, name, role")
     .limit(1);
 
   if (insertError) {
@@ -289,6 +291,7 @@ export async function signup({ name, email, password }) {
     name: String(name || "").trim(),
     email: normalizedEmail,
     password_hash: hashedPassword,
+    role: "customer",
     type: "Signup",
   });
 
@@ -319,7 +322,7 @@ export async function login({ email, password }) {
 
   const { data: user, error: userError } = await supabaseAdmin
     .from("users")
-    .select("id, email, name, password_hash, last_login")
+    .select("id, email, name, role, password_hash, last_login")
     .eq("email", normalizedEmail)
     .single();
 
@@ -363,6 +366,7 @@ export async function login({ email, password }) {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role || "customer",
     },
   };
 }
@@ -465,7 +469,7 @@ export async function verifyOtp({ email, otp, type }) {
 
   const { data: user, error: userError } = await supabaseAdmin
     .from("users")
-    .select("id, email, name")
+    .select("id, email, name, role")
     .eq("email", normalizedEmail)
     .single();
 
@@ -487,6 +491,7 @@ export async function verifyOtp({ email, otp, type }) {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role || "customer",
     },
   };
 }
