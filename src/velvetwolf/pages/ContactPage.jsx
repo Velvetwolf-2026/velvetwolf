@@ -3,6 +3,7 @@ import { S, PageHeader } from "../styles/shared";
 import { THEME } from "../utils/constants";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
+import { FaInstagram, FaFacebookF, FaYoutube } from "react-icons/fa";
 
 const { gold, goldLight, surface, border, muted, text } = THEME;
 
@@ -18,9 +19,9 @@ const CONTACTS = [
 ];
 
 const SOCIALS = [
-  { label: "INSTAGRAM", href: "https://www.instagram.com/velvetwolf.in/" },
-  { label: "TWITTER", href: "https://x.com/velvetwolf_in" },
-  { label: "PINTEREST", href: "https://www.pinterest.com/velvetwolfin/" },
+  { label: "Instagram", icon: <FaInstagram />, href: "https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" },
+  { label: "Facebook", icon: <FaFacebookF />, href: "https://www.facebook.com/profile.php?id=61577839378533" },
+  { label: "YouTube", icon: <FaYoutube />, href: "https://youtube.com" },
 ];
 
 const SUBJECTS = [
@@ -60,7 +61,7 @@ export default function ContactPage() {
     color: text,
     padding: "12px 14px",
     fontFamily: "'Space Mono', monospace",
-    fontSize: 12,
+    fontSize: 13,
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color 0.2s",
@@ -131,6 +132,17 @@ export default function ContactPage() {
     }
   };
 
+  const formatText = (text) =>
+    text.split(/(\d+(-\d+)?\s?(hours|AM|PM)?)/gi).map((part, i) =>
+      /\d/.test(part) ? (
+        <span key={i} style={{ fontFamily: "'Roboto', sans-serif" }}>
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+
   return (
     <div style={S.page}>
       <div style={{ ...S.wrap, maxWidth: 1040 }}>
@@ -148,6 +160,7 @@ export default function ContactPage() {
             alignItems: "start",
           }}
         >
+          {/* LEFT SIDE */}
           <div>
             <div
               style={{
@@ -190,16 +203,26 @@ export default function ContactPage() {
                   </div>
 
                   <a
-                    href={c.href}
-                    target={c.href.startsWith("http") ? "_blank" : undefined}
-                    rel={c.href.startsWith("http") ? "noreferrer" : undefined}
+                    href={
+                      c.val.includes("@")
+                        ? `mailto:${c.val}`
+                        : `https://wa.me/${c.val.replace(/\D/g, "")}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
                     style={{
                       fontSize: 15,
                       color: gold,
                       textDecoration: "none",
                     }}
                   >
-                    {c.val}
+                    {c.val.includes("@") ? (
+                      c.val
+                    ) : (
+                      <span style={{ fontFamily: "'Roboto', sans-serif" }}>
+                        {c.val}
+                      </span>
+                    )}
                   </a>
                 </div>
               </div>
@@ -218,7 +241,7 @@ export default function ContactPage() {
                 FOLLOW US
               </div>
 
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
                 {SOCIALS.map((s) => (
                   <a
                     key={s.label}
@@ -226,25 +249,23 @@ export default function ContactPage() {
                     target="_blank"
                     rel="noreferrer"
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
                       fontFamily: "'Roboto', sans-serif",
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      padding: "5px 10px",
-                      border: `1px solid ${border}`,
-                      color: muted,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
+                      fontSize: 14,
+                      color: "#a9a9a9",
                       textDecoration: "none",
+                      transition: "0.3s",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = gold;
                       e.currentTarget.style.color = gold;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = border;
-                      e.currentTarget.style.color = muted;
+                      e.currentTarget.style.color = "#a9a9a9";
                     }}
                   >
+                    <span style={{ fontSize: 18 }}>{s.icon}</span>
                     {s.label}
                   </a>
                 ))}
@@ -262,7 +283,7 @@ export default function ContactPage() {
               <div
                 style={{
                   fontFamily: "'Space Mono', monospace",
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: 3,
                   color: gold,
                   marginBottom: 8,
@@ -288,12 +309,13 @@ export default function ContactPage() {
                   }}
                 >
                   <span>{r[0]}</span>
-                  <span style={{ color: "#81c784" }}>{r[1]}</span>
+                  <span style={{ color: "#a2dba5" }}>{formatText(r[1])}</span>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* RIGHT SIDE */}
           <div
             style={{
               background: surface,
@@ -559,7 +581,7 @@ export default function ContactPage() {
                       {l}
                     </a>
                   ) : (
-                    l
+                    formatText(l)
                   )}
                 </p>
               ))}

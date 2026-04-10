@@ -17,6 +17,16 @@ const STEPS = [
 ];
 
 export default function ReturnsPage() {
+  const formatText = (text) =>
+    text.split(/(\d+(-\d+)?\s?(hours|days)?)/gi).map((part, i) =>
+      /\d/.test(part) ? (
+        <span key={i} style={{ fontFamily: "'Roboto', sans-serif" }}>
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
   return (
     <div style={S.page}>
       <div style={S.wrap}>
@@ -33,21 +43,65 @@ export default function ReturnsPage() {
         </div>
 
         <Sec title="ELIGIBLE ITEMS">
-          <Ul items={["Items in original condition - unwashed, unworn, tags intact", "Items returned within 7 days of delivery", "Items with a manufacturing defect (full refund or replacement)", "Wrong item received (full refund + free return pickup)", "Damaged in transit (share photos within 24 hours of delivery)"]} />
+          <Ul
+            items={[
+              "Items in original condition - unwashed, unworn, tags intact",
+              <>Items returned within <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days of delivery</>,
+              "Items with a manufacturing defect (full refund or replacement)",
+              "Wrong item received (full refund + free return pickup)",
+              <>Damaged in transit (share photos within <span style={{ fontFamily: "'Roboto', sans-serif" }}>24</span> hours of delivery)</>
+            ]}
+          />
         </Sec>
 
         <Sec title="NON-ELIGIBLE ITEMS">
-          <Ul items={["Custom/personalised orders with your uploaded design", "Limited Edition drops (marked as Final Sale)", "Items that have been washed, worn, or altered", "Items without original tags or packaging", "Items returned after 7 days", "Items purchased during Final Sale events"]} />
+          <Ul
+            items={[
+              "Custom/personalised orders with your uploaded design",
+              "Limited Edition drops (marked as Final Sale)",
+              "Items that have been washed, worn, or altered",
+              "Items without original tags or packaging",
+              <>Items returned after <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days</>,
+              "Items purchased during Final Sale events"
+            ]}
+          />
         </Sec>
 
         <Sec title="HOW TO INITIATE A RETURN">
           {STEPS.map((s, i) => (
             <div key={i} style={{ display: "flex", gap: 20, marginBottom: 24, alignItems: "flex-start" }}>
-              <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 28, color: gold, opacity: 0.5, lineHeight: 1, flexShrink: 0, width: 36 }}>{s.step}</div>
+
+              <div
+                style={{
+                  fontFamily: "'Bebas Neue',cursive",
+                  fontSize: 28,
+                  color: gold,
+                  opacity: 0.5,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                  width: 36
+                }}
+              >
+                {s.step}
+              </div>
+
               <div>
-                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 2, color: text, marginBottom: 4 }}>{s.title}</div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 2, color: text, marginBottom: 4 }}>
+                  {s.title}
+                </div>
+
                 <p style={{ ...S.p, marginBottom: 0 }}>
-                  {s.email ? <>Send an email to <a href={`mailto:${s.email}`} style={{ color: gold }}>{s.email}</a> {s.desc}</> : s.desc}
+                  {s.email ? (
+                    <>
+                      Send an email to{" "}
+                      <a href={`mailto:${s.email}`} style={{ color: gold }}>
+                        {s.email}
+                      </a>{" "}
+                      {formatText(s.desc)}
+                    </>
+                  ) : (
+                    formatText(s.desc)
+                  )}
                 </p>
               </div>
             </div>
@@ -67,7 +121,10 @@ export default function ReturnsPage() {
         </Sec>
 
         <Sec title="SIZE EXCHANGE">
-          <p style={S.p}>We offer <strong style={{ color: text }}>free size exchanges</strong> within 7 days (subject to availability). Initiate a return, select "Exchange", and specify the size you need. If unavailable, we'll issue a full refund.</p>
+          <p style={S.p}>
+            We offer <strong style={{ color: text }}>free size exchanges</strong> within{" "}
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days (subject to availability). Initiate a return, select "Exchange", and specify the size you need. If unavailable, we'll issue a full refund.
+          </p>
         </Sec>
       </div>
     </div>

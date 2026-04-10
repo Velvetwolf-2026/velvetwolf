@@ -53,7 +53,7 @@ export default function SizeGuide() {
               <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"20px 18px" }}>
                 <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:3, color:gold, marginBottom:8 }}>{m.name}</div>
                 <p style={{ ...S.p, marginBottom:8 }}>{m.how}</p>
-                <p style={{ fontFamily:"'Space Mono',monospace", fontSize:11, color:"rgba(255,255,255,0.38)", marginBottom:0 }}>💡 {m.tip}</p>
+                <p style={{ fontFamily:"'Space Mono',monospace", fontSize:12, color:"rgba(255,255,255,0.38)", marginBottom:0 }}>💡 {m.tip}</p>
               </div>
             ))}
           </div>
@@ -83,7 +83,7 @@ export default function SizeGuide() {
         </Sec>
 
         <Sec title="CARE INSTRUCTIONS">
-          <Ul items={["Machine wash cold (30°C) with similar colours","Do not bleach or use harsh detergents","Tumble dry on low heat or air dry flat","Iron on medium heat — do not iron directly on prints","Turn inside out before washing to preserve print longevity"]} />
+          <Ul items={[<>Machine wash cold (<span style={{ fontFamily: "'Roboto', sans-serif" }}>30°C</span>) with similar colours</>,"Do not bleach or use harsh detergents","Tumble dry on low heat or air dry flat","Iron on medium heat — do not iron directly on prints","Turn inside out before washing to preserve print longevity"]} />
         </Sec>
       </div>
     </div>

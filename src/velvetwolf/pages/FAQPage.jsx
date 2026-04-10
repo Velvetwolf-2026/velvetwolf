@@ -23,13 +23,15 @@ const FAQS = [
   { cat: "ACCOUNT", q: "How do I reset my password?", a: "Click 'Forgot Password' on the login page. You'll receive a reset link within 5 minutes. Check spam if you don't see it." },
 ];
 
-function FAQAnswer({ faq }) {
+function FAQAnswer({ faq, formatText }) {
   const { setPage } = useContext(AppContext);
 
   if (faq.type === "orders-help") {
     return (
       <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Orders can be modified or cancelled within 1 hour by emailing <a href="mailto:orders@velvetwolf.in" style={{ color: gold }}>orders@velvetwolf.in</a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
+        Orders can be modified or cancelled within{" "}
+        <span style={{ fontFamily: "'Roboto', sans-serif" }}>1</span> hour by emailing{" "}
+        <a href="mailto:orders@velvetwolf.in" style={{ color: gold }}>orders@velvetwolf.in</a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
       </p>
     );
   }
@@ -37,49 +39,32 @@ function FAQAnswer({ faq }) {
   if (faq.type === "shipping-help") {
     return (
       <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Contact us at <a href="mailto:support@velvetwolf.in" style={{ color: gold }}>support@velvetwolf.in</a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within 4 hours.
+        Contact us at <a href="mailto:support@velvetwolf.in" style={{ color: gold }}>support@velvetwolf.in</a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within{" "}
+        <span style={{ fontFamily: "'Roboto', sans-serif" }}>4</span> hours.
       </p>
     );
   }
 
-  return <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>;
+  return (
+    <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
+      {formatText(faq.a)}
+    </p>
+  );
 }
 
-function FAQAnswer({ faq }) {
-  const { setPage } = useContext(AppContext);
-
-  if (faq.type === "orders-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Orders can be modified or cancelled within 1 hour by emailing <a href="mailto:orders@velvetwolf.in" style={{ color: gold }}>orders@velvetwolf.in</a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
-      </p>
-    );
-  }
-
-  if (faq.type === "shipping-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Contact us at <a href="mailto:support@velvetwolf.in" style={{ color: gold }}>support@velvetwolf.in</a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within 4 hours.
-      </p>
-    );
-  }
-
-  return <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>;
-}
-
-function FAQItem({ faq, isOpen, onToggle }) {
+function FAQItem({ faq, isOpen, onToggle, formatText }) {
   return (
     <div style={{ border: `1px solid ${isOpen ? gold + "55" : border}`, marginBottom: 8, transition: "border-color 0.3s" }}>
       <button
         onClick={onToggle}
         style={{ all: "unset", width: "100%", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", boxSizing: "border-box" }}
       >
-        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 11, letterSpacing: 1, color: isOpen ? gold : text }}>{faq.q}</span>
+        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 1, color: isOpen ? gold : text }}>{faq.q}</span>
         <span style={{ color: gold, fontSize: 20, transform: isOpen ? "rotate(45deg)" : "rotate(0)", transition: "transform 0.3s", flexShrink: 0, marginLeft: 16 }}>+</span>
       </button>
       {isOpen && (
         <div style={{ padding: "0 20px 18px", borderTop: `1px solid ${border}` }}>
-          <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{faq.a}</p>
+          <FAQAnswer faq={faq} formatText={formatText} />
         </div>
       )}
     </div>
@@ -89,6 +74,17 @@ function FAQItem({ faq, isOpen, onToggle }) {
 export default function FAQPage() {
   const [open, setOpen] = useState(null);
   const categories = [...new Set(FAQS.map((f) => f.cat))];
+
+  const formatText = (text) =>
+    text.split(/(₹?\d+(?:,\d+)?(?:[–-]\d+(?:,\d+)?)?\s?(?:minutes?|hours?|days?)?)/gi).map((part, i) =>
+      /\d/.test(part) ? (
+        <span key={i} style={{ fontFamily: "'Roboto', sans-serif" }}>
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
 
   return (
     <div style={S.page}>
@@ -100,7 +96,15 @@ export default function FAQPage() {
             <h2 style={S.h2}>{cat}</h2>
             {FAQS.filter((f) => f.cat === cat).map((faq, i) => {
               const key = `${cat}-${i}`;
-              return <FAQItem key={key} faq={faq} isOpen={open === key} onToggle={() => setOpen(open === key ? null : key)} />;
+              return (
+                <FAQItem
+                  key={key}
+                  faq={faq}
+                  isOpen={open === key}
+                  onToggle={() => setOpen(open === key ? null : key)}
+                  formatText={formatText}
+                />
+              );
             })}
           </div>
         ))}
@@ -108,7 +112,11 @@ export default function FAQPage() {
         {/* Still need help */}
         <div style={{ background: surface, border: `1px solid ${border}`, padding: "28px", textAlign: "center", marginTop: 20 }}>
           <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 24, letterSpacing: 4, color: gold, marginBottom: 8 }}>STILL HAVE QUESTIONS?</div>
-          <p style={{ ...S.p, marginBottom: 20 }}>Our support team is available 10AM–7PM IST, Monday to Saturday.</p>
+          <p style={{ ...S.p, marginBottom: 20 }}>
+            Our support team is available{" "}
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>10AM</span>–
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>7PM</span> IST, Monday to Saturday.
+          </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {[
               { label: "EMAIL SUPPORT", val: "info@velvetwolf.in", type: "email" },
@@ -133,7 +141,9 @@ export default function FAQPage() {
                     target="_blank"
                     style={{ fontSize: 13, color: gold, textDecoration: "none" }}
                   >
-                    {c.val}
+                    <span style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      {c.val}
+                    </span>
                   </a>
                 )}
 
@@ -145,5 +155,3 @@ export default function FAQPage() {
     </div>
   );
 }
-
-
