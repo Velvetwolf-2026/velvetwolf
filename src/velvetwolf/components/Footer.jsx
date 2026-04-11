@@ -39,7 +39,7 @@ export default function Footer() {
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 20,
+                fontSize: 17,
                 color: "var(--silver)",
                 lineHeight: 1.8,
                 fontStyle: "italic",
@@ -48,7 +48,7 @@ export default function Footer() {
               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
             </p>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
+            <div style={{ display: "flex", gap: 14, marginTop: 24, fontSize: 17 }}>
               <a
                 href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
                 target="_blank"
@@ -93,7 +93,7 @@ export default function Footer() {
                   onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
+                    fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
                     marginBottom: 10,
@@ -125,7 +125,7 @@ export default function Footer() {
                   onClick={() => setPage(pg)}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
+                    fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
                     marginBottom: 10,
@@ -153,7 +153,7 @@ export default function Footer() {
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 19,
+                fontSize: 17,
                 color: "var(--silver)",
                 marginBottom: 16,
                 lineHeight: 1.6,
