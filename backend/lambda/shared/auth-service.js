@@ -726,7 +726,7 @@ export async function verifyOtpLink(token) {
     const resetToken = createResetToken(normalizedEmail);
     const params = new URLSearchParams({ reset_token: resetToken });
     logInfo("OTP link verified for password reset", authLogContext({ email: normalizedEmail }));
-    return { redirect: `${frontendUrl}/reset-password?${params.toString()}` };
+    return { redirect: `${frontendUrl}?${params.toString()}` };
   }
 
   // Login / signup: look up user, issue JWT, redirect

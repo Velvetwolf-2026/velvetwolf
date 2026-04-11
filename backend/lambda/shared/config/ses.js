@@ -1,6 +1,7 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { loadBackendEnv } from "./env.js";
 import { buildOtpEmail } from "./otp-email-template.js";
+import { isEmailSuppressed } from "../bounce-handler.js";
 
 loadBackendEnv();
 
@@ -44,6 +45,10 @@ function buildSendParams({ to, subject, html, text, replyTo }) {
 }
 
 export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
+  if (await isEmailSuppressed(email)) {
+    throw Object.assign(new Error(`Email address is suppressed: ${email}`), { code: "EMAIL_SUPPRESSED" });
+  }
+
   const emailContent = buildOtpEmail({ otp, kind, verifyUrl });
 
   const params = buildSendParams({
@@ -57,6 +62,14 @@ export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
 }
 
 export async function sendEmail({ to, subject, html, text, replyTo }) {
-  const params = buildSendParams({ to, subject, html, text, replyTo });
+  const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
+  const suppressed = await Promise.all(recipients.map(isEmailSuppressed));
+  const allowed = recipients.filter((_, i) => !suppressed[i]);
+
+  if (allowed.length === 0) {
+    throw Object.assign(new Error("All recipients are suppressed"), { code: "EMAIL_SUPPRESSED" });
+  }
+
+  const params = buildSendParams({ to: allowed, subject, html, text, replyTo });
   return ses.send(new SendEmailCommand(params));
 }
