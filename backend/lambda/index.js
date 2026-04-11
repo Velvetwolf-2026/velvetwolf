@@ -4,10 +4,13 @@ import {
   getGoogleAuthRedirect,
   login,
   resendOtp,
+  resetPassword,
   signup,
   verifyOtp,
+  verifyOtpLink,
 } from "./shared/auth-service.js";
 import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
+import { handleSnsNotification } from "./shared/bounce-handler.js";
 import { getProducts } from "./shared/product-service.js";
 import { loadBackendEnv } from "./shared/config/env.js";
 import { sendContactMessage } from "./shared/contact-service.js";
@@ -177,8 +180,27 @@ async function dispatch(method, route, body, query, requestId, event) {
     return jsonResponse(200, await verifyOtp(body), {}, event);
   }
 
+  if (method === "GET" && route.endsWith("/auth/verify-otp-link")) {
+    const result = await verifyOtpLink(query.t);
+    return redirectResponse(result.redirect, 302, {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/auth/reset-password")) {
+    return jsonResponse(200, await resetPassword(body), {}, event);
+  }
+
   if (method === "POST" && route.endsWith("/contact/send")) {
     return jsonResponse(200, await sendContactMessage(body), {}, event);
+  }
+
+  // SNS delivers bounce/complaint notifications here.
+  // Must be reachable without auth — SNS does not send credentials.
+  if (method === "POST" && route.endsWith("/ses/notification")) {
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || "", "base64").toString("utf8")
+      : (event.body || "");
+    const result = await handleSnsNotification(rawBody);
+    return jsonResponse(200, result, {}, event);
   }
 
   logWarn("No backend route matched request", { requestId, method, route, query });

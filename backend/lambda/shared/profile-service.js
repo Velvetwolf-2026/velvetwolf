@@ -15,8 +15,8 @@ export async function getProfileById(userId) {
   logInfo("Fetching profile by id", profileLogContext({ userId: normalizedUserId }));
 
   const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .select("*")
+    .from("users")
+    .select("id, email, name, role, last_login")
     .eq("id", normalizedUserId)
     .maybeSingle();
 
