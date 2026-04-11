@@ -47,4 +47,4 @@ amplifytools.xcconfig
 backend/lambda/.env
 
 backend/lambda/.env
-.env
+backend/lambda/function.zip
