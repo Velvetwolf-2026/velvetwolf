@@ -4,10 +4,14 @@ import {
   getGoogleAuthRedirect,
   login,
   resendOtp,
+  resetPassword,
   signup,
   verifyOtp,
+  verifyOtpLink,
 } from "./shared/auth-service.js";
 import { addCartItemByUserId, getCartByUserId, removeCartItemById, updateCartItemQuantity } from "./shared/cart-service.js";
+import { handleSnsNotification } from "./shared/bounce-handler.js";
+import { getProducts } from "./shared/product-service.js";
 import { loadBackendEnv } from "./shared/config/env.js";
 import { sendContactMessage } from "./shared/contact-service.js";
 import { getProfileById } from "./shared/profile-service.js";
@@ -105,8 +109,22 @@ async function dispatch(method, route, body, query, requestId, event) {
   }
 
   if (method === "GET" && route.endsWith("/auth/google/callback")) {
-    const location = await googleCallback({ code: query.code, state: query.state });
+    const location = await googleCallback({
+      code: query.code,
+      state: query.state,
+      error: query.error,
+      errorDescription: query.error_description,
+    });
     return redirectResponse(location, 302, {}, event);
+  }
+
+  if (method === "GET" && route.endsWith("/products")) {
+    return jsonResponse(
+      200,
+      { products: await getProducts({ collection: query.collection, search: query.search }) },
+      {},
+      event
+    );
   }
 
   if (method === "GET" && route.endsWith("/profile")) {
@@ -162,8 +180,27 @@ async function dispatch(method, route, body, query, requestId, event) {
     return jsonResponse(200, await verifyOtp(body), {}, event);
   }
 
+  if (method === "GET" && route.endsWith("/auth/verify-otp-link")) {
+    const result = await verifyOtpLink(query.t);
+    return redirectResponse(result.redirect, 302, {}, event);
+  }
+
+  if (method === "POST" && route.endsWith("/auth/reset-password")) {
+    return jsonResponse(200, await resetPassword(body), {}, event);
+  }
+
   if (method === "POST" && route.endsWith("/contact/send")) {
     return jsonResponse(200, await sendContactMessage(body), {}, event);
+  }
+
+  // SNS delivers bounce/complaint notifications here.
+  // Must be reachable without auth — SNS does not send credentials.
+  if (method === "POST" && route.endsWith("/ses/notification")) {
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || "", "base64").toString("utf8")
+      : (event.body || "");
+    const result = await handleSnsNotification(rawBody);
+    return jsonResponse(200, result, {}, event);
   }
 
   logWarn("No backend route matched request", { requestId, method, route, query });
@@ -223,6 +260,7 @@ export async function handler(event) {
     return jsonResponse(500, { error: "Internal server error" }, {}, event);
   }
 }
+
 
 
 

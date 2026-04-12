@@ -45,3 +45,6 @@ amplifytools.xcconfig
 **.sample
 #amplify-do-not-edit-end
 backend/lambda/.env
+
+backend/lambda/.env
+backend/lambda/function.zip

@@ -231,7 +231,7 @@ export default function Navbar({ activePage }) {
                 color: "var(--gold)",
                 cursor: "pointer",
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 letterSpacing: 1.5,
                 padding: "8px 12px",
                 textTransform: "none",
@@ -250,7 +250,7 @@ export default function Navbar({ activePage }) {
                 color: "var(--ash)",
                 cursor: "pointer",
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 letterSpacing: 2,
                 padding: "8px 12px",
               }}

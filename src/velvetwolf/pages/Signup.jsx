@@ -2,7 +2,6 @@
 // ─── FIX: Import AppContext from shared file ──────────────────────────────────
 import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
-import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import { apiUrl, googleAuthUrl } from "../utils/api";
 
@@ -55,15 +54,26 @@ export function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
+  const [emailError, setEmailError]   = useState("");
   const [agree, setAgree]             = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
-  const update   = (k, v) => { 
-    if (k === "name") {
-      v = v.replace(/[^a-zA-Z\s]/g, "");
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const update = (k, v) => {
+    if (k === "name") v = v.replace(/[^a-zA-Z\s]/g, "");
+    setForm(p => ({ ...p, [k]: v }));
+    setError("");
+    if (k === "email") setEmailError("");
+  };
+
+  const handleEmailBlur = () => {
+    if (!form.email.trim()) return;
+    if (!EMAIL_REGEX.test(form.email.trim())) {
+      setEmailError("Please enter a valid email address (e.g. name@example.com).");
+    } else {
+      setEmailError("");
     }
-    setForm(p => ({ ...p, [k]: v })); 
-    setError(""); 
   };
   const strength = strengthScore(form.password);
   const pwMatch  = form.confirm && form.confirm === form.password;
@@ -77,13 +87,13 @@ export function Signup() {
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validateDetails = () => {
-    if (!form.name.trim())                     { setError("Please enter your full name."); return false; }
-    if (!form.email.trim())                    { setError("Please enter your email address."); return false; }
-    if (!form.email.includes("@"))             { setError("Please enter a valid email address."); return false; }
-    if (form.password.length < 8)              { setError("Password must be at least 8 characters."); return false; }
-    if (strength < 2)                          { setError("Password is too weak — add uppercase letters or numbers."); return false; }
-    if (form.password !== form.confirm)        { setError("Passwords do not match."); return false; }
-    if (!agree)                                { setError("Please accept the Terms & Privacy Policy to continue."); return false; }
+    if (!form.name.trim())                          { setError("Please enter your full name."); return false; }
+    if (!form.email.trim())                         { setError("Please enter your email address."); return false; }
+    if (!EMAIL_REGEX.test(form.email.trim()))       { setError("Please enter a valid email address (e.g. name@example.com)."); return false; }
+    if (form.password.length < 8)                   { setError("Password must be at least 8 characters."); return false; }
+    if (strength < 2)                               { setError("Password is too weak — add uppercase letters or numbers."); return false; }
+    if (form.password !== form.confirm)             { setError("Passwords do not match."); return false; }
+    if (!agree)                                     { setError("Please accept the Terms & Privacy Policy to continue."); return false; }
     return true;
   };
 
@@ -105,34 +115,28 @@ export function Signup() {
           password: form.password
         })
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json();
-        if (data.error && data.error.includes("already exists")) {
-          setError(data.error);
-          setLoading(false);
-          return;
+        const message = data.error || "";
+        if (message.includes("already exists")) {
+          setError("Account with this email already exists. Please login or use a different email.");
+        } else if (res.status >= 500) {
+          setError("The server is unavailable right now. Please try again in a moment.");
+        } else {
+          setError(message || "Failed to create account. Please try again.");
         }
-        throw new Error(data.error || "Request failed");
+        return;
       }
-      const data = await res.json();
       if (data.message) {
         setStep(2);
+        showToast("Verification code sent to your email.");
       }
       startResendTimer();
     } catch (err) {
-      const data = err;  
-      if (!data || typeof data !== 'object') {
-        setError("Network error. Please try again.");
-        return;
-      }
-      const msg = data.error || data.message || "";
-      if (msg.includes("not registered") || msg.includes("not registered")) {
-        setError("An account with this email already exists. Try signing in.");
-      } else if (msg.includes("over_email_send_rate_limit") || msg.includes("Too many")) {
-        setError("Too many requests. Please wait a few minutes and try again.");
-      } else {
-        setError(msg || "Failed to create account. Please try again.");
-      }
+      const isNetworkError = err instanceof TypeError;
+      setError(isNetworkError
+        ? "Unable to reach the server. If you already submitted, try signing in — your account may have been created."
+        : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -146,11 +150,6 @@ export function Signup() {
     setError("");
     setLoading(true);
     try {
-      // const { error: verifyErr } = await supabase.auth.verifyOtp({
-      //   email: form.email.toLowerCase().trim(),
-      //   token: code,
-      //   type:  "signup",
-      // });
       const res = await fetch(apiUrl("/auth/verify-otp"), {
         method: "POST",
         headers: {
@@ -162,41 +161,26 @@ export function Signup() {
           type:  "signup"
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Verification failed");
+      }
       if (data.token) {
-        localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        }
-        
-        // Sync with Supabase session for App.jsx context
-        const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
+        const nextUser = {
+          ...(data.user || {}),
           email: form.email.toLowerCase().trim(),
-          password: form.password
-        });
-        
-        if (signInErr) {
-          console.warn("Supabase sync failed, but backend auth succeeded:", signInErr.message);
-          setUser({
-            id: data.user?.id,
-            email: form.email.toLowerCase().trim(),
-            name: form.name,
-            full_name: form.name,
-          });
-        } else if (authData?.user) {
-          const backendUser = data.user || {};
-          setUser({
-            ...backendUser,
-            ...authData.user,
-            id: backendUser.id,
-            auth_user_id: authData.user.id,
-            name: form.name,
-            full_name: authData.user.user_metadata?.full_name || form.name,
-          });
-        }
-        
+          name: data.user?.name || form.name,
+          full_name: data.user?.full_name || data.user?.name || form.name,
+          role: data.user?.role || "customer",
+          isAdmin: (data.user?.role || "customer") === "admin",
+          authSource: "backend",
+        };
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        setUser(nextUser);
         showToast("Account created! Welcome to the pack ◆");
-        setPage("account"); // SPA navigation
+        setPage("account");
       }
     } catch (err) {
       const msg = err.message || "";
@@ -223,13 +207,12 @@ export function Signup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, kind: "signup" })
       });
-      const data = await res.json();
-      if (data.message) {
-        showToast("New code sent ✓");
-        startResendTimer();
-      } else {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
         throw new Error(data.error || "Resend failed");
       }
+      showToast("New code sent ✓");
+      startResendTimer();
     } catch (err) {
       setError(err.message || "Could not resend code. Please try again.");
     }
@@ -257,7 +240,7 @@ export function Signup() {
 
   const handleGoogle = async () => {
     setError("");
-    window.location.href = googleAuthUrl("signup");
+    window.location.replace(googleAuthUrl("signup"));
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -320,15 +303,15 @@ export function Signup() {
               </div>
 
               <form onSubmit={handleSubmitDetails} noValidate>
-                {[
-                  { label: "FULL NAME",       key: "name",    type: "text",     placeholder: "Your full name",  ac: "name" },
-                  { label: "EMAIL ADDRESS",   key: "email",   type: "email",    placeholder: "you@email.com",   ac: "email" },
-                ].map(f => (
-                  <div key={f.key} style={{ marginBottom: 13 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>{f.label}</label>
-                    <input className="input-dark" type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => update(f.key, e.target.value)} autoComplete={f.ac} disabled={loading}/>
-                  </div>
-                ))}
+                <div style={{ marginBottom: 13 }}>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>FULL NAME</label>
+                  <input className="input-dark" type="text" placeholder="Your full name" value={form.name} onChange={e => update("name", e.target.value)} autoComplete="name" disabled={loading}/>
+                </div>
+                <div style={{ marginBottom: 13 }}>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
+                  <input className="input-dark" type="email" placeholder="you@email.com" value={form.email} onChange={e => update("email", e.target.value)} onBlur={handleEmailBlur} autoComplete="email" disabled={loading} style={{ borderColor: emailError ? "rgba(192,57,43,0.5)" : undefined }}/>
+                  {emailError && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#e07070", marginTop: 5 }}>{emailError}</p>}
+                </div>
 
                 {/* Password + strength */}
                 <div style={{ marginBottom: 13 }}>
@@ -403,6 +386,12 @@ export function Signup() {
                 loadingLabel="VERIFYING..."
                 idPrefix="otp-su"
               />
+              <div style={{ marginTop: 16, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", lineHeight: 1.7 }}>
+                Verified via the email link on another device?{" "}
+                <button type="button" onClick={() => setPage("login")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>
+                  SIGN IN HERE
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -410,6 +399,8 @@ export function Signup() {
     </div>
   );
 }
+
+
 
 
 

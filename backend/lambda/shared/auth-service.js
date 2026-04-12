@@ -14,6 +14,36 @@ const MAX_OTP_ATTEMPTS = 5;
 const RESEND_MAX = 3;
 const RESEND_WINDOW_SECS = 3600;
 
+function getLinkSecret() {
+  return `${process.env.JWT_SECRET}:link`;
+}
+
+function getResetSecret() {
+  return `${process.env.JWT_SECRET}:reset`;
+}
+
+function createOtpLinkToken(email, otp, type) {
+  return jwt.sign(
+    { email, otp, type, purpose: "otp_link" },
+    getLinkSecret(),
+    { expiresIn: `${OTP_EXPIRES_MIN}m` }
+  );
+}
+
+function createResetToken(email) {
+  return jwt.sign(
+    { email, purpose: "password_reset" },
+    getResetSecret(),
+    { expiresIn: "15m" }
+  );
+}
+
+function buildVerifyUrl(email, otp, type) {
+  const backendUrl = (process.env.BACKEND_PUBLIC_URL || "http://localhost:5000").replace(/\/$/, "");
+  const token = createOtpLinkToken(email, otp, type);
+  return `${backendUrl}/auth/verify-otp-link?t=${encodeURIComponent(token)}`;
+}
+
 function normalizeEmail(email) {
   return String(email || "").toLowerCase().trim();
 }
@@ -41,7 +71,7 @@ function createJwt(user) {
   }
 
   return jwt.sign(
-    { id: user.id, email: user.email, name: user.name },
+    { id: user.id, email: user.email, name: user.name, role: user.role || "customer" },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -97,7 +127,7 @@ async function recordRateAttempt(key) {
 }
 
 function createOtpMetadata(type) {
-  const otp = Math.floor(100000 + Math.random() * 900000);
+  const otp = crypto.randomInt(100000, 1000000);
   const expiresAt = new Date(Date.now() + OTP_EXPIRES_MIN * 60 * 1000).toISOString();
   return { otp, expiresAt, type };
 }
@@ -135,6 +165,16 @@ function createState(mode = "login") {
     JSON.stringify({ mode: safeMode, ts: Date.now() }),
     "utf8"
   ).toString("base64url");
+}
+
+function buildGoogleErrorRedirect(mode, message) {
+  const redirectQuery = new URLSearchParams({
+    provider: "google",
+    mode,
+    auth_error: message,
+  });
+
+  return `${getFrontendUrl().replace(/\/$/, "")}?${redirectQuery.toString()}`;
 }
 
 async function exchangeGoogleCodeForTokens(code) {
@@ -200,7 +240,7 @@ async function upsertGoogleUser(profile) {
 
   const { data: existingUser, error: existingUserError } = await supabaseAdmin
     .from("users")
-    .select("id, email, name")
+    .select("id, email, name, role")
     .eq("email", email)
     .single();
 
@@ -225,6 +265,7 @@ async function upsertGoogleUser(profile) {
       id: existingUser.id,
       email: existingUser.email,
       name,
+      role: existingUser.role || "customer",
     };
   }
 
@@ -236,10 +277,11 @@ async function upsertGoogleUser(profile) {
       name,
       email,
       password_hash: googlePasswordHash,
+      role: "customer",
       type: "Google",
       last_login: new Date().toISOString(),
     })
-    .select("id, email, name")
+    .select("id, email, name, role")
     .limit(1);
 
   if (insertError) {
@@ -278,16 +320,23 @@ export function getGoogleAuthRedirect({ mode } = {}) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${query.toString()}`;
 }
 
-export async function googleCallback({ code, state }) {
+export async function googleCallback({ code, state, error, errorDescription }) {
   const stateData = decodeState(state);
   const mode = stateData.mode === "signup" ? "signup" : "login";
 
   logInfo("Processing Google callback", authLogContext({ mode, hasCode: Boolean(code), hasState: Boolean(state) }));
 
   try {
+    if (error) {
+      const message = error === "access_denied"
+        ? "Google sign-in was cancelled."
+        : (errorDescription || "Google sign-in could not be completed.");
+      return buildGoogleErrorRedirect(mode, message);
+    }
+
     if (!code) {
       logWarn("Google callback missing authorization code", authLogContext({ mode }));
-      throw new ApiError(400, "Missing Google authorization code.");
+      return buildGoogleErrorRedirect(mode, "Google sign-in could not be completed.");
     }
 
     const tokenData = await exchangeGoogleCodeForTokens(code);
@@ -311,6 +360,7 @@ export async function googleCallback({ code, state }) {
 
 export async function signup({ name, email, password }) {
   const normalizedEmail = normalizeEmail(email);
+  let userCreated = false;
 
   logInfo("Signup requested", authLogContext({ email: normalizedEmail, hasName: Boolean(name), hasPassword: Boolean(password) }));
 
@@ -319,7 +369,7 @@ export async function signup({ name, email, password }) {
 
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users")
-      .select("id")
+      .select("id, is_verified")
       .eq("email", normalizedEmail)
       .single();
 
@@ -329,8 +379,14 @@ export async function signup({ name, email, password }) {
     }
 
     if (existingUser) {
-      logWarn("Signup attempted for existing user", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
-      throw new ApiError(409, "Account with this email already exists. Please login or use a different email.");
+      if (existingUser.is_verified) {
+        logWarn("Signup attempted for existing verified user", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
+        throw new ApiError(409, "Account with this email already exists. Please login or use a different email.");
+      }
+      // User started signup but never completed OTP verification — clean up stale record.
+      logInfo("Cleaning up unverified user before re-signup", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
+      await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
+      await supabaseAdmin.from("users").delete().eq("id", existingUser.id);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -340,6 +396,7 @@ export async function signup({ name, email, password }) {
       name: String(name || "").trim(),
       email: normalizedEmail,
       password_hash: hashedPassword,
+      role: "customer",
       type: "Signup",
     });
 
@@ -347,6 +404,7 @@ export async function signup({ name, email, password }) {
       logError("Signup user insert failed", authLogContext({ email: normalizedEmail, error: userInsertError }));
       throw new ApiError(400, userInsertError.message);
     }
+    userCreated = true;
 
     const { error: otpInsertError } = await supabaseAdmin.from("otps").insert({
       email: normalizedEmail,
@@ -360,7 +418,7 @@ export async function signup({ name, email, password }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp, "signup");
+    await sendOTP(normalizedEmail, otp, "signup", buildVerifyUrl(normalizedEmail, otp, "signup"));
     logInfo("Signup OTP sent", authLogContext({ email: normalizedEmail, type, expiresAt }));
 
     await recordRateAttempt(`signup:${normalizedEmail}`);
@@ -368,6 +426,10 @@ export async function signup({ name, email, password }) {
     logInfo("Signup completed", authLogContext({ email: normalizedEmail }));
     return { message: "OTP sent" };
   } catch (error) {
+    if (userCreated) {
+      await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
+      await supabaseAdmin.from("users").delete().eq("email", normalizedEmail).eq("type", "Signup");
+    }
     logError("Signup failed", authLogContext({ email: normalizedEmail, error }));
     throw error;
   }
@@ -383,7 +445,7 @@ export async function login({ email, password }) {
 
     const { data: user, error: userError } = await supabaseAdmin
       .from("users")
-      .select("id, email, name, password_hash, last_login")
+      .select("id, email, name, role, password_hash, last_login, is_verified")
       .eq("email", normalizedEmail)
       .single();
 
@@ -396,6 +458,11 @@ export async function login({ email, password }) {
       await recordRateAttempt(`login:${normalizedEmail}`);
       logWarn("Login attempted for missing user", authLogContext({ email: normalizedEmail }));
       throw new ApiError(401, "User not registered. Please complete registration.");
+    }
+
+    if (!user.is_verified) {
+      logWarn("Login attempted for unverified user", authLogContext({ email: normalizedEmail, userId: user.id }));
+      throw new ApiError(403, "Email not verified. Please complete your signup by verifying your email.");
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
@@ -421,7 +488,7 @@ export async function login({ email, password }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp, "login");
+    await sendOTP(normalizedEmail, otp, "login", buildVerifyUrl(normalizedEmail, otp, "login"));
     logInfo("Login OTP sent", authLogContext({ email: normalizedEmail, userId: user.id, expiresAt }));
 
     return {
@@ -432,6 +499,7 @@ export async function login({ email, password }) {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role || "customer",
       },
     };
   } catch (error) {
@@ -476,7 +544,7 @@ export async function resendOtp({ email, kind, type }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp, otpKind);
+    await sendOTP(normalizedEmail, otp, otpKind, buildVerifyUrl(normalizedEmail, otp, otpKind));
     await recordRateAttempt(`resend:${normalizedEmail}`);
 
     logInfo("Resend OTP completed", authLogContext({ email: normalizedEmail, userId: user.id, otpKind, expiresAt }));
@@ -522,7 +590,7 @@ export async function forgotPassword({ email }) {
       throw new ApiError(400, otpInsertError.message);
     }
 
-    await sendOTP(normalizedEmail, otp, "forgot");
+    await sendOTP(normalizedEmail, otp, "forgot", buildVerifyUrl(normalizedEmail, otp, "forgot"));
     await recordRateAttempt(`forgot:${normalizedEmail}`);
 
     logInfo("Forgot password OTP sent", authLogContext({ email: normalizedEmail, userId: user.id, expiresAt }));
@@ -536,6 +604,7 @@ export async function forgotPassword({ email }) {
 export async function verifyOtp({ email, otp, type }) {
   const normalizedEmail = normalizeEmail(email);
   const otpNumber = Number.parseInt(otp, 10);
+  const normalizedType = normalizeOtpKind(type);
 
   logInfo("Verify OTP requested", authLogContext({ email: normalizedEmail, type, hasOtp: Boolean(otp) }));
 
@@ -552,7 +621,7 @@ export async function verifyOtp({ email, otp, type }) {
       throw new ApiError(400, "Invalid or expired OTP");
     }
 
-    if (otpRecord.otp !== otpNumber) {
+    if (Number(otpRecord.otp) !== otpNumber) {
       await supabaseAdmin
         .from("otps")
         .update({ attempts: otpRecord.attempts + 1 })
@@ -566,7 +635,7 @@ export async function verifyOtp({ email, otp, type }) {
 
     const { data: user, error: userError } = await supabaseAdmin
       .from("users")
-      .select("id, email, name")
+      .select("id, email, name, role")
       .eq("email", normalizedEmail)
       .single();
 
@@ -575,7 +644,19 @@ export async function verifyOtp({ email, otp, type }) {
       throw new ApiError(404, "User not found");
     }
 
-    if (String(type || "").toLowerCase() === "login") {
+    if (normalizedType === "signup") {
+      const { error: updateError } = await supabaseAdmin
+        .from("users")
+        .update({ is_verified: true })
+        .eq("id", user.id);
+
+      if (updateError) {
+        logError("Failed to mark user as verified after signup OTP", authLogContext({ userId: user.id, email: normalizedEmail, error: updateError }));
+        throw new ApiError(400, updateError.message);
+      }
+    }
+
+    if (normalizedType === "login") {
       const { error: updateError } = await supabaseAdmin
         .from("users")
         .update({ last_login: new Date().toISOString() })
@@ -587,7 +668,17 @@ export async function verifyOtp({ email, otp, type }) {
       }
     }
 
-    logInfo("OTP verified successfully", authLogContext({ userId: user.id, email: normalizedEmail, type }));
+    if (normalizedType === "forgot") {
+      const resetToken = createResetToken(normalizedEmail);
+      logInfo("Forgot-password OTP verified successfully", authLogContext({ userId: user.id, email: normalizedEmail, type: normalizedType }));
+      return {
+        success: true,
+        resetToken,
+        message: "OTP verified",
+      };
+    }
+
+    logInfo("OTP verified successfully", authLogContext({ userId: user.id, email: normalizedEmail, type: normalizedType }));
 
     return {
       success: true,
@@ -596,6 +687,7 @@ export async function verifyOtp({ email, otp, type }) {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role || "customer",
       },
     };
   } catch (error) {
@@ -604,4 +696,113 @@ export async function verifyOtp({ email, otp, type }) {
   }
 }
 
+// Verifies the signed link token from the email button.
+// - login/signup: returns a JWT redirect URL (same as verifyOtp)
+// - forgot: returns a short-lived reset token redirect URL
+export async function verifyOtpLink(token) {
+  if (!token) throw new ApiError(400, "Missing verification token.");
 
+  let payload;
+  try {
+    payload = jwt.verify(token, getLinkSecret());
+  } catch (err) {
+    logWarn("OTP link token invalid or expired", authLogContext({ error: err.message }));
+    throw new ApiError(400, "This verification link has expired or is invalid.");
+  }
+
+  if (payload.purpose !== "otp_link") {
+    throw new ApiError(400, "Invalid verification link.");
+  }
+
+  const { email, otp, type } = payload;
+  const normalizedEmail = normalizeEmail(email);
+  const otpNumber = Number.parseInt(otp, 10);
+
+  logInfo("Verifying OTP via link", authLogContext({ email: normalizedEmail, type }));
+
+  // Verify and consume the OTP record (same logic as verifyOtp)
+  const { data: otpRecord, error: otpError } = await supabaseAdmin
+    .from("otps")
+    .select("*")
+    .eq("email", normalizedEmail)
+    .gte("expires_at", new Date().toISOString())
+    .single();
+
+  if (otpError || !otpRecord || otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+    logWarn("OTP link: record missing, expired, or exhausted", authLogContext({ email: normalizedEmail, type }));
+    throw new ApiError(400, "OTP has expired. Please request a new one.");
+  }
+
+  if (Number(otpRecord.otp) !== otpNumber) {
+    await supabaseAdmin.from("otps").update({ attempts: otpRecord.attempts + 1 }).eq("id", otpRecord.id);
+    logWarn("OTP link: code mismatch", authLogContext({ email: normalizedEmail, type }));
+    throw new ApiError(400, "Invalid verification link.");
+  }
+
+  await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
+
+  const frontendUrl = getFrontendUrl().replace(/\/$/, "");
+  const normalizedType = normalizeOtpKind(type);
+
+  // Forgot-password: redirect to frontend with a short-lived reset token (no JWT session)
+  if (normalizedType === "forgot") {
+    const resetToken = createResetToken(normalizedEmail);
+    const params = new URLSearchParams({ reset_token: resetToken });
+    logInfo("OTP link verified for password reset", authLogContext({ email: normalizedEmail }));
+    return { redirect: `${frontendUrl}?${params.toString()}` };
+  }
+
+  // Login / signup: look up user, issue JWT, redirect
+  const { data: user, error: userError } = await supabaseAdmin
+    .from("users")
+    .select("id, email, name, role")
+    .eq("email", normalizedEmail)
+    .single();
+
+  if (userError || !user) {
+    logError("User not found after OTP link verification", authLogContext({ email: normalizedEmail }));
+    throw new ApiError(404, "User not found.");
+  }
+
+  if (normalizedType === "login") {
+    await supabaseAdmin.from("users").update({ last_login: new Date().toISOString() }).eq("id", user.id);
+  }
+
+  const jwtToken = createJwt(user);
+  const params = new URLSearchParams({ token: jwtToken, provider: "otp_link", mode: normalizedType });
+  logInfo("OTP link verified, redirecting with token", authLogContext({ email: normalizedEmail, type: normalizedType }));
+  return { redirect: `${frontendUrl}?${params.toString()}` };
+}
+
+// Verifies a reset token and updates the password in the DB.
+export async function resetPassword({ resetToken, newPassword }) {
+  if (!resetToken) throw new ApiError(400, "Missing reset token.");
+  if (!newPassword || newPassword.length < 8) throw new ApiError(400, "Password must be at least 8 characters.");
+
+  let payload;
+  try {
+    payload = jwt.verify(resetToken, getResetSecret());
+  } catch (err) {
+    logWarn("Reset token invalid or expired", authLogContext({ error: err.message }));
+    throw new ApiError(400, "Your reset link has expired. Please request a new one.");
+  }
+
+  if (payload.purpose !== "password_reset") throw new ApiError(400, "Invalid reset token.");
+
+  const normalizedEmail = normalizeEmail(payload.email);
+  logInfo("Resetting password via token", authLogContext({ email: normalizedEmail }));
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const { error } = await supabaseAdmin
+    .from("users")
+    .update({ password_hash: hashedPassword })
+    .eq("email", normalizedEmail);
+
+  if (error) {
+    logError("Password reset DB update failed", authLogContext({ email: normalizedEmail, error }));
+    throw new ApiError(400, error.message);
+  }
+
+  logInfo("Password reset successful", authLogContext({ email: normalizedEmail }));
+  return { success: true, message: "Password updated successfully." };
+}

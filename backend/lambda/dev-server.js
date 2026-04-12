@@ -1,58 +1,58 @@
 import http from "http";
 import { handler } from "./index.js";
 
-const port = Number.parseInt(process.env.LAMBDA_PORT || process.env.PORT || "5001", 10);
+const PORT = process.env.PORT || 5000;
 
-function buildEvent(req, body) {
-  const parsedUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+function buildLambdaEvent(req, body, rawQueryString) {
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const queryParams = {};
+  for (const [k, v] of url.searchParams.entries()) {
+    queryParams[k] = v;
+  }
 
   return {
-    version: "2.0",
-    routeKey: "$default",
-    rawPath: parsedUrl.pathname,
-    rawQueryString: parsedUrl.search ? parsedUrl.search.slice(1) : "",
-    headers: req.headers,
-    queryStringParameters: Object.fromEntries(parsedUrl.searchParams.entries()),
+    rawPath: url.pathname,
+    rawQueryString,
+    queryStringParameters: queryParams,
+    httpMethod: req.method,
     requestContext: {
       http: {
         method: req.method,
-        path: parsedUrl.pathname,
+        sourceIp: req.socket?.remoteAddress || "127.0.0.1",
       },
+      requestId: `dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     },
-    body,
+    headers: Object.fromEntries(
+      Object.entries(req.headers).map(([k, v]) => [k.toLowerCase(), v])
+    ),
+    body: body || null,
     isBase64Encoded: false,
   };
 }
 
 const server = http.createServer(async (req, res) => {
   const chunks = [];
-
-  req.on("data", (chunk) => {
+  for await (const chunk of req) {
     chunks.push(chunk);
-  });
+  }
+  const rawBody = Buffer.concat(chunks).toString("utf8");
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const rawQueryString = url.search ? url.search.slice(1) : "";
 
-  req.on("end", async () => {
-    try {
-      const body = Buffer.concat(chunks).toString("utf8");
-      const response = await handler(buildEvent(req, body));
+  const event = buildLambdaEvent(req, rawBody || null, rawQueryString);
 
-      res.statusCode = response.statusCode || 200;
+  try {
+    const result = await handler(event);
 
-      for (const [header, value] of Object.entries(response.headers || {})) {
-        res.setHeader(header, value);
-      }
-
-      res.end(response.body || "");
-    } catch (error) {
-      console.error("[lambda dev server error]", error);
-      res.statusCode = 500;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ error: "Local lambda server failed" }));
-    }
-  });
+    res.writeHead(result.statusCode || 200, result.headers || {});
+    res.end(result.body || "");
+  } catch (err) {
+    console.error("[dev-server] Unhandled error:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Internal server error" }));
+  }
 });
 
-server.listen(port, () => {
-  console.log(`Lambda migration server listening on port ${port}`);
+server.listen(PORT, () => {
+  console.log(`[dev-server] Backend running at http://localhost:${PORT}`);
 });
-

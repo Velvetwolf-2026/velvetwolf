@@ -14,9 +14,6 @@ export const COLLECTIONS = [
   { id: "limited", name: "Limited Edition", icon: "🏷", color: "#ffab91" },
   { id: "most-loved", name: "Most Loved", icon: "♥", color: "#f48fb1" },
   { id: "budget", name: "Under ₹999", icon: "◎", color: "#a5d6a7" },
-  { id: "custom", name: "Upload Your Design", icon: "✦", color: "#b0bec5" },
-  { id: "bulk", name: "Bulk Orders", icon: "📦", color: "#bcaaa4" },
-  { id: "corporate", name: "Corporate Orders", icon: "🏢", color: "#90caf9" },
 ];
 
 export const INITIAL_COLLECTION_PRODUCTS = [
@@ -34,7 +31,7 @@ export const HOME_COLLECTION_IDS = ["trending", "beast-mode", "anime", "ai-tech"
 export const HOME_COLLECTIONS = HOME_COLLECTION_IDS
   .map((id) => COLLECTIONS.find((col) => col.id === id))
   .filter(Boolean);
-export const BROWSE_COLLECTIONS = COLLECTIONS.filter((col) => !["custom", "bulk"].includes(col.id));
+export const BROWSE_COLLECTIONS = COLLECTIONS;
 
 export function getCollectionById(id) {
   return COLLECTIONS.find((col) => col.id === id) || null;
@@ -56,7 +53,7 @@ export default function CollectionsPage() {
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
         </div>
       </div>
@@ -84,7 +81,7 @@ export default function CollectionsPage() {
               <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }} />
               <div style={{ fontSize: 48, marginBottom: 20, textAlign: "center" }}>{col.icon}</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12, textAlign: "center" }}>{col.name.toUpperCase()}</h2>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2 }}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2 }}>
                 EXPLORE <ArrowIcon size={12} color={col.color} />
               </div>
             </div>

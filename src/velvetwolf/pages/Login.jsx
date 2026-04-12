@@ -1,6 +1,5 @@
 import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
-import { supabase } from "../utils/supabase";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
@@ -148,29 +147,19 @@ export function Login() {
 
   const finalizeLogin = async (data) => {
     localStorage.setItem("token", data.token);
-    if (data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
-    }
+    const backendUser = data.user || pendingUser || {};
+    const nextUser = {
+      ...backendUser,
+      email: backendUser.email || form.email.toLowerCase().trim(),
+      name: backendUser.name || backendUser.full_name || form.email.split("@")[0],
+      full_name: backendUser.full_name || backendUser.name,
+      role: backendUser.role || "customer",
+      isAdmin: (backendUser.role || "customer") === "admin",
+      authSource: "backend",
+    };
 
-    const { data: authData, error: signInErr } = await supabase.auth.signInWithPassword({
-      email: form.email.toLowerCase().trim(),
-      password: form.password,
-    });
-
-    if (signInErr) {
-      console.warn("Supabase session sync failed, falling back to backend user:", signInErr.message);
-      setUser(data.user || pendingUser);
-    } else if (authData?.user) {
-      const backendUser = data.user || pendingUser || {};
-      setUser({
-        ...backendUser,
-        ...authData.user,
-        id: backendUser.id,
-        auth_user_id: authData.user.id,
-        name: backendUser.name || authData.user.user_metadata?.full_name || authData.user.email?.split("@")[0],
-        full_name: authData.user.user_metadata?.full_name || backendUser.name,
-      });
-    }
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    setUser(nextUser);
 
     const name = data.user?.name || pendingUser?.name;
     showToast(`Successfully logged in${name ? `, welcome back ${name}!` : ", welcome back wolf!"}`);
@@ -271,7 +260,7 @@ export function Login() {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     setError("");
-    window.location.href = googleAuthUrl("login");
+    window.location.replace(googleAuthUrl("login"));
   };
 
   return (
