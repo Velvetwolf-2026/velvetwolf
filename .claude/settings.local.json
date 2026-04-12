@@ -5,7 +5,10 @@
       "Bash(npm run:*)",
       "Bash(node dev-server.js)",
       "Bash(curl -s http://localhost:5000/)",
-      "Read(//v/Coding/velvetwolf/**)"
+      "Read(//v/Coding/velvetwolf/**)",
+      "Bash(rm v:/Coding/velvetwolf/backend/shared/auth-service.js v:/Coding/velvetwolf/backend/shared/http.js v:/Coding/velvetwolf/backend/shared/config/env.js v:/Coding/velvetwolf/backend/shared/config/ses.js v:/Coding/velvetwolf/backend/shared/config/supabase.js)",
+      "Bash(rmdir v:/Coding/velvetwolf/backend/shared/config)",
+      "Bash(rmdir v:/Coding/velvetwolf/backend/shared)"
     ]
   }
 }

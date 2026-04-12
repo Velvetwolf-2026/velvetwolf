@@ -8,14 +8,14 @@ export async function updateProfile(userId, updates) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .update({
-      full_name: updates.fullName,
-      phone:     updates.phone,
-      gender:    updates.gender,
+    .upsert({
+      id:            userId,
+      full_name:     updates.fullName,
+      phone:         updates.phone,
+      gender:        updates.gender,
       date_of_birth: updates.dob,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', userId)
+      updated_at:    new Date().toISOString(),
+    }, { onConflict: 'id' })
     .select()
     .single();
 

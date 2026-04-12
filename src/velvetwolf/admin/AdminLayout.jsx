@@ -16,7 +16,7 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--obsidian)" }}>
-      <div className="admin-sidebar" style={{ padding: 0 }}>
+      <div className="admin-sidebar" style={{ padding: 0, position: "relative" }}>
         <div style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
@@ -438,6 +438,74 @@ function AdminAnalytics() {
 
 function AdminSettings() {
   const { showToast } = useContext(AppContext);
+  const [settings, setSettings] = useState({
+    storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 98765 43210",
+    freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
+    razorpayKey: "rzp_test_xxxxx", upiHandle: "velvetwolf@upi", gstNumber: "27XXXXX1234X1ZX", pan: "XXXXX0000X",
+    orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "Twilio", whatsapp: "+91 98765 43210",
+  });
+  const [errors, setErrors] = useState({});
+
+  const set = (key, val) => {
+    setSettings(s => ({ ...s, [key]: val }));
+    setErrors(e => ({ ...e, [key]: "" }));
+  };
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const validate = () => {
+    const e = {};
+    if (!settings.storeName.trim())             e.storeName    = "Store name is required.";
+    if (!settings.storeEmail.trim())            e.storeEmail   = "Email is required.";
+    else if (!EMAIL_RE.test(settings.storeEmail.trim())) e.storeEmail = "Enter a valid email address.";
+    if (!settings.storePhone.trim())            e.storePhone   = "Phone is required.";
+    if (!settings.orderEmail.trim())            e.orderEmail   = "Order email is required.";
+    else if (!EMAIL_RE.test(settings.orderEmail.trim()))  e.orderEmail = "Enter a valid email address.";
+    if (!settings.alertEmail.trim())            e.alertEmail   = "Alert email is required.";
+    else if (!EMAIL_RE.test(settings.alertEmail.trim()))  e.alertEmail = "Enter a valid email address.";
+    if (Number(settings.freeShipping) <= 0)     e.freeShipping = "Must be greater than 0.";
+    if (Number(settings.flatRate) < 0)          e.flatRate     = "Cannot be negative.";
+    if (Number(settings.dispatchDays) < 1)      e.dispatchDays = "Must be at least 1 day.";
+    if (Number(settings.returnDays) < 1)        e.returnDays   = "Must be at least 1 day.";
+    return e;
+  };
+
+  const handleSave = () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      showToast("Please fix the errors before saving.", "error");
+      return;
+    }
+    showToast("Settings saved successfully!");
+  };
+
+  const sections = [
+    { title: "STORE SETTINGS", fields: [
+      { label: "Store Name",  key: "storeName" },
+      { label: "Tagline",     key: "tagline" },
+      { label: "Email",       key: "storeEmail" },
+      { label: "Phone",       key: "storePhone" },
+    ]},
+    { title: "SHIPPING", fields: [
+      { label: "Free Shipping Above (₹)", key: "freeShipping", type: "number" },
+      { label: "Flat Shipping Rate (₹)",  key: "flatRate",     type: "number" },
+      { label: "Dispatch Time (days)",    key: "dispatchDays", type: "number" },
+      { label: "Return Window (days)",    key: "returnDays",   type: "number" },
+    ]},
+    { title: "PAYMENT GATEWAYS", fields: [
+      { label: "Razorpay Key", key: "razorpayKey" },
+      { label: "UPI Handle",   key: "upiHandle" },
+      { label: "GST Number",   key: "gstNumber" },
+      { label: "PAN",          key: "pan" },
+    ]},
+    { title: "NOTIFICATIONS", fields: [
+      { label: "Order Email",  key: "orderEmail" },
+      { label: "Alert Email",  key: "alertEmail" },
+      { label: "SMS Provider", key: "smsProvider" },
+      { label: "WhatsApp",     key: "whatsapp" },
+    ]},
+  ];
 
   return (
     <div>
@@ -447,19 +515,21 @@ function AdminSettings() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {[
-          { title: "STORE SETTINGS", fields: [["Store Name", "VelvetWolf"], ["Tagline", "Luxury Streetwear"], ["Email", "hello@velvetwolf.in"], ["Phone", "+91 98765 43210"]] },
-          { title: "SHIPPING", fields: [["Free Shipping Above (\u20b9)", "1999"], ["Flat Shipping Rate (\u20b9)", "149"], ["Dispatch Time (days)", "2"], ["Return Window (days)", "30"]] },
-          { title: "PAYMENT GATEWAYS", fields: [["Razorpay Key", "rzp_test_xxxxx"], ["UPI Handle", "velvetwolf@upi"], ["GST Number", "27XXXXX1234X1ZX"], ["PAN", "XXXXX0000X"]] },
-          { title: "NOTIFICATIONS", fields: [["Order Email", "orders@velvetwolf.in"], ["Alert Email", "alerts@velvetwolf.in"], ["SMS Provider", "Twilio"], ["WhatsApp", "+91 98765 43210"]] },
-        ].map((section) => (
+        {sections.map((section) => (
           <div key={section.title} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>{section.title}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {section.fields.map(([label, val]) => (
-                <div key={label}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, color: "var(--silver)", display: "block", marginBottom: 6 }}>{label}</label>
-                  <input className="input-dark" defaultValue={val} style={{ padding: "8px 12px", fontSize: 11 }} />
+              {section.fields.map(({ label, key, type = "text" }) => (
+                <div key={key}>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, color: errors[key] ? "#e07070" : "var(--silver)", display: "block", marginBottom: 6 }}>{label}</label>
+                  <input
+                    className="input-dark"
+                    type={type}
+                    value={settings[key]}
+                    onChange={e => set(key, e.target.value)}
+                    style={{ padding: "8px 12px", fontSize: 11, borderColor: errors[key] ? "rgba(192,57,43,0.5)" : undefined }}
+                  />
+                  {errors[key] && <p style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#e07070", marginTop: 4 }}>{errors[key]}</p>}
                 </div>
               ))}
             </div>
@@ -467,7 +537,7 @@ function AdminSettings() {
         ))}
       </div>
       <div style={{ marginTop: 28 }}>
-        <button className="btn-gold" onClick={() => showToast("Settings saved successfully!")}>SAVE ALL SETTINGS</button>
+        <button className="btn-gold" onClick={handleSave}>SAVE ALL SETTINGS</button>
       </div>
     </div>
   );
