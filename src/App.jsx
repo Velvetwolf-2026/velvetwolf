@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useContext, useRef, Component } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
@@ -285,6 +285,25 @@ const TAG_COLORS = {
   "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
 };
 
+// ─── PAGE ERROR BOUNDARY ─────────────────────────────────────────────────────
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error("[PageError]", error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ paddingTop: 120, textAlign: "center", color: "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+          <div style={{ color: "var(--wolf-red)", fontSize: 14, marginBottom: 12 }}>✕ PAGE FAILED TO RENDER</div>
+          <div style={{ color: "var(--silver)", marginBottom: 20 }}>{this.state.error?.message || "Unknown error"}</div>
+          <button className="btn-ghost" style={{ fontSize: 9 }} onClick={() => this.setState({ error: null })}>← GO BACK</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // â"€â"€â"€ ICONS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
@@ -405,8 +424,14 @@ const ProductImage = ({ product, height = 280 }) => {
 
 // â"€â"€â"€ MAIN APP â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 export default function VelvetWolf() {
-  const [page, setPage] = useState("home");
+  const [page, _setPage] = useState("home");
   const [adminPage, setAdminPage] = useState("dashboard");
+
+  // Wrap setPage so every navigation is reflected in browser history
+  const setPage = (nextPage) => {
+    _setPage(nextPage);
+    window.history.pushState({ page: nextPage }, "", window.location.pathname);
+  };
   const [products, setProducts] = useState(INITIAL_COLLECTION_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -418,19 +443,8 @@ export default function VelvetWolf() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCollection, setActiveCollection] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [orders, setOrders] = useState([
-    { id: "VW-2024-001", date: "2024-12-10", items: 2, total: 2598, status: "Delivered", customer: "Arjun Mehta" },
-    { id: "VW-2024-002", date: "2024-12-12", items: 1, total: 2499, status: "Shipped", customer: "Priya Sharma" },
-    { id: "VW-2024-003", date: "2024-12-14", items: 3, total: 4197, status: "Processing", customer: "Ravi Kumar" },
-    { id: "VW-2024-004", date: "2024-12-15", items: 1, total: 899, status: "Pending", customer: "Sneha Patel" },
-  ]);
-  const [customers] = useState([
-    { id: 1, name: "Arjun Mehta", email: "arjun@example.com", orders: 5, spent: 12450, joined: "Oct 2024", tier: "Gold" },
-    { id: 2, name: "Priya Sharma", email: "priya@example.com", orders: 3, spent: 7890, joined: "Nov 2024", tier: "Silver" },
-    { id: 3, name: "Ravi Kumar", email: "ravi@example.com", orders: 8, spent: 21300, joined: "Sep 2024", tier: "Platinum" },
-    { id: 4, name: "Sneha Patel", email: "sneha@example.com", orders: 2, spent: 3400, joined: "Dec 2024", tier: "Bronze" },
-    { id: 5, name: "Kabir Singh", email: "kabir@example.com", orders: 12, spent: 34560, joined: "Aug 2024", tier: "Platinum" },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [customers] = useState([]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -478,7 +492,8 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
-  const getBackendUserId = (value) => value?.id || null;
+  // cart_items / wishlist_items FK references auth.users(id), so auth_user_id takes priority
+  const getBackendUserId = (value) => value?.auth_user_id || value?.id || null;
   const normalizeUserRoleState = (value = {}) => {
     const role = value?.role || (value?.isAdmin ? "admin" : "customer");
     return {
@@ -699,7 +714,18 @@ export default function VelvetWolf() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [page]);
 
-  // â"€â"€ Session init + auth state listener â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+  // ── Browser back/forward button support ─────────────────────────────────────
+  useEffect(() => {
+    window.history.replaceState({ page: "home" }, "", window.location.pathname);
+    const onPopState = (e) => {
+      const target = e.state?.page;
+      if (target) _setPage(target);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // ── Session init + auth state listener â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   useEffect(() => {
     const applySignedInUser = async (authUser, mergeGuestCart = false) => {
       const nextUser = await buildUserState(authUser);
@@ -822,7 +848,8 @@ export default function VelvetWolf() {
 
   useEffect(() => {
     if (user && ["login", "signup", "forgetpassword"].includes(page)) {
-      setPage("account");
+      // Admins go straight to the admin dashboard; regular users go to account
+      setPage(user.isAdmin ? "admin" : "account");
     }
   }, [page, user]);
 
@@ -866,8 +893,8 @@ export default function VelvetWolf() {
               {page === "wishlist"       && <WishlistPage />}
               {page === "account"        && <AccountPage />}
               {page === "checkout"       && <CheckoutPage />}
-              {page === "custom"         && <CustomDesignPage />}
-              {page === "bulk"           && <BulkOrderPage />}
+              {page === "custom"         && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
+              {page === "bulk"           && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
               {page === "contactus"      && <ContactPage />}
               {page === "faq"            && <FAQPage />}
               {page === "privacypolicy"  && <Policy />}
@@ -876,6 +903,17 @@ export default function VelvetWolf() {
               {page === "returnspage"    && <ReturnsPage />}
               {page === "sizeguide"      && <SizeGuide />}
               {page === "trackorder"     && <TrackOrder />}
+              {/* Floating back button for all info/policy pages */}
+              {["privacypolicy","shoppingpolicy","termspage","returnspage","sizeguide","trackorder","faq","contactus"].includes(page) && (
+                <button
+                  onClick={() => window.history.back()}
+                  style={{ position:"fixed", top:80, left:24, zIndex:850, background:"var(--graphite)", border:"1px solid var(--smoke)", color:"var(--ash)", fontFamily:"var(--font-mono)", fontSize:10, letterSpacing:2, padding:"8px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor="var(--gold)"; e.currentTarget.style.color="var(--gold)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor="var(--smoke)"; e.currentTarget.style.color="var(--ash)"; }}
+                >
+                  ← BACK
+                </button>
+              )}
               <Footer onNavigate={setPage} />
             </>
           )}
@@ -1419,8 +1457,10 @@ function ShopPage() {
 
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
-  const [size, setSize] = useState(p.sizes[0]);
-  const [color, setColor] = useState(p.colors[0]);
+  const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
+  const colors = Array.isArray(p.colors) && p.colors.length ? p.colors : [];
+  const [size, setSize]   = useState(sizes[0]  ?? null);
+  const [color, setColor] = useState(colors[0] ?? null);
   const [qty, setQty] = useState(1);
   const inWishlist = wishlist.find(i => i.id === p.id);
 
@@ -1447,24 +1487,28 @@ function ProductModal() {
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.7, marginBottom: 24 }}>{p.description}</p>
 
           {/* Color */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {p.colors.map(c => (
-                <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
-              ))}
+          {colors.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {colors.map(c => (
+                  <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Size */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {p.sizes.map(s => (
-                <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
-              ))}
+          {sizes.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {sizes.map(s => (
+                  <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Qty */}
           <div style={{ marginBottom: 28 }}>
@@ -1908,6 +1952,7 @@ function BulkOrderPage() {
   const { showToast } = useContext(AppContext);
   const [form, setForm] = useState({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
   const [errorMessage, setErrorMessage] = useState("");
+  const errorRef = useRef(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const nameRegex = /^[a-zA-Z\s.'-]{2,}$/;
@@ -1944,6 +1989,7 @@ function BulkOrderPage() {
 
     if (validationMessage) {
       setErrorMessage(validationMessage);
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
       return;
     }
 
@@ -1985,7 +2031,7 @@ function BulkOrderPage() {
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>REQUEST A QUOTE</h2>
 
           {errorMessage && (
-            <div style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
+            <div ref={errorRef} style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
               ✕ {errorMessage}
             </div>
           )}
@@ -2026,7 +2072,7 @@ function BulkOrderPage() {
 //         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
 //           <div>
 //             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>VELVETWOLF</div>
-//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2025</div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2026</div>
 //             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", lineHeight: 1.8, fontStyle: "italic" }}>
 //               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
 //             </p>
@@ -2057,7 +2103,7 @@ function BulkOrderPage() {
 //         </div>
 
 //         <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-//           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
+//           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
 //           <div style={{ display: "flex", gap: 20 }}>
 //             {[["Privacy Policy","privacypolicy"], ["Terms","termspage"], ["Shipping Policy","shoppingpolicy"]].map(([l,pg]) => (
 //               <span key={l} onClick={() => setPage(pg)} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{l}</span>

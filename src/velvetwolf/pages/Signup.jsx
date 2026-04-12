@@ -54,15 +54,26 @@ export function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
+  const [emailError, setEmailError]   = useState("");
   const [agree, setAgree]             = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
-  const update   = (k, v) => { 
-    if (k === "name") {
-      v = v.replace(/[^a-zA-Z\s]/g, "");
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const update = (k, v) => {
+    if (k === "name") v = v.replace(/[^a-zA-Z\s]/g, "");
+    setForm(p => ({ ...p, [k]: v }));
+    setError("");
+    if (k === "email") setEmailError("");
+  };
+
+  const handleEmailBlur = () => {
+    if (!form.email.trim()) return;
+    if (!EMAIL_REGEX.test(form.email.trim())) {
+      setEmailError("Please enter a valid email address (e.g. name@example.com).");
+    } else {
+      setEmailError("");
     }
-    setForm(p => ({ ...p, [k]: v })); 
-    setError(""); 
   };
   const strength = strengthScore(form.password);
   const pwMatch  = form.confirm && form.confirm === form.password;
@@ -76,13 +87,13 @@ export function Signup() {
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validateDetails = () => {
-    if (!form.name.trim())                     { setError("Please enter your full name."); return false; }
-    if (!form.email.trim())                    { setError("Please enter your email address."); return false; }
-    if (!form.email.includes("@"))             { setError("Please enter a valid email address."); return false; }
-    if (form.password.length < 8)              { setError("Password must be at least 8 characters."); return false; }
-    if (strength < 2)                          { setError("Password is too weak — add uppercase letters or numbers."); return false; }
-    if (form.password !== form.confirm)        { setError("Passwords do not match."); return false; }
-    if (!agree)                                { setError("Please accept the Terms & Privacy Policy to continue."); return false; }
+    if (!form.name.trim())                          { setError("Please enter your full name."); return false; }
+    if (!form.email.trim())                         { setError("Please enter your email address."); return false; }
+    if (!EMAIL_REGEX.test(form.email.trim()))       { setError("Please enter a valid email address (e.g. name@example.com)."); return false; }
+    if (form.password.length < 8)                   { setError("Password must be at least 8 characters."); return false; }
+    if (strength < 2)                               { setError("Password is too weak — add uppercase letters or numbers."); return false; }
+    if (form.password !== form.confirm)             { setError("Passwords do not match."); return false; }
+    if (!agree)                                     { setError("Please accept the Terms & Privacy Policy to continue."); return false; }
     return true;
   };
 
@@ -122,7 +133,10 @@ export function Signup() {
       }
       startResendTimer();
     } catch (err) {
-      setError("Unable to reach the server. Please check your connection and try again.");
+      const isNetworkError = err instanceof TypeError;
+      setError(isNetworkError
+        ? "Unable to reach the server. If you already submitted, try signing in — your account may have been created."
+        : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -289,15 +303,15 @@ export function Signup() {
               </div>
 
               <form onSubmit={handleSubmitDetails} noValidate>
-                {[
-                  { label: "FULL NAME",       key: "name",    type: "text",     placeholder: "Your full name",  ac: "name" },
-                  { label: "EMAIL ADDRESS",   key: "email",   type: "email",    placeholder: "you@email.com",   ac: "email" },
-                ].map(f => (
-                  <div key={f.key} style={{ marginBottom: 13 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>{f.label}</label>
-                    <input className="input-dark" type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => update(f.key, e.target.value)} autoComplete={f.ac} disabled={loading}/>
-                  </div>
-                ))}
+                <div style={{ marginBottom: 13 }}>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>FULL NAME</label>
+                  <input className="input-dark" type="text" placeholder="Your full name" value={form.name} onChange={e => update("name", e.target.value)} autoComplete="name" disabled={loading}/>
+                </div>
+                <div style={{ marginBottom: 13 }}>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
+                  <input className="input-dark" type="email" placeholder="you@email.com" value={form.email} onChange={e => update("email", e.target.value)} onBlur={handleEmailBlur} autoComplete="email" disabled={loading} style={{ borderColor: emailError ? "rgba(192,57,43,0.5)" : undefined }}/>
+                  {emailError && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#e07070", marginTop: 5 }}>{emailError}</p>}
+                </div>
 
                 {/* Password + strength */}
                 <div style={{ marginBottom: 13 }}>
@@ -372,6 +386,12 @@ export function Signup() {
                 loadingLabel="VERIFYING..."
                 idPrefix="otp-su"
               />
+              <div style={{ marginTop: 16, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", lineHeight: 1.7 }}>
+                Verified via the email link on another device?{" "}
+                <button type="button" onClick={() => setPage("login")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>
+                  SIGN IN HERE
+                </button>
+              </div>
             </>
           )}
         </div>

@@ -369,7 +369,7 @@ export async function signup({ name, email, password }) {
 
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users")
-      .select("id")
+      .select("id, is_verified")
       .eq("email", normalizedEmail)
       .single();
 
@@ -379,8 +379,14 @@ export async function signup({ name, email, password }) {
     }
 
     if (existingUser) {
-      logWarn("Signup attempted for existing user", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
-      throw new ApiError(409, "Account with this email already exists. Please login or use a different email.");
+      if (existingUser.is_verified) {
+        logWarn("Signup attempted for existing verified user", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
+        throw new ApiError(409, "Account with this email already exists. Please login or use a different email.");
+      }
+      // User started signup but never completed OTP verification — clean up stale record.
+      logInfo("Cleaning up unverified user before re-signup", authLogContext({ email: normalizedEmail, userId: existingUser.id }));
+      await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
+      await supabaseAdmin.from("users").delete().eq("id", existingUser.id);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -439,7 +445,7 @@ export async function login({ email, password }) {
 
     const { data: user, error: userError } = await supabaseAdmin
       .from("users")
-      .select("id, email, name, role, password_hash, last_login")
+      .select("id, email, name, role, password_hash, last_login, is_verified")
       .eq("email", normalizedEmail)
       .single();
 
@@ -452,6 +458,11 @@ export async function login({ email, password }) {
       await recordRateAttempt(`login:${normalizedEmail}`);
       logWarn("Login attempted for missing user", authLogContext({ email: normalizedEmail }));
       throw new ApiError(401, "User not registered. Please complete registration.");
+    }
+
+    if (!user.is_verified) {
+      logWarn("Login attempted for unverified user", authLogContext({ email: normalizedEmail, userId: user.id }));
+      throw new ApiError(403, "Email not verified. Please complete your signup by verifying your email.");
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
@@ -631,6 +642,18 @@ export async function verifyOtp({ email, otp, type }) {
     if (userError || !user) {
       logError("User lookup failed after OTP verification", authLogContext({ email: normalizedEmail, type, error: userError }));
       throw new ApiError(404, "User not found");
+    }
+
+    if (normalizedType === "signup") {
+      const { error: updateError } = await supabaseAdmin
+        .from("users")
+        .update({ is_verified: true })
+        .eq("id", user.id);
+
+      if (updateError) {
+        logError("Failed to mark user as verified after signup OTP", authLogContext({ userId: user.id, email: normalizedEmail, error: updateError }));
+        throw new ApiError(400, updateError.message);
+      }
     }
 
     if (normalizedType === "login") {

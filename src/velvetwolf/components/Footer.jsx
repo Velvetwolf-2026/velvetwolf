@@ -34,7 +34,7 @@ export default function Footer() {
                 marginBottom: 20,
               }}
             >
-              LUXURY STREETWEAR · EST. 2025
+              LUXURY STREETWEAR · EST. 2026
             </div>
             <p
               style={{
@@ -178,7 +178,7 @@ export default function Footer() {
           }}
         >
           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1 }}>
-            © 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
+            © 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
           <div style={{ display: "flex", gap: 20 }}>
