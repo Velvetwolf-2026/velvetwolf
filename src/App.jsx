@@ -122,7 +122,7 @@ const GlobalStyles = () => (
       border: 1px solid var(--smoke);
       padding: 10px 22px;
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: 2px;
       text-transform: uppercase;
       cursor: pointer;
@@ -137,7 +137,7 @@ const GlobalStyles = () => (
       color: var(--ivory);
       padding: 12px 16px;
       font-family: 'Roboto', sans-serif;
-      font-size: 12px;
+      font-size: 14px;
       width: 100%;
       outline: none;
       transition: border-color 0.3s;
@@ -349,75 +349,89 @@ const Toast = ({ message, type = "success", onClose }) => {
   );
 };
 
-// ─── COLLECTION COLOURS (used by placeholder + overlay) ──────────────────────
-const COLLECTION_COLORS = {
-  "ai-tech":        ["#0a1628", "#1a2a4a", "#4fc3f7"],
-  "anime":          ["#1a0010", "#2a0020", "#f06292"],
-  "silent-luxury":  ["#1a1a0a", "#2a2a1a", "#c9a84c"],
-  "founder":        ["#0a1a0a", "#1a2a1a", "#ffd54f"],
-  "beast-mode":     ["#1a0a00", "#2a1a00", "#ff8a65"],
-  "mind-mayhem":    ["#0a001a", "#1a0a2a", "#ce93d8"],
-  "savage-quotes":  ["#1a0a0a", "#2a0000", "#ef5350"],
-  "xp-mode":        ["#001a00", "#0a2a0a", "#81c784"],
-};
-
-// ─── PRODUCT IMAGE PLACEHOLDER ────────────────────────────────────────────────
-function ProductImagePlaceholder({ product, height, cols }) {
-  return (
-    <div style={{
-      height, background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      position: "relative", overflow: "hidden"
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `radial-gradient(circle at 50% 50%, ${cols[2]}22, transparent 70%)`
-      }}/>
-      <div style={{
-        fontFamily: "var(--font-display)", fontSize: 72, color: cols[2],
-        opacity: 0.15, userSelect: "none", letterSpacing: 4,
-        position: "absolute"
-      }}>VW</div>
-      <div style={{ textAlign: "center", zIndex: 1 }}>
-        <div style={{
-          fontFamily: "var(--font-display)", fontSize: 22, color: cols[2],
-          letterSpacing: 3, lineHeight: 1.2
-        }}>
-          {product.name.split(" ").map((w, i) => <div key={i}>{w}</div>)}
-        </div>
-        <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, color: cols[2],
-          opacity: 0.6, letterSpacing: 2, marginTop: 10
-        }}>VELVETWOLF</div>
-      </div>
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        height: 60, background: `linear-gradient(transparent, ${cols[0]}88)`
-      }}/>
-    </div>
-  );
-}
-
 const ProductImage = ({ product, height = 280 }) => {
-  const [imgError, setImgError] = useState(false);
-  const cols = COLLECTION_COLORS[product.collection] || ["#111", "#1a1a1a", "#888"];
+  const collectionColors = {
+    "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
+    "anime": ["#1a0010", "#2a0020", "#f06292"],
+    "silent-luxury": ["#1a1a0a", "#2a2a1a", "#c9a84c"],
+    "founder": ["#0a1a0a", "#1a2a1a", "#ffd54f"],
+    "beast-mode": ["#1a0a00", "#2a1a00", "#ff8a65"],
+    "mind-mayhem": ["#0a001a", "#1a0a2a", "#ce93d8"],
+    "savage-quotes": ["#1a0a0a", "#2a0000", "#ef5350"],
+    "xp-mode": ["#001a00", "#0a2a0a", "#81c784"],
+  };
 
-  if (!product.image || imgError) {
-    return <ProductImagePlaceholder product={product} height={height} cols={cols} />;
-  }
+  const cols = collectionColors[product.collection] || ["#111", "#1a1a1a", "#888"];
 
   return (
-    <div style={{ height, position: "relative", overflow: "hidden", background: cols[0] }}>
-      <img
-        src={product.image}
-        alt={product.name}
-        onError={() => setImgError(true)}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+    <div
+      style={{
+        height,
+        background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(circle at 50% 50%, ${cols[2]}22, transparent 70%)`,
+        }}
       />
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        height: 60, background: `linear-gradient(transparent, ${cols[0]}88)`
-      }}/>
+      <div
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 72,
+          color: cols[2],
+          opacity: 0.15,
+          userSelect: "none",
+          letterSpacing: 4,
+          position: "absolute",
+        }}
+      >
+        VW
+      </div>
+      <div style={{ textAlign: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 22,
+            color: cols[2],
+            letterSpacing: 3,
+            lineHeight: 1.2,
+          }}
+        >
+          {product.name.split(" ").map((w, i) => (
+            <div key={i}>{w}</div>
+          ))}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: cols[2],
+            opacity: 0.6,
+            letterSpacing: 2,
+            marginTop: 10,
+          }}
+        >
+          VELVETWOLF
+        </div>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 60,
+          background: `linear-gradient(transparent, ${cols[0]}88)`,
+        }}
+      />
     </div>
   );
 };
@@ -1199,7 +1213,6 @@ function FeaturedCoverflow({ products }) {
     const timer = setInterval(() => {
       setActiveIndex((current) => (current + 1) % products.length);
     }, 4500);
-
     return () => clearInterval(timer);
   }, [isHovered, products.length]);
 
@@ -1208,10 +1221,8 @@ function FeaturedCoverflow({ products }) {
   const getOffset = (index) => {
     const total = products.length;
     let offset = index - activeIndex;
-
     if (offset > total / 2) offset -= total;
     if (offset < -total / 2) offset += total;
-
     return offset;
   };
 
@@ -1246,9 +1257,7 @@ function FeaturedCoverflow({ products }) {
                 transform: `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1400px) rotateY(${rotateY}deg)`,
                 transformOrigin: "center center",
                 transition: "transform 0.55s ease, opacity 0.45s ease",
-                filter: isActive
-                  ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))"
-                  : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
+                filter: isActive ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))" : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
                 pointerEvents: distance > 2 ? "none" : "auto",
               }}
             >
@@ -1258,27 +1267,12 @@ function FeaturedCoverflow({ products }) {
         })}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 16,
-          marginTop: 12,
-        }}
-      >
-        <button
-          className="btn-ghost"
-          onClick={() =>
-            setActiveIndex((current) => (current - 1 + products.length) % products.length)
-          }
-          style={{ padding: "10px 16px" }}
-        >
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 12 }}>
+        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current - 1 + products.length) % products.length)} style={{ padding: "10px 16px" }}>
           <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}>
             <Icon name="arrowRight" size={12} color="currentColor" />
           </span>
         </button>
-
         <div style={{ display: "flex", gap: 8 }}>
           {products.map((product, index) => (
             <button
@@ -1296,14 +1290,7 @@ function FeaturedCoverflow({ products }) {
             />
           ))}
         </div>
-
-        <button
-          className="btn-ghost"
-          onClick={() =>
-            setActiveIndex((current) => (current + 1) % products.length)
-          }
-          style={{ padding: "10px 16px" }}
-        >
+        <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current + 1) % products.length)} style={{ padding: "10px 16px" }}>
           <Icon name="arrowRight" size={12} color="currentColor" />
         </button>
       </div>
@@ -1332,23 +1319,23 @@ function ProductCard({ product }) {
         <div style={{ position: "absolute", top: 12, left: 12 }}>
           <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color }}>{product.tag}</span>
         </div>
-        {discount > 0 && <div style={{ position: "absolute", top: 12, right: 12, background: "var(--wolf-red)", color: "#fff", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 1 }}>-{discount}%</div>}
+        {discount > 0 && <div style={{ position: "absolute", top: 12, right: 12, background: "var(--wolf-red)", color: "#fff", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>-{discount}%</div>}
         <button onClick={() => toggleWishlist(product)} style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", padding: 8, color: inWishlist ? "var(--wolf-red)" : "var(--ash)" }}>
           <Icon name={inWishlist ? "heartFill" : "heart"} size={16} color={inWishlist ? "#c0392b" : "var(--ash)"} />
         </button>
       </div>
       <div style={{ padding: "20px 20px 24px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 6 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "#c9c3c3", marginBottom: 6 }}>
           {getCollectionById(product.collection)?.name?.toUpperCase()}
         </div>
         <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
         <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-          {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={10} color={s <= Math.floor(product.rating) ? "#c9a84c" : "#333"} />)}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginLeft: 4 }}>({product.reviews})</span>
+          {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating) ? "#c9a84c" : "#333"} />)}
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews})</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
           <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
@@ -1412,7 +1399,7 @@ function ShopPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
               {COLLECTIONS.map(col => (
-                <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "var(--silver)", fontFamily: "'Roboto', sans-serif", fontSize: 11, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "#cfcdcd", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
                   <span>{col.icon}</span>{col.name}
                 </button>
               ))}
@@ -1455,6 +1442,9 @@ function ShopPage() {
   );
 }
 
+// â”€â”€â”€ COLLECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
@@ -1472,47 +1462,43 @@ function ProductModal() {
         </div>
         <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
           <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20}/></button>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
             {getCollectionById(p.collection)?.name?.toUpperCase()}
           </div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 12 }}>{p.name}</h2>
           <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
             {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(p.rating) ? "#c9a84c" : "#333"}/>)}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginLeft: 6 }}>{p.rating} ({p.reviews} reviews)</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginLeft: 6 }}>{p.rating} ({p.reviews} reviews)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{"\u20b9"}{p.price.toLocaleString()}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--silver)", textDecoration: "line-through" }}>{"\u20b9"}{p.originalPrice.toLocaleString()}</span>
           </div>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.7, marginBottom: 24 }}>{p.description}</p>
+          <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", lineHeight: 1.7, marginBottom: 24 }}>{p.description}</p>
 
           {/* Color */}
-          {colors.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {colors.map(c => (
-                  <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
-                ))}
-              </div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {p.colors.map(c => (
+                <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Size */}
-          {sizes.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {sizes.map(s => (
-                  <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
-                ))}
-              </div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {p.sizes.map(s => (
+                <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
+              ))}
             </div>
-          )}
+          </div>
 
           {/* Qty */}
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>QUANTITY</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>QUANTITY</div>
             <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid var(--smoke)", width: "fit-content" }}>
               <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "8px 14px" }}><Icon name="minus" size={14}/></button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ivory)", padding: "0 16px" }}>{qty}</span>
@@ -1528,7 +1514,7 @@ function ProductModal() {
           </div>
           <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
             {["Secure Payment", "Free Ship \u20b91999+", "30-Day Returns"].map(t => (
-              <span key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)", letterSpacing: 1 }}>{t}</span>
+              <span key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1 }}>{t}</span>
             ))}
           </div>
         </div>
@@ -1850,41 +1836,14 @@ function CustomDesignPage() {
           {/* Upload zone */}
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
-
-            <input
-              type="file"
-              accept=".png,.jpg,.jpeg,.svg"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  setUploaded(true);
-                  showToast("Design uploaded!");
-                }
-              }}
-            />
-
-            <div
-              style={{
-                border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`,
-                padding: "60px 40px",
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                background: uploaded ? "rgba(201,168,76,0.05)" : "transparent"
-              }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"} />
+            <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
+              onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
+              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
                 {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
               </div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>
-                PNG, JPG, SVG · MAX 50MB
-              </div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
             </div>
-
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (
                 <div key={t} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 8 }}>{t}</div>
@@ -1909,7 +1868,7 @@ function CustomDesignPage() {
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["#0a0a0a", "#faf9f7", "#1a2a3a", "#1a0a0a", "#0a1a0a", "#2a2a2a"].map(c => (
-                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }} />
+                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }}/>
                   ))}
                 </div>
               </div>
@@ -1921,17 +1880,11 @@ function CustomDesignPage() {
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
-                <input className="input-dark" type="number" min="1" value={form.qty} onChange={(e) => {
-                    let value = parseInt(e.target.value);
-                    if (value < 1 || isNaN(value)) {
-                      value = 1;
-                    }
-                    setForm(f => ({ ...f, qty: value }));
-                }} />
+                <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))}/>
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
-                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
@@ -2002,14 +1955,13 @@ function BulkOrderPage() {
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br />CORPORATE</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
       </div>
 
       <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
         <div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>PRICING TIERS</h2>
-
           {[["10-49 pcs", "5% OFF", "Team orders"], ["50-99 pcs", "12% OFF", "Department orders"], ["100-499 pcs", "20% OFF", "Corporate branding"], ["500+ pcs", "30% OFF + Custom", "Enterprise bulk"]].map(([qty, disc, label]) => (
             <div key={qty} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--smoke)" }}>
               <div>
@@ -2019,10 +1971,9 @@ function BulkOrderPage() {
               <span style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>{disc}</span>
             </div>
           ))}
-
           <div style={{ marginTop: 32 }}>
             {["\u2726 Custom logo embroidery/print", "\u2726 Pantone color matching", "\u2726 Individual name printing", "\u2726 Dedicated account manager", "\u2726 Net-30 payment terms available"].map(t => (
-              <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
+              <div key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{t}</div>
             ))}
           </div>
         </div>
@@ -2031,7 +1982,7 @@ function BulkOrderPage() {
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>REQUEST A QUOTE</h2>
 
           {errorMessage && (
-            <div ref={errorRef} style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
+            <div style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
               ✕ {errorMessage}
             </div>
           )}
@@ -2039,21 +1990,19 @@ function BulkOrderPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>ORDER TYPE</label>
-              <select className="input-dark" value={form.type} onChange={e => updateField("type", e.target.value)}>
+              <select className="input-dark" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
                 <option value="bulk">BULK ORDER</option>
                 <option value="corporate">CORPORATE BRANDING</option>
                 <option value="event">EVENT MERCHANDISE</option>
                 <option value="startup">STARTUP KIT</option>
               </select>
             </div>
-
-            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => updateField("org", e.target.value)} />
-            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => updateField("contact", e.target.value)} />
-            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => updateField("email", e.target.value)} />
-            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} min="5" onChange={e => updateField("qty", e.target.value === "" ? "" : Number(e.target.value))} />
-            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => updateField("message", e.target.value)} style={{ minHeight: 120 }} />
-
-            <button className="btn-gold" style={{ padding: "16px" }} onClick={handleSubmit}>REQUEST QUOTE</button>
+            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => setForm(f => ({ ...f, org: e.target.value }))}/>
+            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))}/>
+            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}/>
+            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} min="10"/>
+            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} style={{ minHeight: 120 }}/>
+            <button className="btn-gold" style={{ padding: "16px" }} onClick={() => showToast("Quote request sent! We'll contact you within 24hrs.")}>REQUEST QUOTE</button>
           </div>
         </div>
       </div>
@@ -2117,4 +2066,3 @@ function BulkOrderPage() {
 //     </footer>
 //   );
 // }
-

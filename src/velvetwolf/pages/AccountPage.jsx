@@ -104,14 +104,14 @@ export function AccountPage() {
               {displayInitial}
             </div>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 6 }}>{user.isAdmin ? "ADMIN WOLF" : "WOLF PACK MEMBER"}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 6 }}>{user.isAdmin ? "ADMIN WOLF" : "WOLF PACK MEMBER"}</div>
               <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2 }}>{displayName.toUpperCase()}</h1>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 4 }}>{user.email}</div>
+              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "#cac7c7", marginTop: 4 }}>{user.email}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 0 }}>
             {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"]].map(([t, label]) => (
-              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, padding: "12px 24px", cursor: "pointer" }}>{label}</button>
+              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 24px", cursor: "pointer" }}>{label}</button>
             ))}
           </div>
         </div>
@@ -123,7 +123,7 @@ export function AccountPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 40 }}>
               {[["ORDERS", userOrders.length], ["WISHLIST", wishlist.length], ["CART ITEMS", cart.length]].map(([label, val]) => (
                 <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)" }}>{val}</div>
                 </div>
               ))}
@@ -131,7 +131,7 @@ export function AccountPage() {
             {user.isAdmin && (
               <div style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
                   <p style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>
                 </div>
                 <button className="btn-gold" onClick={() => setPage("admin")}>ADMIN DASHBOARD</button>
@@ -144,11 +144,11 @@ export function AccountPage() {
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>ORDER HISTORY</h2>
             {ordersLoading ? (
-              <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", letterSpacing: 2 }}>
+              <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>
                 LOADING ORDERS...
               </div>
             ) : userOrders.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "var(--silver)", fontFamily: "var(--font-serif)", fontStyle: "italic" }}>
+              <div style={{ textAlign: "center", padding: "60px 0", color: "var(--silver)", fontFamily: "'Roboto', sans-serif", fontStyle: "italic", fontSize: 18 }}>
                 No orders yet — start shopping!
               </div>
             ) : userOrders.map(order => (
@@ -184,7 +184,7 @@ export function AccountPage() {
                 </div>
               ))}
             </div>
-            {wishlist.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "var(--silver)", fontFamily: "var(--font-serif)", fontStyle: "italic" }}>Your wishlist is empty</div>}
+            {wishlist.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "var(--silver)", fontFamily: "'Roboto', sans-serif", fontStyle: "italic", fontSize: 18 }}>Your wishlist is empty</div>}
           </div>
         )}
 

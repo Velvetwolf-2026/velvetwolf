@@ -24,7 +24,7 @@ const STATUS_GUIDE = [
   { status: "OUT FOR DELIVERY", desc: "Your delivery agent is on the way." },
   { status: "DELIVERED", desc: "Your order has been delivered. Enjoy!" },
   { status: "RETURN INITIATED", desc: "Your return request is being processed." },
-  
+
 ];
 
 export default function TrackOrder() {
@@ -42,7 +42,7 @@ export default function TrackOrder() {
     color: text,
     padding: "12px 14px",
     fontFamily: "'Space Mono',monospace",
-    fontSize: 12,
+    fontSize: 13,
     outline: "none",
     boxSizing: "border-box",
   };
@@ -366,14 +366,16 @@ export default function TrackOrder() {
 
         <Sec title="NEED HELP?">
           <p style={S.p}>
-            If your tracking hasn't updated in 48 hours, contact us at{" "}
+            If your tracking hasn't updated in{" "}
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>48</span> hours, contact us at{" "}
             <a
               href="mailto:info@velvetwolf.in"
               style={{ color: gold, textDecoration: "none" }}
             >
               info@velvetwolf.in
             </a>{" "}
-            with your order ID. We respond within 4 hours.
+            with your order ID. We respond within{" "}
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>4</span> hours.
           </p>
         </Sec>
       </div>
