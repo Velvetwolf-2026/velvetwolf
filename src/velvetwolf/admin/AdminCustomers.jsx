@@ -33,7 +33,7 @@ export default function AdminCustomers() {
   return (
     <div>
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>CUSTOMERS</h1>
       </div>
 
@@ -45,7 +45,7 @@ export default function AdminCustomers() {
           ["AVG SPEND",       `₹${avgSpend.toLocaleString()}`],
         ].map(([label, val]) => (
           <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 8 }}>{label}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 8 }}>{label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{val}</div>
           </div>
         ))}
@@ -62,19 +62,19 @@ export default function AdminCustomers() {
         />
         <button type="submit" className="btn-gold" style={{ padding: "0 20px", fontSize: 10 }}>SEARCH</button>
         {search && (
-          <button type="button" className="btn-ghost" style={{ padding: "0 14px", fontSize: 9 }} onClick={() => { setSearch(""); load(""); }}>CLEAR</button>
+          <button type="button" className="btn-ghost" style={{ padding: "0 14px", fontSize: 10 }} onClick={() => { setSearch(""); load(""); }}>CLEAR</button>
         )}
       </form>
 
       <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
+          <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
                 {["CUSTOMER", "EMAIL", "ORDERS", "TOTAL SPENT", "JOINED", "VERIFIED"].map((h) => (
-                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
+                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -84,12 +84,12 @@ export default function AdminCustomers() {
               ) : customers.map((c) => (
                 <tr key={c.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
                   <td style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ivory)", padding: "14px 16px" }}>{c.name || "—"}</td>
-                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.email}</td>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", padding: "14px 16px" }}>{c.email}</td>
                   <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)", padding: "14px 16px" }}>{c.orderCount}</td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", padding: "14px 16px" }}>₹{c.totalSpent.toLocaleString()}</td>
-                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN") : "—"}</td>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", padding: "14px 16px" }}>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-IN") : "—"}</td>
                   <td style={{ padding: "14px 16px" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 8px", background: c.isVerified ? "rgba(129,199,132,0.2)" : "rgba(255,138,128,0.2)", color: c.isVerified ? "#81c784" : "#ff8a80" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, padding: "3px 8px", background: c.isVerified ? "rgba(129,199,132,0.2)" : "rgba(255,138,128,0.2)", color: c.isVerified ? "#81c784" : "#ff8a80" }}>
                       {c.isVerified ? "VERIFIED" : "PENDING"}
                     </span>
                   </td>

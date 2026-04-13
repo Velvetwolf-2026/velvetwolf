@@ -43,10 +43,10 @@ export default function AdminDashboard() {
     return (
       <div>
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>OVERVIEW</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>OVERVIEW</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>DASHBOARD</h1>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
   return (
     <div>
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>OVERVIEW</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>OVERVIEW</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>DASHBOARD</h1>
       </div>
 
@@ -69,24 +69,24 @@ export default function AdminDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 40 }}>
         {statCards.map((s) => (
           <div key={s.label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 12 }}>{s.label}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 12 }}>{s.label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: s.color, marginBottom: 6 }}>{s.value}</div>
-            {s.sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)" }}>{s.sub}</div>}
+            {s.sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)" }}>{s.sub}</div>}
           </div>
         ))}
       </div>
 
       {/* Recent orders */}
       <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>RECENT ORDERS</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>RECENT ORDERS</div>
         {(stats?.recentOrders || []).length === 0 ? (
-          <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)", padding: "24px 0" }}>No orders yet.</div>
+          <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "'Roboto', sans-serif", padding: "24px 0" }}>No orders yet.</div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
                 {["ORDER ID", "CUSTOMER", "DATE", "ITEMS", "TOTAL", "STATUS"].map((h) => (
-                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "8px 0", textAlign: "left", borderBottom: "1px solid var(--smoke)" }}>{h}</th>
+                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", padding: "8px 0", textAlign: "left", borderBottom: "1px solid var(--smoke)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
