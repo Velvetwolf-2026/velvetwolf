@@ -80,10 +80,12 @@ export function redirectResponse(location, statusCode = 302, extraHeaders = {}, 
 
 export const getCorsHeaders = (event) => {
   const requestOrigin = event?.headers?.origin || event?.headers?.Origin || "";
-  const configuredOrigins = String(process.env.FRONTEND_URL || "")
+  const configuredOrigins = String(process.env.FRONTEND_URL || "" ||process.env.PROD_FRONTEND_URL_WWW || process.env.PROD_FRONTEND_URL)
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
+
+  
 
   let selectedOrigin = "";
   if (requestOrigin) {
