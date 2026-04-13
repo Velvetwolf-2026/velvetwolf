@@ -24,8 +24,8 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
       {/* Sidebar */}
       <div className="admin-sidebar" style={{ padding: 0, position: "relative" }}>
         <div style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
         </div>
 
         <div style={{ padding: "20px 0" }}>
@@ -45,7 +45,7 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
                 alignItems: "center",
                 gap: 12,
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontSize: 11,
                 letterSpacing: 2,
                 textAlign: "left",
               }}
@@ -61,7 +61,7 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
           <button
             onClick={() => setPage("home")}
             className="btn-ghost"
-            style={{ width: "100%", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            style={{ width: "100%", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
             <Icon name="arrowRight" size={12} />
             BACK TO STORE

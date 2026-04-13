@@ -34,12 +34,12 @@ export default function Footer() {
                 marginBottom: 20,
               }}
             >
-              LUXURY STREETWEAR · EST. 2026
+              LUXURY STREETWEAR · EST. 2025
             </div>
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 20,
+                fontSize: 17,
                 color: "var(--silver)",
                 lineHeight: 1.8,
                 fontStyle: "italic",
@@ -93,7 +93,7 @@ export default function Footer() {
                   onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
+                    fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
                     marginBottom: 10,
@@ -125,7 +125,7 @@ export default function Footer() {
                   onClick={() => setPage(pg)}
                   style={{
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
+                    fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
                     marginBottom: 10,
@@ -153,7 +153,7 @@ export default function Footer() {
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 19,
+                fontSize: 17,
                 color: "var(--silver)",
                 marginBottom: 16,
                 lineHeight: 1.6,
@@ -178,7 +178,7 @@ export default function Footer() {
           }}
         >
           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1 }}>
-            © 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
+            © 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
           <div style={{ display: "flex", gap: 20 }}>
