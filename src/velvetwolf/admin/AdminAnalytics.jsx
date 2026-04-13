@@ -21,10 +21,10 @@ export default function AdminAnalytics() {
     return (
       <div>
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>INSIGHTS</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>INSIGHTS</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>ANALYTICS</h1>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
       </div>
     );
   }
@@ -43,7 +43,7 @@ export default function AdminAnalytics() {
   return (
     <div>
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>INSIGHTS</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>INSIGHTS</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>ANALYTICS</h1>
       </div>
 
@@ -51,9 +51,9 @@ export default function AdminAnalytics() {
 
         {/* Monthly revenue chart */}
         <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>MONTHLY REVENUE (LAST 12 MONTHS)</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>MONTHLY REVENUE (LAST 12 MONTHS)</div>
           {monthly.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
           ) : (
             <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 140 }}>
               {monthly.map((m, i) => {
@@ -73,9 +73,9 @@ export default function AdminAnalytics() {
 
         {/* Daily revenue — last 30 days */}
         <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>DAILY REVENUE (LAST 30 DAYS)</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>DAILY REVENUE (LAST 30 DAYS)</div>
           {daily.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
           ) : (
             <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
               {daily.map((d) => {
@@ -90,9 +90,9 @@ export default function AdminAnalytics() {
 
         {/* Orders by status */}
         <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>ORDERS BY STATUS</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>ORDERS BY STATUS</div>
           {Object.keys(ordersByStatus).length === 0 ? (
-            <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
           ) : Object.entries(ordersByStatus).map(([status, count]) => {
             const total = Object.values(ordersByStatus).reduce((a, b) => a + b, 0);
             const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -112,9 +112,9 @@ export default function AdminAnalytics() {
 
         {/* Top products */}
         <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>TOP SELLING PRODUCTS</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>TOP SELLING PRODUCTS</div>
           {topProducts.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>No sales data yet.</div>
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No sales data yet.</div>
           ) : topProducts.map((p) => {
             const pct = Math.round((p.quantity / maxQty) * 100);
             return (

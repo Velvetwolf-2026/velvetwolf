@@ -95,14 +95,14 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>PRODUCTS</h1>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginTop: 6 }}>{total} TOTAL</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>{total} TOTAL</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <form onSubmit={(e) => { e.preventDefault(); load(search); }} style={{ display: "flex", gap: 8 }}>
-            <input className="input-dark" placeholder="SEARCH..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: "8px 12px", fontSize: 10 }} />
-            <button type="submit" className="btn-ghost" style={{ fontSize: 9, padding: "0 12px" }}>SEARCH</button>
+            <input className="input-dark" placeholder="SEARCH..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: "8px 12px", fontSize: 12 }} />
+            <button type="submit" className="btn-ghost" style={{ fontSize: 12, padding: "0 12px" }}>SEARCH</button>
           </form>
           <button className="btn-gold" onClick={() => { setAdding(true); setEditProduct(null); }} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Icon name="plus" size={14} /> ADD PRODUCT
@@ -137,13 +137,13 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
 
       <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
+          <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
                 {["PRODUCT", "COLLECTION", "PRICE", "STOCK", "TAG", "ACTIONS"].map((h) => (
-                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
+                  <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -157,7 +157,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                       ? <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
                       : <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>}
                   </td>
-                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px", letterSpacing: 1 }}>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", padding: "14px 16px", letterSpacing: 1 }}>
                     {COLLECTIONS.find((c) => c.id === p.collection)?.name || p.collection}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
@@ -167,23 +167,23 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                   </td>
                   <td style={{ padding: "14px 16px" }}>
                     {editProduct?.id === p.id
-                      ? <input className="input-dark" type="number" value={editProduct.stock} onChange={(e) => setEditProduct((ep) => ({ ...ep, stock: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 11, width: 80 }} />
-                      : <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: Number(p.stock ?? 0) < 10 ? "#ff8a65" : Number(p.stock ?? 0) < 20 ? "#ffd54f" : "#81c784" }}>{p.stock ?? 0}</span>}
+                      ? <input className="input-dark" type="number" value={editProduct.stock} onChange={(e) => setEditProduct((ep) => ({ ...ep, stock: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 12, width: 80 }} />
+                      : <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: Number(p.stock ?? 0) < 10 ? "#ff8a65" : Number(p.stock ?? 0) < 20 ? "#ffd54f" : "#81c784" }}>{p.stock ?? 0}</span>}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 8px", background: TAG_COLORS[p.tag]?.bg || "var(--smoke)", color: TAG_COLORS[p.tag]?.color || "var(--ash)" }}>{p.tag || "—"}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1, padding: "3px 8px", background: TAG_COLORS[p.tag]?.bg || "var(--smoke)", color: TAG_COLORS[p.tag]?.color || "var(--ash)" }}>{p.tag || "—"}</span>
                   </td>
                   <td style={{ padding: "14px 16px" }}>
                     <div style={{ display: "flex", gap: 8 }}>
                       {editProduct?.id === p.id ? (
                         <>
-                          <button onClick={handleSave} disabled={saving} style={{ background: "none", border: "1px solid #81c784", color: "#81c784", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 9 }}>{saving ? "..." : "SAVE"}</button>
-                          <button onClick={() => setEditProduct(null)} style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--silver)", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 9 }}>CANCEL</button>
+                          <button onClick={handleSave} disabled={saving} style={{ background: "none", border: "1px solid #81c784", color: "#81c784", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 11 }}>{saving ? "..." : "SAVE"}</button>
+                          <button onClick={() => setEditProduct(null)} style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--silver)", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 11 }}>CANCEL</button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => { setEditProduct({ ...p }); setAdding(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="edit" size={14} /></button>
-                          <button onClick={() => handleDelete(p.id)} disabled={saving} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={14} /></button>
+                          <button onClick={() => { setEditProduct({ ...p }); setAdding(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => handleDelete(p.id)} disabled={saving} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={16} /></button>
                         </>
                       )}
                     </div>

@@ -132,7 +132,7 @@ export function AccountPage() {
               <div style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
-                  <p style={{ fontFamily: "var(--font-serif)", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>
+                  <p style={{ fontFamily: "'Roboto', sans-serif", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>
                 </div>
                 <button className="btn-gold" onClick={() => setPage("admin")}>ADMIN DASHBOARD</button>
               </div>

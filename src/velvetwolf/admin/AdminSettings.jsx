@@ -78,24 +78,24 @@ export default function AdminSettings() {
   return (
     <div>
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>CONFIGURE</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>CONFIGURE</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>SETTINGS</h1>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         {sections.map((section) => (
           <div key={section.title} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>{section.title}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>{section.title}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {section.fields.map(({ label, key, type = "text" }) => (
                 <div key={key}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, color: errors[key] ? "#e07070" : "var(--silver)", display: "block", marginBottom: 6 }}>{label}</label>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1, color: errors[key] ? "#e07070" : "var(--silver)", display: "block", marginBottom: 6 }}>{label}</label>
                   <input
                     className="input-dark"
                     type={type}
                     value={settings[key]}
                     onChange={(e) => set(key, e.target.value)}
-                    style={{ padding: "8px 12px", fontSize: 11, borderColor: errors[key] ? "rgba(192,57,43,0.5)" : undefined }}
+                    style={{ padding: "8px 12px", fontSize: 12, borderColor: errors[key] ? "rgba(192,57,43,0.5)" : undefined }}
                   />
                   {errors[key] && <p style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#e07070", marginTop: 4 }}>{errors[key]}</p>}
                 </div>
