@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "./config/supabase.js";
-import { ApiError, logError, logInfo } from "./http.js";
+import { supabaseAdmin } from "../config/supabase.js";
+import { ApiError, logError, logInfo } from "../utils/http.js";
 
 function productLogContext(context = {}) {
   return { service: "product", ...context };
@@ -32,18 +32,12 @@ export async function getProducts({ collection, search, limit = 100, offset = 0 
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (collection) {
-    query = query.eq("collection", collection);
-  }
-
+  if (collection) query = query.eq("collection", collection);
   if (search) {
-    query = query.or(
-      `name.ilike.%${search}%,description.ilike.%${search}%,tag.ilike.%${search}%`
-    );
+    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,tag.ilike.%${search}%`);
   }
 
   const { data, error } = await query;
-
   if (error) {
     logError("Products fetch failed", productLogContext({ collection, search, error }));
     throw new ApiError(500, error.message || "Failed to load products.");

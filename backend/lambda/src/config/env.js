@@ -5,14 +5,13 @@ import { fileURLToPath } from "url";
 let loaded = false;
 
 export function loadBackendEnv() {
-  if (loaded) {
-    return;
-  }
+  if (loaded) return;
 
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  // Depth: src/config/ → src/ → lambda/ → backend/ → root
   const rootDir = path.resolve(currentDir, "../../../../");
   const candidates = [
-    path.join(rootDir, "backend", "lambda",".env.local"),
+    path.join(rootDir, "backend", "lambda", ".env.local"),
     path.join(rootDir, ".env"),
     path.join(rootDir, "backend", "lambda", ".env"),
   ];
@@ -23,4 +22,3 @@ export function loadBackendEnv() {
 
   loaded = true;
 }
-

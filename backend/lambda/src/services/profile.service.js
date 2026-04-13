@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "./config/supabase.js";
-import { ApiError, logError, logInfo } from "./http.js";
+import { supabaseAdmin } from "../config/supabase.js";
+import { ApiError, logError, logInfo } from "../utils/http.js";
 
 function profileLogContext(context = {}) {
   return { service: "profile", ...context };
@@ -7,10 +7,7 @@ function profileLogContext(context = {}) {
 
 export async function getProfileById(userId) {
   const normalizedUserId = String(userId || "").trim();
-
-  if (!normalizedUserId) {
-    throw new ApiError(400, "Profile id is required.");
-  }
+  if (!normalizedUserId) throw new ApiError(400, "Profile id is required.");
 
   logInfo("Fetching profile by id", profileLogContext({ userId: normalizedUserId }));
 

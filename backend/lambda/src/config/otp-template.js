@@ -48,15 +48,8 @@ function escapeHtml(value) {
 
 export function normalizeOtpKind(kind) {
   const value = String(kind || "").toLowerCase().trim();
-
-  if (["signup", "sign-up", "register", "registration"].includes(value)) {
-    return "signup";
-  }
-
-  if (["forgot", "forget", "forgot-password", "forget-password", "recovery", "reset"].includes(value)) {
-    return "forgot";
-  }
-
+  if (["signup", "sign-up", "register", "registration"].includes(value)) return "signup";
+  if (["forgot", "forget", "forgot-password", "forget-password", "recovery", "reset"].includes(value)) return "forgot";
   return "login";
 }
 
