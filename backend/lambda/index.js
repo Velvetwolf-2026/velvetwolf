@@ -16,6 +16,18 @@ import { loadBackendEnv } from "./shared/config/env.js";
 import { sendContactMessage } from "./shared/contact-service.js";
 import { getProfileById } from "./shared/profile-service.js";
 import { getWishlistByUserId, toggleWishlistByUserId } from "./shared/wishlist-service.js";
+import { requireAdmin } from "./shared/admin-auth.js";
+import {
+  getAdminDashboardStats,
+  getAdminOrders,
+  updateAdminOrderStatus,
+  getAdminProducts,
+  createAdminProduct,
+  updateAdminProduct,
+  deleteAdminProduct,
+  getAdminCustomers,
+  getAdminAnalytics,
+} from "./shared/admin-service.js";
 import {
   ApiError,
   jsonResponse,
@@ -201,6 +213,80 @@ async function dispatch(method, route, body, query, requestId, event) {
       : (event.body || "");
     const result = await handleSnsNotification(rawBody);
     return jsonResponse(200, result, {}, event);
+  }
+
+  // ─── ADMIN ROUTES ─────────────────────────────────────────────────────────
+  // requireAdmin() is called first on every /admin/* request.
+  // It verifies the JWT and asserts role === "admin".
+  // Any request without a valid admin token is rejected before any DB call.
+  if (route.startsWith("/admin")) {
+    const admin = requireAdmin(event); // throws ApiError(401/403) if invalid
+
+    // GET /admin/dashboard
+    if (method === "GET" && route === "/admin/dashboard") {
+      return jsonResponse(200, await getAdminDashboardStats(), {}, event);
+    }
+
+    // GET /admin/orders[?status=&page=&limit=]
+    if (method === "GET" && route === "/admin/orders") {
+      return jsonResponse(200, await getAdminOrders({
+        status: query.status,
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 50,
+      }), {}, event);
+    }
+
+    // PATCH /admin/orders/:id/status
+    // Route pattern: /admin/orders/<uuid>/status
+    const orderStatusMatch = route.match(/^\/admin\/orders\/([^/]+)\/status$/);
+    if (method === "PATCH" && orderStatusMatch) {
+      const orderId = orderStatusMatch[1];
+      return jsonResponse(200, await updateAdminOrderStatus(orderId, body.status, admin.id), {}, event);
+    }
+
+    // GET /admin/products[?collection=&search=&page=&limit=]
+    if (method === "GET" && route === "/admin/products") {
+      return jsonResponse(200, await getAdminProducts({
+        collection: query.collection,
+        search: query.search,
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 100,
+      }), {}, event);
+    }
+
+    // POST /admin/products
+    if (method === "POST" && route === "/admin/products") {
+      return jsonResponse(201, await createAdminProduct(body, admin.id), {}, event);
+    }
+
+    // PUT /admin/products/:id
+    const productMatch = route.match(/^\/admin\/products\/([^/]+)$/);
+    if (method === "PUT" && productMatch) {
+      return jsonResponse(200, await updateAdminProduct(productMatch[1], body, admin.id), {}, event);
+    }
+
+    // DELETE /admin/products/:id
+    if (method === "DELETE" && productMatch) {
+      return jsonResponse(200, await deleteAdminProduct(productMatch[1], admin.id), {}, event);
+    }
+
+    // GET /admin/customers[?search=&page=&limit=]
+    if (method === "GET" && route === "/admin/customers") {
+      return jsonResponse(200, await getAdminCustomers({
+        search: query.search,
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 50,
+      }), {}, event);
+    }
+
+    // GET /admin/analytics
+    if (method === "GET" && route === "/admin/analytics") {
+      return jsonResponse(200, await getAdminAnalytics(), {}, event);
+    }
+
+    // No sub-route matched within /admin
+    logWarn("No admin route matched", { requestId, method, route, adminId: admin.id });
+    return jsonResponse(404, { error: "Admin route not found" }, {}, event);
   }
 
   logWarn("No backend route matched request", { requestId, method, route, query });

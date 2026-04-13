@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef, Component } from "react";
+import { useState, useEffect, useContext, useRef, Component, lazy, Suspense } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
@@ -12,7 +12,9 @@ import { loadProductsFromAPI } from './velvetwolf/utils/products';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 import Navbar from "./velvetwolf/components/Navbar";
 import Footer from "./velvetwolf/components/Footer";
-import AdminLayout from "./velvetwolf/admin/AdminLayout";
+
+// Admin chunk is lazy-loaded — not downloaded by regular users
+const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
 
 const GlobalStyles = () => (
   <style>{`
@@ -889,7 +891,15 @@ export default function VelvetWolf() {
       <GlobalStyles />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {page === "admin" && canAccessAdmin ? <AdminLayout Icon={Icon} TAG_COLORS={TAG_COLORS} /> : (
+      {page === "admin" && canAccessAdmin ? (
+        <Suspense fallback={
+          <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
+          </div>
+        }>
+          <AdminLayout Icon={Icon} TAG_COLORS={TAG_COLORS} />
+        </Suspense>
+      ) : (
         <>
           {/* â"€â"€ Auth pages: standalone, no Navbar / Footer â"€â"€ */}
           {page === "login"           && <Login />}
