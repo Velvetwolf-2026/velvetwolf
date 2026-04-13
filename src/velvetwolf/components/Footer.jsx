@@ -48,7 +48,7 @@ export default function Footer() {
               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
             </p>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 24, fontSize: 17 }}>
+            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
               <a
                 href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
                 target="_blank"

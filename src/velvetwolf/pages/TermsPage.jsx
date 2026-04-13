@@ -8,7 +8,7 @@ export default function TermsPage() {
   return (
     <div style={S.page}>
       <div style={S.wrap}>
-        <PageHeader eyebrow="LEGAL" title="TERMS & AGREEMENTS" sub="Last updated: March 2025  ·  Please read carefully before using our services" />
+        <PageHeader eyebrow="LEGAL" title="TERMS & AGREEMENTS" sub="Last updated: March 2026  ·  Please read carefully before using our services" />
         <p style={S.p}>By accessing velvetwolf.in or placing an order, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.</p>
 
         <Sec title="1. ACCEPTANCE OF TERMS">

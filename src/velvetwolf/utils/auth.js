@@ -2,8 +2,6 @@ import { supabase } from './supabase';
 import { checkRateLimit, recordAttempt } from './ratelimit';
 import { apiUrl } from './api';
 
-const ADMIN_EMAIL = 'velvetwolfofficial@gmail.com';
-
 function createControlledError(error, fallbackMessage) {
   return new Error(error?.message || fallbackMessage);
 }
@@ -78,7 +76,8 @@ export async function signIn(email, password) {
       user: {
         ...data.user,
         ...profile,
-        isAdmin: profile?.is_admin || false,
+        role: profile?.role || 'customer',
+        isAdmin: (profile?.role || 'customer') === 'admin',
       },
     };
   } catch (err) {

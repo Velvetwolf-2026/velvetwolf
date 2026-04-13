@@ -10,7 +10,7 @@ export default function PrivacyPolicy() {
   return (
     <div style={S.page}>
       <div style={S.wrap}>
-        <PageHeader eyebrow="LEGAL" title="PRIVACY POLICY" sub="Last updated: March 2025  ·  Effective immediately" />
+        <PageHeader eyebrow="LEGAL" title="PRIVACY POLICY" sub="Last updated: March 2026  ·  Effective immediately" />
         <p style={S.p}>VelvetWolf is committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit velvetwolf.in or make a purchase.</p>
 
         <Sec title="1. INFORMATION WE COLLECT">

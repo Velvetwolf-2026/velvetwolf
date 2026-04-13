@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef, Component } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
@@ -12,6 +12,7 @@ import { loadProductsFromAPI } from './velvetwolf/utils/products';
 import { placeOrder, getUserOrders } from './velvetwolf/utils/order';
 import Navbar from "./velvetwolf/components/Navbar";
 import Footer from "./velvetwolf/components/Footer";
+import AdminLayout from "./velvetwolf/admin/AdminLayout";
 
 const GlobalStyles = () => (
   <style>{`
@@ -272,9 +273,8 @@ const GlobalStyles = () => (
   `}</style>
 );
 
-// â”€â”€â”€ CONTEXT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// AppContext is imported from ./AppContext.js â€” shared with Login, Signup, ForgetPassword
-
+// â"€â"€â"€ CONTEXT â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// AppContext is imported from ./AppContext.js â€" shared with Login, Signup, ForgetPassword
 const TAG_COLORS = {
   "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
   "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
@@ -285,7 +285,26 @@ const TAG_COLORS = {
   "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
 };
 
-// â”€â”€â”€ ICONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PAGE ERROR BOUNDARY ─────────────────────────────────────────────────────
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error("[PageError]", error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ paddingTop: 120, textAlign: "center", color: "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+          <div style={{ color: "var(--wolf-red)", fontSize: 14, marginBottom: 12 }}>✕ PAGE FAILED TO RENDER</div>
+          <div style={{ color: "var(--silver)", marginBottom: 20 }}>{this.state.error?.message || "Unknown error"}</div>
+          <button className="btn-ghost" style={{ fontSize: 9 }} onClick={() => this.setState({ error: null })}>← GO BACK</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// â"€â"€â"€ ICONS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
     wolf: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2L8 6H4l3 3-1 5 6-3 6 3-1-5 3-3h-4L12 2zm0 8a2 2 0 100 4 2 2 0 000-4z"/></svg>,
@@ -316,7 +335,7 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
   return icons[name] || null;
 };
 
-// â”€â”€â”€ TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ TOAST â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const Toast = ({ message, type = "success", onClose }) => {
   useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
   const colors = { success: "#c9a84c", error: "#c0392b", info: "#4fc3f7" };
@@ -417,10 +436,16 @@ const ProductImage = ({ product, height = 280 }) => {
   );
 };
 
-// â”€â”€â”€ MAIN APP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ MAIN APP â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 export default function VelvetWolf() {
-  const [page, setPage] = useState("home");
+  const [page, _setPage] = useState("home");
   const [adminPage, setAdminPage] = useState("dashboard");
+
+  // Wrap setPage so every navigation is reflected in browser history
+  const setPage = (nextPage) => {
+    _setPage(nextPage);
+    window.history.pushState({ page: nextPage }, "", window.location.pathname);
+  };
   const [products, setProducts] = useState(INITIAL_COLLECTION_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -432,19 +457,8 @@ export default function VelvetWolf() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCollection, setActiveCollection] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [orders, setOrders] = useState([
-    { id: "VW-2024-001", date: "2024-12-10", items: 2, total: 2598, status: "Delivered", customer: "Arjun Mehta" },
-    { id: "VW-2024-002", date: "2024-12-12", items: 1, total: 2499, status: "Shipped", customer: "Priya Sharma" },
-    { id: "VW-2024-003", date: "2024-12-14", items: 3, total: 4197, status: "Processing", customer: "Ravi Kumar" },
-    { id: "VW-2024-004", date: "2024-12-15", items: 1, total: 899, status: "Pending", customer: "Sneha Patel" },
-  ]);
-  const [customers] = useState([
-    { id: 1, name: "Arjun Mehta", email: "arjun@example.com", orders: 5, spent: 12450, joined: "Oct 2024", tier: "Gold" },
-    { id: 2, name: "Priya Sharma", email: "priya@example.com", orders: 3, spent: 7890, joined: "Nov 2024", tier: "Silver" },
-    { id: 3, name: "Ravi Kumar", email: "ravi@example.com", orders: 8, spent: 21300, joined: "Sep 2024", tier: "Platinum" },
-    { id: 4, name: "Sneha Patel", email: "sneha@example.com", orders: 2, spent: 3400, joined: "Dec 2024", tier: "Bronze" },
-    { id: 5, name: "Kabir Singh", email: "kabir@example.com", orders: 12, spent: 34560, joined: "Aug 2024", tier: "Platinum" },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [customers] = useState([]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -492,17 +506,25 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
-  const getBackendUserId = (value) => value?.id || null;
+  // cart_items / wishlist_items FK references auth.users(id), so auth_user_id takes priority
+  const getBackendUserId = (value) => value?.auth_user_id || value?.id || null;
+  const normalizeUserRoleState = (value = {}) => {
+    const role = value?.role || (value?.isAdmin ? "admin" : "customer");
+    return {
+      ...value,
+      role,
+      isAdmin: role === "admin",
+    };
+  };
 
   const buildUserState = async (authUser) => {
     const storedUser = getStoredUser();
     const backendToken = localStorage.getItem("token");
     const tokenUser = backendToken ? parseBackendToken(backendToken) : null;
     const appUserId = storedUser?.id || tokenUser?.id || null;
-    const profileUserId = authUser?.id || storedUser?.auth_user_id || null;
 
     if (!authUser?.id) {
-      return {
+      return normalizeUserRoleState({
         ...storedUser,
         ...authUser,
         id: appUserId,
@@ -511,41 +533,43 @@ export default function VelvetWolf() {
         name: authUser.name || storedUser?.name || authUser.email?.split("@")[0],
         full_name: authUser.full_name || authUser.name || storedUser?.full_name || storedUser?.name,
         authSource: authUser.authSource || storedUser?.authSource || "backend",
-        isAdmin: storedUser?.isAdmin || false,
-      };
+        role: storedUser?.role || tokenUser?.role || "customer",
+      });
     }
 
     try {
-      const profile = profileUserId ? await getProfile(profileUserId) : null;
-      return {
+      const profile = appUserId ? await getProfile(appUserId) : null;
+      return normalizeUserRoleState({
         ...storedUser,
         ...authUser,
         ...profile,
         id: appUserId || authUser.id,
         auth_user_id: authUser.id,
-        name: profile.full_name || storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
-        isAdmin: profile.is_admin,
-      };
+        name: profile?.name || storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
+        full_name: storedUser?.full_name || authUser.user_metadata?.full_name || profile?.name,
+        role: profile?.role || storedUser?.role || tokenUser?.role || "customer",
+      });
     } catch (err) {
       console.warn("[buildUserState]", err.message);
-      return {
+      return normalizeUserRoleState({
         ...storedUser,
         ...authUser,
         id: appUserId || authUser.id,
         auth_user_id: authUser.id,
         name: storedUser?.name || authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
         full_name: storedUser?.full_name || authUser.user_metadata?.full_name,
-        isAdmin: storedUser?.isAdmin || false,
-      };
+        role: storedUser?.role || tokenUser?.role || "customer",
+      });
     }
   };
 
-  // â”€â”€ syncCartFromDB: loads DB cart into React state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Defined first â€” addToCart/removeFromCart below both call it
+  // â"€â"€ syncCartFromDB: loads DB cart into React state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+  // Defined first â€" addToCart/removeFromCart below both call it
   const syncCartFromDB = async (userId) => {
     try {
       const items = await loadCartFromDB(userId);
       setCart(items);
+      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch {}
     } catch (err) {
       console.error('[syncCartFromDB]', err.message);
     }
@@ -665,6 +689,7 @@ export default function VelvetWolf() {
     try {
       if (user?.id) {
         await supabase.auth.signOut();
+        localStorage.removeItem(`vw_cart_${user.id}`);
       }
       localStorage.removeItem("user");
       localStorage.removeItem("token");
@@ -679,7 +704,7 @@ export default function VelvetWolf() {
     }
   };
 
-  // Coerce to numbers â€” Supabase returns numeric columns as strings via JS client
+  // Coerce to numbers â€" Supabase returns numeric columns as strings via JS client
   const cartTotal = cart.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.qty) || 0), 0);
   const cartCount = cart.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
   const openShop = (collection = null) => {
@@ -698,12 +723,23 @@ export default function VelvetWolf() {
     addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast, openShop,
   };
 
-  // â”€â”€ Scroll to top on every page change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â"€â"€ Scroll to top on every page change â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [page]);
 
-  // â”€â”€ Session init + auth state listener â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Browser back/forward button support ─────────────────────────────────────
+  useEffect(() => {
+    window.history.replaceState({ page: "home" }, "", window.location.pathname);
+    const onPopState = (e) => {
+      const target = e.state?.page;
+      if (target) _setPage(target);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // ── Session init + auth state listener â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   useEffect(() => {
     const applySignedInUser = async (authUser, mergeGuestCart = false) => {
       const nextUser = await buildUserState(authUser);
@@ -726,7 +762,7 @@ export default function VelvetWolf() {
 
     const clearSignedInUser = () => {
       setUser(null);
-      setCart([]);
+      setCart(getGuestCart());
       setWishlist([]);
       localStorage.removeItem("user");
       localStorage.removeItem("token");
@@ -736,21 +772,29 @@ export default function VelvetWolf() {
     const backendToken = query.get("token");
     const authError = query.get("auth_error");
     const authMode = query.get("mode");
+    const resetToken = query.get("reset_token");
     if (backendToken) {
       const decoded = parseBackendToken(backendToken);
       if (decoded?.email) {
-        const backendUser = {
+        const backendUser = normalizeUserRoleState({
           ...decoded,
           full_name: decoded.name,
           authSource: "google",
-        };
+        });
         localStorage.setItem("token", backendToken);
         localStorage.setItem("user", JSON.stringify(backendUser));
         setUser(backendUser);
-        setWishlist(loadLocalWishlist(backendUser.email));
-        setCart(getGuestCart());
+        if (backendUser.id) {
+          syncCartFromDB(backendUser.id);
+          syncWishlistFromDB(backendUser.id);
+        } else {
+          setWishlist(loadLocalWishlist(backendUser.email));
+          setCart(getGuestCart());
+        }
         setPage("home");
       }
+    } else if (resetToken) {
+      setPage("forgetpassword");
     } else if (authError) {
       showToast(decodeURIComponent(authError), "info");
       setPage(authMode === "signup" ? "signup" : "login");
@@ -768,11 +812,21 @@ export default function VelvetWolf() {
 
     const storedUser = getStoredUser();
     if (storedUser?.email) {
-      setUser(storedUser);
-      if (!storedUser?.id) {
+      const normalizedStoredUser = normalizeUserRoleState(storedUser);
+      setUser(normalizedStoredUser);
+      if (normalizedStoredUser?.id) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(`vw_cart_${normalizedStoredUser.id}`) || "null");
+          if (Array.isArray(cached) && cached.length > 0) setCart(cached);
+        } catch {}
+        syncCartFromDB(normalizedStoredUser.id);
+        syncWishlistFromDB(normalizedStoredUser.id);
+      } else {
         setWishlist(loadLocalWishlist(storedUser.email));
         setCart(getGuestCart());
       }
+    } else {
+      setCart(getGuestCart());
     }
 
     // 1. Get session on first load (handles page refresh)
@@ -808,23 +862,41 @@ export default function VelvetWolf() {
 
   useEffect(() => {
     if (user && ["login", "signup", "forgetpassword"].includes(page)) {
-      setPage("account");
+      // Admins go straight to the admin dashboard; regular users go to account
+      setPage(user.isAdmin ? "admin" : "account");
     }
   }, [page, user]);
+
+  const canAccessAdmin = Boolean(user?.isAdmin);
+
+  useEffect(() => {
+    if (page !== "admin" || canAccessAdmin) return;
+
+    setAdminPage("dashboard");
+
+    if (!user) {
+      setPage("login");
+      showToast("Please sign in with an admin account.", "info");
+      return;
+    }
+
+    setPage("account");
+    showToast("Admin access required.", "error");
+  }, [page, user, canAccessAdmin]);
 
   return (
     <AppContext.Provider value={ctx}>
       <GlobalStyles />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {page === "admin" ? <AdminLayout /> : (
+      {page === "admin" && canAccessAdmin ? <AdminLayout Icon={Icon} TAG_COLORS={TAG_COLORS} /> : (
         <>
-          {/* â”€â”€ Auth pages: standalone, no Navbar / Footer â”€â”€ */}
+          {/* â"€â"€ Auth pages: standalone, no Navbar / Footer â"€â"€ */}
           {page === "login"           && <Login />}
           {page === "signup"          && <Signup />}
           {page === "forgetpassword"  && <ForgetPassword />}
 
-          {/* â”€â”€ All other pages: wrapped with Navbar + Footer â”€â”€ */}
+          {/* â"€â"€ All other pages: wrapped with Navbar + Footer â"€â"€ */}
           {!["login", "signup", "forgetpassword"].includes(page) && (
             <>
               <Navbar activePage={page} />
@@ -835,8 +907,8 @@ export default function VelvetWolf() {
               {page === "wishlist"       && <WishlistPage />}
               {page === "account"        && <AccountPage />}
               {page === "checkout"       && <CheckoutPage />}
-              {page === "custom"         && <CustomDesignPage />}
-              {page === "bulk"           && <BulkOrderPage />}
+              {page === "custom"         && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
+              {page === "bulk"           && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
               {page === "contactus"      && <ContactPage />}
               {page === "faq"            && <FAQPage />}
               {page === "privacypolicy"  && <Policy />}
@@ -845,6 +917,17 @@ export default function VelvetWolf() {
               {page === "returnspage"    && <ReturnsPage />}
               {page === "sizeguide"      && <SizeGuide />}
               {page === "trackorder"     && <TrackOrder />}
+              {/* Floating back button for all info/policy pages */}
+              {["privacypolicy","shoppingpolicy","termspage","returnspage","sizeguide","trackorder","faq","contactus"].includes(page) && (
+                <button
+                  onClick={() => window.history.back()}
+                  style={{ position:"fixed", top:80, left:24, zIndex:850, background:"var(--graphite)", border:"1px solid var(--smoke)", color:"var(--ash)", fontFamily:"var(--font-mono)", fontSize:10, letterSpacing:2, padding:"8px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor="var(--gold)"; e.currentTarget.style.color="var(--gold)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor="var(--smoke)"; e.currentTarget.style.color="var(--ash)"; }}
+                >
+                  ← BACK
+                </button>
+              )}
               <Footer onNavigate={setPage} />
             </>
           )}
@@ -1115,7 +1198,7 @@ function HomePage() {
   );
 }
 
-// â”€â”€â”€ PRODUCT CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ PRODUCT CARD â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function FeaturedCoverflow({ products }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -1267,7 +1350,6 @@ function ProductCard({ product }) {
   );
 }
 
-// â”€â”€â”€ SHOP PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ShopPage() {
   const { products, activeCollection, setActiveCollection, searchQuery } = useContext(AppContext);
   const [sort, setSort] = useState("featured");
@@ -1365,8 +1447,10 @@ function ShopPage() {
 // â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
-  const [size, setSize] = useState(p.sizes[0]);
-  const [color, setColor] = useState(p.colors[0]);
+  const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
+  const colors = Array.isArray(p.colors) && p.colors.length ? p.colors : [];
+  const [size, setSize]   = useState(sizes[0]  ?? null);
+  const [color, setColor] = useState(colors[0] ?? null);
   const [qty, setQty] = useState(1);
   const inWishlist = wishlist.find(i => i.id === p.id);
 
@@ -1394,7 +1478,7 @@ function ProductModal() {
 
           {/* Color */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
             <div style={{ display: "flex", gap: 8 }}>
               {p.colors.map(c => (
                 <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
@@ -1404,10 +1488,10 @@ function ProductModal() {
 
           {/* Size */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>SIZE</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {p.sizes.map(s => (
-                <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
+                <button key={s} onClick={() => setSize(s)} style={{ padding: "8px 14px", border: "1px solid", borderColor: size === s ? "var(--gold)" : "var(--smoke)", background: size === s ? "var(--gold)" : "transparent", color: size === s ? "var(--obsidian)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>{s}</button>
               ))}
             </div>
           </div>
@@ -1439,7 +1523,7 @@ function ProductModal() {
   );
 }
 
-// â”€â”€â”€ CART SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ CART SIDEBAR â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function CartSidebar() {
   const { cart, setCartOpen, removeFromCart, updateCartQty, cartTotal, setPage } = useContext(AppContext);
   return (
@@ -1498,7 +1582,7 @@ function CartSidebar() {
   );
 }
 
-// â”€â”€â”€ WISHLIST SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ WISHLIST SIDEBAR â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function WishlistSidebar() {
   const { wishlist, setWishlistOpen, toggleWishlist, addToCart } = useContext(AppContext);
   return (
@@ -1541,7 +1625,7 @@ function WishlistSidebar() {
   );
 }
 
-// // â”€â”€â”€ CHECKOUT PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// // â"€â"€â"€ CHECKOUT PAGE â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 void CartSidebar;
 void WishlistSidebar;
 
@@ -1593,7 +1677,7 @@ void WishlistSidebar;
 //             {["DELIVERY", "PAYMENT", "REVIEW"].map((s, i) => (
 //               <div key={s} style={{ flex: 1, textAlign: "center" }}>
 //                 <div style={{ width: 32, height: 32, borderRadius: "50%", background: step > i + 1 ? "var(--gold)" : step === i + 1 ? "var(--gold)" : "var(--smoke)", color: step >= i + 1 ? "var(--obsidian)" : "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, margin: "0 auto 8px", fontWeight: "bold" }}>
-//                   {step > i + 1 ? "âœ“" : i + 1}
+//                   {step > i + 1 ? "âœ"" : i + 1}
 //                 </div>
 //                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: step === i + 1 ? "var(--gold)" : "var(--silver)" }}>{s}</div>
 //               </div>
@@ -1628,7 +1712,7 @@ void WishlistSidebar;
 //             <div>
 //               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
 //               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-//                 {[["card", "ðŸ’³ Credit / Debit Card"], ["upi", "ðŸ“± UPI (GPay, PhonePe, Paytm)"], ["cod", "ðŸ’µ Cash on Delivery"], ["emi", "ðŸ“† EMI (0% for 3 months)"]].map(([val, label]) => (
+//                 {[["card", "ðŸ'³ Credit / Debit Card"], ["upi", "ðŸ"± UPI (GPay, PhonePe, Paytm)"], ["cod", "ðŸ'µ Cash on Delivery"], ["emi", "ðŸ"† EMI (0% for 3 months)"]].map(([val, label]) => (
 //                   <label key={val} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
 //                     <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }}/>
 //                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
@@ -1707,7 +1791,7 @@ void WishlistSidebar;
 //   );
 // }
 
-// â”€â”€â”€ CUSTOM DESIGN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ CUSTOM DESIGN PAGE â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function CustomDesignPage() {
   const { user, setPage, showToast } = useContext(AppContext);
   const [uploaded, setUploaded] = useState(false);
@@ -1718,6 +1802,21 @@ function CustomDesignPage() {
     if (!user) {
       showToast("Please sign in to place a custom order.", "info");
       setPage("login");
+      return;
+    }
+
+    if (!uploaded) {
+      showToast("Upload your design before submitting the request.", "error");
+      return;
+    }
+
+    if (!Number.isFinite(Number(form.qty)) || Number(form.qty) < 1) {
+      showToast("Enter a valid quantity.", "error");
+      return;
+    }
+
+    if (!form.note.trim()) {
+      showToast("Add your design notes before submitting.", "error");
       return;
     }
 
@@ -1801,10 +1900,56 @@ function CustomDesignPage() {
   );
 }
 
-// â”€â”€â”€ BULK ORDER PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ BULK ORDER PAGE â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function BulkOrderPage() {
   const { showToast } = useContext(AppContext);
-  const [form, setForm] = useState({ type: "corporate", qty: 50, product: "", message: "", org: "", contact: "", email: "" });
+  const [form, setForm] = useState({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
+  const [errorMessage, setErrorMessage] = useState("");
+  const errorRef = useRef(null);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const nameRegex = /^[a-zA-Z\s.'-]{2,}$/;
+  const orgRegex = /^[a-zA-Z0-9&().,\s'-]{2,}$/;
+
+  const updateField = (key, value) => {
+    let nextValue = value;
+    if (key === "contact") {
+      nextValue = value.replace(/[^a-zA-Z\s.'-]/g, "");
+    }
+    if (key === "org") {
+      nextValue = value.replace(/[^a-zA-Z0-9&().,\s'-]/g, "");
+    }
+    setForm(prev => ({ ...prev, [key]: nextValue }));
+    setErrorMessage("");
+  };
+
+  const validateForm = () => {
+    if (!form.org.trim()) return "Please enter organization name.";
+    if (!orgRegex.test(form.org.trim())) return "Please enter a valid organization name.";
+    if (!form.contact.trim()) return "Please enter contact person name.";
+    if (!nameRegex.test(form.contact.trim())) return "Please enter a valid contact person name.";
+    if (!form.email.trim()) return "Please enter email address.";
+    if (!emailRegex.test(form.email.trim())) return "Please enter a valid email address.";
+    if (form.qty === "" || form.qty === null) return "Please enter quantity.";
+    if (Number(form.qty) < 5) return "Minimum quantity should be 5.";
+    if (!form.message.trim()) return "Please enter product requirements.";
+    if (form.message.trim().length < 10) return "Please enter more detailed product requirements.";
+    return "";
+  };
+
+  const handleSubmit = () => {
+    const validationMessage = validateForm();
+
+    if (validationMessage) {
+      setErrorMessage(validationMessage);
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+      return;
+    }
+
+    showToast("Quote request sent! We'll contact you within 24hrs.");
+    setErrorMessage("");
+    setForm({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
+  };
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -1835,6 +1980,13 @@ function BulkOrderPage() {
 
         <div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>REQUEST A QUOTE</h2>
+
+          {errorMessage && (
+            <div style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
+              ✕ {errorMessage}
+            </div>
+          )}
+
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>ORDER TYPE</label>
@@ -1858,516 +2010,8 @@ function BulkOrderPage() {
   );
 }
 
-// â”€â”€â”€ ADMIN LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminLayout() {
-  const { setPage, adminPage, setAdminPage } = useContext(AppContext);
 
-  const navItems = [
-    ["dashboard", "DASHBOARD", "chart"],
-    ["products", "PRODUCTS", "package"],
-    ["orders", "ORDERS", "cart"],
-    ["customers", "CUSTOMERS", "users"],
-    ["analytics", "ANALYTICS", "chart"],
-    ["settings", "SETTINGS", "settings"],
-  ];
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--obsidian)" }}>
-      {/* Admin Sidebar */}
-      <div className="admin-sidebar" style={{ padding: 0 }}>
-        <div style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
-        </div>
-        <div style={{ padding: "20px 0" }}>
-          {navItems.map(([id, label, icon]) => (
-            <button key={id} onClick={() => setAdminPage(id)} style={{
-              width: "100%", background: adminPage === id ? "rgba(201,168,76,0.1)" : "transparent",
-              border: "none", borderLeft: `3px solid ${adminPage === id ? "var(--gold)" : "transparent"}`,
-              color: adminPage === id ? "var(--gold)" : "var(--silver)", cursor: "pointer",
-              padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
-              fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, textAlign: "left"
-            }}>
-              <Icon name={icon} size={14} color={adminPage === id ? "var(--gold)" : "var(--silver)"}/>
-              {label}
-            </button>
-          ))}
-        </div>
-        <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, padding: "0 16px" }}>
-          <button onClick={() => setPage("home")} className="btn-ghost" style={{ width: "100%", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Icon name="arrowRight" size={12}/> BACK TO STORE
-          </button>
-        </div>
-      </div>
-
-      {/* Admin Content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "40px" }}>
-        {adminPage === "dashboard" && <AdminDashboard />}
-        {adminPage === "products" && <AdminProducts />}
-        {adminPage === "orders" && <AdminOrders />}
-        {adminPage === "customers" && <AdminCustomers />}
-        {adminPage === "analytics" && <AdminAnalytics />}
-        {adminPage === "settings" && <AdminSettings />}
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminDashboard() {
-  const { orders, customers, products } = useContext(AppContext);
-
-  // Handle both mock (o.total) and Supabase (o.total_amount) field names
-  const revenue = orders.reduce((s, o) => s + Number(o.total_amount || o.total || 0), 0);
-
-  // Case-insensitive status comparison for both mock ("Processing") and Supabase ("confirmed")
-  const processingCount = orders.filter(o =>
-    ["processing", "confirmed", "in_production"].includes((o.status || "").toLowerCase())
-  ).length;
-
-  const stats = [
-    { label: "TOTAL REVENUE", value: `\u20b9${revenue.toLocaleString()}`, sub: "+23% vs last month", color: "var(--gold)" },
-    { label: "TOTAL ORDERS", value: orders.length, sub: `${processingCount} processing`, color: "#4fc3f7" },
-    { label: "CUSTOMERS", value: customers.length, sub: "2 new this week", color: "#81c784" },
-    { label: "PRODUCTS", value: products.length, sub: `${products.filter(p => (p.stock || 0) < 20).length} low stock`, color: "#ff8a65" },
-  ];
-
-  const recentOrders = orders.slice(0, 4);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>OVERVIEW</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>DASHBOARD</h1>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 40 }}>
-        {stats.map(s => (
-          <div key={s.label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 12 }}>{s.label}</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: s.color, marginBottom: 6 }}>{s.value}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)" }}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Revenue chart (simple bar) */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, marginBottom: 28 }}>
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>MONTHLY REVENUE</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 120 }}>
-            {[40, 65, 48, 80, 72, 90, 85, 95, 70, 88, 92, 100].map((h, i) => (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <div style={{ width: "100%", height: `${h}%`, background: i === 11 ? "var(--gold)" : "rgba(201,168,76,0.3)", transition: "all 0.3s" }}/>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--silver)" }}>{["J","F","M","A","M","J","J","A","S","O","N","D"][i]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>TOP COLLECTIONS</div>
-          {[["Silent Luxury", 34], ["AI & Tech", 28], ["Anime", 22], ["Founder", 16]].map(([name, pct]) => (
-            <div key={name} style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)" }}>{name}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ash)" }}>{pct}%</span>
-              </div>
-              <div style={{ height: 3, background: "var(--smoke)" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "var(--gold)" }}/>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent orders */}
-      <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>RECENT ORDERS</div>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              {["ORDER ID", "CUSTOMER", "DATE", "TOTAL", "STATUS"].map(h => (
-                <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "8px 0", textAlign: "left", borderBottom: "1px solid var(--smoke)" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentOrders.map(o => (
-              <tr key={o.id}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", padding: "12px 0" }}>{o.order_number || o.id}</td>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--ash)", padding: "12px 0" }}>{o.profiles?.full_name || o.customer || "-"}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "12px 0" }}>
-                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "-"}
-                </td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ivory)", padding: "12px 0" }}>
-                  {"\u20b9"}{Number(o.total_amount || o.total || 0).toLocaleString()}
-                </td>
-                <td style={{ padding: "12px 0" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px",
-                    background: ["delivered"].includes((o.status||"").toLowerCase()) ? "rgba(129,199,132,0.2)" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "rgba(79,195,247,0.2)" : "rgba(201,168,76,0.2)",
-                    color: ["delivered"].includes((o.status||"").toLowerCase()) ? "#81c784" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "#4fc3f7" : "var(--gold)" }}>
-                    {(o.status || "PENDING").toUpperCase()}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN PRODUCTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminProducts() {
-  const { products, setProducts, showToast } = useContext(AppContext);
-  const [editProduct, setEditProduct] = useState(null);
-  const [adding, setAdding] = useState(false);
-  const [newProd, setNewProd] = useState({ name: "", collection: "ai-tech", price: "", originalPrice: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50 });
-
-  const handleSave = () => {
-    if (editProduct) {
-      setProducts(prev => prev.map(p => p.id === editProduct.id ? { ...editProduct } : p));
-      setEditProduct(null);
-      showToast("Product updated!");
-    }
-  };
-
-  const handleAdd = () => {
-    if (!newProd.name.trim()) { showToast("Product name is required.", "error"); return; }
-    if (!newProd.price || Number(newProd.price) <= 0) { showToast("Enter a valid price.", "error"); return; }
-    if (!newProd.originalPrice || Number(newProd.originalPrice) <= 0) { showToast("Enter a valid original price.", "error"); return; }
-    if (Number(newProd.originalPrice) < Number(newProd.price)) { showToast("Original price must be â‰¥ sale price.", "error"); return; }
-    const p = { ...newProd, id: Date.now(), rating: 4.5, reviews: 0, price: Number(newProd.price), originalPrice: Number(newProd.originalPrice) };
-    setProducts(prev => [...prev, p]);
-    setAdding(false);
-    showToast("Product added!");
-    setNewProd({ name: "", collection: "ai-tech", price: "", originalPrice: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50 });
-  };
-
-  const handleDelete = (id) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-    showToast("Product removed", "info");
-  };
-
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>PRODUCTS</h1>
-        </div>
-        <button className="btn-gold" onClick={() => setAdding(true)}><Icon name="plus" size={14}/> ADD PRODUCT</button>
-      </div>
-
-      {/* Add product form */}
-      {adding && (
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--gold)", padding: "28px", marginBottom: 28 }}>
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 20 }}>NEW PRODUCT</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <input className="input-dark" placeholder="PRODUCT NAME" value={newProd.name} onChange={e => setNewProd(p => ({ ...p, name: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-            <select className="input-dark" value={newProd.collection} onChange={e => setNewProd(p => ({ ...p, collection: e.target.value }))}>
-              {COLLECTIONS.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <select className="input-dark" value={newProd.tag} onChange={e => setNewProd(p => ({ ...p, tag: e.target.value }))}>
-              {Object.keys(TAG_COLORS).map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <input className="input-dark" placeholder="PRICE (\u20b9)" type="number" value={newProd.price} onChange={e => setNewProd(p => ({ ...p, price: e.target.value }))}/>
-            <input className="input-dark" placeholder="ORIGINAL PRICE (\u20b9)" type="number" value={newProd.originalPrice} onChange={e => setNewProd(p => ({ ...p, originalPrice: e.target.value }))}/>
-            <input className="input-dark" placeholder="STOCK QTY" type="number" value={newProd.stock} onChange={e => setNewProd(p => ({ ...p, stock: e.target.value }))}/>
-            <textarea className="input-dark" placeholder="DESCRIPTION" value={newProd.description} onChange={e => setNewProd(p => ({ ...p, description: e.target.value }))} style={{ gridColumn: "1/-1" }}/>
-          </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-            <button className="btn-gold" onClick={handleAdd}>ADD PRODUCT</button>
-            <button className="btn-ghost" onClick={() => setAdding(false)}>CANCEL</button>
-          </div>
-        </div>
-      )}
-
-      {/* Products table */}
-      <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
-              {["PRODUCT", "COLLECTION", "PRICE", "STOCK", "STATUS", "ACTIONS"].map(h => (
-                <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(p => (
-              <tr key={p.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
-                <td style={{ padding: "14px 16px" }}>
-                  {editProduct?.id === p.id ? (
-                    <input className="input-dark" value={editProduct.name} onChange={e => setEditProduct(ep => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }}/>
-                  ) : (
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>
-                  )}
-                </td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px", letterSpacing: 1 }}>
-                  {COLLECTIONS.find(c => c.id === p.collection)?.name}
-                </td>
-                <td style={{ padding: "14px 16px" }}>
-                  {editProduct?.id === p.id ? (
-                    <input className="input-dark" type="number" value={editProduct.price} onChange={e => setEditProduct(ep => ({ ...ep, price: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 11, width: 90 }}/>
-                  ) : (
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)" }}>{"\u20b9"}{p.price.toLocaleString()}</span>
-                  )}
-                </td>
-                <td style={{ padding: "14px 16px" }}>
-                  {editProduct?.id === p.id ? (
-                    <input className="input-dark" type="number" value={editProduct.stock} onChange={e => setEditProduct(ep => ({ ...ep, stock: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 11, width: 80 }}/>
-                  ) : (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: p.stock < 20 ? "#ff8a65" : "#81c784" }}>{p.stock}</span>
-                  )}
-                </td>
-                <td style={{ padding: "14px 16px" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 8px", background: TAG_COLORS[p.tag]?.bg || "var(--smoke)", color: TAG_COLORS[p.tag]?.color || "var(--ash)" }}>{p.tag}</span>
-                </td>
-                <td style={{ padding: "14px 16px" }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {editProduct?.id === p.id ? (
-                      <>
-                        <button onClick={handleSave} style={{ background: "none", border: "1px solid #81c784", color: "#81c784", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 9 }}>SAVE</button>
-                        <button onClick={() => setEditProduct(null)} style={{ background: "none", border: "1px solid var(--smoke)", color: "var(--silver)", cursor: "pointer", padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 9 }}>CANCEL</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => setEditProduct({ ...p })} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="edit" size={14}/></button>
-                        <button onClick={() => handleDelete(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={14}/></button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN ORDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminOrders() {
-  const { orders } = useContext(AppContext);
-  const [filter, setFilter] = useState("all");
-
-  const filtered = filter === "all"
-    ? orders
-    : orders.filter(o => (o.status || "").toLowerCase() === filter);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>ORDERS</h1>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-        {["all", "pending", "confirmed", "dispatched", "delivered"].map(s => (
-          <button key={s} onClick={() => setFilter(s)} style={{ background: filter === s ? "var(--gold)" : "transparent", border: "1px solid", borderColor: filter === s ? "var(--gold)" : "var(--smoke)", color: filter === s ? "var(--obsidian)" : "var(--silver)", padding: "6px 16px", fontFamily: "var(--font-mono)", fontSize: 9, cursor: "pointer", letterSpacing: 2 }}>
-            {s.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
-              {["ORDER ID", "CUSTOMER", "DATE", "ITEMS", "TOTAL", "STATUS"].map(h => (
-                <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: "40px 16px", textAlign: "center", fontFamily: "var(--font-serif)", fontStyle: "italic", color: "var(--silver)" }}>
-                  No orders found
-                </td>
-              </tr>
-            ) : filtered.map(o => (
-              <tr key={o.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", padding: "14px 16px", letterSpacing: 1 }}>
-                  {o.order_number || o.id}
-                </td>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--ash)", padding: "14px 16px" }}>
-                  {o.profiles?.full_name || o.customer || "-"}
-                </td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", padding: "14px 16px" }}>
-                  {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN") : o.date || "-"}
-                </td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", padding: "14px 16px" }}>
-                  {o.order_items?.length ?? o.items ?? "-"}
-                </td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", padding: "14px 16px" }}>
-                  {"\u20b9"}{Number(o.total_amount || o.total || 0).toLocaleString()}
-                </td>
-                <td style={{ padding: "14px 16px" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "4px 12px",
-                    background: ["delivered"].includes((o.status||"").toLowerCase()) ? "rgba(129,199,132,0.2)" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "rgba(79,195,247,0.2)" : ["confirmed","processing","in_production"].includes((o.status||"").toLowerCase()) ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.1)",
-                    color: ["delivered"].includes((o.status||"").toLowerCase()) ? "#81c784" : ["dispatched","shipped"].includes((o.status||"").toLowerCase()) ? "#4fc3f7" : ["confirmed","processing","in_production"].includes((o.status||"").toLowerCase()) ? "var(--gold)" : "var(--silver)" }}>
-                    {(o.status || "PENDING").toUpperCase()}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN CUSTOMERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminCustomers() {
-  const { customers } = useContext(AppContext);
-  const tierColors = { Platinum: "#e5e4e2", Gold: "#c9a84c", Silver: "#c0c0c0", Bronze: "#cd7f32" };
-
-  return (
-    <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>CUSTOMERS</h1>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
-        {[ ["TOTAL", customers.length], ["PLATINUM", customers.filter(c => c.tier === "Platinum").length], ["GOLD", customers.filter(c => c.tier === "Gold").length], ["AVG SPEND", `\u20b9${Math.round(customers.reduce((s,c) => s+c.spent, 0) / customers.length).toLocaleString()}`] ].map(([label, val]) => (
-          <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", marginBottom: 8 }}>{label}</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{val}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
-              {["CUSTOMER", "EMAIL", "ORDERS", "TOTAL SPENT", "JOINED", "TIER"].map(h => (
-                <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 2, color: "var(--silver)", padding: "14px 16px", textAlign: "left" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map(c => (
-              <tr key={c.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
-                <td style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--ivory)", padding: "14px 16px" }}>{c.name}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.email}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)", padding: "14px 16px" }}>{c.orders}</td>
-                <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", padding: "14px 16px" }}>{"\u20b9"}{c.spent.toLocaleString()}</td>
-                <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", padding: "14px 16px" }}>{c.joined}</td>
-                <td style={{ padding: "14px 16px" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, padding: "3px 10px", background: "transparent", border: `1px solid ${tierColors[c.tier]}`, color: tierColors[c.tier] }}>{c.tier.toUpperCase()}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN ANALYTICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminAnalytics() {
-  return (
-    <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>INSIGHTS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>ANALYTICS</h1>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        {/* Sales trend */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>WEEKLY SALES TREND</div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 160 }}>
-            {[{ day: "MON", val: 65 }, { day: "TUE", val: 80 }, { day: "WED", val: 55 }, { day: "THU", val: 90 }, { day: "FRI", val: 100 }, { day: "SAT", val: 85 }, { day: "SUN", val: 70 }].map(d => (
-              <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>{"\u20b9"}{d.val * 120}</div>
-                <div style={{ width: "100%", height: `${d.val}%`, background: d.day === "FRI" ? "var(--gold)" : "rgba(201,168,76,0.35)", position: "relative" }}/>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>{d.day}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Traffic sources */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>TRAFFIC SOURCES</div>
-          {[["Instagram", 42, "#e1306c"], ["Google", 28, "#4285f4"], ["Direct", 18, "#c9a84c"], ["Referral", 12, "#81c784"]].map(([src, pct, col]) => (
-            <div key={src} style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)" }}>{src}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ash)" }}>{pct}%</span>
-              </div>
-              <div style={{ height: 4, background: "var(--smoke)" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: col }}/>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Best sellers */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>BEST SELLERS</div>
-          {[["Error 404: Sleep", 523, "AI & Tech"], ["Demon Mode", 445, "Anime"], ["Founder's Mindset", 312, "Founder"], ["100 Days of Grind", 267, "Beast Mode"]].map(([name, sales, col]) => (
-            <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--smoke)" }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{name}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>{col}</div>
-              </div>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--gold)" }}>{sales}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// â”€â”€â”€ ADMIN SETTINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function AdminSettings() {
-  const { showToast } = useContext(AppContext);
-  return (
-    <div>
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>CONFIGURE</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>SETTINGS</h1>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-        {[
-          { title: "STORE SETTINGS", fields: [["Store Name", "VelvetWolf"], ["Tagline", "Luxury Streetwear"], ["Email", "hello@velvetwolf.in"], ["Phone", "+91 98765 43210"]] },
-          { title: "SHIPPING", fields: [["Free Shipping Above (\u20b9)", "1999"], ["Flat Shipping Rate (\u20b9)", "149"], ["Dispatch Time (days)", "2"], ["Return Window (days)", "30"]] },
-          { title: "PAYMENT GATEWAYS", fields: [["Razorpay Key", "rzp_test_xxxxx"], ["UPI Handle", "velvetwolf@upi"], ["GST Number", "27XXXXX1234X1ZX"], ["PAN", "XXXXX0000X"]] },
-          { title: "NOTIFICATIONS", fields: [["Order Email", "orders@velvetwolf.in"], ["Alert Email", "alerts@velvetwolf.in"], ["SMS Provider", "Twilio"], ["WhatsApp", "+91 98765 43210"]] },
-        ].map(section => (
-          <div key={section.title} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>{section.title}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {section.fields.map(([label, val]) => (
-                <div key={label}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 1, color: "var(--silver)", display: "block", marginBottom: 6 }}>{label}</label>
-                  <input className="input-dark" defaultValue={val} style={{ padding: "8px 12px", fontSize: 11 }}/>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ marginTop: 28 }}>
-        <button className="btn-gold" onClick={() => showToast("Settings saved successfully!")}>SAVE ALL SETTINGS</button>
-      </div>
-    </div>
-  );
-}
-
+// â"€â"€â"€ ADMIN LAYOUT â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 // ─── FOOTER ───────────────────────────────────────────────────────────────────
 // function Footer() {
 //   const { setPage } = useContext(AppContext);
@@ -2377,7 +2021,7 @@ function AdminSettings() {
 //         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
 //           <div>
 //             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>VELVETWOLF</div>
-//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2025</div>
+//             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 20 }}>LUXURY STREETWEAR · EST. 2026</div>
 //             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", lineHeight: 1.8, fontStyle: "italic" }}>
 //               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
 //             </p>
@@ -2408,7 +2052,7 @@ function AdminSettings() {
 //         </div>
 
 //         <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 28, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-//           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
+//           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>© 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.</div>
 //           <div style={{ display: "flex", gap: 20 }}>
 //             {[["Privacy Policy","privacypolicy"], ["Terms","termspage"], ["Shipping Policy","shoppingpolicy"]].map(([l,pg]) => (
 //               <span key={l} onClick={() => setPage(pg)} style={{ fontFamily: "'Roboto', sans-serif", fontSize: 9, color: "var(--silver)", cursor: "pointer", letterSpacing: 1 }}>{l}</span>
