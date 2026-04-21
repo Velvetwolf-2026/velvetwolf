@@ -278,7 +278,7 @@ export function Signup() {
           ))}
         </div>
 
-        <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "34px 32px" }}>
+        <div className="vw-auth-card" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "34px 32px" }}>
 
           {/* ── STEP 1 ── */}
           {step === 1 && (

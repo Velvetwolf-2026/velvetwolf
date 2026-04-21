@@ -268,9 +268,641 @@ const GlobalStyles = () => (
     select.input-dark { appearance: none; cursor: pointer; }
     textarea.input-dark { resize: vertical; min-height: 100px; }
 
+    .vw-mobile-menu-toggle,
+    .vw-mobile-menu-leading,
+    .vw-mobile-backdrop,
+    .vw-filter-backdrop,
+    .vw-filter-drawer-head,
+    .vw-shop-bottom-bar,
+    .vw-mobile-panel,
+    .vw-filter-toggle,
+    .vw-shop-results-mobile { display: none; }
+
+    .vw-table-scroll { width: 100%; overflow-x: auto; }
+    .vw-table-scroll table { min-width: 720px; }
+
+    .vw-admin-mobile-title { display: none; }
+
+    @media (max-width: 1024px) {
+      .vw-nav-shell { padding: 0 28px !important; }
+      .vw-nav-row {
+        display: flex !important;
+        align-items: center;
+        height: 68px !important;
+        gap: 14px !important;
+      }
+      .vw-brand-link { min-width: 0; flex: 0 1 auto; }
+      .vw-desktop-nav { display: none !important; }
+      .vw-mobile-menu-leading {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--ash);
+      }
+      .vw-nav-actions .vw-mobile-menu-toggle { display: none !important; }
+      .vw-nav-actions { gap: 16px !important; margin-left: auto; }
+      .vw-brand-logo { width: 35px !important; height: 35px !important; }
+      .vw-brand-title { font-size: 23px !important; letter-spacing: 5px !important; }
+      .vw-brand-subtitle { font-size: 10px !important; letter-spacing: 3px !important; }
+      .vw-mobile-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 850;
+        background: rgba(0,0,0,0.58);
+        backdrop-filter: blur(3px);
+        animation: fadeIn 0.2s ease;
+      }
+      .vw-mobile-panel {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 900;
+        width: min(380px, 78vw);
+        height: 100vh;
+        background: rgba(17,17,17,0.98);
+        border-right: 1px solid rgba(201,168,76,0.28);
+        box-shadow: 24px 0 70px rgba(0,0,0,0.55);
+        animation: vwDrawerIn 0.28s ease forwards;
+        overflow-y: auto;
+      }
+      .vw-mobile-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 28px 24px 22px;
+        border-bottom: 1px solid var(--smoke);
+      }
+      .vw-mobile-drawer-brand {
+        font-family: var(--font-display);
+        font-size: 26px;
+        letter-spacing: 6px;
+        color: var(--ivory);
+        line-height: 1;
+      }
+      .vw-mobile-drawer-sub {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: var(--gold);
+        margin-top: 5px;
+      }
+      .vw-mobile-panel-inner {
+        display: grid;
+        gap: 10px;
+        padding: 24px;
+      }
+      @keyframes vwDrawerIn {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+      .vw-desktop-nav { gap: 18px !important; }
+      .vw-shop-layout { flex-direction: column !important; gap: 24px !important; padding-bottom: 92px !important; }
+      .vw-shop-filters {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 900;
+        width: min(380px, 78vw) !important;
+        height: 100vh;
+        padding: 24px !important;
+        background: rgba(17,17,17,0.98);
+        border-right: 1px solid rgba(201,168,76,0.28);
+        box-shadow: 24px 0 70px rgba(0,0,0,0.55);
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform 0.28s ease;
+        display: block !important;
+      }
+      .vw-shop-filters.is-open {
+        transform: translateX(0);
+      }
+      .vw-shop-bottom-bar { display: none !important; }
+      .vw-shop-results-mobile {
+        display: flex !important;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .vw-filter-toggle {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: auto !important;
+        min-width: 0;
+        padding: 9px 14px !important;
+        border: 1px solid rgba(201,168,76,0.42) !important;
+        background: rgba(18,18,18,0.92) !important;
+        color: var(--ivory) !important;
+        box-shadow: 0 10px 26px rgba(0,0,0,0.24);
+        letter-spacing: 1.8px;
+      }
+      .vw-filter-toggle .vw-filter-toggle-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gold);
+      }
+      .vw-shop-toolbar {
+        align-items: flex-start !important;
+        gap: 16px !important;
+        margin-bottom: 24px !important;
+      }
+      .vw-shop-toolbar > div:first-child {
+        display: none !important;
+      }
+      .vw-shop-layout {
+        gap: 28px !important;
+        padding: 32px 28px !important;
+      }
+      .vw-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 18px !important;
+      }
+      .vw-product-card-image {
+        height: 236px !important;
+      }
+      .vw-product-card-body {
+        padding: 16px 16px 18px !important;
+      }
+      .vw-product-card-collection {
+        font-size: 10px !important;
+        letter-spacing: 1.6px !important;
+        margin-bottom: 5px !important;
+      }
+      .vw-product-card-title {
+        font-size: 18px !important;
+        line-height: 1.05 !important;
+        margin-bottom: 6px !important;
+      }
+      .vw-product-card-rating {
+        margin-bottom: 10px !important;
+      }
+      .vw-product-card-review-count {
+        font-size: 10px !important;
+      }
+      .vw-product-card-price-row {
+        gap: 10px !important;
+      }
+      .vw-product-card-price {
+        font-size: 20px !important;
+      }
+      .vw-product-card-original-price {
+        font-size: 11px !important;
+      }
+      .vw-product-card-sale,
+      .vw-product-card-badge-wrap .badge {
+        font-size: 9px !important;
+      }
+      .vw-product-card-wishlist {
+        padding: 6px !important;
+      }
+      .vw-product-card-actions {
+        gap: 8px !important;
+        margin-top: 14px !important;
+      }
+      .vw-product-card-action-button {
+        padding: 9px 12px !important;
+        font-size: 9px !important;
+        letter-spacing: 1.6px !important;
+      }
+      .vw-filter-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 850;
+        background: rgba(0,0,0,0.58);
+        backdrop-filter: blur(3px);
+        animation: fadeIn 0.2s ease;
+      }
+      .vw-filter-drawer-head {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 18px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--smoke);
+      }
+      .vw-admin-layout { flex-direction: column !important; }
+      .admin-sidebar {
+        width: 100% !important;
+        min-height: auto !important;
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--smoke) !important;
+      }
+      .vw-admin-main { padding: 28px !important; overflow-x: hidden !important; }
+      .vw-admin-nav { display: flex !important; overflow-x: auto; padding: 10px 12px !important; }
+      .vw-admin-nav button {
+        width: auto !important;
+        min-width: max-content;
+        border-left: 0 !important;
+        border-bottom: 2px solid transparent;
+      }
+      .vw-admin-back { position: static !important; padding: 12px 16px 18px !important; }
+      .vw-admin-card-grid,
+      .vw-admin-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .vw-admin-two-col { grid-template-columns: 1fr !important; }
+      .vw-admin-toolbar { flex-wrap: wrap !important; justify-content: flex-start !important; }
+      .vw-admin-search { flex: 1 1 260px !important; }
+      .btn-gold,
+      .btn-outline,
+      .btn-ghost {
+        padding: 10px 18px;
+        font-size: 10px;
+        letter-spacing: 2px;
+      }
+      .vw-section-heading .btn-outline,
+      .vw-hero-actions .btn-gold,
+      .vw-hero-actions .btn-outline {
+        width: auto !important;
+        align-self: flex-start;
+      }
+      .vw-why-section { max-width: 980px !important; padding-top: 72px !important; padding-bottom: 72px !important; }
+      .vw-why-header { margin-bottom: 38px !important; }
+      .vw-why-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 18px !important;
+      }
+      .vw-why-card { padding: 26px 20px !important; }
+      .vw-why-card-icon { font-size: 32px !important; margin-bottom: 14px !important; }
+      .vw-why-card h3 { font-size: 24px !important; margin-bottom: 10px !important; }
+      .vw-why-card p { font-size: 14px !important; line-height: 1.55 !important; }
+      .vw-footer { padding: 54px 28px 28px !important; }
+      .vw-footer-grid { gap: 32px !important; margin-bottom: 36px !important; }
+      .vw-footer-socials { gap: 12px !important; flex-wrap: wrap !important; }
+      .vw-footer-bottom { padding-top: 20px !important; gap: 16px !important; }
+      [style*="grid-template-columns: repeat(4, 1fr)"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      [style*="grid-template-columns: 2fr 1fr 1fr 1fr"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+    }
+
     @media (max-width: 768px) {
       .sidebar { width: 100vw; }
-      .admin-sidebar { width: 180px; }
+      .modal-overlay { align-items: flex-start; padding: 16px; overflow-y: auto; }
+      .modal-box { width: 100% !important; max-height: none !important; }
+      .vw-product-modal { flex-direction: column !important; }
+      .vw-product-modal-image { width: 100% !important; flex: none !important; }
+      .vw-product-modal-body { padding: 28px 20px !important; }
+      .vw-product-modal-actions,
+      .vw-product-modal-perks { flex-wrap: wrap !important; }
+
+      .toast {
+        left: 16px !important;
+        right: 16px !important;
+        bottom: 18px !important;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .btn-gold,
+      .btn-outline,
+      .btn-ghost {
+        max-width: 100%;
+        letter-spacing: 2px;
+        white-space: normal;
+      }
+
+      .vw-nav-shell { padding: 0 14px !important; }
+      .vw-nav-row {
+        display: flex !important;
+        align-items: center;
+        height: 64px !important;
+        gap: 10px !important;
+      }
+      .vw-brand-link { gap: 9px !important; }
+      .vw-nav-actions { gap: 10px !important; justify-self: end; }
+      .vw-user-greeting,
+      .vw-sign-out { display: none !important; }
+      .vw-brand-title { font-size: 20px !important; letter-spacing: 4px !important; }
+      .vw-brand-subtitle { font-size: 9px !important; letter-spacing: 2px !important; }
+      .vw-mobile-menu-leading {
+        width: 36px;
+        height: 36px;
+      }
+      .vw-brand-logo { width: 32px !important; height: 32px !important; }
+      .vw-mobile-panel {
+        width: min(330px, 84vw);
+      }
+      .vw-mobile-drawer-head { padding: 24px 20px 18px; }
+      .vw-mobile-drawer-brand { font-size: 24px; letter-spacing: 5px; }
+      .vw-mobile-panel-inner { padding: 20px; }
+      .vw-mobile-panel-inner button {
+        font-size: 13px !important;
+        padding: 12px 13px !important;
+      }
+
+      .vw-home-hero { min-height: 78vh !important; padding: 96px 0 70px !important; overflow: hidden !important; }
+      .vw-hero-inner { padding: 0 22px !important; }
+      .vw-hero-title { font-size: clamp(52px, 20vw, 86px) !important; letter-spacing: 0 !important; }
+      .vw-hero-actions,
+      .vw-section-heading,
+      .vw-shop-toolbar,
+      .vw-admin-header,
+      .vw-footer-bottom,
+      .vw-account-admin-card,
+      .vw-contact-submit-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+      }
+      .vw-hero-actions,
+      .vw-section-heading {
+        align-items: flex-start !important;
+      }
+      .vw-hero-actions .btn-gold,
+      .vw-hero-actions .btn-outline,
+      .vw-section-heading .btn-outline,
+      .vw-filter-toggle {
+        width: auto !important;
+        min-width: 0;
+        padding: 10px 16px !important;
+      }
+
+      .vw-section-pad { padding: 56px 20px !important; }
+      .vw-page-hero { padding: 48px 20px 34px !important; }
+      .vw-page-hero h1,
+      [style*="font-size: 72px"],
+      [style*="font-size: 80px"] {
+        font-size: clamp(36px, 12vw, 48px) !important;
+        letter-spacing: 2px !important;
+      }
+      [style*="font-size: 64px"],
+      [style*="font-size: 56px"] {
+        font-size: clamp(30px, 10vw, 40px) !important;
+        letter-spacing: 2px !important;
+      }
+      .vw-page-hero p {
+        font-size: 13px !important;
+        margin-top: 6px !important;
+      }
+      .vw-shop-layout {
+        padding: 26px 20px 28px !important;
+        gap: 22px !important;
+      }
+
+      [style*="padding: 0px 40px"],
+      [style*="padding: 40px 40px"],
+      [style*="padding: 48px 40px"],
+      [style*="padding: 60px 40px"],
+      [style*="padding: 80px 40px"],
+      [style*="padding: 100px 40px"] {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+      }
+
+      [style*="grid-template-columns: 1fr 1fr"],
+      [style*="grid-template-columns: 1fr 1.6fr"],
+      [style*="grid-template-columns: 1fr 360px"],
+      [style*="grid-template-columns: repeat(2, 1fr)"],
+      [style*="grid-template-columns: repeat(3, 1fr)"],
+      [style*="grid-template-columns: repeat(4, 1fr)"],
+      [style*="grid-template-columns: 2fr 1fr 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      .vw-shop-filters {
+        width: min(330px, 84vw) !important;
+        padding: 20px !important;
+      }
+      .vw-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 14px !important;
+      }
+      .vw-product-card-image {
+        height: 200px !important;
+      }
+      .vw-product-card-body {
+        padding: 14px 14px 16px !important;
+      }
+      .vw-product-card-collection {
+        font-size: 9px !important;
+        letter-spacing: 1.4px !important;
+      }
+      .vw-product-card-title {
+        font-size: 16px !important;
+        margin-bottom: 6px !important;
+      }
+      .vw-product-card-rating {
+        gap: 3px !important;
+        margin-bottom: 9px !important;
+      }
+      .vw-product-card-review-count {
+        font-size: 9px !important;
+      }
+      .vw-product-card-price {
+        font-size: 18px !important;
+      }
+      .vw-product-card-original-price {
+        font-size: 10px !important;
+      }
+      .vw-product-card-actions {
+        gap: 8px !important;
+        margin-top: 12px !important;
+      }
+      .vw-product-card-action-button {
+        padding: 8px 10px !important;
+        font-size: 8px !important;
+        letter-spacing: 1.4px !important;
+      }
+      .vw-shop-toolbar {
+        margin-bottom: 18px !important;
+        gap: 12px !important;
+      }
+      .vw-shop-toolbar select,
+      .vw-shop-toolbar .input-dark {
+        font-size: 11px !important;
+        padding: 7px 12px !important;
+      }
+      .vw-shop-results-mobile > div:first-child,
+      .vw-shop-toolbar > div:first-child {
+        font-size: 11px !important;
+        letter-spacing: 1.8px !important;
+      }
+
+      .vw-coverflow-stage { height: 500px !important; }
+      .vw-coverflow-card { width: min(310px, calc(100vw - 48px)) !important; }
+      .vw-mosaic-header { flex-direction: column !important; align-items: flex-start !important; padding: 34px 20px 20px !important; gap: 18px !important; }
+      .vw-mosaic-track { padding-left: 20px !important; padding-right: 20px !important; }
+      .vw-active-banner { margin: 4px 20px 0 !important; flex-direction: column !important; align-items: stretch !important; gap: 14px !important; }
+
+      .vw-cart-item,
+      .vw-wishlist-item {
+        grid-template-columns: 1fr !important;
+      }
+      .vw-cart-total,
+      .vw-wishlist-price {
+        text-align: left !important;
+        gap: 8px !important;
+      }
+      .vw-cart-controls,
+      .vw-wishlist-actions {
+        flex-wrap: wrap !important;
+      }
+
+      .vw-auth-card { padding: 28px 20px !important; }
+      .vw-otp-row { gap: 6px !important; }
+      .vw-otp-input {
+        width: clamp(36px, 12vw, 46px) !important;
+        height: clamp(44px, 13vw, 54px) !important;
+      }
+
+      .vw-table-scroll { margin-left: -1px; margin-right: -1px; }
+      .vw-admin-main { padding: 24px 18px !important; }
+      .vw-admin-main form[style*="display: flex"] { flex-wrap: wrap !important; }
+      .vw-admin-main form[style*="display: flex"] .input-dark { min-width: min(220px, 100%); }
+      .vw-admin-shell-header {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 16px !important;
+      }
+      .vw-admin-shell-header > div { min-width: 0; }
+      .vw-admin-mobile-title {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--silver);
+        margin-top: 4px;
+      }
+      .vw-admin-card-grid,
+      .vw-admin-summary-grid,
+      .vw-admin-form-grid,
+      .vw-admin-two-col { grid-template-columns: 1fr !important; }
+      .vw-admin-header { margin-bottom: 28px !important; }
+      .vw-admin-toolbar,
+      .vw-admin-search,
+      .vw-admin-actions {
+        width: 100% !important;
+      }
+      .vw-admin-toolbar,
+      .vw-admin-actions,
+      .vw-admin-form-actions,
+      .vw-admin-customer-search {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .vw-admin-main h1 {
+        font-size: clamp(36px, 12vw, 44px) !important;
+        letter-spacing: 2px !important;
+      }
+      .vw-admin-main .btn-gold,
+      .vw-admin-main .btn-ghost {
+        min-height: 42px;
+        justify-content: center;
+      }
+      .vw-table-scroll table { min-width: 760px; }
+      .vw-admin-stat-card { padding: 20px 18px !important; }
+      .vw-admin-panel { padding: 22px 18px !important; }
+      .vw-admin-chart-scroll { overflow-x: auto; padding-bottom: 4px; }
+      .vw-admin-chart-scroll > div { min-width: 520px; }
+      .vw-why-section { max-width: 760px !important; padding-top: 56px !important; padding-bottom: 56px !important; }
+      .vw-why-header { margin-bottom: 30px !important; }
+      .vw-why-grid {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+        gap: 14px !important;
+      }
+      .vw-why-card { padding: 22px 18px !important; }
+      .vw-footer { padding: 42px 20px 24px !important; }
+      .vw-footer-grid {
+        gap: 24px !important;
+        margin-bottom: 28px !important;
+      }
+      .vw-footer-brand p,
+      .vw-footer-newsletter p {
+        font-size: 15px !important;
+        line-height: 1.55 !important;
+      }
+      .vw-footer-heading { margin-bottom: 12px !important; }
+    }
+
+    @media (max-width: 480px) {
+      .vw-nav-shell { padding: 0 10px !important; }
+      .vw-nav-row {
+        gap: 8px !important;
+      }
+      .vw-nav-actions { gap: 8px !important; }
+      .vw-nav-actions button { padding: 0 !important; }
+      .vw-mobile-menu-leading { width: 34px; height: 34px; }
+      .vw-brand-logo { width: 30px !important; height: 30px !important; }
+      .vw-brand-title { font-size: 18px !important; letter-spacing: 3px !important; }
+      .vw-brand-subtitle { display: none !important; }
+      .vw-mobile-panel { width: min(310px, 88vw); }
+      .vw-shop-filters { width: min(310px, 88vw) !important; }
+      .vw-shop-results-mobile {
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .vw-shop-layout {
+        padding: 22px 14px 26px !important;
+        gap: 18px !important;
+      }
+      .vw-product-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 12px !important;
+      }
+      .vw-product-card-image {
+        height: 180px !important;
+      }
+      .vw-product-card-body {
+        padding: 12px 12px 14px !important;
+      }
+      .vw-product-card-title {
+        font-size: 15px !important;
+      }
+      .vw-product-card-price {
+        font-size: 17px !important;
+      }
+      .vw-product-card-original-price,
+      .vw-product-card-review-count {
+        font-size: 9px !important;
+      }
+      .vw-product-card-sale {
+        padding: 2px 6px !important;
+      }
+      .vw-product-card-wishlist {
+        bottom: 10px !important;
+        right: 10px !important;
+        padding: 5px !important;
+      }
+      .vw-filter-toggle {
+        padding: 8px 12px !important;
+        font-size: 10px;
+      }
+      .vw-hero-actions .btn-gold,
+      .vw-hero-actions .btn-outline,
+      .vw-section-heading .btn-outline,
+      .vw-product-card-actions,
+      .vw-contact-submit-row button {
+        width: 100% !important;
+      }
+      .vw-product-card-actions { grid-template-columns: 1fr !important; }
+      .vw-footer-socials,
+      .vw-footer-links { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+      .vw-sidebar-item { gap: 12px !important; }
+      .vw-sidebar-thumb { width: 56px !important; height: 68px !important; }
+      .btn-gold,
+      .btn-outline,
+      .btn-ghost {
+        padding: 8px 12px;
+        font-size: 9px;
+        letter-spacing: 1.5px;
+      }
+      .vw-why-grid { grid-template-columns: minmax(0, 1fr) !important; max-width: 360px; margin: 0 auto; }
+      .vw-why-card { padding: 20px 16px !important; }
+      .vw-footer-grid { gap: 22px !important; }
+      .vw-footer-bottom { align-items: flex-start !important; }
     }
   `}</style>
 );
@@ -351,7 +983,7 @@ const Toast = ({ message, type = "success", onClose }) => {
   );
 };
 
-const ProductImage = ({ product, height = 280 }) => {
+const ProductImage = ({ product, height = 280, className = "" }) => {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -367,6 +999,7 @@ const ProductImage = ({ product, height = 280 }) => {
 
   return (
     <div
+      className={className}
       style={{
         height,
         background: `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`,
@@ -1064,22 +1697,22 @@ function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px"}}>
+      <section className="vw-home-hero" style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px"}}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }}/>
         {/* Geometric accents */}
         <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
         <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }}/>
         <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
 
-        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
+        <div className="vw-hero-inner" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
           <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
+            <h1 className="vw-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
-            <div style={{ display: "flex", gap: 16 }}>
+            <div className="vw-hero-actions" style={{ display: "flex", gap: 16 }}>
               <button className="btn-gold" onClick={() => openShop(slide.collection)}>
                 EXPLORE COLLECTION
               </button>
@@ -1105,7 +1738,7 @@ function HomePage() {
       </div>
 
       {/* STATS */}
-      <section style={{ background: "var(--graphite)", padding: "60px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <section className="vw-section-pad" style={{ background: "var(--graphite)", padding: "60px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40, textAlign: "center" }}>
           {[["10,000+", "Happy Wolves"], ["220 GSM", "Premium Cotton"], ["48hr", "Dispatch"], ["100%", "India Made"]].map(([num, label]) => (
             <div key={label}>
@@ -1117,9 +1750,9 @@ function HomePage() {
       </section>
 
  {/* FEATURED PRODUCTS */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
+      <section className="vw-section-pad" style={{ padding: "80px 40px", background: "var(--graphite)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+          <div className="vw-section-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
@@ -1166,7 +1799,7 @@ function HomePage() {
       </section> */}
 
       {/* CTA BAND */}
-      <section style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <section className="vw-section-pad" style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
         <div style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 DESIGN YOUR IDENTITY \u2726"}</div>
@@ -1183,20 +1816,20 @@ function HomePage() {
       </section>
 
       {/* WHY VELVETWOLF */}
-      <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
+      <section className="vw-section-pad vw-why-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
+        <div className="vw-why-header" style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider"/>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
+        <div className="vw-why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
             ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],
             ["\u2726", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
           ].map(([icon, title, desc]) => (
-            <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
+            <div className="vw-why-card" key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
+              <div className="vw-why-card-icon" style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 16 }}>{title}</h3>
               <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 16, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
               <div style={{ position: "absolute", top: 0, left: 0, width: 2, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
@@ -1241,6 +1874,7 @@ function FeaturedCoverflow({ products }) {
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        className="vw-coverflow-stage"
         style={{ position: "relative", height: 560, overflow: "hidden" }}
       >
         {products.map((product, index) => {
@@ -1256,6 +1890,7 @@ function FeaturedCoverflow({ products }) {
             <div
               key={product.id}
               onClick={() => setActiveIndex(index)}
+              className="vw-coverflow-card"
               style={{
                 position: "absolute",
                 top: 12,
@@ -1317,41 +1952,41 @@ function ProductCard({ product }) {
   const defaultColor = product.colors?.[0];
 
   return (
-    <div className="product-card" style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "relative" }}>
+    <div className="product-card vw-product-card" style={{ display: "flex", flexDirection: "column" }}>
+      <div className="vw-product-card-media-wrap" style={{ position: "relative" }}>
         <button
           onClick={() => setSelectedProduct(product)}
           style={{ background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", display: "block", textAlign: "left" }}
           aria-label={`Quick view ${product.name}`}
         >
-          <ProductImage product={product} />
+          <ProductImage product={product} className="vw-product-card-image" />
         </button>
-        <div style={{ position: "absolute", top: 12, left: 12 }}>
+        <div className="vw-product-card-badge-wrap" style={{ position: "absolute", top: 12, left: 12 }}>
           <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color }}>{product.tag}</span>
         </div>
-        {discount > 0 && <div style={{ position: "absolute", top: 12, right: 12, background: "var(--wolf-red)", color: "#fff", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>-{discount}%</div>}
-        <button onClick={() => toggleWishlist(product)} style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", padding: 8, color: inWishlist ? "var(--wolf-red)" : "var(--ash)" }}>
+        {discount > 0 && <div className="vw-product-card-sale" style={{ position: "absolute", top: 12, right: 12, background: "var(--wolf-red)", color: "#fff", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>-{discount}%</div>}
+        <button className="vw-product-card-wishlist" onClick={() => toggleWishlist(product)} style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(0,0,0,0.6)", border: "none", cursor: "pointer", padding: 8, color: inWishlist ? "var(--wolf-red)" : "var(--ash)" }}>
           <Icon name={inWishlist ? "heartFill" : "heart"} size={16} color={inWishlist ? "#c0392b" : "var(--ash)"} />
         </button>
       </div>
-      <div style={{ padding: "20px 20px 24px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "#c9c3c3", marginBottom: 6 }}>
+      <div className="vw-product-card-body" style={{ padding: "20px 20px 24px" }}>
+        <div className="vw-product-card-collection" style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "#c9c3c3", marginBottom: 6 }}>
           {getCollectionById(product.collection)?.name?.toUpperCase()}
         </div>
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
-        <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+        <h3 className="vw-product-card-title" style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
+        <div className="vw-product-card-rating" style={{ display: "flex", gap: 4, marginBottom: 12 }}>
           {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating) ? "#c9a84c" : "#333"} />)}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews})</span>
+          <span className="vw-product-card-review-count" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews})</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
+        <div className="vw-product-card-price-row" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="vw-product-card-price" style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
+          <span className="vw-product-card-original-price" style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
-          <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
+        <div className="vw-product-card-actions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
+          <button className="btn-ghost vw-product-card-action-button" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
             QUICK VIEW
           </button>
-          <button className="btn-gold" onClick={() => addToCart(product, defaultSize, defaultColor)} style={{ width: "100%", padding: "12px 16px" }}>
+          <button className="btn-gold vw-product-card-action-button" onClick={() => addToCart(product, defaultSize, defaultColor)} style={{ width: "100%", padding: "12px 16px" }}>
             ADD TO CART
           </button>
         </div>
@@ -1391,7 +2026,7 @@ function ShopPage() {
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       {/* Header */}
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
@@ -1401,18 +2036,42 @@ function ShopPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "40px 40px", display: "flex", gap: 40 }}>
+      <div className="vw-shop-layout" style={{ maxWidth: 1400, margin: "0 auto", padding: "40px 40px", display: "flex", gap: 40 }}>
+        {filterOpen && <div className="vw-filter-backdrop" onClick={() => setFilterOpen(false)} />}
         {/* Sidebar filters */}
-        <div style={{ width: 220, flexShrink: 0 }}>
+        <div id="vw-shop-filters" className={`vw-shop-filters ${filterOpen ? "is-open" : ""}`} style={{ width: 220, flexShrink: 0 }}>
+          <div className="vw-filter-drawer-head">
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 4, color: "var(--ivory)", lineHeight: 1 }}>FILTERS</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--gold)", marginTop: 5 }}>REFINE THE DROP</div>
+            </div>
+            <button
+              onClick={() => setFilterOpen(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", padding: 4 }}
+              aria-label="Close filters"
+            >
+              <Icon name="x" size={22} />
+            </button>
+          </div>
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>COLLECTIONS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button onClick={() => setActiveCollection(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>ALL</button>
-              {COLLECTIONS.map(col => (
-                <button key={col.id} onClick={() => setActiveCollection(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "#cfcdcd", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>{col.icon}</span>{col.name}
-                </button>
-              ))}
+              {COLLECTIONS.map(col => {
+                const CollectionIcon = col.icon;
+                const active = activeCollection === col.id;
+
+                return (
+                  <button key={col.id} onClick={() => setActiveCollection(active ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: active ? "var(--gold)" : "#cfcdcd", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                    {typeof CollectionIcon === "string" ? (
+                      <span>{CollectionIcon}</span>
+                    ) : (
+                      <CollectionIcon sx={{ fontSize: 16, color: active ? "var(--gold)" : col.color, flexShrink: 0 }} />
+                    )}
+                    <span>{col.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div style={{ marginBottom: 32 }}>
@@ -1427,7 +2086,16 @@ function ShopPage() {
 
         {/* Products grid */}
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <div className="vw-shop-results-mobile">
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>{filtered.length} RESULTS</div>
+            <button className="btn-ghost vw-filter-toggle" onClick={() => setFilterOpen(open => !open)} aria-expanded={filterOpen} aria-controls="vw-shop-filters">
+              <span className="vw-filter-toggle-icon">
+                <Icon name="filter" size={16} />
+              </span>
+              <span>{filterOpen ? "HIDE FILTER" : "FILTER"}</span>
+            </button>
+          </div>
+          <div className="vw-shop-toolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>{filtered.length} RESULTS</div>
             <select className="input-dark" value={sort} onChange={e => setSort(e.target.value)} style={{ width: "auto", padding: "8px 16px" }}>
               <option value="featured">FEATURED</option>
@@ -1442,7 +2110,7 @@ function ShopPage() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No products match your filters.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+            <div className="vw-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
@@ -1466,11 +2134,11 @@ function ProductModal() {
 
   return (
     <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
-      <div className="modal-box" style={{ maxWidth: 880, display: "flex", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
-        <div style={{ flex: 1, flexShrink: 0 }}>
+      <div className="modal-box vw-product-modal" style={{ maxWidth: 880, display: "flex", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+        <div className="vw-product-modal-image" style={{ flex: 1, flexShrink: 0 }}>
           <ProductImage product={p} height={420} />
         </div>
-        <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
+        <div className="vw-product-modal-body" style={{ flex: 1, padding: 40, overflowY: "auto" }}>
           <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20}/></button>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
             {getCollectionById(p.collection)?.name?.toUpperCase()}
@@ -1516,13 +2184,13 @@ function ProductModal() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div className="vw-product-modal-actions" style={{ display: "flex", gap: 12 }}>
             <button className="btn-gold" style={{ flex: 1 }} onClick={() => { addToCart(p, size, color, qty); setSelectedProduct(null); }}>ADD TO CART</button>
             <button onClick={() => toggleWishlist(p)} style={{ background: inWishlist ? "rgba(192,57,43,0.2)" : "transparent", border: `1px solid ${inWishlist ? "var(--wolf-red)" : "var(--smoke)"}`, color: inWishlist ? "var(--wolf-red)" : "var(--silver)", padding: "0 18px", cursor: "pointer" }}>
               <Icon name={inWishlist ? "heartFill" : "heart"} size={18} color={inWishlist ? "#c0392b" : "var(--silver)"}/>
             </button>
           </div>
-          <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
+          <div className="vw-product-modal-perks" style={{ marginTop: 20, display: "flex", gap: 20 }}>
             {["Secure Payment", "Free Ship \u20b91999+", "30-Day Returns"].map(t => (
               <span key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1 }}>{t}</span>
             ))}
@@ -1555,8 +2223,8 @@ function CartSidebar() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", marginTop: 16 }}>Your cart is empty</p>
             </div>
           ) : cart.map((item, i) => (
-            <div key={i} style={{ padding: "20px 0", borderBottom: "1px solid var(--smoke)", display: "flex", gap: 16 }}>
-              <div style={{ width: 70, height: 80, flexShrink: 0 }}>
+            <div className="vw-sidebar-item" key={i} style={{ padding: "20px 0", borderBottom: "1px solid var(--smoke)", display: "flex", gap: 16 }}>
+              <div className="vw-sidebar-thumb" style={{ width: 70, height: 80, flexShrink: 0 }}>
                 <ProductImage product={item} height={80} />
               </div>
               <div style={{ flex: 1 }}>
@@ -1613,8 +2281,8 @@ function WishlistSidebar() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", marginTop: 16 }}>Nothing saved yet</p>
             </div>
           ) : wishlist.map(item => (
-            <div key={item.id} style={{ padding: "20px 0", borderBottom: "1px solid var(--smoke)", display: "flex", gap: 16, alignItems: "center" }}>
-              <div style={{ width: 70, flexShrink: 0 }}><ProductImage product={item} height={80}/></div>
+            <div className="vw-sidebar-item" key={item.id} style={{ padding: "20px 0", borderBottom: "1px solid var(--smoke)", display: "flex", gap: 16, alignItems: "center" }}>
+              <div className="vw-sidebar-thumb" style={{ width: 70, flexShrink: 0 }}><ProductImage product={item} height={80}/></div>
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 1, marginBottom: 6 }}>{item.name}</h4>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", marginBottom: 10 }}>{"\u20b9"}{item.price.toLocaleString()}</div>
@@ -1835,7 +2503,7 @@ function CustomDesignPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>MAKE IT YOURS</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br/>DESIGN</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
@@ -1963,7 +2631,7 @@ function BulkOrderPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>

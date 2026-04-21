@@ -18,14 +18,15 @@ export default function Footer() {
   };
 
   return (
-    <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
+    <footer className="vw-footer" style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
-          <div>
+        <div className="vw-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
+          <div className="vw-footer-brand">
             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 10,
@@ -48,7 +49,7 @@ export default function Footer() {
               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
             </p>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
+            <div className="vw-footer-socials" style={{ display: "flex", gap: 14, marginTop: 24 }}>
               <a
                 href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
                 target="_blank"
@@ -75,6 +76,7 @@ export default function Footer() {
 
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 20,
@@ -107,6 +109,7 @@ export default function Footer() {
 
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 20,
@@ -137,8 +140,9 @@ export default function Footer() {
             )}
           </div>
 
-          <div>
+          <div className="vw-footer-newsletter">
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 20,
@@ -169,6 +173,7 @@ export default function Footer() {
         </div>
 
         <div
+          className="vw-footer-bottom"
           style={{
             borderTop: "1px solid var(--smoke)",
             paddingTop: 28,
@@ -181,7 +186,7 @@ export default function Footer() {
             © 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
-          <div style={{ display: "flex", gap: 20 }}>
+          <div className="vw-footer-links" style={{ display: "flex", gap: 20 }}>
             {[["Privacy Policy", "privacypolicy"], ["Terms", "termspage"], ["Shipping Policy", "shoppingpolicy"]].map(
               ([l, pg]) => (
                 <span

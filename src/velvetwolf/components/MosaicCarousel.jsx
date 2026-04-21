@@ -75,7 +75,7 @@ function MosaicPanel({ cats, onClick, activeId }) {
 function ActiveBanner({ cat, onClose, onShopNow }) {
   if (!cat) return null;
   return (
-    <div style={{
+    <div className="vw-active-banner" style={{
       margin: "4px 36px 0",
       padding: "14px 22px",
       borderRadius: 4,
@@ -188,7 +188,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
       <section style={{ background:"#090909", paddingBottom: 8 }}>
 
         {/* Header row */}
-        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
+        <div className="vw-mosaic-header" style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.04),transparent 60%)",pointerEvents:"none" }}/>
           <div style={{ position:"relative" }}>
             <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:5, color:gold, marginBottom:10, display:"flex", alignItems:"center", gap:10 }}>
@@ -215,7 +215,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
 
           <div
             ref={trackRef}
-            className="vwmc-track"
+            className="vwmc-track vw-mosaic-track"
             onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
             onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}
             onScroll={fade}

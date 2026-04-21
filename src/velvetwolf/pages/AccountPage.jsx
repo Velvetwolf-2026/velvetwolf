@@ -97,7 +97,7 @@ export function AccountPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40 }}>
             <div style={{ width: 72, height: 72, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 28, color: "var(--obsidian)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>
@@ -129,7 +129,7 @@ export function AccountPage() {
               ))}
             </div>
             {user.isAdmin && (
-              <div style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="vw-account-admin-card" style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
                   <p style={{ fontFamily: "'Roboto', sans-serif", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>

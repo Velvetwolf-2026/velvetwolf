@@ -303,7 +303,7 @@ export function Login() {
           </div>
         </div>
 
-        <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
+        <div className="vw-auth-card" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
           {step === 1 && (
             <>
               <div style={{ marginBottom: 26 }}>

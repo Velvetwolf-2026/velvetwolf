@@ -1,21 +1,37 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
 
+// MUI ICONS
+import MemoryIcon from "@mui/icons-material/Memory";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import DiamondIcon from "@mui/icons-material/Diamond";
+import WhatshotIcon from "@mui/icons-material/Whatshot";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+
+// COLLECTIONS (UPDATED)
 export const COLLECTIONS = [
-  { id: "ai-tech", name: "AI & Tech Humor", icon: "⚡", color: "#4fc3f7" },
-  { id: "anime", name: "Anime Anarchy", icon: "🎌", color: "#f06292" },
-  { id: "xp-mode", name: "XP Mode: Activated", icon: "🖥", color: "#81c784" },
-  { id: "beast-mode", name: "Beast Mode Grind", icon: "🔥", color: "#ff8a65" },
-  { id: "mind-mayhem", name: "Mind Over Mayhem", icon: "🧠", color: "#ce93d8" },
-  { id: "silent-luxury", name: "Silent Luxury", icon: "💎", color: "#c9a84c" },
-  { id: "savage-quotes", name: "Savage Quotes", icon: "💬", color: "#ef5350" },
-  { id: "founder", name: "Founder Energy", icon: "🚀", color: "#ffd54f" },
-  { id: "trending", name: "Trending Now", icon: "⭐", color: "#80cbc4" },
-  { id: "limited", name: "Limited Edition", icon: "🏷", color: "#ffab91" },
-  { id: "most-loved", name: "Most Loved", icon: "♥", color: "#f48fb1" },
-  { id: "budget", name: "Under ₹999", icon: "◎", color: "#a5d6a7" },
+  { id: "ai-tech", name: "AI & Tech Humor", icon: MemoryIcon, color: "#4fc3f7" },
+  { id: "anime", name: "Anime Anarchy", icon: AutoAwesomeIcon, color: "#f06292" },
+  { id: "xp-mode", name: "XP Mode: Activated", icon: SportsEsportsIcon, color: "#81c784" },
+  { id: "beast-mode", name: "Beast Mode Grind", icon: FitnessCenterIcon, color: "#ff8a65" },
+  { id: "mind-mayhem", name: "Mind Over Mayhem", icon: PsychologyIcon, color: "#ce93d8" },
+  { id: "silent-luxury", name: "Silent Luxury", icon: DiamondIcon, color: "#c9a84c" },
+  { id: "savage-quotes", name: "Savage Quotes", icon: WhatshotIcon, color: "#ef5350" },
+  { id: "founder", name: "Founder Energy", icon: RocketLaunchIcon, color: "#ffd54f" },
+  { id: "trending", name: "Trending Now", icon: TrendingUpIcon, color: "#80cbc4" },
+  { id: "limited", name: "Limited Edition", icon: LocalOfferIcon, color: "#ffab91" },
+  { id: "most-loved", name: "Most Loved", icon: FavoriteIcon, color: "#f48fb1" },
+  { id: "budget", name: "Under ₹999", icon: CurrencyRupeeIcon, color: "#a5d6a7" },
 ];
 
+// PRODUCTS (UNCHANGED)
 export const INITIAL_COLLECTION_PRODUCTS = [
   { id: "3f8b5e7a-9d2a-4c1b-b6a2-1a8f0d5e2c11", name: "Neural Network Tee", collection: "ai-tech", price: 1299, originalPrice: 1899, image: null, sizes: ["XS", "S", "M", "L", "XL", "XXL"], colors: ["#0a0a0a", "#1a1a2e", "#f0ede8"], rating: 4.8, reviews: 234, tag: "BESTSELLER", description: "Minimal circuit-board motif. 100% Egyptian cotton, 220 GSM.", stock: 45 },
   { id: "8a1c4d92-5f3e-4c8b-9f2a-6d7b1e0c3a44", name: "Silent Predator", collection: "silent-luxury", price: 2499, originalPrice: 3200, image: null, sizes: ["S", "M", "L", "XL"], colors: ["#0a0a0a", "#2c2c2c"], rating: 4.9, reviews: 189, tag: "LIMITED", description: "Embossed wolf crest. Supima cotton, hand-stitched details.", stock: 12 },
@@ -28,15 +44,14 @@ export const INITIAL_COLLECTION_PRODUCTS = [
 ];
 
 export const HOME_COLLECTION_IDS = ["trending", "beast-mode", "anime", "ai-tech", "silent-luxury"];
-export const HOME_COLLECTIONS = HOME_COLLECTION_IDS
-  .map((id) => COLLECTIONS.find((col) => col.id === id))
-  .filter(Boolean);
+export const HOME_COLLECTIONS = HOME_COLLECTION_IDS.map(id => COLLECTIONS.find(col => col.id === id)).filter(Boolean);
 export const BROWSE_COLLECTIONS = COLLECTIONS;
 
 export function getCollectionById(id) {
-  return COLLECTIONS.find((col) => col.id === id) || null;
+  return COLLECTIONS.find(col => col.id === id) || null;
 }
 
+// ARROW ICON
 function ArrowIcon({ color = "currentColor", size = 12 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
@@ -46,46 +61,96 @@ function ArrowIcon({ color = "currentColor", size = 12 }) {
   );
 }
 
+// MAIN PAGE
 export default function CollectionsPage() {
   const { openShop } = useContext(AppContext);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>
+            EXPLORE
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
+            ALL COLLECTIONS
+          </h1>
         </div>
       </div>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 300px))", justifyContent: "center", gap: 24 }}>
-          {BROWSE_COLLECTIONS.map((col) => (
-            <div
-              key={col.id}
-              onClick={() => {
-                openShop(col.id);
-              }}
-              style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "48px 32px", cursor: "pointer", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = col.color;
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.querySelector(".col-bg").style.opacity = 1;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--smoke)";
-                e.currentTarget.style.transform = "";
-                e.currentTarget.querySelector(".col-bg").style.opacity = 0;
-              }}
-            >
-              <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }} />
-              <div style={{ fontSize: 48, marginBottom: 20, textAlign: "center" }}>{col.icon}</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12, textAlign: "center" }}>{col.name.toUpperCase()}</h2>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2 }}>
-                EXPLORE <ArrowIcon size={12} color={col.color} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 300px))", justifyContent: "center", gap: 24 }}>
+          {BROWSE_COLLECTIONS.map((col) => {
+            const Icon = col.icon;
+
+            return (
+              <div
+                key={col.id}
+                onClick={() => openShop(col.id)}
+                style={{
+                  background: "var(--graphite)",
+                  border: "1px solid var(--smoke)",
+                  padding: "48px 32px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = col.color;
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.querySelector(".col-bg").style.opacity = 1;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--smoke)";
+                  e.currentTarget.style.transform = "";
+                  e.currentTarget.querySelector(".col-bg").style.opacity = 0;
+                }}
+              >
+                <div
+                  className="col-bg"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`,
+                    opacity: 0,
+                    transition: "opacity 0.4s",
+                  }}
+                />
+
+                <div style={{ textAlign: "center", marginBottom: 20 }}>
+                  <Icon sx={{ fontSize: 48, color: col.color }} />
+                </div>
+
+                <h2
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: 32,
+                    letterSpacing: 2,
+                    marginBottom: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  {col.name.toUpperCase()}
+                </h2>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 8,
+                    color: col.color,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    letterSpacing: 2,
+                  }}
+                >
+                  EXPLORE <ArrowIcon size={12} color={col.color} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -21,6 +21,19 @@ function Icon({ name, size = 18, color = "currentColor" }) {
         <circle cx="12" cy="7" r="4" />
       </svg>
     ),
+    menu: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    ),
+    x: (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    ),
   };
 
   return icons[name] || null;
@@ -29,8 +42,15 @@ function Icon({ name, size = 18, color = "currentColor" }) {
 export default function Navbar({ activePage }) {
   const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop } = useContext(AppContext);
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
   const greetingName = displayName ? displayName.split(" ")[0] : "";
+  const navItems = [["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]];
+
+  const goToPage = (pg) => {
+    setMenuOpen(false);
+    pg === "shop" ? openShop() : setPage(pg);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -52,8 +72,10 @@ export default function Navbar({ activePage }) {
         transition: "all 0.4s ease",
         padding: "0 40px",
       }}
+      className="vw-nav-shell"
     >
       <div
+        className="vw-nav-row"
         style={{
           maxWidth: 1400,
           margin: "0 auto",
@@ -63,9 +85,19 @@ export default function Navbar({ activePage }) {
           height: 70,
         }}
       >
+        <button
+          className="vw-mobile-menu-leading"
+          onClick={() => setMenuOpen((open) => !open)}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", padding: 0 }}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+        >
+          <Icon name={menuOpen ? "x" : "menu"} size={24} />
+        </button>
+
         {/* Logo */}
         <div
-          onClick={() => setPage("home")}
+          className="vw-brand-link"
+          onClick={() => { setMenuOpen(false); setPage("home"); }}
           style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
         >
           <div
@@ -78,6 +110,7 @@ export default function Navbar({ activePage }) {
               alignItems: "center",
               justifyContent: "center",
             }}
+            className="vw-brand-logo"
           >
             <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
 
@@ -92,6 +125,7 @@ export default function Navbar({ activePage }) {
                 color: "var(--ivory)",
                 lineHeight: 1,
               }}
+              className="vw-brand-title"
             >
               VELVETWOLF
             </div>
@@ -103,6 +137,7 @@ export default function Navbar({ activePage }) {
                 color: "var(--gold)",
                 opacity: 0.8,
               }}
+              className="vw-brand-subtitle"
             >
               LUXURY STREETWEAR
             </div>
@@ -110,12 +145,12 @@ export default function Navbar({ activePage }) {
         </div>
 
         {/* Nav links */}
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {[["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]].map(
+        <div className="vw-desktop-nav" style={{ display: "flex", gap: 32, alignItems: "center" }}>
+          {navItems.map(
             ([label, pg]) => (
               <button
                 key={pg}
-                onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
+                onClick={() => goToPage(pg)}
                 style={{
                   background: "none",
                   border: "none",
@@ -164,7 +199,16 @@ export default function Navbar({ activePage }) {
         </div>
 
         {/* Icons */}
-        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+        <div className="vw-nav-actions" style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <button
+            className="vw-mobile-menu-toggle"
+            onClick={() => setMenuOpen((open) => !open)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", padding: 0 }}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+          >
+            <Icon name={menuOpen ? "x" : "menu"} size={24} />
+          </button>
+
           <button
             onClick={() => (user ? setWishlistOpen(true) : setPage("login"))}
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}
@@ -225,6 +269,7 @@ export default function Navbar({ activePage }) {
           {greetingName && (
             <button
               onClick={() => setPage("account")}
+              className="vw-user-greeting"
               style={{
                 background: "none",
                 border: "1px solid rgba(201,168,76,0.35)",
@@ -244,6 +289,7 @@ export default function Navbar({ activePage }) {
           {user && (
             <button
               onClick={signOutUser}
+              className="vw-sign-out"
               style={{
                 background: "none",
                 border: "1px solid var(--smoke)",
@@ -267,6 +313,84 @@ export default function Navbar({ activePage }) {
           </button>
         </div>
       </div>
+      {menuOpen && (
+        <>
+          <div className="vw-mobile-backdrop" onClick={() => setMenuOpen(false)} />
+          <aside className="vw-mobile-panel" aria-label="Mobile navigation">
+            <div className="vw-mobile-drawer-head">
+              <div>
+                <div className="vw-mobile-drawer-brand">VELVETWOLF</div>
+                <div className="vw-mobile-drawer-sub">LUXURY STREETWEAR</div>
+              </div>
+              <button
+                onClick={() => setMenuOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", padding: 4 }}
+                aria-label="Close menu"
+              >
+                <Icon name="x" size={22} />
+              </button>
+            </div>
+
+            <div className="vw-mobile-panel-inner">
+              {navItems.map(([label, pg]) => (
+                <button
+                  key={pg}
+                  onClick={() => goToPage(pg)}
+                  style={{
+                    background: activePage === pg ? "rgba(201,168,76,0.12)" : "transparent",
+                    border: "1px solid var(--smoke)",
+                    color: activePage === pg ? "var(--gold)" : "var(--ash)",
+                    cursor: "pointer",
+                    fontFamily: "'Roboto', sans-serif",
+                    fontSize: 14,
+                    letterSpacing: 3,
+                    padding: "13px 14px",
+                    textAlign: "left",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+              {greetingName && (
+                <button
+                  onClick={() => goToPage("account")}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid rgba(201,168,76,0.35)",
+                    color: "var(--gold)",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    letterSpacing: 1.5,
+                    padding: "13px 14px",
+                    textAlign: "left",
+                  }}
+                >
+                  {`Hi ${greetingName}`}
+                </button>
+              )}
+              {user && (
+                <button
+                  onClick={() => { setMenuOpen(false); signOutUser(); }}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--smoke)",
+                    color: "var(--ash)",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    letterSpacing: 2,
+                    padding: "13px 14px",
+                    textAlign: "left",
+                  }}
+                >
+                  SIGN OUT
+                </button>
+              )}
+            </div>
+          </aside>
+        </>
+      )}
     </nav>
   );
 }

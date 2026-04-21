@@ -23,13 +23,13 @@ function QuantityButton({ children, onClick }) {
 
 function CartItemCard({ item, onQtyChange, onRemove }) {
   return (
-    <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
+    <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 1, marginBottom: 8 }}>{item.name}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginBottom: 14 }}>
           SIZE {item.size} · COLOR {item.color}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="vw-cart-controls" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <QuantityButton onClick={() => onQtyChange(item.qty - 1)}>-</QuantityButton>
           <div style={{ minWidth: 32, textAlign: "center", fontFamily: "var(--font-mono)", color: "var(--ivory)" }}>{item.qty}</div>
           <QuantityButton onClick={() => onQtyChange(item.qty + 1)}>+</QuantityButton>
@@ -41,7 +41,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
           </button>
         </div>
       </div>
-      <div style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div className="vw-cart-total" style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>₹{(Number(item.price) * Number(item.qty)).toLocaleString()}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>
           ₹{Number(item.price).toLocaleString()} each
@@ -56,7 +56,7 @@ export default function CartPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>
             {user?.id ? "SYNCED WITH YOUR ACCOUNT" : "GUEST CART"}
