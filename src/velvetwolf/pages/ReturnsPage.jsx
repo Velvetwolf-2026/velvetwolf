@@ -10,7 +10,7 @@ const STAT_CARDS = [
 ];
 
 const STEPS = [
-  { step: "01", title: "EMAIL US", email: "returns@velvetwolf.in", desc: "with your order ID, items to return, and reason. Attach photos if defective." },
+  { step: "01", title: "EMAIL US", email: "info@velvetwolf.in", desc: "with your order ID, items to return, and reason. Attach photos if defective." },
   { step: "02", title: "GET APPROVED", desc: "We'll review your request within 24 hours and send a return authorisation with instructions." },
   { step: "03", title: "SHIP IT BACK", desc: "Pack the item securely. Drop at the nearest courier point or schedule a pickup (available in select cities)." },
   { step: "04", title: "REFUND PROCESSED", desc: "Once we receive and inspect the item (2-3 days), your refund or exchange is processed within 48 hours." },
