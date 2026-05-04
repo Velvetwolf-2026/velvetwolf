@@ -193,8 +193,8 @@ export default function Footer() {
             © 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
-          <div className="vw-footer-links" style={{ display: "flex", gap: 14 }}>
-            {[["Privacy Policy", "privacypolicy"], ["Terms", "termspage"], ["Shipping Policy", "shoppingpolicy"]].map(
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {[["Privacy Policy", "privacypolicy"], ["Terms", "termspage"], ["Contact", "contactus"], ["Shipping", "shoppingpolicy"], ["Returns", "returnspage"]].map(
               ([l, pg]) => (
                 <span
                   className="vw-footer-legal-link"
