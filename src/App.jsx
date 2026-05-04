@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef, Component, lazy, Suspense } from "react";
+import { useState, useEffect, useContext, useRef, useCallback, Component, lazy, Suspense } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
@@ -15,6 +15,12 @@ import Footer from "./velvetwolf/components/Footer";
 
 // Admin chunk is lazy-loaded — not downloaded by regular users
 const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
+
+const loadedCartUsers = new Set();
+const loadedWishlistUsers = new Set();
+const inFlightCartLoads = new Map();
+const inFlightWishlistLoads = new Map();
+let productsLoadPromise = null;
 
 const GlobalStyles = () => (
   <style>{`
@@ -667,7 +673,12 @@ const GlobalStyles = () => (
         white-space: normal;
       }
 
-      .vw-nav-shell { padding: 0 14px !important; }
+      .vw-nav-shell {
+        padding: 0 14px !important;
+        background: rgba(10,10,10,0.96) !important;
+        border-bottom: 1px solid rgba(201,168,76,0.18) !important;
+        backdrop-filter: blur(18px) !important;
+      }
       .vw-nav-row {
         display: flex !important;
         align-items: center;
@@ -675,18 +686,51 @@ const GlobalStyles = () => (
         gap: 10px !important;
       }
       .vw-brand-link { gap: 9px !important; }
-      .vw-nav-actions { gap: 10px !important; justify-self: end; }
+      .vw-brand-link,
+      .vw-nav-actions {
+        min-width: 0;
+      }
+      .vw-brand-link > div:last-child {
+        min-width: 0;
+      }
+      .vw-nav-actions {
+        gap: 6px !important;
+        justify-self: end;
+        flex-shrink: 0;
+      }
+      .vw-nav-actions button {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        padding: 2px !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px !important;
+        line-height: 1;
+      }
+      .vw-nav-actions button svg {
+        width: 19px;
+        height: 19px;
+      }
       .vw-user-greeting,
       .vw-sign-out { display: none !important; }
       .vw-brand-title { font-size: 20px !important; letter-spacing: 4px !important; }
-      .vw-brand-subtitle { font-size: 9px !important; letter-spacing: 2px !important; }
+      .vw-brand-subtitle {
+        font-size: 8px !important;
+        letter-spacing: 1.2px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 118px;
+      }
       .vw-mobile-menu-leading {
         width: 36px;
         height: 36px;
       }
       .vw-brand-logo { width: 32px !important; height: 32px !important; }
       .vw-mobile-panel {
-        width: min(260px, 54vw);
+        width: min(300px, 86vw);
       }
       .vw-mobile-drawer-head { padding: 20px 18px 14px; }
       .vw-mobile-drawer-brand { font-size: 20px; letter-spacing: 4px; }
@@ -839,6 +883,79 @@ const GlobalStyles = () => (
         font-size: 13px !important;
         margin-top: 6px !important;
       }
+
+      .vw-account-page {
+        padding-top: 64px !important;
+        overflow-x: hidden;
+      }
+      .vw-account-page .vw-page-hero {
+        padding: 28px 16px 0 !important;
+      }
+      .vw-account-profile-row {
+        align-items: flex-start !important;
+        gap: 14px !important;
+        margin-bottom: 22px !important;
+      }
+      .vw-account-avatar {
+        width: 54px !important;
+        height: 54px !important;
+        flex: 0 0 54px;
+        font-size: 22px !important;
+      }
+      .vw-account-profile-copy {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .vw-account-profile-copy h1 {
+        letter-spacing: 1px !important;
+        word-break: break-word;
+      }
+      .vw-account-tabs {
+        width: calc(100vw - 32px);
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .vw-account-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .vw-account-tabs button {
+        flex: 0 0 auto;
+        min-width: max-content;
+        padding: 12px 16px !important;
+        letter-spacing: 2px !important;
+      }
+      .vw-account-content {
+        margin: 24px auto 36px !important;
+        padding: 0 16px !important;
+      }
+      .vw-account-stats-grid,
+      .vw-account-wishlist-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .vw-account-stats-grid {
+        margin-bottom: 24px !important;
+      }
+      .vw-account-stat-card {
+        padding: 20px 18px !important;
+      }
+      .vw-account-order-card {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 14px !important;
+        padding: 18px 16px !important;
+      }
+      .vw-account-order-total {
+        width: 100%;
+        text-align: left !important;
+      }
+      .vw-account-settings-panel {
+        max-width: none !important;
+        width: 100%;
+      }
+
       .vw-shop-layout {
         padding: 26px 20px 28px !important;
         gap: 22px !important;
@@ -1116,19 +1233,32 @@ const GlobalStyles = () => (
       .vw-nav-row {
         gap: 8px !important;
       }
-      .vw-nav-actions { gap: 8px !important; }
-      .vw-nav-actions button { padding: 0 !important; }
+      .vw-nav-actions { gap: 4px !important; }
+      .vw-nav-actions button {
+        width: 26px !important;
+        height: 26px !important;
+        min-width: 26px !important;
+        padding: 1px !important;
+      }
+      .vw-nav-actions button svg {
+        width: 18px;
+        height: 18px;
+      }
       .vw-mobile-menu-leading { width: 34px; height: 34px; }
       .vw-brand-logo { width: 30px !important; height: 30px !important; }
       .vw-brand-title { font-size: 18px !important; letter-spacing: 3px !important; }
       .vw-brand-subtitle {
         display: block !important;
-        font-size: 8px !important;
-        letter-spacing: 1.6px !important;
+        font-size: 7px !important;
+        letter-spacing: 1px !important;
         opacity: 0.78 !important;
         margin-top: 2px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 104px;
       }
-      .vw-mobile-panel { width: min(220px, 52vw); }
+      .vw-mobile-panel { width: min(280px, 86vw); }
       .vw-mobile-drawer-head { padding: 18px 14px 12px !important; }
       .vw-mobile-drawer-brand { font-size: 18px !important; letter-spacing: 3px !important; }
       .vw-mobile-drawer-sub { font-size: 7px !important; letter-spacing: 1.6px !important; }
@@ -1556,10 +1686,10 @@ export default function VelvetWolf() {
   const [adminPage, setAdminPage] = useState("dashboard");
 
   // Wrap setPage so every navigation is reflected in browser history
-  const setPage = (nextPage) => {
+  const setPage = useCallback((nextPage) => {
     _setPage(nextPage);
     window.history.pushState({ page: nextPage }, "", window.location.pathname);
-  };
+  }, []);
   const [products, setProducts] = useState(INITIAL_COLLECTION_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -1574,10 +1704,10 @@ export default function VelvetWolf() {
   const [orders, setOrders] = useState([]);
   const [customers] = useState([]);
 
-  const showToast = (message, type = "success") => {
+  const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3200);
-  };
+  }, []);
 
   const getLocalWishlistKey = (email) => `vw_wishlist_${(email || "guest").toLowerCase()}`;
   const getGuestCart = () => JSON.parse(localStorage.getItem("vw_guest_cart") || "[]");
@@ -1679,22 +1809,63 @@ export default function VelvetWolf() {
 
   // â"€â"€ syncCartFromDB: loads DB cart into React state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
   // Defined first â€" addToCart/removeFromCart below both call it
-  const syncCartFromDB = async (userId) => {
-    try {
-      const items = await loadCartFromDB(userId);
-      setCart(items);
-      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch {}
-    } catch (err) {
-      console.error('[syncCartFromDB]', err.message);
-    }
+  const syncCartFromDB = async (userId, { force = false } = {}) => {
+    if (!userId) return [];
+    if (!force && loadedCartUsers.has(userId)) return null;
+    if (!force && inFlightCartLoads.has(userId)) return inFlightCartLoads.get(userId);
+
+    const request = loadCartFromDB(userId)
+      .then((items) => {
+        setCart(items);
+        loadedCartUsers.add(userId);
+        try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch {}
+        return items;
+      })
+      .catch((err) => {
+        console.error('[syncCartFromDB]', err.message);
+        return [];
+      })
+      .finally(() => {
+        inFlightCartLoads.delete(userId);
+      });
+
+    inFlightCartLoads.set(userId, request);
+    return request;
   };
+
+  const refreshCartFromDB = (userId) => syncCartFromDB(userId, { force: true });
+
+  const syncWishlistFromDB = async (userId, { force = false } = {}) => {
+    if (!userId) return [];
+    if (!force && loadedWishlistUsers.has(userId)) return null;
+    if (!force && inFlightWishlistLoads.has(userId)) return inFlightWishlistLoads.get(userId);
+
+    const request = loadWishlistFromDB(userId)
+      .then((items) => {
+        setWishlist(items);
+        loadedWishlistUsers.add(userId);
+        return items;
+      })
+      .catch((err) => {
+        console.error('[syncWishlistFromDB]', err.message);
+        return [];
+      })
+      .finally(() => {
+        inFlightWishlistLoads.delete(userId);
+      });
+
+    inFlightWishlistLoads.set(userId, request);
+    return request;
+  };
+
+  const refreshWishlistFromDB = (userId) => syncWishlistFromDB(userId, { force: true });
 
   const addToCart = async (product, size, color, qty = 1) => {
     try {
       const backendUserId = getBackendUserId(user);
       if (backendUserId) {
         await addCartItemDB(backendUserId, product, qty);
-        await syncCartFromDB(backendUserId);
+        await refreshCartFromDB(backendUserId);
       } else {
         // Guest: save to localStorage
         const guest = getGuestCart();
@@ -1716,7 +1887,7 @@ export default function VelvetWolf() {
       if (backendUserId) {
         const item = cart.find(i => i.id === id && i.size === size && i.color === color);
         if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
-        await syncCartFromDB(backendUserId);
+        await refreshCartFromDB(backendUserId);
       } else {
         saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       }
@@ -1737,7 +1908,7 @@ export default function VelvetWolf() {
         } else {
           await updateCartQtyDB(item.cart_item_id, qty);
         }
-        await syncCartFromDB(backendUserId);
+        await refreshCartFromDB(backendUserId);
       }
     } else {
       // Guest cart: update local state
@@ -1755,15 +1926,6 @@ export default function VelvetWolf() {
       await mergeGuestCart(userId);
     } catch (err) {
       console.error('[mergeGuestCartToDB]', err.message);
-    }
-  };
-
-  const syncWishlistFromDB = async (userId) => {
-    try {
-      const items = await loadWishlistFromDB(userId);
-      setWishlist(items);
-    } catch (err) {
-      console.error('[syncWishlistFromDB]', err.message);
     }
   };
 
@@ -1791,7 +1953,7 @@ export default function VelvetWolf() {
     }
     try {
       const added = await toggleWishlistDB(backendUserId, product);
-      await syncWishlistFromDB(backendUserId);
+      await refreshWishlistFromDB(backendUserId);
       showToast(added ? "Added to wishlist \u2665" : "Removed from wishlist", added ? "success" : "info");
     } catch (err) {
       showToast('Could not update wishlist', 'error');
@@ -1866,7 +2028,7 @@ export default function VelvetWolf() {
       }
 
       if (backendUserId) {
-        await syncCartFromDB(backendUserId);
+        await syncCartFromDB(backendUserId, { force: mergeGuestCart });
         await syncWishlistFromDB(backendUserId);
       } else {
         setCart(getGuestCart());
@@ -1967,11 +2129,20 @@ export default function VelvetWolf() {
   }, []);     
 
   useEffect(() => {
-    loadProductsFromAPI()
+    if (!productsLoadPromise) {
+      productsLoadPromise = loadProductsFromAPI();
+    }
+
+    let cancelled = false;
+    productsLoadPromise
       .then((fetched) => {
-        if (fetched.length > 0) setProducts(fetched);
+        if (!cancelled && fetched.length > 0) setProducts(fetched);
       })
       .catch((err) => console.error('[loadProducts]', err.message));
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
