@@ -18,25 +18,27 @@ export default function Footer() {
   };
 
   return (
-    <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
+    <footer className="vw-footer" style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "56px 40px 28px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
-          <div>
-            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
+        <div className="vw-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
+          <div className="vw-footer-brand">
+            <div className="vw-footer-brand-title" style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>
             <div
+              className="vw-footer-subtitle"
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 10,
-                letterSpacing: 4,
+                fontSize: 9,
+                letterSpacing: 3.2,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
               }}
             >
               LUXURY STREETWEAR · EST. 2025
             </div>
             <p
+              className="vw-footer-copy"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 17,
@@ -48,12 +50,13 @@ export default function Footer() {
               Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
             </p>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
+            <div className="vw-footer-socials" style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <a
                 href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
                 target="_blank"
                 rel="noopener noreferrer"
                 style={socialLinkStyle}
+                className="vw-footer-social-link"
               >
                 <FaInstagram /> Instagram
               </a>
@@ -63,11 +66,12 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={socialLinkStyle}
+                className="vw-footer-social-link"
               >
                 <FaFacebook /> Facebook
               </a>
 
-              <span style={socialLinkStyle}>
+              <span className="vw-footer-social-link" style={socialLinkStyle}>
                 <FaYoutube /> YouTube
               </span>
             </div>
@@ -75,12 +79,13 @@ export default function Footer() {
 
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 20,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
@@ -89,6 +94,7 @@ export default function Footer() {
             {[["All Products", "shop"], ["Custom Design", "custom"], ["Bulk Orders", "bulk"], ["Collections", "collection"]].map(
               ([label, pg]) => (
                 <div
+                  className="vw-footer-nav-link"
                   key={label}
                   onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
                   style={{
@@ -96,7 +102,7 @@ export default function Footer() {
                     fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
-                    marginBottom: 10,
+                    marginBottom: 6,
                   }}
                 >
                   {label}
@@ -107,12 +113,13 @@ export default function Footer() {
 
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 20,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
@@ -121,6 +128,7 @@ export default function Footer() {
             {[["Size Guide", "sizeguide"], ["Track Order", "trackorder"], ["Returns & Exchange", "returnspage"], ["FAQ", "faq"], ["Contact Us", "contactus"]].map(
               ([l, pg]) => (
                 <div
+                  className="vw-footer-nav-link"
                   key={l}
                   onClick={() => setPage(pg)}
                   style={{
@@ -128,7 +136,7 @@ export default function Footer() {
                     fontSize: 17,
                     color: "var(--silver)",
                     cursor: "pointer",
-                    marginBottom: 10,
+                    marginBottom: 6,
                   }}
                 >
                   {l}
@@ -137,31 +145,33 @@ export default function Footer() {
             )}
           </div>
 
-          <div>
+          <div className="vw-footer-newsletter">
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 20,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
               NEWSLETTER
             </div>
             <p
+              className="vw-footer-copy"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 17,
                 color: "var(--silver)",
-                marginBottom: 16,
+                marginBottom: 10,
                 lineHeight: 1.6,
               }}
             >
               New drops, exclusive offers — for wolves only.
             </p>
-            <input className="input-dark" placeholder="YOUR EMAIL" style={{ marginBottom: 10 }} />
+            <input className="input-dark" placeholder="YOUR EMAIL" style={{ marginBottom: 6 }} />
             <button className="btn-gold" style={{ width: "100%", padding: "10px" }}>
               JOIN THE PACK
             </button>
@@ -169,12 +179,14 @@ export default function Footer() {
         </div>
 
         <div
+          className="vw-footer-bottom"
           style={{
             borderTop: "1px solid var(--smoke)",
-            paddingTop: 28,
+            paddingTop: 14,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 10,
           }}
         >
           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1 }}>
@@ -185,6 +197,7 @@ export default function Footer() {
             {[["Privacy Policy", "privacypolicy"], ["Terms", "termspage"], ["Contact", "contactus"], ["Shipping", "shoppingpolicy"], ["Returns", "returnspage"]].map(
               ([l, pg]) => (
                 <span
+                  className="vw-footer-legal-link"
                   key={l}
                   onClick={() => setPage(pg)}
                   style={{
@@ -213,4 +226,3 @@ export default function Footer() {
     </footer>
   );
 }
-

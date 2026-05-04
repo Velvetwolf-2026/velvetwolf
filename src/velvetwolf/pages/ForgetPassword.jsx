@@ -257,7 +257,7 @@ export function ForgetPassword() {
 
           {step < 4 && <StepBar step={step} />}
 
-          <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "34px 32px" }}>
+          <div className="vw-auth-card" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "34px 32px" }}>
             {step === 1 && (
               <>
                 <div style={{ marginBottom: 22 }}>

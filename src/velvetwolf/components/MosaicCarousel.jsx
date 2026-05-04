@@ -17,21 +17,91 @@ import CategoryTile from "./CategoryTile";
 import { CATEGORIES, THEME } from "../utils/constants";
 
 const { gold, goldLight, muted, border } = THEME;
-const GAP     = 8;   // gap between tiles within a panel
-const PANEL_G = 24;  // gap between mosaic panels
-const ROW_H   = 390; // total carousel height
+const getMosaicMetrics = (viewportWidth) => {
+  if (viewportWidth <= 480) {
+    return {
+      gap: 5,
+      panelGap: 12,
+      rowHeight: 210,
+      smallWidth: 94,
+      tallWidth: 112,
+      wideWidth: 164,
+      rightColOne: 98,
+      rightColTwo: 98,
+      logoSmall: 20,
+      logoTall: 32,
+      logoWide: 40,
+      logoClusterTop: 22,
+      logoClusterBottom: 18,
+      trackPadding: "4px 12px 10px",
+      edgeFadeWidth: 28,
+      scrollAmount: 220,
+      navButtonSize: 30,
+      navButtonFontSize: 16,
+      headerGap: 8,
+    };
+  }
+
+  if (viewportWidth <= 768) {
+    return {
+      gap: 6,
+      panelGap: 16,
+      rowHeight: 270,
+      smallWidth: 122,
+      tallWidth: 142,
+      wideWidth: 224,
+      rightColOne: 128,
+      rightColTwo: 128,
+      logoSmall: 26,
+      logoTall: 40,
+      logoWide: 50,
+      logoClusterTop: 26,
+      logoClusterBottom: 22,
+      trackPadding: "4px 18px 12px",
+      edgeFadeWidth: 46,
+      scrollAmount: 300,
+      navButtonSize: 34,
+      navButtonFontSize: 18,
+      headerGap: 9,
+    };
+  }
+
+  return {
+    gap: 8,
+    panelGap: 24,
+    rowHeight: 390,
+    smallWidth: 178,
+    tallWidth: 200,
+    wideWidth: 340,
+    rightColOne: 182,
+    rightColTwo: 182,
+    logoSmall: 36,
+    logoTall: 60,
+    logoWide: 80,
+    logoClusterTop: 38,
+    logoClusterBottom: 30,
+    trackPadding: "4px 36px 16px",
+    edgeFadeWidth: 90,
+    scrollAmount: 500,
+    navButtonSize: 40,
+    navButtonFontSize: 20,
+    headerGap: 10,
+  };
+};
 
 /* ── One repeating mosaic panel ── */
-function MosaicPanel({ cats, onClick, activeId }) {
+function MosaicPanel({ cats, onClick, activeId, metrics }) {
   // LEFT ZONE
-  const smW   = 178;
+  const GAP = metrics.gap;
+  const ROW_H = metrics.rowHeight;
+  const smW   = metrics.smallWidth;
   const smH   = (ROW_H - GAP * 2) / 3;
-  const tallW = 200;
+  const tallW = metrics.tallWidth;
 
   // RIGHT ZONE
-  const wideW   = 340;
-  const rc1W    = 182;
-  const rc2W    = 182;
+  const wideW   = metrics.wideWidth;
+  const rc1W    = metrics.rightColOne;
+  const rc2W    = metrics.rightColTwo;
   const rcTopH  = ROW_H / 2 - GAP / 2;
   const rcBotH  = (ROW_H - GAP * 3) / 3 * 1.35;
 
@@ -40,30 +110,30 @@ function MosaicPanel({ cats, onClick, activeId }) {
 
       {/* Col A — 3 stacked smalls */}
       <div style={{ display:"flex", flexDirection:"column", gap:GAP, flexShrink:0 }}>
-        <CategoryTile cat={cats[0]} w={smW}   h={smH}   logoSize={36} onClick={onClick} activeId={activeId}/>
-        <CategoryTile cat={cats[1]} w={smW}   h={smH}   logoSize={36} onClick={onClick} activeId={activeId}/>
-        <CategoryTile cat={cats[2]} w={smW}   h={smH}   logoSize={36} onClick={onClick} activeId={activeId}/>
+        <CategoryTile cat={cats[0]} w={smW}   h={smH}   logoSize={metrics.logoSmall} onClick={onClick} activeId={activeId}/>
+        <CategoryTile cat={cats[1]} w={smW}   h={smH}   logoSize={metrics.logoSmall} onClick={onClick} activeId={activeId}/>
+        <CategoryTile cat={cats[2]} w={smW}   h={smH}   logoSize={metrics.logoSmall} onClick={onClick} activeId={activeId}/>
       </div>
 
       {/* Col B — tall */}
-      <CategoryTile cat={cats[3]} w={tallW} h={ROW_H} logoSize={60} onClick={onClick} activeId={activeId}/>
+      <CategoryTile cat={cats[3]} w={tallW} h={ROW_H} logoSize={metrics.logoTall} onClick={onClick} activeId={activeId}/>
 
       {/* Spacer */}
       <div style={{ width: GAP * 2, flexShrink:0 }}/>
 
       {/* Col C — dominant wide */}
-      <CategoryTile cat={cats[4]} w={wideW} h={ROW_H} logoSize={80} onClick={onClick} activeId={activeId}/>
+      <CategoryTile cat={cats[4]} w={wideW} h={ROW_H} logoSize={metrics.logoWide} onClick={onClick} activeId={activeId}/>
 
       {/* Col D+E — 2×2 top / 3 bottom cluster */}
       <div style={{ display:"flex", flexDirection:"column", gap:GAP, flexShrink:0 }}>
         <div style={{ display:"flex", gap:GAP }}>
-          <CategoryTile cat={cats[0]} w={rc1W}      h={rcTopH} logoSize={38} onClick={onClick} activeId={activeId}/>
-          <CategoryTile cat={cats[2]} w={rc2W}      h={rcTopH} logoSize={38} onClick={onClick} activeId={activeId}/>
+          <CategoryTile cat={cats[0]} w={rc1W}      h={rcTopH} logoSize={metrics.logoClusterTop} onClick={onClick} activeId={activeId}/>
+          <CategoryTile cat={cats[2]} w={rc2W}      h={rcTopH} logoSize={metrics.logoClusterTop} onClick={onClick} activeId={activeId}/>
         </div>
         <div style={{ display:"flex", gap:GAP }}>
-          <CategoryTile cat={cats[1]} w={rc1W - 22} h={rcBotH} logoSize={30} onClick={onClick} activeId={activeId}/>
-          <CategoryTile cat={cats[3]} w={rc2W}      h={rcBotH} logoSize={30} onClick={onClick} activeId={activeId}/>
-          <CategoryTile cat={cats[4]} w={rc1W - 10} h={rcBotH} logoSize={30} onClick={onClick} activeId={activeId}/>
+          <CategoryTile cat={cats[1]} w={rc1W - Math.max(14, GAP * 2)} h={rcBotH} logoSize={metrics.logoClusterBottom} onClick={onClick} activeId={activeId}/>
+          <CategoryTile cat={cats[3]} w={rc2W}                       h={rcBotH} logoSize={metrics.logoClusterBottom} onClick={onClick} activeId={activeId}/>
+          <CategoryTile cat={cats[4]} w={rc1W - Math.max(8, GAP)}    h={rcBotH} logoSize={metrics.logoClusterBottom} onClick={onClick} activeId={activeId}/>
         </div>
       </div>
 
@@ -75,7 +145,7 @@ function MosaicPanel({ cats, onClick, activeId }) {
 function ActiveBanner({ cat, onClose, onShopNow }) {
   if (!cat) return null;
   return (
-    <div style={{
+    <div className="vw-active-banner" style={{
       margin: "4px 36px 0",
       padding: "14px 22px",
       borderRadius: 4,
@@ -123,7 +193,9 @@ export default function MosaicCarousel({ onCategoryClick }) {
   const [active, setActive] = useState(null);
   const [showL, setShowL]   = useState(false);
   const [auto, setAuto]     = useState(true);
+  const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1280));
   const dist = useRef(0);
+  const metrics = getMosaicMetrics(viewportWidth);
 
   // Build panels: 5 panels × rotate cats, doubled for loop
   const panels = Array.from({ length: 5 }, (_, i) =>
@@ -151,6 +223,13 @@ export default function MosaicCarousel({ onCategoryClick }) {
     return () => cancelAnimationFrame(raf);
   }, [auto, drag, fade]);
 
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const pause = (ms = 3500) => {
     setAuto(false);
     clearTimeout(window.__vwmc_pause);
@@ -171,7 +250,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
     if (next && onCategoryClick) onCategoryClick(next);
   };
 
-  const scrollBy = dir => { pause(4000); trackRef.current.scrollBy({ left: dir * 500, behavior:"smooth" }); };
+  const scrollBy = dir => { pause(4000); trackRef.current.scrollBy({ left: dir * metrics.scrollAmount, behavior:"smooth" }); };
 
   return (
     <>
@@ -181,6 +260,12 @@ export default function MosaicCarousel({ onCategoryClick }) {
         .vwmc-track::-webkit-scrollbar { display:none; }
         .vwmc-btn { all:unset; width:40px; height:40px; border:1px solid rgba(201,168,76,0.28); color:#c9a84c; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; transition:all 0.25s; background:rgba(9,9,9,0.92); backdrop-filter:blur(10px); }
         .vwmc-btn:hover { background:rgba(201,168,76,0.1); border-color:#c9a84c; transform:scale(1.1); }
+        @media (max-width: 768px) {
+          .vwmc-btn { width:34px; height:34px; font-size:18px; }
+        }
+        @media (max-width: 480px) {
+          .vwmc-btn { width:30px; height:30px; font-size:16px; }
+        }
         @keyframes vwmc-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes vwmc-blink  { 0%,100%{opacity:1} 50%{opacity:.25} }
       `}</style>
@@ -188,7 +273,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
       <section style={{ background:"#090909", paddingBottom: 8 }}>
 
         {/* Header row */}
-        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
+        <div className="vw-mosaic-header" style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.04),transparent 60%)",pointerEvents:"none" }}/>
           <div style={{ position:"relative" }}>
             <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:5, color:gold, marginBottom:10, display:"flex", alignItems:"center", gap:10 }}>
@@ -198,7 +283,7 @@ export default function MosaicCarousel({ onCategoryClick }) {
               YOUR CULTURE
             </h2>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:10, position:"relative" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:metrics.headerGap, position:"relative" }}>
             <div style={{ display:"flex", alignItems:"center", gap:7, marginRight:6 }}>
               <div style={{ width:5, height:5, borderRadius:"50%", background:gold, animation:"vwmc-blink 2.2s infinite" }}/>
               <span style={{ fontFamily: "'Roboto', sans-serif", fontSize:11, letterSpacing:3, color:"rgba(255, 255, 255, 0.63)" }}>5 CATEGORIES</span>
@@ -210,19 +295,19 @@ export default function MosaicCarousel({ onCategoryClick }) {
 
         {/* Track with edge fades */}
         <div style={{ position:"relative" }}>
-          <div style={{ position:"absolute",left:0,top:0,bottom:0,width:90,zIndex:10,background:"linear-gradient(to right,#090909 15%,transparent)",pointerEvents:"none",opacity:showL?1:0,transition:"opacity 0.3s" }}/>
-          <div style={{ position:"absolute",right:0,top:0,bottom:0,width:90,zIndex:10,background:"linear-gradient(to left,#090909 15%,transparent)",pointerEvents:"none" }}/>
+          <div style={{ position:"absolute",left:0,top:0,bottom:0,width:metrics.edgeFadeWidth,zIndex:10,background:"linear-gradient(to right,#090909 15%,transparent)",pointerEvents:"none",opacity:showL?1:0,transition:"opacity 0.3s" }}/>
+          <div style={{ position:"absolute",right:0,top:0,bottom:0,width:metrics.edgeFadeWidth,zIndex:10,background:"linear-gradient(to left,#090909 15%,transparent)",pointerEvents:"none" }}/>
 
           <div
             ref={trackRef}
-            className="vwmc-track"
+            className="vwmc-track vw-mosaic-track"
             onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
             onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}
             onScroll={fade}
-            style={{ display:"flex", alignItems:"flex-start", gap:PANEL_G, overflowX:"scroll", padding:`4px 36px 16px`, cursor:drag?"grabbing":"grab" }}
+            style={{ display:"flex", alignItems:"flex-start", gap:metrics.panelGap, overflowX:"scroll", padding:metrics.trackPadding, cursor:drag?"grabbing":"grab" }}
           >
             {allPanels.map((cats, i) => (
-              <MosaicPanel key={i} cats={cats} onClick={handleClick} activeId={active?.id}/>
+              <MosaicPanel key={i} cats={cats} onClick={handleClick} activeId={active?.id} metrics={metrics}/>
             ))}
           </div>
         </div>

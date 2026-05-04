@@ -93,14 +93,14 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
+      <div className="vw-admin-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>MANAGE</div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>PRODUCTS</h1>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>{total} TOTAL</div>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <form onSubmit={(e) => { e.preventDefault(); load(search); }} style={{ display: "flex", gap: 8 }}>
+        <div className="vw-admin-toolbar" style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <form className="vw-admin-search" onSubmit={(e) => { e.preventDefault(); load(search); }} style={{ display: "flex", gap: 8 }}>
             <input className="input-dark" placeholder="SEARCH..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: "8px 12px", fontSize: 12 }} />
             <button type="submit" className="btn-ghost" style={{ fontSize: 12, padding: "0 12px" }}>SEARCH</button>
           </form>
@@ -112,9 +112,9 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
 
       {/* Add form */}
       {adding && (
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--gold)", padding: "28px", marginBottom: 28 }}>
+        <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--gold)", padding: "28px", marginBottom: 28 }}>
           <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 20 }}>NEW PRODUCT</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="vw-admin-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <input className="input-dark" placeholder="PRODUCT NAME *" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={{ gridColumn: "1/-1" }} />
             <select className="input-dark" value={form.collection} onChange={(e) => setForm((f) => ({ ...f, collection: e.target.value }))}>
               {COLLECTIONS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -128,7 +128,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
             <input className="input-dark" placeholder="IMAGE URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} />
             <textarea className="input-dark" placeholder="DESCRIPTION" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} style={{ gridColumn: "1/-1" }} />
           </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          <div className="vw-admin-form-actions" style={{ display: "flex", gap: 12, marginTop: 20 }}>
             <button className="btn-gold" onClick={handleAdd} disabled={saving}>{saving ? "SAVING..." : "ADD PRODUCT"}</button>
             <button className="btn-ghost" onClick={() => { setAdding(false); setForm(EMPTY_FORM); }}>CANCEL</button>
           </div>
@@ -139,6 +139,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
         ) : (
+          <div className="vw-table-scroll">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
@@ -192,6 +193,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
