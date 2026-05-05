@@ -51,21 +51,26 @@ export default function CollectionsPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
+          <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "60px 40px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 300px))", justifyContent: "center", gap: 24 }}>
+      <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "60px 40px" }}>
+        <div
+          className="collections-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: 24,
+          }}
+        >
           {BROWSE_COLLECTIONS.map((col) => (
             <div
               key={col.id}
-              onClick={() => {
-                openShop(col.id);
-              }}
+              onClick={() => openShop(col.id)}
               style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "48px 32px", cursor: "pointer", transition: "all 0.3s ease", position: "relative", overflow: "hidden" }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = col.color;

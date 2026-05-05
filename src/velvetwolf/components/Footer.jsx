@@ -18,10 +18,27 @@ export default function Footer() {
   };
 
   return (
-    <footer style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "80px 40px 40px" }}>
+    <footer
+      className="footer-pad"
+      style={{
+        background: "var(--graphite)",
+        borderTop: "1px solid var(--smoke)",
+        padding: "80px 40px 40px",
+      }}
+    >
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 60, marginBottom: 60 }}>
-          <div>
+        {/* Main grid — CSS class handles breakpoints */}
+        <div
+          className="footer-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr 1fr 1fr",
+            gap: 60,
+            marginBottom: 60,
+          }}
+        >
+          {/* Brand column */}
+          <div className="footer-brand-col">
             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>
@@ -39,16 +56,18 @@ export default function Footer() {
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 20,
+                fontSize: 16,
                 color: "var(--silver)",
                 lineHeight: 1.8,
                 fontStyle: "italic",
+                maxWidth: 340,
               }}
             >
-              Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with presence, not noise.
+              Born in Chennai. Worn worldwide. VelvetWolf exists for the silent predators — those who lead with
+              presence, not noise.
             </p>
 
-            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
+            <div style={{ display: "flex", gap: 14, marginTop: 24, flexWrap: "wrap" }}>
               <a
                 href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag=="
                 target="_blank"
@@ -57,7 +76,6 @@ export default function Footer() {
               >
                 <FaInstagram /> Instagram
               </a>
-
               <a
                 href="https://www.facebook.com/profile.php?id=61577839378533"
                 target="_blank"
@@ -66,18 +84,18 @@ export default function Footer() {
               >
                 <FaFacebook /> Facebook
               </a>
-
               <span style={socialLinkStyle}>
                 <FaYoutube /> YouTube
               </span>
             </div>
           </div>
 
+          {/* Shop column */}
           <div>
             <div
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 20,
+                fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
                 marginBottom: 20,
@@ -86,30 +104,37 @@ export default function Footer() {
             >
               SHOP
             </div>
-            {[["All Products", "shop"], ["Custom Design", "custom"], ["Bulk Orders", "bulk"], ["Collections", "collection"]].map(
-              ([label, pg]) => (
-                <div
-                  key={label}
-                  onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
-                  style={{
-                    fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
-                    color: "var(--silver)",
-                    cursor: "pointer",
-                    marginBottom: 10,
-                  }}
-                >
-                  {label}
-                </div>
-              )
-            )}
+            {[
+              ["All Products", "shop"],
+              ["Custom Design", "custom"],
+              ["Bulk Orders", "bulk"],
+              ["Collections", "collection"],
+            ].map(([label, pg]) => (
+              <div
+                key={label}
+                onClick={() => (pg === "shop" ? openShop() : setPage(pg))}
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 15,
+                  color: "var(--silver)",
+                  cursor: "pointer",
+                  marginBottom: 12,
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "var(--ivory)")}
+                onMouseLeave={(e) => (e.target.style.color = "var(--silver)")}
+              >
+                {label}
+              </div>
+            ))}
           </div>
 
+          {/* Support column */}
           <div>
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 20,
+                fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
                 marginBottom: 20,
@@ -118,30 +143,38 @@ export default function Footer() {
             >
               SUPPORT
             </div>
-            {[["Size Guide", "sizeguide"], ["Track Order", "trackorder"], ["Returns & Exchange", "returnspage"], ["FAQ", "faq"], ["Contact Us", "contactus"]].map(
-              ([l, pg]) => (
-                <div
-                  key={l}
-                  onClick={() => setPage(pg)}
-                  style={{
-                    fontFamily: "'Roboto', sans-serif",
-                    fontSize: 19,
-                    color: "var(--silver)",
-                    cursor: "pointer",
-                    marginBottom: 10,
-                  }}
-                >
-                  {l}
-                </div>
-              )
-            )}
+            {[
+              ["Size Guide", "sizeguide"],
+              ["Track Order", "trackorder"],
+              ["Returns & Exchange", "returnspage"],
+              ["FAQ", "faq"],
+              ["Contact Us", "contactus"],
+            ].map(([l, pg]) => (
+              <div
+                key={l}
+                onClick={() => setPage(pg)}
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 15,
+                  color: "var(--silver)",
+                  cursor: "pointer",
+                  marginBottom: 12,
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.target.style.color = "var(--ivory)")}
+                onMouseLeave={(e) => (e.target.style.color = "var(--silver)")}
+              >
+                {l}
+              </div>
+            ))}
           </div>
 
+          {/* Newsletter column */}
           <div>
             <div
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 20,
+                fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
                 marginBottom: 20,
@@ -153,7 +186,7 @@ export default function Footer() {
             <p
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 19,
+                fontSize: 15,
                 color: "var(--silver)",
                 marginBottom: 16,
                 lineHeight: 1.6,
@@ -168,37 +201,45 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Bottom bar */}
         <div
+          className="footer-bottom"
           style={{
             borderTop: "1px solid var(--smoke)",
             paddingTop: 28,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
+            gap: 16,
           }}
         >
           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1 }}>
             © 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {[["Privacy Policy", "privacypolicy"], ["Terms", "termspage"], ["Contact", "contactus"], ["Shipping", "shoppingpolicy"], ["Returns", "returnspage"]].map(
-              ([l, pg]) => (
-                <span
-                  key={l}
-                  onClick={() => setPage(pg)}
-                  style={{
-                    fontFamily: "'Roboto', sans-serif",
-                    fontSize: 12,
-                    color: "var(--silver)",
-                    cursor: "pointer",
-                    letterSpacing: 1,
-                  }}
-                >
-                  {l}
-                </span>
-              )
-            )}
+          <div className="footer-links" style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {[
+              ["Privacy Policy", "privacypolicy"],
+              ["Terms", "termspage"],
+              ["Contact", "contactus"],
+              ["Shipping", "shoppingpolicy"],
+              ["Returns", "returnspage"],
+            ].map(([l, pg]) => (
+              <span
+                key={l}
+                onClick={() => setPage(pg)}
+                style={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 12,
+                  color: "var(--silver)",
+                  cursor: "pointer",
+                  letterSpacing: 1,
+                }}
+              >
+                {l}
+              </span>
+            ))}
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -213,4 +254,3 @@ export default function Footer() {
     </footer>
   );
 }
-
