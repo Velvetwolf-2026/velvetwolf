@@ -80,21 +80,26 @@ export function redirectResponse(location, statusCode = 302, extraHeaders = {}, 
 
 export const getCorsHeaders = (event) => {
   const requestOrigin = event?.headers?.origin || event?.headers?.Origin || "";
-  const configuredOrigins = String(process.env.FRONTEND_URL || "" ||process.env.PROD_FRONTEND_URL_WWW || process.env.PROD_FRONTEND_URL)
-    .split(",")
+
+  const configuredOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.PROD_FRONTEND_URL_WWW,
+    process.env.PROD_FRONTEND_URL,
+  ]
+    .filter(Boolean)
+    .flatMap((o) => o.split(","))
     .map((o) => o.trim())
     .filter(Boolean);
 
-  
-
   let selectedOrigin = "";
-  if (requestOrigin) {
-    selectedOrigin = configuredOrigins.includes(requestOrigin) ? requestOrigin : "";
-  } else if (configuredOrigins.length === 1) {
-    selectedOrigin = configuredOrigins[0];
-  } else if (configuredOrigins.length === 0) {
+  if (configuredOrigins.length === 0) {
     selectedOrigin = "*";
+  } else if (requestOrigin && configuredOrigins.includes(requestOrigin)) {
+    selectedOrigin = requestOrigin;
+  } else if (!requestOrigin && configuredOrigins.length >= 1) {
+    selectedOrigin = configuredOrigins[0];
   }
+  // else: origin present but not in allowlist → stays ""
 
   return {
     "Access-Control-Allow-Origin": selectedOrigin,
