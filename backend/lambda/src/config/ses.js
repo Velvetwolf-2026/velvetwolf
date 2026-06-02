@@ -2,6 +2,7 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { loadBackendEnv } from "./env.js";
 import { buildOtpEmail } from "./otp-template.js";
 import { isEmailSuppressed } from "../services/bounce.service.js";
+import { ApiError, logError } from "../utils/http.js";
 
 loadBackendEnv();
 
@@ -24,6 +25,25 @@ function getSesConfig() {
 
 const ses = new SESClient(getSesConfig());
 
+function parseSesError(err) {
+  const name = err?.name || err?.code || "";
+  if (name === "MessageRejected") {
+    // SES sandbox: recipient must be verified. In production this won't happen.
+    return "This email address has not been verified with our email provider. If you just registered, please contact support.";
+  }
+  if (name === "MailFromDomainNotVerifiedException" || name === "MailFromDomainNotVerified") {
+    return "Email sending is temporarily unavailable. Please try again later.";
+  }
+  if (name === "AccountSendingPausedException" || name === "SendingPausedException") {
+    return "Email sending is currently paused. Please try again later.";
+  }
+  if (name === "InvalidParameterValue") {
+    return "Invalid email address. Please check and try again.";
+  }
+  // Fallback — use AWS message if available, otherwise generic
+  return err?.message || "Failed to send email. Please try again later.";
+}
+
 function buildSendParams({ to, subject, html, text, replyTo }) {
   const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
   return {
@@ -43,11 +63,16 @@ function buildSendParams({ to, subject, html, text, replyTo }) {
 
 export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
   if (await isEmailSuppressed(email)) {
-    throw Object.assign(new Error(`Email address is suppressed: ${email}`), { code: "EMAIL_SUPPRESSED" });
+    throw new ApiError(400, "This email address cannot receive messages. Please contact support.");
   }
   const emailContent = buildOtpEmail({ otp, kind, verifyUrl });
   const params = buildSendParams({ to: email, subject: emailContent.subject, html: emailContent.html, text: emailContent.text });
-  return ses.send(new SendEmailCommand(params));
+  try {
+    return await ses.send(new SendEmailCommand(params));
+  } catch (err) {
+    logError("SES sendOTP failed", { email, kind, errorName: err?.name, errorMessage: err?.message });
+    throw new ApiError(502, parseSesError(err));
+  }
 }
 
 export async function sendEmail({ to, subject, html, text, replyTo }) {
@@ -55,8 +80,13 @@ export async function sendEmail({ to, subject, html, text, replyTo }) {
   const suppressed = await Promise.all(recipients.map(isEmailSuppressed));
   const allowed = recipients.filter((_, i) => !suppressed[i]);
   if (allowed.length === 0) {
-    throw Object.assign(new Error("All recipients are suppressed"), { code: "EMAIL_SUPPRESSED" });
+    throw new ApiError(400, "All recipients are suppressed from receiving emails.");
   }
   const params = buildSendParams({ to: allowed, subject, html, text, replyTo });
-  return ses.send(new SendEmailCommand(params));
+  try {
+    return await ses.send(new SendEmailCommand(params));
+  } catch (err) {
+    logError("SES sendEmail failed", { to: allowed, errorName: err?.name, errorMessage: err?.message });
+    throw new ApiError(502, parseSesError(err));
+  }
 }

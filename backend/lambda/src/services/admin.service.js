@@ -24,9 +24,9 @@ export async function getAdminDashboardStats() {
     supabaseAdmin.from("products").select("id, stock", { count: "exact" }),
   ]);
 
-  if (ordersResult.error) { logError("Dashboard orders query failed", adminLogContext({ error: ordersResult.error })); throw new ApiError(500, "Failed to load dashboard data."); }
-  if (customersResult.error) { logError("Dashboard customers query failed", adminLogContext({ error: customersResult.error })); throw new ApiError(500, "Failed to load dashboard data."); }
-  if (productsResult.error) { logError("Dashboard products query failed", adminLogContext({ error: productsResult.error })); throw new ApiError(500, "Failed to load dashboard data."); }
+  if (ordersResult.error) { logError("Dashboard orders query failed", adminLogContext({ error: ordersResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${ordersResult.error.message}`); }
+  if (customersResult.error) { logError("Dashboard customers query failed", adminLogContext({ error: customersResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${customersResult.error.message}`); }
+  if (productsResult.error) { logError("Dashboard products query failed", adminLogContext({ error: productsResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${productsResult.error.message}`); }
 
   const orders = ordersResult.data || [];
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);

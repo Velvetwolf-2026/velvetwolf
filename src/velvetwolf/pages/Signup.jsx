@@ -117,14 +117,7 @@ export function Signup() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const message = data.error || "";
-        if (message.includes("already exists")) {
-          setError("Account with this email already exists. Please login or use a different email.");
-        } else if (res.status >= 500) {
-          setError("The server is unavailable right now. Please try again in a moment.");
-        } else {
-          setError(message || "Failed to create account. Please try again.");
-        }
+        setError(data.error || "Failed to create account. Please try again.");
         return;
       }
       if (data.message) {

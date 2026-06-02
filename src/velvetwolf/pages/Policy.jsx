@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
         </Sec>
 
         <Sec title="2. HOW WE USE YOUR INFORMATION">
-          <Ul items={["To process and fulfil your orders and send order confirmations","To communicate about shipping, delivery, and order updates","To respond to customer service inquiries","To personalise your shopping experience","To send marketing emails and SMS (only if you opt in)","To prevent fraud and maintain site security","To comply with Indian law (IT Act 2000, GST regulations)"]} />
+          <Ul items={["To process and fulfil your orders and send order confirmations","To communicate about shipping, delivery, and order updates","To respond to customer service inquiries","To personalise your shopping experience","To send marketing emails and SMS (only if you opt in)","To prevent fraud and maintain site security","To comply with Indian law (IT Act 2000, GST regulations)","To send transactional OTP verification emails during login, signup, password reset, and account authentication."]} />
         </Sec>
 
         <Sec title="3. SHARING YOUR INFORMATION">
@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
 
         <Sec title="5. YOUR RIGHTS">
           <Ul items={["Access: Request a copy of the personal data we hold about you","Correction: Ask us to update inaccurate information","Deletion: Request erasure of your data (subject to legal obligations)","Opt-out: Unsubscribe from marketing at any time","Portability: Receive your data in a machine-readable format"]} />
-          <p style={S.p}>To exercise these rights, email: <span style={{ color: gold }}>privacy@velvetwolf.in</span></p>
+          <p style={S.p}>To exercise these rights, email: <span style={{ color: gold }}>info@velvetwolf.in</span></p>
         </Sec>
 
         <Sec title="6. SECURITY">
@@ -44,7 +44,7 @@ export default function PrivacyPolicy() {
         </Sec>
 
         <Sec title="7. CONTACT">
-          <p style={S.p}>Privacy enquiries: <span style={{ color: gold }}>privacy@velvetwolf.in</span><br/>VelvetWolf, Chennai, Tamil Nadu, India</p>
+          <p style={S.p}>Privacy enquiries: <span style={{ color: gold }}>info@velvetwolf.in</span><br/>VelvetWolf, Chennai, Tamil Nadu, India</p>
         </Sec>
       </div>
     </div>

@@ -43,6 +43,10 @@ export default function TermsPage() {
         <Sec title="8. GOVERNING LAW">
           <p style={S.p}>These Terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of courts in Chennai, Tamil Nadu.</p>
         </Sec>
+
+        <Sec title="9. CONTACT">
+          <p style={S.p}>For any questions regarding these Terms, contact us at: <span style={{ color: "#c9a84c" }}>info@velvetwolf.in</span><br/>VelvetWolf, Chennai, Tamil Nadu, India</p>
+        </Sec>
       </div>
     </div>
   );

@@ -94,14 +94,7 @@ export function ForgetPassword() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const message = data.error || "";
-        if (message.includes("not registered")) {
-          setError("User is not registered, complete the registration");
-        } else if (res.status >= 500) {
-          setError("The server is unavailable right now. Please try again in a moment.");
-        } else {
-          setError(message || "Failed to send reset code. Please try again.");
-        }
+        setError(data.error || "Failed to send reset code. Please try again.");
         return;
       }
 
