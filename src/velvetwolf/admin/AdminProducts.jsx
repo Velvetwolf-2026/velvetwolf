@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
 import { fetchAdminProducts, createProduct, updateProduct, deleteProduct } from "../utils/adminApi";
 import { COLLECTIONS } from "../pages/Collections";
+import { supabase } from "../utils/supabase";
 
 const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "" };
 
@@ -34,12 +35,17 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
   const handleAdd = async () => {
     if (!form.name.trim())                             { showToast("Product name is required.", "error"); return; }
     if (!form.price || Number(form.price) <= 0)        { showToast("Enter a valid price.", "error"); return; }
-    if (!form.original_price || Number(form.original_price) <= 0) { showToast("Enter a valid original price.", "error"); return; }
-    if (Number(form.original_price) < Number(form.price)) { showToast("Original price must be ≥ sale price.", "error"); return; }
+    if (form.original_price && Number(form.original_price) < Number(form.price)) { showToast("Original price must be ≥ sale price.", "error"); return; }
 
     setSaving(true);
     try {
-      const res = await createProduct({ ...form, price: Number(form.price), original_price: Number(form.original_price), stock: Number(form.stock || 0) });
+      const payload = { 
+        ...form, 
+        price: Number(form.price), 
+        original_price: form.original_price ? Number(form.original_price) : Number(form.price), 
+        stock: Number(form.stock || 0) 
+      };
+      const res = await createProduct(payload);
       setProducts((prev) => [res.product, ...prev]);
       setTotal((t) => t + 1);
       setAdding(false);
@@ -66,6 +72,9 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
         sizes: editProduct.sizes,
         colors: editProduct.colors,
         image: editProduct.image,
+        imageBase64: editProduct.imageBase64,
+        imageFileName: editProduct.imageFileName,
+        imageContentType: editProduct.imageContentType,
       });
       setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.product : p));
       setEditProduct(null);
@@ -88,6 +97,39 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
       showToast(err.message || "Failed to delete product.", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        if (isEdit) {
+          setEditProduct((ep) => ({ 
+            ...ep, 
+            imageBase64: base64, 
+            imageFileName: fileName, 
+            imageContentType: file.type 
+          }));
+        } else {
+          setForm((f) => ({ 
+            ...f, 
+            imageBase64: base64, 
+            imageFileName: fileName, 
+            imageContentType: file.type 
+          }));
+        }
+        showToast("Image ready for upload! Please save/add product to upload.");
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      showToast("Failed to process image.", "error");
     }
   };
 
@@ -123,9 +165,22 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
               {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
-            <input className="input-dark" placeholder="ORIGINAL PRICE (₹) *" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
+            <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
-            <input className="input-dark" placeholder="IMAGE URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} />
+            <div style={{ display: "flex", gap: 8, gridColumn: "1/-1", alignItems: "center" }}>
+              {(form.imageBase64 || form.image) && (
+                <img 
+                  src={form.imageBase64 ? `data:${form.imageContentType};base64,${form.imageBase64}` : form.image} 
+                  alt="Preview" 
+                  style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
+                />
+              )}
+              <input className="input-dark" placeholder="IMAGE URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value, imageBase64: null }))} style={{ flex: 1 }} />
+              <label className="btn-ghost" style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0 16px", fontSize: 12, height: 40, boxSizing: "border-box" }}>
+                UPLOAD FILE
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, false)} />
+              </label>
+            </div>
             <textarea className="input-dark" placeholder="DESCRIPTION" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} style={{ gridColumn: "1/-1" }} />
           </div>
           <div className="vw-admin-form-actions" style={{ display: "flex", gap: 12, marginTop: 20 }}>
@@ -155,8 +210,27 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                 <tr key={p.id} style={{ borderBottom: "1px solid var(--smoke)" }}>
                   <td style={{ padding: "14px 16px" }}>
                     {editProduct?.id === p.id
-                      ? <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
-                      : <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>}
+                      ? <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            {(editProduct.imageBase64 || editProduct.image) && (
+                              <img 
+                                src={editProduct.imageBase64 ? `data:${editProduct.imageContentType};base64,${editProduct.imageBase64}` : editProduct.image} 
+                                alt="Preview" 
+                                style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
+                              />
+                            )}
+                            <input className="input-dark" placeholder="IMAGE URL" value={editProduct.image || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, image: e.target.value, imageBase64: null }))} style={{ padding: "6px 10px", fontSize: 11, flex: 1 }} />
+                            <label className="btn-ghost" style={{ cursor: "pointer", padding: "0 8px", fontSize: 10, display: "flex", alignItems: "center", height: 30, boxSizing: "border-box" }}>
+                              FILE
+                              <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, true)} />
+                            </label>
+                          </div>
+                        </div>
+                      : <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          {p.image && <img src={p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />}
+                          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>
+                        </div>}
                   </td>
                   <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", padding: "14px 16px", letterSpacing: 1 }}>
                     {COLLECTIONS.find((c) => c.id === p.collection)?.name || p.collection}
