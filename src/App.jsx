@@ -1550,30 +1550,30 @@ class PageErrorBoundary extends Component {
 // â"€â"€â"€ ICONS â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
-    wolf: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2L8 6H4l3 3-1 5 6-3 6 3-1-5 3-3h-4L12 2zm0 8a2 2 0 100 4 2 2 0 000-4z"/></svg>,
-    cart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>,
-    heart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
-    heartFill: <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
-    user: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-    search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-    menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
-    x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-    plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    minus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
-    star: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-    arrowRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
-    eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-    package: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-    chart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-    users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
-    settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-    logout: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-    check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
-    upload: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>,
-    filter: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
-    edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-    shield: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    wolf: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2L8 6H4l3 3-1 5 6-3 6 3-1-5 3-3h-4L12 2zm0 8a2 2 0 100 4 2 2 0 000-4z" /></svg>,
+    cart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>,
+    heart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
+    heartFill: <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>,
+    user: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+    search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+    menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>,
+    x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+    plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+    minus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+    trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>,
+    star: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
+    arrowRight: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>,
+    eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
+    package: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>,
+    chart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>,
+    users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></svg>,
+    settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></svg>,
+    logout: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>,
+    check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>,
+    upload: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" /></svg>,
+    filter: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>,
+    edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>,
+    shield: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
   };
   return icons[name] || null;
 };
@@ -1593,6 +1593,18 @@ const Toast = ({ message, type = "success", onClose }) => {
 };
 
 const ProductImage = ({ product, height = 280, className = "" }) => {
+  if (product.image) {
+    return (
+      <div className={className} style={{ height, position: "relative", overflow: "hidden", background: "var(--smoke)" }}>
+        <img 
+          src={product.image} 
+          alt={product.name} 
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} 
+        />
+      </div>
+    );
+  }
+
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -1818,7 +1830,7 @@ export default function VelvetWolf() {
       .then((items) => {
         setCart(items);
         loadedCartUsers.add(userId);
-        try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch {}
+        try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { }
         return items;
       })
       .catch((err) => {
@@ -2094,7 +2106,7 @@ export default function VelvetWolf() {
         try {
           const cached = JSON.parse(localStorage.getItem(`vw_cart_${normalizedStoredUser.id}`) || "null");
           if (Array.isArray(cached) && cached.length > 0) setCart(cached);
-        } catch {}
+        } catch { }
         syncCartFromDB(normalizedStoredUser.id);
         syncWishlistFromDB(normalizedStoredUser.id);
       } else {
@@ -2126,7 +2138,7 @@ export default function VelvetWolf() {
       }
     );
     return () => subscription.unsubscribe();
-  }, []);     
+  }, []);
 
   useEffect(() => {
     if (!productsLoadPromise) {
@@ -2185,38 +2197,38 @@ export default function VelvetWolf() {
       ) : (
         <>
           {/* â"€â"€ Auth pages: standalone, no Navbar / Footer â"€â"€ */}
-          {page === "login"           && <Login />}
-          {page === "signup"          && <Signup />}
-          {page === "forgetpassword"  && <ForgetPassword />}
+          {page === "login" && <Login />}
+          {page === "signup" && <Signup />}
+          {page === "forgetpassword" && <ForgetPassword />}
 
           {/* â"€â"€ All other pages: wrapped with Navbar + Footer â"€â"€ */}
           {!["login", "signup", "forgetpassword"].includes(page) && (
             <>
               <Navbar activePage={page} />
-              {page === "home"           && <HomePage />}
-              {page === "shop"           && <ShopPage />}
-              {page === "collection"     && <CollectionsPage />}
-              {page === "cart"           && <CartPage />}
-              {page === "wishlist"       && <WishlistPage />}
-              {page === "account"        && <AccountPage />}
-              {page === "checkout"       && <CheckoutPage />}
-              {page === "custom"         && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
-              {page === "bulk"           && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
-              {page === "contactus"      && <ContactPage />}
-              {page === "faq"            && <FAQPage />}
-              {page === "privacypolicy"  && <Policy />}
+              {page === "home" && <HomePage />}
+              {page === "shop" && <ShopPage />}
+              {page === "collection" && <CollectionsPage />}
+              {page === "cart" && <CartPage />}
+              {page === "wishlist" && <WishlistPage />}
+              {page === "account" && <AccountPage />}
+              {page === "checkout" && <CheckoutPage />}
+              {page === "custom" && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
+              {page === "bulk" && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
+              {page === "contactus" && <ContactPage />}
+              {page === "faq" && <FAQPage />}
+              {page === "privacypolicy" && <Policy />}
               {page === "shoppingpolicy" && <ShoppingPolicy />}
-              {page === "termspage"      && <TermsPage />}
-              {page === "returnspage"    && <ReturnsPage />}
-              {page === "sizeguide"      && <SizeGuide />}
-              {page === "trackorder"     && <TrackOrder />}
+              {page === "termspage" && <TermsPage />}
+              {page === "returnspage" && <ReturnsPage />}
+              {page === "sizeguide" && <SizeGuide />}
+              {page === "trackorder" && <TrackOrder />}
               {/* Floating back button for all info/policy pages */}
-              {["privacypolicy","shoppingpolicy","termspage","returnspage","sizeguide","trackorder","faq","contactus"].includes(page) && (
+              {["privacypolicy", "shoppingpolicy", "termspage", "returnspage", "sizeguide", "trackorder", "faq", "contactus"].includes(page) && (
                 <button
                   onClick={() => window.history.back()}
-                  style={{ position:"fixed", top:80, left:24, zIndex:850, background:"var(--graphite)", border:"1px solid var(--smoke)", color:"var(--ash)", fontFamily:"var(--font-mono)", fontSize:10, letterSpacing:2, padding:"8px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor="var(--gold)"; e.currentTarget.style.color="var(--gold)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor="var(--smoke)"; e.currentTarget.style.color="var(--ash)"; }}
+                  style={{ position: "fixed", top: 80, left: 24, zIndex: 850, background: "var(--graphite)", border: "1px solid var(--smoke)", color: "var(--ash)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.color = "var(--gold)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.color = "var(--ash)"; }}
                 >
                   ← BACK
                 </button>
@@ -2347,12 +2359,12 @@ function HomePage() {
   return (
     <div>
       {/* HERO */}
-      <section className="vw-home-hero" style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px"}}>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }}/>
+      <section className="vw-home-hero" style={{ minHeight: "85vh", position: "relative", display: "flex", alignItems: "center", overflow: "visible", paddingTop: "100px", paddingBottom: "80px" }}>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a1a 100%)" }} />
         {/* Geometric accents */}
-        <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }}/>
-        <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }}/>
-        <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
+        <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }} />
+        <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }} />
 
         <div className="vw-hero-inner" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
           <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
@@ -2372,7 +2384,7 @@ function HomePage() {
           {/* Hero slide indicators */}
           <div className="vw-hero-indicators" style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
             {heroSlides.map((_, i) => (
-              <div className="vw-hero-indicator-dot" key={i} onClick={() => setHeroIndex(i)} style={{ width: i === heroIndex ? 32 : 8, height: 2, background: i === heroIndex ? "var(--gold)" : "var(--smoke)", cursor: "pointer", transition: "all 0.4s ease" }}/>
+              <div className="vw-hero-indicator-dot" key={i} onClick={() => setHeroIndex(i)} style={{ width: i === heroIndex ? 32 : 8, height: 2, background: i === heroIndex ? "var(--gold)" : "var(--smoke)", cursor: "pointer", transition: "all 0.4s ease" }} />
             ))}
           </div>
         </div>
@@ -2399,7 +2411,7 @@ function HomePage() {
         </div>
       </section>
 
- {/* FEATURED PRODUCTS */}
+      {/* FEATURED PRODUCTS */}
       <section className="vw-section-pad vw-featured-section" style={{ padding: "80px 40px", background: "var(--graphite)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div className="vw-section-heading vw-featured-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
@@ -2408,13 +2420,13 @@ function HomePage() {
               <h2 className="vw-featured-title" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
             </div>
             <div className="vw-featured-heading-actions">
-              <button className="btn-outline vw-featured-view-all" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12}/></button>
+              <button className="btn-outline vw-featured-view-all" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12} /></button>
             </div>
           </div>
           <FeaturedCoverflow products={featured} className="vw-featured-coverflow" />
         </div>
       </section>
-      
+
       {/* MOSAIC CAROUSEL */}
       <MosaicCarousel
         onCategoryClick={(cat) => {
@@ -2452,11 +2464,11 @@ function HomePage() {
 
       {/* CTA BAND */}
       <section className="vw-section-pad vw-upload-section" style={{ background: "linear-gradient(135deg, var(--graphite), var(--smoke))", padding: "80px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }}/>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%)" }} />
         <div className="vw-upload-content" style={{ maxWidth: 700, margin: "0 auto", zIndex: 1, position: "relative" }}>
           <div className="vw-upload-kicker" style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 DESIGN YOUR IDENTITY \u2726"}</div>
           <h2 className="vw-upload-title" style={{ fontFamily: "var(--font-display)", fontSize: 64, lineHeight: 0.95, letterSpacing: 2, marginBottom: 24 }}>
-            UPLOAD YOUR<br/><span className="gold-text">OWN DESIGN</span>
+            UPLOAD YOUR<br /><span className="gold-text">OWN DESIGN</span>
           </h2>
           <p className="vw-upload-copy" style={{ fontFamily: "'Roboto', sans-serif", fontSize: 17, color: "var(--silver)", fontStyle: "italic", marginBottom: 40 }}>
             Your vision. Our premium canvas. Upload your artwork and we'll bring it to life on luxury-grade fabric.
@@ -2472,7 +2484,7 @@ function HomePage() {
         <div className="vw-why-header" style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
-          <div className="divider"/>
+          <div className="divider" />
         </div>
         <div className="vw-why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
@@ -2484,7 +2496,7 @@ function HomePage() {
               <div className="vw-why-card-icon" style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 16 }}>{title}</h3>
               <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 16, color: "var(--silver)", lineHeight: 1.7 }}>{desc}</p>
-              <div style={{ position: "absolute", top: 0, left: 0, width: 2, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }}/>
+              <div style={{ position: "absolute", top: 0, left: 0, width: 2, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
             </div>
           ))}
         </div>
@@ -2627,7 +2639,7 @@ function ProductCard({ product }) {
         </div>
         <h3 className="vw-product-card-title" style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
         <div className="vw-product-card-rating" style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-          {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating) ? "#c9a84c" : "#333"} />)}
+          {[1, 2, 3, 4, 5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating) ? "#c9a84c" : "#333"} />)}
           <span className="vw-product-card-review-count" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews})</span>
         </div>
         <div className="vw-product-card-price-row" style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2729,8 +2741,8 @@ function ShopPage() {
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>SIZE</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {["XS","S","M","L","XL","XXL"].map(size => (
-                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{background: selectedSizes.includes(size) ? "var(--gold)": "transparent",border: "1px solid var(--gold)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--gold)", padding: "6px 10px",fontFamily: "var(--font-mono)",fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
+              {["XS", "S", "M", "L", "XL", "XXL"].map(size => (
+                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid var(--gold)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--gold)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
               ))}
             </div>
           </div>
@@ -2777,9 +2789,9 @@ function ShopPage() {
 // â”€â”€â”€ PRODUCT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
-  const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
+  const sizes = Array.isArray(p.sizes) && p.sizes.length ? p.sizes : [];
   const colors = Array.isArray(p.colors) && p.colors.length ? p.colors : [];
-  const [size, setSize]   = useState(sizes[0]  ?? null);
+  const [size, setSize] = useState(sizes[0] ?? null);
   const [color, setColor] = useState(colors[0] ?? null);
   const [qty, setQty] = useState(1);
   const inWishlist = wishlist.find(i => i.id === p.id);
@@ -2791,13 +2803,13 @@ function ProductModal() {
           <ProductImage product={p} height={420} className="vw-product-modal-image-inner" />
         </div>
         <div className="vw-product-modal-body" style={{ flex: 1, padding: 40, overflowY: "auto" }}>
-          <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20}/></button>
+          <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20} /></button>
           <div className="vw-product-modal-kicker" style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
             {getCollectionById(p.collection)?.name?.toUpperCase()}
           </div>
           <h2 className="vw-product-modal-title" style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 12 }}>{p.name}</h2>
           <div className="vw-product-modal-rating" style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-            {[1,2,3,4,5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(p.rating) ? "#c9a84c" : "#333"}/>)}
+            {[1, 2, 3, 4, 5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(p.rating) ? "#c9a84c" : "#333"} />)}
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginLeft: 6 }}>{p.rating} ({p.reviews} reviews)</span>
           </div>
           <div className="vw-product-modal-price-row" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
@@ -2811,7 +2823,7 @@ function ProductModal() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
             <div style={{ display: "flex", gap: 8 }}>
               {p.colors.map(c => (
-                <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
+                <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }} />
               ))}
             </div>
           </div>
@@ -2830,16 +2842,16 @@ function ProductModal() {
           <div className="vw-product-modal-section" style={{ marginBottom: 28 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>QUANTITY</div>
             <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid var(--smoke)", width: "fit-content" }}>
-              <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "8px 14px" }}><Icon name="minus" size={14}/></button>
+              <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "8px 14px" }}><Icon name="minus" size={14} /></button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ivory)", padding: "0 16px" }}>{qty}</span>
-              <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "8px 14px" }}><Icon name="plus" size={14}/></button>
+              <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "8px 14px" }}><Icon name="plus" size={14} /></button>
             </div>
           </div>
 
           <div className="vw-product-modal-actions" style={{ display: "flex", gap: 12 }}>
             <button className="btn-gold" style={{ flex: 1 }} onClick={() => { addToCart(p, size, color, qty); setSelectedProduct(null); }}>ADD TO CART</button>
             <button onClick={() => toggleWishlist(p)} style={{ background: inWishlist ? "rgba(192,57,43,0.2)" : "transparent", border: `1px solid ${inWishlist ? "var(--wolf-red)" : "var(--smoke)"}`, color: inWishlist ? "var(--wolf-red)" : "var(--silver)", padding: "0 18px", cursor: "pointer" }}>
-              <Icon name={inWishlist ? "heartFill" : "heart"} size={18} color={inWishlist ? "#c0392b" : "var(--silver)"}/>
+              <Icon name={inWishlist ? "heartFill" : "heart"} size={18} color={inWishlist ? "#c0392b" : "var(--silver)"} />
             </button>
           </div>
           <div className="vw-product-modal-perks" style={{ marginTop: 20, display: "flex", gap: 20 }}>
@@ -2858,20 +2870,20 @@ function CartSidebar() {
   const { cart, setCartOpen, removeFromCart, updateCartQty, cartTotal, setPage } = useContext(AppContext);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 900 }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => setCartOpen(false)}/>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => setCartOpen(false)} />
       <div className="sidebar" style={{ right: 0 }}>
         <div style={{ padding: "30px 28px", borderBottom: "1px solid var(--smoke)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 3 }}>YOUR CART</h2>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginTop: 4 }}>{cart.length} ITEMS</div>
           </div>
-          <button onClick={() => setCartOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={22}/></button>
+          <button onClick={() => setCartOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={22} /></button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "0 28px" }}>
           {cart.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0", color: "var(--silver)" }}>
-              <Icon name="cart" size={48} color="var(--smoke)"/>
+              <Icon name="cart" size={48} color="var(--smoke)" />
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", marginTop: 16 }}>Your cart is empty</p>
             </div>
           ) : cart.map((item, i) => (
@@ -2884,14 +2896,14 @@ function CartSidebar() {
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>SIZE: {item.size}</div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid var(--smoke)" }}>
-                    <button onClick={() => updateCartQty(item.id, item.size, item.color, item.qty - 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "4px 10px" }}><Icon name="minus" size={12}/></button>
+                    <button onClick={() => updateCartQty(item.id, item.size, item.color, item.qty - 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "4px 10px" }}><Icon name="minus" size={12} /></button>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 10px" }}>{item.qty}</span>
-                    <button onClick={() => updateCartQty(item.id, item.size, item.color, item.qty + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "4px 10px" }}><Icon name="plus" size={12}/></button>
+                    <button onClick={() => updateCartQty(item.id, item.size, item.color, item.qty + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "4px 10px" }}><Icon name="plus" size={12} /></button>
                   </div>
                   <span style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--gold)" }}>{"\u20b9"}{(item.price * item.qty).toLocaleString()}</span>
                 </div>
               </div>
-              <button onClick={() => removeFromCart(item.id, item.size, item.color)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", alignSelf: "flex-start" }}><Icon name="trash" size={14}/></button>
+              <button onClick={() => removeFromCart(item.id, item.size, item.color)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", alignSelf: "flex-start" }}><Icon name="trash" size={14} /></button>
             </div>
           ))}
         </div>
@@ -2917,24 +2929,24 @@ function WishlistSidebar() {
   const { wishlist, setWishlistOpen, toggleWishlist, addToCart } = useContext(AppContext);
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 900 }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => setWishlistOpen(false)}/>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} onClick={() => setWishlistOpen(false)} />
       <div className="sidebar">
         <div style={{ padding: "30px 28px", borderBottom: "1px solid var(--smoke)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 3 }}>WISHLIST</h2>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginTop: 4 }}>{wishlist.length} SAVED PIECES</div>
           </div>
-          <button onClick={() => setWishlistOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={22}/></button>
+          <button onClick={() => setWishlistOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={22} /></button>
         </div>
         <div style={{ padding: "0 28px" }}>
           {wishlist.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0", color: "var(--silver)" }}>
-              <Icon name="heart" size={48} color="var(--smoke)"/>
+              <Icon name="heart" size={48} color="var(--smoke)" />
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", marginTop: 16 }}>Nothing saved yet</p>
             </div>
           ) : wishlist.map(item => (
             <div className="vw-sidebar-item" key={item.id} style={{ padding: "20px 0", borderBottom: "1px solid var(--smoke)", display: "flex", gap: 16, alignItems: "center" }}>
-              <div className="vw-sidebar-thumb" style={{ width: 70, flexShrink: 0 }}><ProductImage product={item} height={80}/></div>
+              <div className="vw-sidebar-thumb" style={{ width: 70, flexShrink: 0 }}><ProductImage product={item} height={80} /></div>
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontFamily: "var(--font-display)", fontSize: 17, letterSpacing: 1, marginBottom: 6 }}>{item.name}</h4>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)", marginBottom: 10 }}>{"\u20b9"}{item.price.toLocaleString()}</div>
@@ -2946,7 +2958,7 @@ function WishlistSidebar() {
                   }
                 }}>ADD TO CART</button>
               </div>
-              <button onClick={() => toggleWishlist(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={14}/></button>
+              <button onClick={() => toggleWishlist(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={14} /></button>
             </div>
           ))}
         </div>
@@ -3157,7 +3169,7 @@ function CustomDesignPage() {
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>MAKE IT YOURS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br/>DESIGN</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br />DESIGN</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
       </div>
 
@@ -3168,7 +3180,7 @@ function CustomDesignPage() {
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
             <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
               onClick={() => { setUploaded(!uploaded); if (!uploaded) showToast("Design uploaded!"); }}>
-              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
+              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"} />
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
                 {uploaded ? "DESIGN UPLOADED ✓" : "CLICK TO UPLOAD"}
               </div>
@@ -3198,23 +3210,23 @@ function CustomDesignPage() {
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>BASE COLOR</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["#0a0a0a", "#faf9f7", "#1a2a3a", "#1a0a0a", "#0a1a0a", "#2a2a2a"].map(c => (
-                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }}/>
+                    <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 36, height: 36, background: c, cursor: "pointer", border: `2px solid ${form.color === c ? "var(--gold)" : "transparent"}`, outline: "2px solid var(--smoke)" }} />
                   ))}
                 </div>
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SIZE</label>
                 <select className="input-dark" value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))}>
-                  {["XS","S","M","L","XL","XXL"].map(s => <option key={s} value={s}>{s}</option>)}
+                  {["XS", "S", "M", "L", "XL", "XXL"].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>QUANTITY</label>
-                <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))}/>
+                <input className="input-dark" type="number" min="1" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>SPECIAL NOTES</label>
-                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}/>
+                <textarea className="input-dark" placeholder="Print placement, special instructions..." value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
               </div>
               <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "16px 20px" }}>
                 <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 4 }}>ESTIMATED PRICE</div>
@@ -3285,7 +3297,7 @@ function BulkOrderPage() {
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br />CORPORATE</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
       </div>
 
@@ -3327,11 +3339,11 @@ function BulkOrderPage() {
                 <option value="startup">STARTUP KIT</option>
               </select>
             </div>
-            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => setForm(f => ({ ...f, org: e.target.value }))}/>
-            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))}/>
-            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}/>
-            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} min="10"/>
-            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} style={{ minHeight: 120 }}/>
+            <input className="input-dark" placeholder="ORGANIZATION NAME" value={form.org} onChange={e => setForm(f => ({ ...f, org: e.target.value }))} />
+            <input className="input-dark" placeholder="CONTACT PERSON" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} />
+            <input className="input-dark" type="email" placeholder="EMAIL ADDRESS" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+            <input className="input-dark" type="number" placeholder="QUANTITY REQUIRED" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} min="10" />
+            <textarea className="input-dark" placeholder="PRODUCT REQUIREMENTS, DESIGN IDEAS, DEADLINE..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} style={{ minHeight: 120 }} />
             <button className="btn-gold" style={{ padding: "16px" }} onClick={() => showToast("Quote request sent! We'll contact you within 24hrs.")}>REQUEST QUOTE</button>
           </div>
         </div>

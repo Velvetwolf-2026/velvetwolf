@@ -132,13 +132,35 @@ export async function getAdminProducts({ collection, search, page = 1, limit = 1
 }
 
 export async function createAdminProduct(productData, adminId) {
-  const { name, collection, price, original_price, description, tag, sizes, colors, stock, image } = productData;
+  const { name, collection, price, original_price, description, tag, sizes, colors, stock, image, imageBase64, imageFileName, imageContentType } = productData;
 
   logInfo("Creating product", adminLogContext({ name, collection, adminId }));
+
+  let finalImageUrl = image?.trim() || null;
+
+  if (imageBase64 && imageFileName) {
+    const buffer = Buffer.from(imageBase64, "base64");
+    const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(imageFileName, buffer, {
+      contentType: imageContentType || "image/jpeg",
+      upsert: true
+    });
+    if (uploadError) {
+      logError("Failed to upload product image", adminLogContext({ imageFileName, error: uploadError }));
+      throw new ApiError(500, "Failed to upload product image.");
+    }
+    const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(imageFileName);
+    finalImageUrl = publicUrlData.publicUrl;
+  }
+
+  const sku = `VW-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+  const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
 
   const { data, error } = await supabaseAdmin.from("products").insert({
     name: name.trim(),
     collection: collection.trim(),
+    sku,
+    slug,
     price: Number(price),
     original_price: original_price ? Number(original_price) : Number(price),
     description: description?.trim() || null,
@@ -146,7 +168,7 @@ export async function createAdminProduct(productData, adminId) {
     sizes: Array.isArray(sizes) ? sizes : [],
     colors: Array.isArray(colors) ? colors : [],
     stock: Number(stock ?? 0),
-    image: image?.trim() || null,
+    image: finalImageUrl,
   }).select().single();
 
   if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, "Failed to create product."); }
@@ -163,6 +185,21 @@ export async function updateAdminProduct(productId, productData, adminId) {
   for (const key of allowed) {
     if (productData[key] !== undefined) updates[key] = productData[key];
   }
+
+  if (productData.imageBase64 && productData.imageFileName) {
+    const buffer = Buffer.from(productData.imageBase64, "base64");
+    const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(productData.imageFileName, buffer, {
+      contentType: productData.imageContentType || "image/jpeg",
+      upsert: true
+    });
+    if (uploadError) {
+      logError("Failed to upload product image", adminLogContext({ imageFileName: productData.imageFileName, error: uploadError }));
+      throw new ApiError(500, "Failed to upload product image.");
+    }
+    const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(productData.imageFileName);
+    updates.image = publicUrlData.publicUrl;
+  }
+
   if (Object.keys(updates).length === 0) throw new ApiError(400, "No valid fields to update.");
 
   const { data, error } = await supabaseAdmin.from("products").update(updates).eq("id", productId).select().single();
