@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef, Component, lazy, Suspense } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage, CheckoutPage, PaymentStatusPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
 import CartPage from "./velvetwolf/pages/CartPage";
 import WishlistPage from "./velvetwolf/pages/WishlistPage";
@@ -287,6 +287,9 @@ const GlobalStyles = () => (
       .nav-links button { font-size: 15px !important; letter-spacing: 2px !important; }
       .account-grid { grid-template-columns: repeat(2, 1fr) !important; }
       .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; }
+      .promise-section { padding: 64px 24px !important; }
+      .promise-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+      .promise-h2 { font-size: clamp(32px, 6vw, 56px) !important; }
     }
 
     /* Mobile: < 640px */
@@ -317,6 +320,9 @@ const GlobalStyles = () => (
       .modal-box { width: 95% !important; max-height: 95vh !important; }
       .toast { bottom: 16px !important; right: 16px !important; left: 16px !important; font-size: 10px !important; }
       .featured-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+      .promise-section { padding: 48px 20px !important; }
+      .promise-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+      .promise-h2 { font-size: clamp(28px, 9vw, 48px) !important; letter-spacing: 1px !important; }
     }
   `}</style>
 );
@@ -554,8 +560,8 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
-  // cart_items / wishlist_items FK references auth.users(id), so auth_user_id takes priority
-  const getBackendUserId = (value) => value?.auth_user_id || value?.id || null;
+  // cart_items / wishlist_items FK references public.users(id)
+  const getBackendUserId = (value) => value?.id || null;
   const normalizeUserRoleState = (value = {}) => {
     const role = value?.role || (value?.isAdmin ? "admin" : "customer");
     return {
@@ -821,7 +827,11 @@ export default function VelvetWolf() {
     const authError = query.get("auth_error");
     const authMode = query.get("mode");
     const resetToken = query.get("reset_token");
-    if (backendToken) {
+    const orderId = query.get("order_id");
+    
+    if (orderId) {
+      setPage("payment-status");
+    } else if (backendToken) {
       const decoded = parseBackendToken(backendToken);
       if (decoded?.email) {
         const backendUser = normalizeUserRoleState({
@@ -963,6 +973,7 @@ export default function VelvetWolf() {
               {page === "wishlist"       && <WishlistPage />}
               {page === "account"        && <AccountPage />}
               {page === "checkout"       && <CheckoutPage />}
+              {page === "payment-status" && <PaymentStatusPage />}
               {page === "custom"         && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
               {page === "bulk"           && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
               {page === "contactus"      && <ContactPage />}
@@ -1229,13 +1240,13 @@ function HomePage() {
       </section>
 
       {/* WHY VELVETWOLF */}
-      <section style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
+      <section className="promise-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
+          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider"/>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
+        <div className="promise-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
             ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],

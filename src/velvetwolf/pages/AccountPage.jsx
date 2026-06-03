@@ -11,7 +11,7 @@ export function AccountPage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
   const [savingSettings, setSavingSettings] = useState(false);
-  const databaseUserId = user?.auth_user_id || user?.id || null;
+  const databaseUserId = user?.id || null;
 
   useEffect(() => {
     if (!databaseUserId || tab !== "orders") return;
@@ -41,7 +41,7 @@ export function AccountPage() {
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
   const displayInitial = displayName[0].toUpperCase();
-  const profileUserId = user?.auth_user_id || user?.id || null;
+  const profileUserId = user?.id || null;
 
   useEffect(() => {
     setSettings({

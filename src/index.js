@@ -39,6 +39,8 @@ export { default as ReturnsPage    } from "./velvetwolf/pages/ReturnsPage";
 export { default as FAQPage        } from "./velvetwolf/pages/FAQPage";
 export { default as ContactPage    } from "./velvetwolf/pages/ContactPage";
 export { default as CollectionsPage } from "./velvetwolf/pages/Collections";
+export { default as CheckoutPage } from "./velvetwolf/pages/CheckoutPage";
+export { default as PaymentStatusPage } from "./velvetwolf/pages/PaymentStatusPage";
 
 // ── Shared Style Helpers ──
 export { S, PageHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
