@@ -11,7 +11,7 @@ export function AccountPage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
   const [savingSettings, setSavingSettings] = useState(false);
-  const databaseUserId = user?.auth_user_id || user?.id || null;
+  const databaseUserId = user?.id || null;
 
   useEffect(() => {
     if (!databaseUserId || tab !== "orders") return;
@@ -41,7 +41,7 @@ export function AccountPage() {
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
   const displayInitial = displayName[0].toUpperCase();
-  const profileUserId = user?.auth_user_id || user?.id || null;
+  const profileUserId = user?.id || null;
 
   useEffect(() => {
     setSettings({
@@ -96,11 +96,11 @@ export function AccountPage() {
   }
 
   return (
-    <div className="vw-account-page" style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
+    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div className="vw-account-profile-row" style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40 }}>
-            <div className="vw-account-avatar" style={{ width: 72, height: 72, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 28, color: "var(--obsidian)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40, flexWrap: "wrap" }}>
+            <div style={{ width: 72, height: 72, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 28, color: "var(--obsidian)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>
               {displayInitial}
             </div>
             <div className="vw-account-profile-copy">
@@ -109,18 +109,18 @@ export function AccountPage() {
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "#cac7c7", marginTop: 4 }}>{user.email}</div>
             </div>
           </div>
-          <div className="vw-account-tabs" style={{ display: "flex", gap: 0 }}>
+          <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
             {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"]].map(([t, label]) => (
-              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 24px", cursor: "pointer" }}>{label}</button>
+              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 20px", cursor: "pointer" }}>{label}</button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="vw-account-content" style={{ maxWidth: 1200, margin: "40px auto", padding: "0 40px" }}>
+      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "40px auto", padding: "0 40px" }}>
         {tab === "overview" && (
           <div>
-            <div className="vw-account-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 40 }}>
+            <div className="account-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 40 }}>
               {[["ORDERS", userOrders.length], ["WISHLIST", wishlist.length], ["CART ITEMS", cart.length]].map(([label, val]) => (
                 <div className="vw-account-stat-card" key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>

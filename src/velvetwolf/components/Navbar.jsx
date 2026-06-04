@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
+import { useBreakpoint } from "../utils/breakpoints";
 
 function Icon({ name, size = 18, color = "currentColor" }) {
   const icons = {
@@ -35,14 +36,16 @@ function Icon({ name, size = 18, color = "currentColor" }) {
       </svg>
     ),
   };
-
   return icons[name] || null;
 }
 
 export default function Navbar({ activePage }) {
-  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop } = useContext(AppContext);
+  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop } =
+    useContext(AppContext);
   const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { isMobileOrTablet, isMobile } = useBreakpoint();
+
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
   const greetingName = displayName ? displayName.split(" ")[0] : "";
   const navItems = [["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]];
@@ -58,339 +61,362 @@ export default function Navbar({ activePage }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Close mobile menu when switching to desktop
+  useEffect(() => {
+    if (!isMobileOrTablet) setMobileOpen(false);
+  }, [isMobileOrTablet]);
+
+  const navLinks = [
+    ["SHOP", "shop"],
+    ["COLLECTIONS", "collection"],
+    ["CUSTOM", "custom"],
+    ["BULK", "bulk"],
+  ];
+
+  const handleNavClick = (pg) => {
+    pg === "shop" ? openShop() : setPage(pg);
+    setMobileOpen(false);
+  };
+
   return (
-    <nav
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 800,
-        background: scrolled ? "rgba(10,10,10,0.95)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(201,168,76,0.2)" : "none",
-        transition: "all 0.4s ease",
-        padding: "0 40px",
-      }}
-      className="vw-nav-shell"
-    >
-      <div
-        className="vw-nav-row"
+    <>
+      <nav
+        className="nav-pad"
         style={{
-          maxWidth: 1400,
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          height: 70,
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 800,
+          background: scrolled || mobileOpen ? "rgba(10,10,10,0.97)" : "transparent",
+          backdropFilter: scrolled || mobileOpen ? "blur(20px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(201,168,76,0.2)" : "none",
+          transition: "all 0.4s ease",
+          padding: "0 40px",
         }}
       >
-        <button
-          className="vw-mobile-menu-leading"
-          onClick={() => setMenuOpen((open) => !open)}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", padding: 0 }}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-        >
-          <Icon name={menuOpen ? "x" : "menu"} size={24} />
-        </button>
-
-        {/* Logo */}
         <div
-          className="vw-brand-link"
-          onClick={() => { setMenuOpen(false); setPage("home"); }}
-          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
+          className="nav-height"
+          style={{
+            maxWidth: 1400,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: 70,
+          }}
         >
+          {/* Logo */}
           <div
-            style={{
-              width: 36,
-              height: 36,
-              background: "linear-gradient(135deg, var(--gold), var(--gold-light))",
-              clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            className="vw-brand-logo"
+            onClick={() => { setPage("home"); setMobileOpen(false); }}
+            style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
           >
-            <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
-
-          </div>
-
-          <div>
             <div
               style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 24,
-                letterSpacing: 6,
-                color: "var(--ivory)",
-                lineHeight: 1,
-              }}
-              className="vw-brand-title"
-            >
-              VELVETWOLF
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: 4,
-                color: "var(--gold)",
-                opacity: 0.8,
+                width: 36,
+                height: 36,
+                background: "linear-gradient(135deg, var(--gold), var(--gold-light))",
+                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
               className="vw-brand-subtitle"
             >
-              LUXURY STREETWEAR
+              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
+            </div>
+
+            <div>
+              <div
+                className="nav-logo-text"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 24,
+                  letterSpacing: 6,
+                  color: "var(--ivory)",
+                  lineHeight: 1,
+                }}
+              >
+                VELVETWOLF
+              </div>
+              <div
+                className="nav-logo-sub"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: 4,
+                  color: "var(--gold)",
+                  opacity: 0.8,
+                }}
+              >
+                LUXURY STREETWEAR
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Nav links */}
-        <div className="vw-desktop-nav" style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {navItems.map(
-            ([label, pg]) => (
-              <button
-                key={pg}
-                onClick={() => goToPage(pg)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: 18,
-                  letterSpacing: 3,
-                  fontWeight: 500,
-                  padding: "4px 0",
-                  position: "relative",
-
-                  // 👇 main logic
-                  color: activePage === pg ? "var(--gold)" : "var(--ash)",
-
-                  transition: "color 0.3s, transform 0.3s",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = "scale(1.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = "scale(1)";
-                }}
-              >
-                {label}
-              </button>
-            )
-          )}
-
-          {user?.isAdmin && (
-            <button
-              onClick={() => setPage("admin")}
-              style={{
-                background: "none",
-                border: "1px solid var(--gold)",
-                color: "var(--gold)",
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: 2,
-                padding: "4px 12px",
-              }}
-            >
-              ADMIN
-            </button>
-          )}
-        </div>
-
-        {/* Icons */}
-        <div className="vw-nav-actions" style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <button
-            className="vw-mobile-menu-toggle"
-            onClick={() => setMenuOpen((open) => !open)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", padding: 0 }}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-          >
-            <Icon name={menuOpen ? "x" : "menu"} size={24} />
-          </button>
-
-          <button
-            onClick={() => (user ? setWishlistOpen(true) : setPage("login"))}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}
-          >
-            <Icon name="heart" size={22} />
-            {wishlist.length > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -6,
-                  right: -6,
-                  background: "var(--wolf-red)",
-                  color: "#fff",
-                  borderRadius: "50%",
-                  width: 14,
-                  height: 14,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 8,
-                }}
-              >
-                {wishlist.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setCartOpen(true)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}
-          >
-            <Icon name="cart" size={22} />
-            {cartCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -6,
-                  right: -6,
-                  background: "var(--gold)",
-                  color: "var(--obsidian)",
-                  borderRadius: "50%",
-                  width: 16,
-                  height: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 8,
-                  fontWeight: "bold",
-                }}
-              >
-                {cartCount}
-              </span>
-            )}
-          </button>
-
-          {greetingName && (
-            <button
-              onClick={() => setPage("account")}
-              className="vw-user-greeting"
-              style={{
-                background: "none",
-                border: "1px solid rgba(201,168,76,0.35)",
-                color: "var(--gold)",
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: 1.5,
-                padding: "8px 12px",
-                textTransform: "none",
-              }}
-            >
-              {`Hi ${greetingName}`}
-            </button>
-          )}
-
-          {user && (
-            <button
-              onClick={signOutUser}
-              className="vw-sign-out"
-              style={{
-                background: "none",
-                border: "1px solid var(--smoke)",
-                color: "var(--ash)",
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: 2,
-                padding: "8px 12px",
-              }}
-            >
-              SIGN OUT
-            </button>
-          )}
-
-          <button
-            onClick={() => (user ? setPage("account") : setPage("login"))}
-            style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}
-          >
-            <Icon name="user" size={22} />
-          </button>
-        </div>
-      </div>
-      {menuOpen && (
-        <>
-          <div className="vw-mobile-backdrop" onClick={() => setMenuOpen(false)} />
-          <aside className="vw-mobile-panel" aria-label="Mobile navigation">
-            <div className="vw-mobile-drawer-head">
-              <div>
-                <div className="vw-mobile-drawer-brand">VELVETWOLF</div>
-                <div className="vw-mobile-drawer-sub">LUXURY STREETWEAR</div>
-              </div>
-              <button
-                onClick={() => setMenuOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)", padding: 4 }}
-                aria-label="Close menu"
-              >
-                <Icon name="x" size={22} />
-              </button>
-            </div>
-
-            <div className="vw-mobile-panel-inner">
-              {navItems.map(([label, pg]) => (
+          {/* Desktop nav links */}
+          {!isMobileOrTablet && (
+            <div className="nav-links" style={{ display: "flex", gap: 32, alignItems: "center" }}>
+              {navLinks.map(([label, pg]) => (
                 <button
                   key={pg}
-                  onClick={() => goToPage(pg)}
+                  onClick={() => handleNavClick(pg)}
                   style={{
-                    background: activePage === pg ? "rgba(201,168,76,0.12)" : "transparent",
-                    border: "1px solid var(--smoke)",
-                    color: activePage === pg ? "var(--gold)" : "var(--ash)",
+                    background: "none",
+                    border: "none",
                     cursor: "pointer",
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 14,
+                    fontSize: 18,
                     letterSpacing: 3,
-                    padding: "13px 14px",
-                    textAlign: "left",
+                    fontWeight: 500,
+                    padding: "4px 0",
+                    color: activePage === pg ? "var(--gold)" : "var(--ash)",
+                    transition: "color 0.3s, transform 0.3s",
                   }}
+                  onMouseEnter={(e) => { e.target.style.transform = "scale(1.1)"; }}
+                  onMouseLeave={(e) => { e.target.style.transform = "scale(1)"; }}
                 >
                   {label}
                 </button>
               ))}
-              {greetingName && (
+
+              {user?.isAdmin && (
                 <button
-                  onClick={() => goToPage("account")}
+                  onClick={() => setPage("admin")}
                   style={{
-                    background: "transparent",
-                    border: "1px solid rgba(201,168,76,0.35)",
+                    background: "none",
+                    border: "1px solid var(--gold)",
                     color: "var(--gold)",
                     cursor: "pointer",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    letterSpacing: 1.5,
-                    padding: "13px 14px",
-                    textAlign: "left",
-                  }}
-                >
-                  {`Hi ${greetingName}`}
-                </button>
-              )}
-              {user && (
-                <button
-                  onClick={() => { setMenuOpen(false); signOutUser(); }}
-                  style={{
-                    background: "transparent",
-                    border: "1px solid var(--smoke)",
-                    color: "var(--ash)",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
+                    fontSize: 9,
                     letterSpacing: 2,
-                    padding: "13px 14px",
-                    textAlign: "left",
+                    padding: "4px 12px",
                   }}
                 >
-                  SIGN OUT
+                  ADMIN
                 </button>
               )}
             </div>
-          </aside>
-        </>
+          )}
+
+          {/* Right icons */}
+          <div style={{ display: "flex", gap: isMobile ? 12 : 20, alignItems: "center" }}>
+            {/* Wishlist */}
+            <button
+              onClick={() => { user ? setWishlistOpen(true) : setPage("login"); setMobileOpen(false); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}
+            >
+              <Icon name="heart" size={isMobile ? 20 : 22} />
+              {wishlist.length > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    background: "var(--wolf-red)",
+                    color: "#fff",
+                    borderRadius: "50%",
+                    width: 14,
+                    height: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                  }}
+                >
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
+            {/* Cart */}
+            <button
+              onClick={() => { setCartOpen(true); setMobileOpen(false); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", position: "relative" }}
+            >
+              <Icon name="cart" size={isMobile ? 20 : 22} />
+              {cartCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    background: "var(--gold)",
+                    color: "var(--obsidian)",
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {/* User button — desktop only */}
+            {!isMobileOrTablet && (
+              <>
+                {greetingName && (
+                  <button
+                    onClick={() => setPage("account")}
+                    style={{
+                      background: "none",
+                      border: "1px solid rgba(201,168,76,0.35)",
+                      color: "var(--gold)",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      letterSpacing: 1.5,
+                      padding: "8px 12px",
+                      textTransform: "none",
+                    }}
+                  >
+                    {`Hi ${greetingName}`}
+                  </button>
+                )}
+
+                {user && (
+                  <button
+                    onClick={signOutUser}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--smoke)",
+                      color: "var(--ash)",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      letterSpacing: 2,
+                      padding: "8px 12px",
+                    }}
+                  >
+                    SIGN OUT
+                  </button>
+                )}
+
+                <button
+                  onClick={() => (user ? setPage("account") : setPage("login"))}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: user ? "var(--gold)" : "var(--ash)" }}
+                >
+                  <Icon name="user" size={22} />
+                </button>
+              </>
+            )}
+
+            {/* Hamburger — mobile/tablet only */}
+            {isMobileOrTablet && (
+              <button
+                onClick={() => setMobileOpen((v) => !v)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)", padding: 4 }}
+                aria-label="Toggle menu"
+              >
+                <Icon name={mobileOpen ? "x" : "menu"} size={24} />
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile drawer */}
+      {isMobileOrTablet && mobileOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 60,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 799,
+            background: "rgba(10,10,10,0.98)",
+            backdropFilter: "blur(20px)",
+            display: "flex",
+            flexDirection: "column",
+            padding: "32px 24px",
+            overflowY: "auto",
+            animation: "fadeIn 0.2s ease",
+          }}
+        >
+          {/* Nav links */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 40 }}>
+            {navLinks.map(([label, pg]) => (
+              <button
+                key={pg}
+                onClick={() => handleNavClick(pg)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: "1px solid var(--smoke)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 32,
+                  letterSpacing: 4,
+                  color: activePage === pg ? "var(--gold)" : "var(--ivory)",
+                  padding: "16px 0",
+                  textAlign: "left",
+                  transition: "color 0.2s",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+
+            {user?.isAdmin && (
+              <button
+                onClick={() => { setPage("admin"); setMobileOpen(false); }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: "1px solid var(--smoke)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 32,
+                  letterSpacing: 4,
+                  color: "var(--gold)",
+                  padding: "16px 0",
+                  textAlign: "left",
+                }}
+              >
+                ADMIN
+              </button>
+            )}
+          </div>
+
+          {/* User section */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {greetingName && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 8 }}>
+                HELLO, {greetingName.toUpperCase()}
+              </div>
+            )}
+
+            <button
+              onClick={() => { user ? setPage("account") : setPage("login"); setMobileOpen(false); }}
+              className="btn-outline"
+              style={{ width: "100%", textAlign: "center" }}
+            >
+              {user ? "MY ACCOUNT" : "SIGN IN"}
+            </button>
+
+            {user && (
+              <button
+                onClick={() => { signOutUser(); setMobileOpen(false); }}
+                className="btn-ghost"
+                style={{ width: "100%", textAlign: "center" }}
+              >
+                SIGN OUT
+              </button>
+            )}
+          </div>
+        </div>
       )}
-    </nav>
+    </>
   );
 }

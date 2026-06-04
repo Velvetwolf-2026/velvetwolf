@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef, useCallback, Component, lazy, Suspense } from "react";
 import { AppContext } from "./velvetwolf/pages/AppContext";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage } from "./index";
+import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, MosaicCarousel, ForgetPassword, Login, Signup, AccountPage, CheckoutPage, PaymentStatusPage } from "./index";
 import CollectionsPage, { COLLECTIONS, HOME_COLLECTIONS, INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "./velvetwolf/pages/Collections";
 import CartPage from "./velvetwolf/pages/CartPage";
 import WishlistPage from "./velvetwolf/pages/WishlistPage";
@@ -279,6 +279,61 @@ const GlobalStyles = () => (
     select.input-dark { appearance: none; cursor: pointer; }
     textarea.input-dark { resize: vertical; min-height: 100px; }
 
+    /* ── Responsive breakpoints ── */
+
+    /* Tablet: 640px – 1023px */
+    @media (max-width: 1023px) {
+      .shop-sidebar { width: 100% !important; display: flex; flex-wrap: wrap; gap: 24px; }
+      .featured-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+      .admin-sidebar { width: 200px; }
+      .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 40px !important; }
+      .footer-brand-col { grid-column: 1 / -1; }
+      .page-hero-title { font-size: clamp(40px, 8vw, 72px) !important; }
+      .page-hero-pad { padding: 48px 24px 32px !important; }
+      .page-content-pad { padding: 40px 24px !important; }
+      .collections-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; justify-content: unset !important; }
+      .cart-layout { grid-template-columns: 1fr !important; }
+      .cart-summary { position: static !important; }
+      .nav-links { gap: 20px !important; }
+      .nav-links button { font-size: 15px !important; letter-spacing: 2px !important; }
+      .account-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; }
+      .promise-section { padding: 64px 24px !important; }
+      .promise-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+      .promise-h2 { font-size: clamp(32px, 6vw, 56px) !important; }
+    }
+
+    /* Mobile: < 640px */
+    @media (max-width: 639px) {
+      .shop-sidebar { width: 100% !important; display: flex; flex-wrap: wrap; gap: 16px; }
+      .sidebar { width: 100vw; }
+      .admin-sidebar { width: 160px; }
+      .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+      .footer-brand-col { grid-column: unset; }
+      .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+      .footer-links { flex-wrap: wrap !important; gap: 12px !important; }
+      .footer-pad { padding: 48px 20px 32px !important; }
+      .page-hero-title { font-size: clamp(36px, 10vw, 56px) !important; }
+      .page-hero-pad { padding: 32px 20px 24px !important; }
+      .page-content-pad { padding: 28px 20px !important; }
+      .collections-grid { grid-template-columns: 1fr !important; }
+      .cart-layout { grid-template-columns: 1fr !important; }
+      .cart-summary { position: static !important; }
+      .cart-header { font-size: clamp(40px, 12vw, 72px) !important; }
+      .nav-pad { padding: 0 16px !important; }
+      .nav-height { height: 60px !important; }
+      .nav-logo-text { font-size: 18px !important; letter-spacing: 4px !important; }
+      .nav-logo-sub { display: none !important; }
+      .account-grid { grid-template-columns: 1fr !important; }
+      .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+      .auth-box { padding: 32px 20px !important; }
+      .contact-grid { grid-template-columns: 1fr !important; }
+      .modal-box { width: 95% !important; max-height: 95vh !important; }
+      .toast { bottom: 16px !important; right: 16px !important; left: 16px !important; font-size: 10px !important; }
+      .featured-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+      .promise-section { padding: 48px 20px !important; }
+      .promise-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+      .promise-h2 { font-size: clamp(28px, 9vw, 48px) !important; letter-spacing: 1px !important; }
     .vw-mobile-menu-toggle,
     .vw-mobile-menu-leading,
     .vw-mobile-backdrop,
@@ -1762,8 +1817,8 @@ export default function VelvetWolf() {
     setWishlist(items);
   };
 
-  // cart_items / wishlist_items FK references auth.users(id), so auth_user_id takes priority
-  const getBackendUserId = (value) => value?.auth_user_id || value?.id || null;
+  // cart_items / wishlist_items FK references public.users(id)
+  const getBackendUserId = (value) => value?.id || null;
   const normalizeUserRoleState = (value = {}) => {
     const role = value?.role || (value?.isAdmin ? "admin" : "customer");
     return {
@@ -2061,7 +2116,11 @@ export default function VelvetWolf() {
     const authError = query.get("auth_error");
     const authMode = query.get("mode");
     const resetToken = query.get("reset_token");
-    if (backendToken) {
+    const orderId = query.get("order_id");
+    
+    if (orderId) {
+      setPage("payment-status");
+    } else if (backendToken) {
       const decoded = parseBackendToken(backendToken);
       if (decoded?.email) {
         const backendUser = normalizeUserRoleState({
@@ -2205,18 +2264,19 @@ export default function VelvetWolf() {
           {!["login", "signup", "forgetpassword"].includes(page) && (
             <>
               <Navbar activePage={page} />
-              {page === "home" && <HomePage />}
-              {page === "shop" && <ShopPage />}
-              {page === "collection" && <CollectionsPage />}
-              {page === "cart" && <CartPage />}
-              {page === "wishlist" && <WishlistPage />}
-              {page === "account" && <AccountPage />}
-              {page === "checkout" && <CheckoutPage />}
-              {page === "custom" && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
-              {page === "bulk" && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
-              {page === "contactus" && <ContactPage />}
-              {page === "faq" && <FAQPage />}
-              {page === "privacypolicy" && <Policy />}
+              {page === "home"           && <HomePage />}
+              {page === "shop"           && <ShopPage />}
+              {page === "collection"     && <CollectionsPage />}
+              {page === "cart"           && <CartPage />}
+              {page === "wishlist"       && <WishlistPage />}
+              {page === "account"        && <AccountPage />}
+              {page === "checkout"       && <CheckoutPage />}
+              {page === "payment-status" && <PaymentStatusPage />}
+              {page === "custom"         && <PageErrorBoundary key="custom"><CustomDesignPage /></PageErrorBoundary>}
+              {page === "bulk"           && <PageErrorBoundary key="bulk"><BulkOrderPage /></PageErrorBoundary>}
+              {page === "contactus"      && <ContactPage />}
+              {page === "faq"            && <FAQPage />}
+              {page === "privacypolicy"  && <Policy />}
               {page === "shoppingpolicy" && <ShoppingPolicy />}
               {page === "termspage" && <TermsPage />}
               {page === "returnspage" && <ReturnsPage />}
@@ -2366,7 +2426,7 @@ function HomePage() {
         <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }} />
         <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }} />
 
-        <div className="vw-hero-inner" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
+        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
           <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
             <div className="vw-hero-kicker" style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
             <h1 className="vw-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
@@ -2400,8 +2460,8 @@ function HomePage() {
       </div>
 
       {/* STATS */}
-      <section className="vw-section-pad vw-stats-section" style={{ background: "var(--graphite)", padding: "60px 40px", borderBottom: "1px solid var(--smoke)" }}>
-        <div className="vw-stats-grid" style={{ maxWidth: 1400, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40, textAlign: "center" }}>
+      <section className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px", borderBottom: "1px solid var(--smoke)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 32, textAlign: "center" }}>
           {[["10,000+", "Happy Wolves"], ["220 GSM", "Premium Cotton"], ["48hr", "Dispatch"], ["100%", "India Made"]].map(([num, label]) => (
             <div className="vw-stat-item" key={label}>
               <div className="vw-stat-value" style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)", letterSpacing: 2 }}>{num}</div>
@@ -2414,13 +2474,10 @@ function HomePage() {
       {/* FEATURED PRODUCTS */}
       <section className="vw-section-pad vw-featured-section" style={{ padding: "80px 40px", background: "var(--graphite)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div className="vw-section-heading vw-featured-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
-            <div className="vw-featured-heading-copy">
-              <div className="vw-featured-kicker" style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 className="vw-featured-title" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
-            </div>
-            <div className="vw-featured-heading-actions">
-              <button className="btn-outline vw-featured-view-all" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12} /></button>
+          <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
             </div>
           </div>
           <FeaturedCoverflow products={featured} className="vw-featured-coverflow" />
@@ -2480,13 +2537,13 @@ function HomePage() {
       </section>
 
       {/* WHY VELVETWOLF */}
-      <section className="vw-section-pad vw-why-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
-        <div className="vw-why-header" style={{ textAlign: "center", marginBottom: 64 }}>
+      <section className="promise-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
-          <div className="divider" />
+          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
+          <div className="divider"/>
         </div>
-        <div className="vw-why-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
+        <div className="promise-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 40 }}>
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
             ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],
@@ -2690,10 +2747,10 @@ function ShopPage() {
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
       {/* Header */}
-      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>VELVETWOLF STORE</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
+          <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>
             {activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : "ALL PRODUCTS"}
           </h1>
           <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 16, color: "var(--silver)", marginTop: 8 }}>{filtered.length} pieces available</p>
@@ -3167,14 +3224,14 @@ function CustomDesignPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>MAKE IT YOURS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br />DESIGN</h1>
+        <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br/>DESIGN</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
+      <div className="page-content-pad" style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px" }}>
+        <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
           {/* Upload zone */}
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
@@ -3295,13 +3352,13 @@ function BulkOrderPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>FOR TEAMS & ORGANIZATIONS</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br />CORPORATE</h1>
+        <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>BULK &<br/>CORPORATE</h1>
         <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
+      <div className="contact-grid page-content-pad" style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
         <div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>PRICING TIERS</h2>
           {[["10-49 pcs", "5% OFF", "Team orders"], ["50-99 pcs", "12% OFF", "Department orders"], ["100-499 pcs", "20% OFF", "Corporate branding"], ["500+ pcs", "30% OFF + Custom", "Enterprise bulk"]].map(([qty, disc, label]) => (

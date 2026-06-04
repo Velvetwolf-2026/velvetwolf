@@ -8,6 +8,7 @@ import { handleProfileRoutes } from "./routes/profile.routes.js";
 import { handleContactRoutes } from "./routes/contact.routes.js";
 import { handleSesRoutes } from "./routes/ses.routes.js";
 import { handleAdminRoutes } from "./routes/admin.routes.js";
+import { handleCheckoutRoutes } from "./routes/checkout.routes.js";
 
 loadBackendEnv();
 
@@ -66,6 +67,7 @@ const ROUTE_HANDLERS = [
   handleContactRoutes,
   handleSesRoutes,
   handleAdminRoutes,
+  handleCheckoutRoutes,
 ];
 
 async function dispatch(method, route, body, query, requestId, event) {

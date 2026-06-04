@@ -45,15 +45,15 @@ export default function WishlistPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="vw-page-hero" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SYNCED WITH YOUR ACCOUNT</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4, marginBottom: 8 }}>YOUR WISHLIST</h1>
+          <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4, marginBottom: 8 }}>YOUR WISHLIST</h1>
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)" }}>{wishlist.length} saved pieces</p>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 40px" }}>
+      <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 40px" }}>
         {wishlist.length === 0 ? (
           <div style={{ textAlign: "center", padding: "90px 0", border: "1px solid var(--smoke)", background: "var(--graphite)" }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 58, opacity: 0.2, marginBottom: 12 }}>EMPTY</div>
