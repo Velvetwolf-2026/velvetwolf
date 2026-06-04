@@ -30,7 +30,7 @@ export function AuthOtpStep({
       {error && <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 10, marginBottom: 16, textAlign: "center", letterSpacing: 0.5 }}>✕ {error}</div>}
 
       <form onSubmit={onSubmit}>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }} onPaste={onOtpPaste}>
+        <div className="vw-otp-row" style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }} onPaste={onOtpPaste}>
           {otp.map((digit, i) => (
             <input
               key={i}
@@ -41,6 +41,7 @@ export function AuthOtpStep({
               value={digit}
               onChange={e => onOtpChange(i, e.target.value)}
               onKeyDown={e => onOtpKeyDown(i, e)}
+              className="vw-otp-input"
               style={{ width: 46, height: 54, textAlign: "center", background: "var(--graphite)", border: `1px solid ${digit ? "var(--gold)" : "var(--smoke)"}`, color: "var(--ivory)", fontFamily: "var(--font-display)", fontSize: 26, outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => { e.target.style.borderColor = "var(--gold)"; }}
               onBlur={e => { e.target.style.borderColor = digit ? "var(--gold)" : "var(--smoke)"; }}

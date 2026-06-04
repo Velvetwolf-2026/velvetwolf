@@ -34,6 +34,9 @@ export const createProductSchema = z.object({
   colors: z.array(z.string()).default([]),
   stock: z.number({ invalid_type_error: "Stock must be a number" }).int().min(0, "Stock cannot be negative").default(0),
   image: z.string().optional().nullable(),
+  imageBase64: z.string().optional().nullable(),
+  imageFileName: z.string().optional().nullable(),
+  imageContentType: z.string().optional().nullable(),
 });
 
 export const updateProductSchema = z.object({
@@ -47,6 +50,9 @@ export const updateProductSchema = z.object({
   colors: z.array(z.string()).optional(),
   stock: z.number().int().min(0).optional(),
   image: z.string().optional().nullable(),
+  imageBase64: z.string().optional().nullable(),
+  imageFileName: z.string().optional().nullable(),
+  imageContentType: z.string().optional().nullable(),
 });
 
 export const getOrdersSchema = z.object({
