@@ -49,7 +49,7 @@ export default function AdminOrders() {
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
+      <div className="vw-admin-actions" style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
         {STATUS_FILTERS.map((s) => (
           <button key={s} onClick={() => setFilter(s)} style={{ background: filter === s ? "var(--gold)" : "transparent", border: "1px solid", borderColor: filter === s ? "var(--gold)" : "var(--smoke)", color: filter === s ? "var(--obsidian)" : "var(--silver)", padding: "6px 14px", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 2 }}>
             {s.replace(/_/g, " ").toUpperCase()}
@@ -61,6 +61,7 @@ export default function AdminOrders() {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
         ) : (
+          <div className="vw-table-scroll">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
@@ -100,6 +101,7 @@ export default function AdminOrders() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

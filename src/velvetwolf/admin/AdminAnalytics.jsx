@@ -47,14 +47,15 @@ export default function AdminAnalytics() {
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>ANALYTICS</h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="vw-admin-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
 
         {/* Monthly revenue chart */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
+        <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>MONTHLY REVENUE (LAST 12 MONTHS)</div>
           {monthly.length === 0 ? (
             <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
           ) : (
+            <div className="vw-admin-chart-scroll">
             <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 140 }}>
               {monthly.map((m, i) => {
                 const pct = Math.round((m.revenue / maxMonthly) * 100);
@@ -68,15 +69,17 @@ export default function AdminAnalytics() {
                 );
               })}
             </div>
+            </div>
           )}
         </div>
 
         {/* Daily revenue — last 30 days */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
+        <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>DAILY REVENUE (LAST 30 DAYS)</div>
           {daily.length === 0 ? (
             <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
           ) : (
+            <div className="vw-admin-chart-scroll">
             <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
               {daily.map((d) => {
                 const pct = Math.round((d.revenue / maxDaily) * 100);
@@ -85,11 +88,12 @@ export default function AdminAnalytics() {
                 );
               })}
             </div>
+            </div>
           )}
         </div>
 
         {/* Orders by status */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
+        <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>ORDERS BY STATUS</div>
           {Object.keys(ordersByStatus).length === 0 ? (
             <div style={{ fontFamily: "'Roboto', sans-serif",fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No data yet.</div>
@@ -111,7 +115,7 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Top products */}
-        <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
+        <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", gridColumn: "1/-1" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 24 }}>TOP SELLING PRODUCTS</div>
           {topProducts.length === 0 ? (
             <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, fontStyle: "italic", color: "var(--silver)" }}>No sales data yet.</div>

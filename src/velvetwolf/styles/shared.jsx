@@ -1,16 +1,14 @@
 // ─────────────────────────────────────────────
 // VelvetWolf — Shared Inline Style Tokens
-// Import into any page component that needs
-// consistent typography and spacing.
 // ─────────────────────────────────────────────
 import { THEME } from "../utils/constants";
 
 const { gold, bg, surface, border, muted, text } = THEME;
 
 export const S = {
-  page:    { background: bg, minHeight: "100vh", color: text, fontFamily: "'Georgia', serif" },
-  wrap:    { maxWidth: 860,  margin: "0 auto", padding: "60px 32px 100px" },
-  wrapWide:{ maxWidth: 1060, margin: "0 auto", padding: "60px 32px 100px" },
+  page:     { background: bg, minHeight: "100vh", color: text, fontFamily: "'Georgia', serif" },
+  wrap:     { maxWidth: 860,  margin: "0 auto", padding: "clamp(32px, 5vw, 60px) clamp(16px, 4vw, 32px) 100px" },
+  wrapWide: { maxWidth: 1060, margin: "0 auto", padding: "clamp(32px, 5vw, 60px) clamp(16px, 4vw, 32px) 100px" },
 
   eyebrow: {
     fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 5,
@@ -18,11 +16,11 @@ export const S = {
   },
   h1: {
     fontFamily: "'Bebas Neue',cursive",
-    fontSize: "clamp(42px,6vw,72px)", letterSpacing: 6,
+    fontSize: "clamp(36px,6vw,72px)", letterSpacing: 6,
     color: "#f5f0e8", lineHeight: 1, margin: "0 0 8px",
   },
   sub:  { fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: muted, marginBottom: 48 },
-  h2:   { fontFamily: "'Bebas Neue',cursive", fontSize: 26, letterSpacing: 4, color: gold,  marginBottom: 10, marginTop: 44 },
+  h2:   { fontFamily: "'Bebas Neue',cursive", fontSize: "clamp(20px,3vw,26px)", letterSpacing: 4, color: gold, marginBottom: 10, marginTop: 44 },
   h3:   { fontFamily: "'Space Mono',monospace", fontSize: 11, letterSpacing: 2, color: "#f5f0e8", marginBottom: 8, marginTop: 24 },
   p:    { fontSize: 14, lineHeight: 1.85, color: "#bbb", marginBottom: 14 },
   li:   { fontSize: 14, lineHeight: 1.8,  color: "#bbb", marginBottom: 6,  paddingLeft: 8 },
@@ -72,12 +70,24 @@ export function Ul({ items }) {
 /** Reusable data table */
 export function DataTable({ headers, rows }) {
   return (
-    <div style={{ overflowX: "auto", marginBottom: 14 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+    <div style={{ overflowX: "auto", marginBottom: 14, WebkitOverflowScrolling: "touch" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 400 }}>
         <thead>
           <tr style={{ background: "#161616" }}>
-            {headers.map(h => (
-              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 2, color: gold, border: `1px solid ${border}` }}>
+            {headers.map((h) => (
+              <th
+                key={h}
+                style={{
+                  padding: "10px 14px",
+                  textAlign: "left",
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: 12,
+                  letterSpacing: 2,
+                  color: gold,
+                  border: `1px solid ${border}`,
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {h}
               </th>
             ))}
@@ -87,7 +97,17 @@ export function DataTable({ headers, rows }) {
           {rows.map((row, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "#0d0d0d" }}>
               {row.map((cell, j) => (
-                <td key={j} style={{ padding: "10px 14px", color: "#bbb", border: `1px solid ${border}`, fontFamily: "'Roboto', sans-serif"}}>{cell}</td>
+                <td
+                  key={j}
+                  style={{
+                    padding: "10px 14px",
+                    color: "#bbb",
+                    border: `1px solid ${border}`,
+                    fontFamily: "'Roboto', sans-serif",
+                  }}
+                >
+                  {cell}
+                </td>
               ))}
             </tr>
           ))}

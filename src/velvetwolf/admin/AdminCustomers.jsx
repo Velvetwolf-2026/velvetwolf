@@ -38,13 +38,13 @@ export default function AdminCustomers() {
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
+      <div className="vw-admin-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
         {[
           ["TOTAL CUSTOMERS", total],
           ["TOTAL REVENUE",   `₹${totalRevenue.toLocaleString()}`],
           ["AVG SPEND",       `₹${avgSpend.toLocaleString()}`],
         ].map(([label, val]) => (
-          <div key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px" }}>
+          <div className="vw-admin-stat-card" key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "20px 24px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 8 }}>{label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 36, color: "var(--gold)" }}>{val}</div>
           </div>
@@ -52,7 +52,7 @@ export default function AdminCustomers() {
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+      <form className="vw-admin-customer-search" onSubmit={handleSearch} style={{ display: "flex", gap: 10, marginBottom: 24 }}>
         <input
           className="input-dark"
           placeholder="SEARCH BY NAME OR EMAIL"
@@ -70,6 +70,7 @@ export default function AdminCustomers() {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>LOADING...</div>
         ) : (
+          <div className="vw-table-scroll">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--smoke)" }}>
@@ -97,6 +98,7 @@ export default function AdminCustomers() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

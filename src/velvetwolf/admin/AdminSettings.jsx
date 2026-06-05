@@ -82,9 +82,9 @@ export default function AdminSettings() {
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3 }}>SETTINGS</h1>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+      <div className="vw-admin-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
         {sections.map((section) => (
-          <div key={section.title} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
+          <div className="vw-admin-panel" key={section.title} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>{section.title}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {section.fields.map(({ label, key, type = "text" }) => (

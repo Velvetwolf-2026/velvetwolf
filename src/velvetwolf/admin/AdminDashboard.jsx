@@ -66,9 +66,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 40 }}>
+      <div className="vw-admin-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 40 }}>
         {statCards.map((s) => (
-          <div key={s.label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
+          <div className="vw-admin-stat-card" key={s.label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", marginBottom: 12 }}>{s.label}</div>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: s.color, marginBottom: 6 }}>{s.value}</div>
             {s.sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)" }}>{s.sub}</div>}
@@ -77,11 +77,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent orders */}
-      <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
+      <div className="vw-admin-panel" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px 24px" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 20 }}>RECENT ORDERS</div>
         {(stats?.recentOrders || []).length === 0 ? (
           <div style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", color: "'Roboto', sans-serif", padding: "24px 0" }}>No orders yet.</div>
         ) : (
+          <div className="vw-table-scroll">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -103,6 +104,7 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
