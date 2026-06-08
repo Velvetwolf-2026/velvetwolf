@@ -1,30 +1,20 @@
 import { useState } from "react";
 import { S, PageHeader, Sec } from "../styles/shared";
 import { THEME } from "../utils/constants";
+import { apiUrl } from "../utils/api";
 
 const { gold, goldLight, surface, border, muted, text } = THEME;
 
-const ORDER_ID_RE = /^VW-\d{4}-[A-Z0-9]{4,}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const TRACKING_STEPS = [
-  { label: "Order Placed", time: "Mar 8, 10:32 AM", done: true },
-  { label: "Payment Confirmed", time: "Mar 8, 10:33 AM", done: true },
-  { label: "In Production", time: "Mar 9, 2:15 PM", done: true },
-  { label: "Quality Check", time: "Mar 10, 11:00 AM", done: true },
-  { label: "Dispatched", time: "Mar 11, 9:45 AM", done: true },
-  { label: "Out for Delivery", time: "Expected today", done: false },
-  { label: "Delivered", time: "—", done: false },
-];
 
 const STATUS_GUIDE = [
   { status: "ORDER PLACED", desc: "We've received your order and are preparing it." },
-  { status: "IN PRODUCTION", desc: "Your tee is being printed and quality checked." },
-  { status: "DISPATCHED", desc: "Your order is with our logistics partner." },
+  { status: "PAYMENT CONFIRMED", desc: "Your payment has been verified by our gateway." },
+  { status: "IN PRODUCTION", desc: "Your premium streetwear is being processed and printed." },
+  { status: "QUALITY CHECK", desc: "The piece is inspected for fabric and printing details." },
+  { status: "DISPATCHED", desc: "Your order is package-sealed and with our courier partner." },
   { status: "OUT FOR DELIVERY", desc: "Your delivery agent is on the way." },
   { status: "DELIVERED", desc: "Your order has been delivered. Enjoy!" },
-  { status: "RETURN INITIATED", desc: "Your return request is being processed." },
-
 ];
 
 export default function TrackOrder() {
@@ -32,8 +22,9 @@ export default function TrackOrder() {
   const [email, setEmail] = useState("");
 
   const [tracked, setTracked] = useState(false);
+  const [trackingData, setTrackingData] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
 
   const inputStyle = {
     width: "100%",
@@ -47,13 +38,13 @@ export default function TrackOrder() {
     boxSizing: "border-box",
   };
 
-  const handleTrack = () => {
+  const handleTrack = async () => {
     const nextErrors = {};
-    const normalizedOrderId = orderId.trim().toUpperCase();
+    const normalizedOrderId = orderId.trim();
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (!ORDER_ID_RE.test(normalizedOrderId)) {
-      nextErrors.orderId = "Enter a valid order ID like VW-2025-ABCD.";
+    if (!normalizedOrderId || normalizedOrderId.length < 5) {
+      nextErrors.orderId = "Enter a valid order Reference or ID.";
     }
 
     if (!EMAIL_RE.test(normalizedEmail)) {
@@ -64,12 +55,30 @@ export default function TrackOrder() {
 
     if (Object.keys(nextErrors).length > 0) {
       setTracked(false);
+      setTrackingData(null);
       return;
     }
 
-    setOrderId(normalizedOrderId);
-    setEmail(normalizedEmail);
-    setTracked(true);
+    setLoading(true);
+    setTracked(false);
+    setTrackingData(null);
+
+    try {
+      const res = await fetch(apiUrl(`/shipping/track/${encodeURIComponent(normalizedOrderId)}`));
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Order tracking details not found. Verify details and try again.");
+      }
+
+      setTrackingData(data);
+      setTracked(true);
+    } catch (err) {
+      setErrors({ orderId: err.message });
+      setTracked(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -112,8 +121,8 @@ export default function TrackOrder() {
             {[
               {
                 key: "orderId",
-                label: "ORDER ID",
-                placeholder: "VW-2025-ABCD",
+                label: "ORDER ID / REF",
+                placeholder: "e.g. 705fca1c-xxxx...",
                 val: orderId,
                 set: setOrderId,
               },
@@ -159,6 +168,7 @@ export default function TrackOrder() {
 
           <button
             onClick={handleTrack}
+            disabled={loading}
             style={{
               background: gold,
               color: "#0a0a0a",
@@ -167,16 +177,25 @@ export default function TrackOrder() {
               fontFamily: "'Bebas Neue',cursive",
               fontSize: 16,
               letterSpacing: 4,
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = goldLight)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = gold)}
+            onMouseEnter={(e) => !loading && (e.currentTarget.style.background = goldLight)}
+            onMouseLeave={(e) => !loading && (e.currentTarget.style.background = gold)}
           >
-            TRACK ORDER →
+            {loading ? "SEARCHING..." : "TRACK ORDER →"}
           </button>
         </div>
 
-        {tracked && (
+        {loading && (
+          <div style={{ textAlign: "center", padding: "60px 0", border: `1px solid ${border}` }}>
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 4, color: gold }}>
+              RETRIEVING LIVE TRACKING DETAILS...
+            </div>
+          </div>
+        )}
+
+        {tracked && trackingData && (
           <div style={{ border: `1px solid ${gold}44`, padding: "28px 28px 32px" }}>
             <div
               style={{
@@ -198,7 +217,7 @@ export default function TrackOrder() {
                     marginBottom: 4,
                   }}
                 >
-                  ORDER ID
+                  ORDER REFERENCE
                 </div>
                 <div
                   style={{
@@ -208,22 +227,22 @@ export default function TrackOrder() {
                     color: gold,
                   }}
                 >
-                  {orderId}
+                  {trackingData.order_id?.toUpperCase()}
                 </div>
               </div>
 
               <div
                 style={{
-                  background: "rgba(76,175,80,0.1)",
-                  border: "1px solid rgba(76,175,80,0.3)",
+                  background: trackingData.status === "DELIVERED" ? "rgba(76,175,80,0.1)" : "rgba(201,168,76,0.1)",
+                  border: trackingData.status === "DELIVERED" ? "1px solid rgba(76,175,80,0.3)" : "1px solid rgba(201,168,76,0.3)",
                   padding: "6px 16px",
                   fontFamily: "'Space Mono',monospace",
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: "#81c784",
+                  color: trackingData.status === "DELIVERED" ? "#81c784" : gold,
                 }}
               >
-                ● OUT FOR DELIVERY
+                ● {trackingData.status}
               </div>
             </div>
 
@@ -239,14 +258,14 @@ export default function TrackOrder() {
                 }}
               />
 
-              {TRACKING_STEPS.map((step, i) => (
+              {trackingData.steps?.map((step, i) => (
                 <div
                   key={i}
                   style={{
                     display: "flex",
                     alignItems: "flex-start",
                     gap: 16,
-                    marginBottom: i < TRACKING_STEPS.length - 1 ? 24 : 0,
+                    marginBottom: i < trackingData.steps.length - 1 ? 24 : 0,
                     position: "relative",
                   }}
                 >
@@ -307,9 +326,9 @@ export default function TrackOrder() {
               }}
             >
               {[
-                { label: "CARRIER", value: "Delhivery" },
-                { label: "AWB NUMBER", value: "DEL7823940123" },
-                { label: "ESTIMATED", value: "Today by 8 PM" },
+                { label: "CARRIER", value: trackingData.courier_name || "Shiprocket Logistics" },
+                { label: "AWB NUMBER", value: trackingData.awb_number || "Awaiting Assignment" },
+                { label: "ESTIMATED DELIVERY", value: trackingData.etd || "3-5 Business Days" },
               ].map((d, i) => (
                 <div key={i}>
                   <div

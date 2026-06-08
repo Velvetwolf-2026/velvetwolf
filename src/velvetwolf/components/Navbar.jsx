@@ -1,50 +1,26 @@
 import { useState, useEffect, useContext } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AppContext } from "../pages/AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
-
-function Icon({ name, size = 18, color = "currentColor" }) {
-  const icons = {
-    heart: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-      </svg>
-    ),
-    cart: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <path d="M16 10a4 4 0 01-8 0" />
-      </svg>
-    ),
-    user: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-    menu: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </svg>
-    ),
-    x: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
-    ),
-  };
-  return icons[name] || null;
-}
+import Icon from "./Icon";
 
 export default function Navbar({ activePage }) {
-  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop } =
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop, searchQuery, setSearchQuery } =
     useContext(AppContext);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isMobileOrTablet, isMobile } = useBreakpoint();
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (location.pathname !== "/shop" && !location.pathname.startsWith("/shop/")) {
+      navigate("/shop");
+    }
+  };
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
   const greetingName = displayName ? displayName.split(" ")[0] : "";
@@ -196,6 +172,45 @@ export default function Navbar({ activePage }) {
 
           {/* Right icons */}
           <div style={{ display: "flex", gap: isMobile ? 12 : 20, alignItems: "center" }}>
+            {/* Search */}
+            {searchOpen ? (
+              <div style={{ display: "flex", alignItems: "center", position: "relative", gap: 8 }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder="SEARCH..."
+                  style={{
+                    width: isMobile ? 100 : 150,
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    fontFamily: "var(--font-mono)",
+                    border: "1px solid var(--gold)",
+                    background: "rgba(0, 0, 0, 0.7)",
+                    color: "var(--ivory)",
+                    outline: "none",
+                  }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery("");
+                  }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", padding: 0 }}
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ash)" }}
+              >
+                <Icon name="search" size={isMobile ? 20 : 22} />
+              </button>
+            )}
+
             {/* Wishlist */}
             <button
               onClick={() => { user ? setWishlistOpen(true) : setPage("login"); setMobileOpen(false); }}
@@ -337,6 +352,42 @@ export default function Navbar({ activePage }) {
             animation: "fadeIn 0.2s ease",
           }}
         >
+          {/* Mobile Search */}
+          <div style={{ marginBottom: 20, display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="SEARCH PIECES..."
+              style={{
+                flex: 1,
+                padding: "12px 16px",
+                fontSize: 14,
+                fontFamily: "var(--font-mono)",
+                border: "1px solid var(--smoke)",
+                background: "rgba(20, 20, 20, 0.8)",
+                color: "var(--ivory)",
+                outline: "none",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  background: "var(--smoke)",
+                  border: "none",
+                  color: "var(--ash)",
+                  padding: "0 16px",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12
+                }}
+              >
+                CLEAR
+              </button>
+            )}
+          </div>
+
           {/* Nav links */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 40 }}>
             {navLinks.map(([label, pg]) => (

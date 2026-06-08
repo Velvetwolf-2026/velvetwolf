@@ -11,8 +11,9 @@ export const signupSchema = z.object({
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
   password: z
-    .string({ required_error: "Password is required" })
-    .min(8, "Password must be at least 8 characters"),
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional(),
 });
 
 export const loginSchema = z.object({
@@ -20,7 +21,7 @@ export const loginSchema = z.object({
     .string({ required_error: "Email is required" })
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
-  password: z.string({ required_error: "Password is required" }).min(1, "Password is required"),
+  password: z.string().optional(),
 });
 
 export const verifyOtpSchema = z.object({
@@ -56,4 +57,7 @@ export const resetPasswordSchema = z.object({
   newPassword: z
     .string({ required_error: "New password is required" })
     .min(8, "Password must be at least 8 characters"),
+});export const firebaseLoginSchema = z.object({
+  phone: z.string({ required_error: "Phone number is required" }).min(1, "Phone number is required"),
+  token: z.string({ required_error: "Firebase token is required" }).min(1, "Firebase token is required"),
 });

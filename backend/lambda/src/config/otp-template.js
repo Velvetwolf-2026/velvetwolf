@@ -35,6 +35,18 @@ const OTP_EMAIL_VARIANTS = {
     actionText: "Reset Password",
     footerText: "Need help? Contact VelvetWolf support.",
   },
+  change_email: {
+    subject: "VelvetWolf Email Update OTP",
+    tagline: "Account Security Verification",
+    titleWhite: "UPDATE",
+    titleGold: "EMAIL",
+    introText: "Hi there,",
+    messageText: "We received a request to update your VelvetWolf account email address. Use the OTP below to verify your new email.",
+    otpLabel: "Verification Code",
+    expiryText: "This OTP is valid for 10 minutes. If you did not request this change, please ignore this email.",
+    actionText: "Verify Email",
+    footerText: "VelvetWolf Team",
+  },
 };
 
 function escapeHtml(value) {
@@ -50,6 +62,7 @@ export function normalizeOtpKind(kind) {
   const value = String(kind || "").toLowerCase().trim();
   if (["signup", "sign-up", "register", "registration"].includes(value)) return "signup";
   if (["forgot", "forget", "forgot-password", "forget-password", "recovery", "reset"].includes(value)) return "forgot";
+  if (["change_email", "change-email", "update_email", "update-email"].includes(value)) return "change_email";
   return "login";
 }
 

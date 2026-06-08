@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { apiUrl } from './api';
 
 export async function updateProfile(userId, updates) {
   // Validate phone format
@@ -6,22 +7,28 @@ export async function updateProfile(userId, updates) {
     throw new Error('Enter a valid 10-digit Indian mobile number');
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert({
-      id:            userId,
-      full_name:     updates.fullName,
-      phone:         updates.phone,
-      gender:        updates.gender,
-      date_of_birth: updates.dob,
-      updated_at:    new Date().toISOString(),
-    }, { onConflict: 'id' })
-    .select()
-    .single();
+  const res = await fetch(apiUrl('/profile/update'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: userId,
+      fullName: updates.fullName,
+      phone: updates.phone,
+      gender: updates.gender,
+      dob: updates.dob
+    })
+  });
 
-  if (error) throw error;
-  return data;
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update profile');
+  }
+
+  return data.profile;
 }
+
 
 export async function getAddresses(userId) {
   const { data, error } = await supabase
@@ -47,5 +54,41 @@ export async function saveAddress(userId, address) {
     : await supabase.from('addresses').insert({ ...address, user_id: userId }).select().single();
 
   if (error) throw error;
+  return data;
+}
+
+export async function sendEmailUpdateOtp(newEmail) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(apiUrl('/profile/email/send-otp'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ newEmail })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to send verification code.');
+  }
+  return data;
+}
+
+export async function verifyEmailUpdateOtp(newEmail, otp) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(apiUrl('/profile/email/verify-otp'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ newEmail, otp })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to verify verification code.');
+  }
   return data;
 }

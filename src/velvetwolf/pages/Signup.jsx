@@ -117,7 +117,9 @@ export function Signup() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error || "Failed to create account. Please try again.");
+        const errMsg = data.error || "Failed to create account. Please try again.";
+        setError(errMsg);
+        showToast(errMsg);
         return;
       }
       if (data.message) {
