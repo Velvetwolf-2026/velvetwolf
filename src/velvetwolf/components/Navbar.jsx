@@ -24,6 +24,12 @@ export default function Navbar({ activePage }) {
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
   const greetingName = displayName ? displayName.split(" ")[0] : "";
+  const navItems = [["SHOP", "shop"], ["COLLECTIONS", "collection"], ["CUSTOM", "custom"], ["BULK", "bulk"]];
+
+  const goToPage = (pg) => {
+    setMenuOpen(false);
+    pg === "shop" ? openShop() : setPage(pg);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -92,6 +98,7 @@ export default function Navbar({ activePage }) {
                 justifyContent: "center",
                 flexShrink: 0,
               }}
+              className="vw-brand-subtitle"
             >
               <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>

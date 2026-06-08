@@ -23,16 +23,7 @@ function QuantityButton({ children, onClick }) {
 
 function CartItemCard({ item, onQtyChange, onRemove }) {
   return (
-    <div
-      style={{
-        background: "var(--graphite)",
-        border: "1px solid var(--smoke)",
-        padding: "20px 24px",
-        display: "grid",
-        gridTemplateColumns: "1fr auto",
-        gap: 16,
-      }}
-    >
+    <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 4vw, 26px)", letterSpacing: 1, marginBottom: 6 }}>
           {item.name}

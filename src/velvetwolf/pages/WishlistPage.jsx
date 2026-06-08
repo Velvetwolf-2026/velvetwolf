@@ -3,14 +3,14 @@ import { AppContext } from "./AppContext";
 
 function WishlistItemCard({ item, onAddToCart, onRemove }) {
   return (
-    <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
+    <div className="vw-wishlist-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 1, marginBottom: 8 }}>{item.name}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginBottom: 12 }}>
           {item.tag} · {item.sizes?.join(" / ")}
         </div>
         <p style={{ fontFamily: "var(--font-serif)", color: "var(--silver)", lineHeight: 1.6, marginBottom: 18 }}>{item.description}</p>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div className="vw-wishlist-actions" style={{ display: "flex", gap: 12 }}>
           <button className="btn-gold" onClick={onAddToCart}>ADD TO CART</button>
           <button
             onClick={onRemove}
@@ -20,7 +20,7 @@ function WishlistItemCard({ item, onAddToCart, onRemove }) {
           </button>
         </div>
       </div>
-      <div style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div className="vw-wishlist-price" style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>₹{Number(item.price).toLocaleString()}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>SAVE FOR LATER</div>
       </div>

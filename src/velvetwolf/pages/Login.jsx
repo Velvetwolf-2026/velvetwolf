@@ -10,10 +10,10 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
     </svg>
   );
 }
@@ -21,12 +21,12 @@ function GoogleIcon() {
 function EyeIcon({ visible }) {
   return visible ? (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ) : (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
 }
@@ -138,7 +138,7 @@ export function Login() {
         if (isFirebaseAvailable && auth) {
           // Firebase Phone Auth integration
           const phoneNumber = `+91${input}`;
-          
+
           if (window.recaptchaVerifier) {
             try {
               window.recaptchaVerifier.clear();
@@ -150,8 +150,8 @@ export function Login() {
 
           window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             'size': 'invisible',
-            'callback': () => {},
-            'expired-callback': () => {}
+            'callback': () => { },
+            'expired-callback': () => { }
           });
 
           const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
@@ -164,8 +164,8 @@ export function Login() {
         } else {
           // Fallback Flow: trigger passwordless login or signup to send OTP (mock SMS)
           const endpoint = data.exists ? "/auth/login" : "/auth/signup";
-          const body = data.exists 
-            ? { email: emailQuery } 
+          const body = data.exists
+            ? { email: emailQuery }
             : { email: emailQuery, name: "Mobile User" };
 
           const optRes = await fetch(apiUrl(endpoint), {
@@ -422,8 +422,8 @@ export function Login() {
 
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
           'size': 'invisible',
-          'callback': () => {},
-          'expired-callback': () => {}
+          'callback': () => { },
+          'expired-callback': () => { }
         });
 
         const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
@@ -540,7 +540,7 @@ export function Login() {
           borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)",
           pointerEvents: "none",
-        }}/>
+        }} />
 
         <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
           <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -567,7 +567,7 @@ export function Login() {
               <>
                 <div style={{ marginBottom: 26 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                    <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>WELCOME TO VELVETWOLF<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME TO VELVETWOLF<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
                   </div>
                   <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 4, color: "var(--ivory)", margin: 0, lineHeight: 1.1 }}>SIGN IN / SIGN UP</h1>
                 </div>
@@ -583,9 +583,9 @@ export function Login() {
                 </button>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
+                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }} />
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)" }}>OR</span>
-                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
+                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }} />
                 </div>
 
                 <form onSubmit={handleIdentifierSubmit}>
@@ -618,7 +618,7 @@ export function Login() {
               <>
                 <div style={{ marginBottom: 26 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                    <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
                   </div>
                   <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>SIGN IN</h1>
                   <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Enter password for: {resolvedEmail}</p>
@@ -685,7 +685,7 @@ export function Login() {
               <>
                 <div style={{ marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                    <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>CREATE YOUR ACCOUNT<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />CREATE YOUR ACCOUNT<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
                   </div>
                   <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>SIGN UP</h1>
                   <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Signing up as: {resolvedEmail}</p>
@@ -727,8 +727,8 @@ export function Login() {
                     {password && (
                       <div style={{ marginTop: 10 }}>
                         <div style={{ display: "flex", gap: 3, height: 3, background: "var(--smoke)", borderRadius: 2, overflow: "hidden" }}>
-                          {[1,2,3,4].map(n => (
-                            <div key={n} style={{ flex: 1, height: "100%", background: n <= strengthScore ? getStrengthColor() : "transparent" }}/>
+                          {[1, 2, 3, 4].map(n => (
+                            <div key={n} style={{ flex: 1, height: "100%", background: n <= strengthScore ? getStrengthColor() : "transparent" }} />
                           ))}
                         </div>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: getStrengthColor(), marginTop: 4, display: "block" }}>STRENGTH: {getStrength()}</span>
@@ -796,7 +796,7 @@ export function Login() {
               <>
                 <div style={{ marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                    <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>WELCOME TO THE PACK ◆<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME TO THE PACK ◆<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
                   </div>
                   <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>ENTER NAME</h1>
                   <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Tell us your name to complete registration.</p>

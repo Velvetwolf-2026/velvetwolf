@@ -500,7 +500,7 @@ export default function ContactPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div className="vw-contact-submit-row" style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <button
                     onClick={handleSubmit}
                     disabled={sending}

@@ -20,15 +20,20 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--obsidian)" }}>
+    <div className="vw-admin-layout" style={{ display: "flex", minHeight: "100vh", background: "var(--obsidian)" }}>
       {/* Sidebar */}
       <div className="admin-sidebar" style={{ padding: 0, position: "relative" }}>
-        <div style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
+        <div className="vw-admin-shell-header" style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
+          </div>
+          <div className="vw-admin-mobile-title">
+            {adminPage.toUpperCase()}
+          </div>
         </div>
 
-        <div style={{ padding: "20px 0" }}>
+        <div className="vw-admin-nav" style={{ padding: "20px 0" }}>
           {navItems.map(([id, label, icon]) => (
             <button
               key={id}
@@ -45,7 +50,7 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
                 alignItems: "center",
                 gap: 12,
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontSize: 11,
                 letterSpacing: 2,
                 textAlign: "left",
               }}
@@ -57,11 +62,11 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
         </div>
 
         {/* Back to Store — anchored to sidebar bottom */}
-        <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, padding: "0 16px" }}>
+        <div className="vw-admin-back" style={{ position: "absolute", bottom: 20, left: 0, right: 0, padding: "0 16px" }}>
           <button
             onClick={() => setPage("home")}
             className="btn-ghost"
-            style={{ width: "100%", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            style={{ width: "100%", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
             <Icon name="arrowRight" size={12} />
             BACK TO STORE
@@ -70,7 +75,7 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "40px" }}>
+      <div className="vw-admin-main" style={{ flex: 1, overflowY: "auto", padding: "40px" }}>
         {adminPage === "dashboard" && <AdminDashboard />}
         {adminPage === "products"  && <AdminProducts Icon={Icon} TAG_COLORS={TAG_COLORS} />}
         {adminPage === "orders"    && <AdminOrders />}

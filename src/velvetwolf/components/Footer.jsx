@@ -51,45 +51,30 @@ export default function Footer() {
   };
 
   return (
-    <footer
-      className="footer-pad"
-      style={{
-        background: "var(--graphite)",
-        borderTop: "1px solid var(--smoke)",
-        padding: "80px 40px 40px",
-      }}
-    >
+    <footer className="vw-footer" style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "56px 40px 28px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        {/* Main grid — CSS class handles breakpoints */}
-        <div
-          className="footer-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr",
-            gap: 60,
-            marginBottom: 60,
-          }}
-        >
-          {/* Brand column */}
-          <div className="footer-brand-col">
-            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
+        <div className="vw-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
+          <div className="vw-footer-brand">
+            <div className="vw-footer-brand-title" style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>
             <div
+              className="vw-footer-subtitle"
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 10,
-                letterSpacing: 4,
+                fontSize: 9,
+                letterSpacing: 3.2,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
               }}
             >
-              LUXURY STREETWEAR · EST. 2026
+              LUXURY STREETWEAR · EST. 2025
             </div>
             <p
+              className="vw-footer-copy"
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 16,
+                fontSize: 17,
                 color: "var(--silver)",
                 lineHeight: 1.8,
                 fontStyle: "italic",
@@ -106,6 +91,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={socialLinkStyle}
+                className="vw-footer-social-link"
               >
                 <FaInstagram /> Instagram
               </a>
@@ -114,6 +100,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={socialLinkStyle}
+                className="vw-footer-social-link"
               >
                 <FaFacebook /> Facebook
               </a>
@@ -126,12 +113,13 @@ export default function Footer() {
           {/* Shop column */}
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
@@ -165,12 +153,13 @@ export default function Footer() {
           {/* Support column */}
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
@@ -205,48 +194,50 @@ export default function Footer() {
           {/* Newsletter column */}
           <div>
             <div
+              className="vw-footer-heading"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontSize: 14,
                 letterSpacing: 3,
                 color: "var(--gold)",
-                marginBottom: 20,
+                marginBottom: 10,
                 fontWeight: 700,
               }}
             >
               NEWSLETTER
             </div>
             <p
+              className="vw-footer-copy"
               style={{
                 fontFamily: "'Roboto', sans-serif",
-                fontSize: 15,
+                fontSize: 17,
                 color: "var(--silver)",
-                marginBottom: 16,
+                marginBottom: 10,
                 lineHeight: 1.6,
               }}
             >
               New drops, exclusive offers — for wolves only.
             </p>
-            <input 
-              className="input-dark" 
-              placeholder="YOUR EMAIL" 
-              style={{ marginBottom: 10 }} 
+            <input
+              className="input-dark"
+              placeholder="YOUR EMAIL"
+              style={{ marginBottom: 10 }}
               value={newsletterEmail}
               onChange={handleEmailChange}
             />
             {feedback && (
-              <div style={{ 
-                fontFamily: "var(--font-mono)", 
-                fontSize: 10, 
-                letterSpacing: 1, 
+              <div style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: 1,
                 marginBottom: 10,
                 color: feedbackType === "success" ? "var(--gold)" : "var(--wolf-red)"
               }}>
                 {feedbackType === "success" ? "✓" : "✕"} {feedback.toUpperCase()}
               </div>
             )}
-            <button 
-              className="btn-gold" 
+            <button
+              className="btn-gold"
               style={{ width: "100%", padding: "10px" }}
               onClick={handleSubscribe}
             >
@@ -260,7 +251,7 @@ export default function Footer() {
           className="footer-bottom"
           style={{
             borderTop: "1px solid var(--smoke)",
-            paddingTop: 28,
+            paddingTop: 14,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -269,7 +260,7 @@ export default function Footer() {
           }}
         >
           <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1 }}>
-            © 2026 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
+            © 2025 VelvetWolf. All rights reserved. Made with ♥ in Chennai, India.
           </div>
 
           <div className="footer-links" style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
