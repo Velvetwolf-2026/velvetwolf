@@ -1593,11 +1593,20 @@ const Toast = ({ message, type = "success", onClose }) => {
 };
 
 const ProductImage = ({ product, height = 280, className = "" }) => {
+  let images = [];
   if (product.image) {
+    try {
+      images = product.image.startsWith('[') ? JSON.parse(product.image) : [product.image];
+    } catch {
+      images = [product.image];
+    }
+  }
+
+  if (images.length > 0) {
     return (
       <div className={className} style={{ height, position: "relative", overflow: "hidden", background: "var(--smoke)" }}>
         <img 
-          src={product.image} 
+          src={images[0]} 
           alt={product.name} 
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} 
         />
@@ -2794,13 +2803,110 @@ function ProductModal() {
   const [size, setSize] = useState(sizes[0] ?? null);
   const [color, setColor] = useState(colors[0] ?? null);
   const [qty, setQty] = useState(1);
+  const [imageIndex, setImageIndex] = useState(0);
   const inWishlist = wishlist.find(i => i.id === p.id);
+
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  let images = [];
+  if (p.image) {
+    try {
+      images = p.image.startsWith('[') ? JSON.parse(p.image) : [p.image];
+    } catch {
+      images = [p.image];
+    }
+  }
+
+  const minSwipeDistance = 50;
+
+  const onSwipeStart = (clientX) => {
+    setTouchEnd(null);
+    setTouchStart(clientX);
+    setIsDragging(true);
+  };
+
+  const onSwipeMove = (clientX) => {
+    if (!isDragging) return;
+    setTouchEnd(clientX);
+  };
+
+  const onSwipeEnd = () => {
+    setIsDragging(false);
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (images.length > 1) {
+      if (isLeftSwipe) setImageIndex(i => (i + 1) % images.length);
+      if (isRightSwipe) setImageIndex(i => (i - 1 + images.length) % images.length);
+    }
+    
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  const wheelAccumulator = useRef(0);
+  const wheelTimeout = useRef(null);
+
+  const onWheel = (e) => {
+    if (images.length <= 1) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      wheelAccumulator.current += e.deltaX;
+      if (wheelTimeout.current) clearTimeout(wheelTimeout.current);
+
+      if (Math.abs(wheelAccumulator.current) > minSwipeDistance) {
+        if (wheelAccumulator.current > 0) {
+          setImageIndex(i => (i + 1) % images.length);
+        } else {
+          setImageIndex(i => (i - 1 + images.length) % images.length);
+        }
+        wheelAccumulator.current = 0;
+        wheelTimeout.current = setTimeout(() => { wheelAccumulator.current = 0; }, 300);
+      } else {
+        wheelTimeout.current = setTimeout(() => { wheelAccumulator.current = 0; }, 150);
+      }
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
       <div className="modal-box vw-product-modal" style={{ maxWidth: 880, display: "flex", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
-        <div className="vw-product-modal-image" style={{ flex: 1, flexShrink: 0 }}>
-          <ProductImage product={p} height={420} className="vw-product-modal-image-inner" />
+        <div className="vw-product-modal-image" style={{ flex: 1, flexShrink: 0, position: "relative" }}>
+          {images.length > 0 ? (
+            <div 
+              style={{ position: "relative", height: "100%", background: "var(--smoke)", cursor: images.length > 1 ? (isDragging ? "grabbing" : "grab") : "default" }}
+              onTouchStart={(e) => onSwipeStart(e.targetTouches[0].clientX)}
+              onTouchMove={(e) => onSwipeMove(e.targetTouches[0].clientX)}
+              onTouchEnd={onSwipeEnd}
+              onMouseDown={(e) => { e.preventDefault(); onSwipeStart(e.clientX); }}
+              onMouseMove={(e) => { e.preventDefault(); onSwipeMove(e.clientX); }}
+              onMouseUp={onSwipeEnd}
+              onMouseLeave={onSwipeEnd}
+              onWheel={onWheel}
+            >
+              <img src={images[imageIndex]} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
+              {images.length > 1 && (
+                <>
+                  <button onClick={(e) => { e.stopPropagation(); setImageIndex(i => (i - 1 + images.length) % images.length); }} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", color: "white", border: "none", padding: 8, cursor: "pointer", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon name="arrowRight" size={16} color="currentColor" /></span>
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setImageIndex(i => (i + 1) % images.length); }} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", color: "white", border: "none", padding: 8, cursor: "pointer", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="arrowRight" size={16} color="currentColor" />
+                  </button>
+                  <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 8 }}>
+                    {images.map((_, i) => (
+                      <button key={i} onClick={(e) => { e.stopPropagation(); setImageIndex(i); }} style={{ width: 8, height: 8, borderRadius: "50%", background: i === imageIndex ? "var(--gold)" : "rgba(255,255,255,0.5)", border: "none", padding: 0, cursor: "pointer" }} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <ProductImage product={p} height={420} className="vw-product-modal-image-inner" />
+          )}
         </div>
         <div className="vw-product-modal-body" style={{ flex: 1, padding: 40, overflowY: "auto" }}>
           <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20} /></button>

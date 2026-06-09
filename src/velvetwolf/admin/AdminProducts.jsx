@@ -4,7 +4,15 @@ import { fetchAdminProducts, createProduct, updateProduct, deleteProduct } from 
 import { COLLECTIONS } from "../pages/Collections";
 import { supabase } from "../utils/supabase";
 
-const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "" };
+const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, images: [], imagesToUpload: [] };
+
+const parseImages = (imgStr) => {
+  if (!imgStr) return [];
+  try {
+    if (imgStr.startsWith('[')) return JSON.parse(imgStr);
+  } catch (e) {}
+  return [imgStr];
+};
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
 
@@ -71,10 +79,8 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
         tag: editProduct.tag,
         sizes: editProduct.sizes,
         colors: editProduct.colors,
-        image: editProduct.image,
-        imageBase64: editProduct.imageBase64,
-        imageFileName: editProduct.imageFileName,
-        imageContentType: editProduct.imageContentType,
+        images: editProduct.images || [],
+        imagesToUpload: editProduct.imagesToUpload || [],
       });
       setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.product : p));
       setEditProduct(null);
@@ -101,35 +107,38 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
   };
 
   const handleImageUpload = async (e, isEdit = false) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
     try {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const newUploads = await Promise.all(files.map(file => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({
+              base64: reader.result.split(',')[1],
+              fileName: `${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`,
+              contentType: file.type
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }));
 
-        if (isEdit) {
-          setEditProduct((ep) => ({ 
-            ...ep, 
-            imageBase64: base64, 
-            imageFileName: fileName, 
-            imageContentType: file.type 
-          }));
-        } else {
-          setForm((f) => ({ 
-            ...f, 
-            imageBase64: base64, 
-            imageFileName: fileName, 
-            imageContentType: file.type 
-          }));
-        }
-        showToast("Image ready for upload! Please save/add product to upload.");
-      };
-      reader.readAsDataURL(file);
+      if (isEdit) {
+        setEditProduct((ep) => {
+          const combined = [...(ep.imagesToUpload || []), ...newUploads];
+          return { ...ep, imagesToUpload: combined.slice(0, 5 - (ep.images?.length || 0)) };
+        });
+      } else {
+        setForm((f) => {
+          const combined = [...(f.imagesToUpload || []), ...newUploads];
+          return { ...f, imagesToUpload: combined.slice(0, 5 - (f.images?.length || 0)) };
+        });
+      }
+      showToast("Images ready for upload!");
     } catch {
-      showToast("Failed to process image.", "error");
+      showToast("Failed to process images.", "error");
     }
   };
 
@@ -167,19 +176,27 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
-            <div style={{ display: "flex", gap: 8, gridColumn: "1/-1", alignItems: "center" }}>
-              {(form.imageBase64 || form.image) && (
-                <img 
-                  src={form.imageBase64 ? `data:${form.imageContentType};base64,${form.imageBase64}` : form.image} 
-                  alt="Preview" 
-                  style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
-                />
-              )}
-              <input className="input-dark" placeholder="IMAGE URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value, imageBase64: null }))} style={{ flex: 1 }} />
-              <label className="btn-ghost" style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0 16px", fontSize: 12, height: 40, boxSizing: "border-box" }}>
-                UPLOAD FILE
-                <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, false)} />
-              </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, gridColumn: "1/-1" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {form.images?.map((url, i) => (
+                  <div key={i} style={{ position: "relative" }}>
+                    <img src={url} alt={`img-${i}`} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                    <button onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))} style={{ position: "absolute", top: -5, right: -5, background: "red", color: "white", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer" }}>×</button>
+                  </div>
+                ))}
+                {form.imagesToUpload?.map((obj, i) => (
+                  <div key={`new-${i}`} style={{ position: "relative" }}>
+                    <img src={`data:${obj.contentType};base64,${obj.base64}`} alt={`new-${i}`} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                    <button onClick={() => setForm(f => ({ ...f, imagesToUpload: f.imagesToUpload.filter((_, idx) => idx !== i) }))} style={{ position: "absolute", top: -5, right: -5, background: "red", color: "white", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer" }}>×</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <label className="btn-ghost" style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0 16px", fontSize: 12, height: 40, boxSizing: "border-box" }}>
+                  UPLOAD IMAGES (MAX 5)
+                  <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, false)} />
+                </label>
+              </div>
             </div>
             <textarea className="input-dark" placeholder="DESCRIPTION" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} style={{ gridColumn: "1/-1" }} />
           </div>
@@ -212,23 +229,27 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                     {editProduct?.id === p.id
                       ? <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            {(editProduct.imageBase64 || editProduct.image) && (
-                              <img 
-                                src={editProduct.imageBase64 ? `data:${editProduct.imageContentType};base64,${editProduct.imageBase64}` : editProduct.image} 
-                                alt="Preview" 
-                                style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
-                              />
-                            )}
-                            <input className="input-dark" placeholder="IMAGE URL" value={editProduct.image || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, image: e.target.value, imageBase64: null }))} style={{ padding: "6px 10px", fontSize: 11, flex: 1 }} />
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                            {editProduct.images?.map((url, i) => (
+                              <div key={i} style={{ position: "relative" }}>
+                                <img src={url} alt={`img-${i}`} style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                                <button onClick={() => setEditProduct(ep => ({ ...ep, images: ep.images.filter((_, idx) => idx !== i) }))} style={{ position: "absolute", top: -5, right: -5, background: "red", color: "white", border: "none", borderRadius: "50%", width: 14, height: 14, fontSize: 9, cursor: "pointer" }}>×</button>
+                              </div>
+                            ))}
+                            {editProduct.imagesToUpload?.map((obj, i) => (
+                              <div key={`new-${i}`} style={{ position: "relative" }}>
+                                <img src={`data:${obj.contentType};base64,${obj.base64}`} alt={`new-${i}`} style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                                <button onClick={() => setEditProduct(ep => ({ ...ep, imagesToUpload: ep.imagesToUpload.filter((_, idx) => idx !== i) }))} style={{ position: "absolute", top: -5, right: -5, background: "red", color: "white", border: "none", borderRadius: "50%", width: 14, height: 14, fontSize: 9, cursor: "pointer" }}>×</button>
+                              </div>
+                            ))}
                             <label className="btn-ghost" style={{ cursor: "pointer", padding: "0 8px", fontSize: 10, display: "flex", alignItems: "center", height: 30, boxSizing: "border-box" }}>
-                              FILE
-                              <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, true)} />
+                              ADD FILE
+                              <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, true)} />
                             </label>
                           </div>
                         </div>
                       : <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          {p.image && <img src={p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />}
+                          {parseImages(p.image)[0] && <img src={parseImages(p.image)[0]} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />}
                           <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>
                         </div>}
                   </td>
@@ -257,7 +278,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => { setEditProduct({ ...p }); setAdding(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="edit" size={16} /></button>
+                          <button onClick={() => { setEditProduct({ ...p, images: parseImages(p.image), imagesToUpload: [] }); setAdding(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="edit" size={16} /></button>
                           <button onClick={() => handleDelete(p.id)} disabled={saving} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--wolf-red)" }}><Icon name="trash" size={16} /></button>
                         </>
                       )}
