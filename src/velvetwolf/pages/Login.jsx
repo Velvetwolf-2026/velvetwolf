@@ -3,14 +3,17 @@ import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
 import { apiUrl, googleAuthUrl } from "../utils/api";
+import { updateProfile } from "../utils/profile";
+import { auth, isFirebaseAvailable } from "../utils/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
     </svg>
   );
 }
@@ -18,12 +21,12 @@ function GoogleIcon() {
 function EyeIcon({ visible }) {
   return visible ? (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ) : (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
 }
@@ -31,42 +34,24 @@ function EyeIcon({ visible }) {
 export function Login() {
   const { user, setPage, setUser, showToast } = useContext(AppContext);
 
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [step, setStep] = useState("identifier"); // identifier, password, register_email, otp, mobile_name
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [pendingUser, setPendingUser] = useState(null);
+  const [agree, setAgree] = useState(false);
 
-  const update = (key, value) => {
-    setForm(prev => ({ ...prev, [key]: value }));
-    setError("");
-  };
-
-  const checks = {
-    uppercase: /[A-Z]/.test(form.password),
-    lowercase: /[a-z]/.test(form.password),
-    number: /[0-9]/.test(form.password),
-    special: /[^A-Za-z0-9]/.test(form.password),
-    length: form.password.length >= 8,
-  };
-
-  const strengthScore = Object.values(checks).filter(Boolean).length;
-
-  const getStrength = () => {
-    if (strengthScore <= 2) return "Weak";
-    if (strengthScore <= 4) return "Medium";
-    return "Strong";
-  };
-
-  const getColor = () => {
-    if (strengthScore <= 2) return "red";
-    if (strengthScore <= 4) return "orange";
-    return "green";
-  };
+  // Resolved discovery state
+  const [resolvedEmail, setResolvedEmail] = useState("");
+  const [isExistingUser, setIsExistingUser] = useState(false);
+  const [pendingToken, setPendingToken] = useState(null);
+  const [pendingUserObject, setPendingUserObject] = useState(null);
+  const [confirmationResult, setConfirmationResult] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -74,12 +59,24 @@ export function Login() {
     }
   }, [user, setPage]);
 
-  const validate = () => {
-    if (!form.email.trim()) { setError("Please enter your email address."); return false; }
-    if (!form.email.includes("@")) { setError("Please enter a valid email address."); return false; }
-    if (!form.password) { setError("Please enter your password."); return false; }
-    if (form.password.length < 8) { setError("Password must be at least 8 characters."); return false; }
-    return true;
+  // Password strength helper
+  const checks = {
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+    length: password.length >= 8,
+  };
+  const strengthScore = Object.values(checks).filter(Boolean).length;
+  const getStrength = () => {
+    if (strengthScore <= 2) return "Weak";
+    if (strengthScore <= 4) return "Medium";
+    return "Strong";
+  };
+  const getStrengthColor = () => {
+    if (strengthScore <= 2) return "#c0504d";
+    if (strengthScore <= 4) return "#c87941";
+    return "#5db87a";
   };
 
   const startResendTimer = () => {
@@ -95,10 +92,133 @@ export function Login() {
     }, 1000);
   };
 
-  const handleLogin = async (e) => {
+  // Google OAuth
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    setError("");
+    window.location.replace(googleAuthUrl("login"));
+  };
+
+  // Discovery step: checks if email or mobile exists
+  const handleIdentifierSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!validate()) return;
+    const input = identifier.trim().toLowerCase();
+    if (!input) {
+      setError("Please enter your email address or mobile number.");
+      return;
+    }
+
+    const isEmail = input.includes("@");
+    const isMobile = /^[6-9]\d{9}$/.test(input);
+
+    if (!isEmail && !isMobile) {
+      setError("Please enter a valid email address or 10-digit mobile number.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const emailQuery = isMobile ? `${input}@mobile.velvetwolf.in` : input;
+      const res = await fetch(apiUrl("/auth/discover"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailQuery }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Discover request failed.");
+      }
+
+      setIsExistingUser(data.exists);
+      setResolvedEmail(emailQuery);
+
+      if (isMobile) {
+        if (isFirebaseAvailable && auth) {
+          // Firebase Phone Auth integration
+          const phoneNumber = `+91${input}`;
+
+          if (window.recaptchaVerifier) {
+            try {
+              window.recaptchaVerifier.clear();
+            } catch (err) {
+              console.error("Error clearing existing recaptcha verifier:", err);
+            }
+            window.recaptchaVerifier = null;
+          }
+
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => { },
+            'expired-callback': () => { }
+          });
+
+          const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+          setConfirmationResult(confirmation);
+
+          setStep("otp");
+          setOtp(["", "", "", "", "", ""]);
+          startResendTimer();
+          showToast("OTP code has been sent!");
+        } else {
+          // Fallback Flow: trigger passwordless login or signup to send OTP (mock SMS)
+          const endpoint = data.exists ? "/auth/login" : "/auth/signup";
+          const body = data.exists
+            ? { email: emailQuery }
+            : { email: emailQuery, name: "Mobile User" };
+
+          const optRes = await fetch(apiUrl(endpoint), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          const optData = await optRes.json();
+          if (!optRes.ok) {
+            const errMsg = optData.error || "Failed to trigger login/signup OTP.";
+            if (errMsg.toLowerCase().includes("not registered")) {
+              showToast("Account not found — please sign up first.");
+            }
+            throw new Error(errMsg);
+          }
+
+          setStep("otp");
+          setOtp(["", "", "", "", "", ""]);
+          startResendTimer();
+          showToast("Mock OTP code has been sent! (Use bypass 123456)");
+        }
+      } else {
+        // Email Flow
+        if (data.exists) {
+          setStep("password");
+        } else {
+          setStep("register_email");
+        }
+      }
+    } catch (err) {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error(e);
+        }
+        window.recaptchaVerifier = null;
+      }
+      setError(err.message || "An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Password login (existing email user)
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -106,67 +226,93 @@ export function Login() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: form.email.toLowerCase().trim(),
-          password: form.password,
+          email: resolvedEmail,
+          password: password,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        const msg = data.error || "";
-        if (msg.includes("User not registered") || msg.includes("not registered")) {
-          showToast("User is not registered, complete the registration", "error");
-          setError("User not found. Please sign up first.");
-        } else if (msg.includes("Incorrect email or password")) {
-          setError("Incorrect email or password. Please try again.");
-        } else {
-          setError(msg || "Login failed. Please try again.");
-        }
-        return;
+        throw new Error(data.error || "Incorrect password. Please try again.");
       }
 
-      if (data.requiresOtp || data.message) {
-        setPendingUser(data.user || null);
-        setStep(2);
-        setOtp(["", "", "", "", "", ""]);
-        startResendTimer();
-        showToast("OTP sent to your email");
-        return;
-      }
-
-      if (data.token && !data.requiresOtp) {
-        setError("OTP login is enabled in the frontend, but the backend is still returning the old login response. Please restart the backend server and try again.");
-        return;
+      // Email password login returns JWT directly (No OTP)
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        const nextUser = {
+          ...data.user,
+          email: data.user.email || resolvedEmail,
+          name: data.user.name || resolvedEmail.split("@")[0],
+          full_name: data.user.full_name || data.user.name,
+          role: data.user.role || "customer",
+          isAdmin: data.user.role === "admin",
+          authSource: "backend",
+        };
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        setUser(nextUser);
+        showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
+        setPage("account");
       }
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      const msg = err.message || "Login failed. Please try again.";
+      if (msg.toLowerCase().includes("not registered")) {
+        showToast("Account not found — please sign up first.");
+        setError("User not registered. Please complete registration.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const finalizeLogin = async (data) => {
-    localStorage.setItem("token", data.token);
-    const backendUser = data.user || pendingUser || {};
-    const nextUser = {
-      ...backendUser,
-      email: backendUser.email || form.email.toLowerCase().trim(),
-      name: backendUser.name || backendUser.full_name || form.email.split("@")[0],
-      full_name: backendUser.full_name || backendUser.name,
-      role: backendUser.role || "customer",
-      isAdmin: (backendUser.role || "customer") === "admin",
-      authSource: "backend",
-    };
+  // Create password and trigger signup OTP (new email user)
+  const handleEmailRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (!agree) {
+      setError("Please accept the Terms & Privacy Policy to continue.");
+      return;
+    }
 
-    localStorage.setItem("user", JSON.stringify(nextUser));
-    setUser(nextUser);
+    setLoading(true);
+    try {
+      const res = await fetch(apiUrl("/auth/signup"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fullName.trim(),
+          email: resolvedEmail,
+          password: password,
+        }),
+      });
 
-    const name = data.user?.name || pendingUser?.name;
-    showToast(`Successfully logged in${name ? `, welcome back ${name}!` : ", welcome back wolf!"}`);
-    setPage("account");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Registration failed. Please try again.");
+      }
+
+      setStep("otp");
+      setOtp(["", "", "", "", "", ""]);
+      startResendTimer();
+      showToast("Verification code sent to your email!");
+    } catch (err) {
+      setError(err.message || "Signup failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyOtp = async (e) => {
+  // Verify OTP (email signup, mobile login, mobile signup)
+  const handleVerifyOtpSubmit = async (e) => {
     e.preventDefault();
     const code = otp.join("");
     if (code.length < 6) {
@@ -177,58 +323,172 @@ export function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(apiUrl("/auth/verify-otp"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email.toLowerCase().trim(),
-          otp: code,
-          type: "login",
-        }),
-      });
+      const isMobile = resolvedEmail.endsWith("@mobile.velvetwolf.in");
+      let data;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Verification failed");
+      if (isMobile && isFirebaseAvailable && auth) {
+        if (!confirmationResult) {
+          throw new Error("No active phone verification session. Please go back and retry.");
+        }
+        // Verify with Firebase
+        const userCredential = await confirmationResult.confirm(code);
+        const firebaseUser = userCredential.user;
+        const idToken = await firebaseUser.getIdToken();
+
+        // Send token to backend
+        const mobileNumber = resolvedEmail.split("@")[0];
+        const res = await fetch(apiUrl("/auth/firebase-login"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: `+91${mobileNumber}`,
+            token: idToken,
+          }),
+        });
+
+        data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Backend verification failed.");
+        }
+      } else {
+        // Standard Email Flow OR Mobile Fallback Flow (using standard backend verify-otp)
+        const res = await fetch(apiUrl("/auth/verify-otp"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: resolvedEmail,
+            otp: code,
+            type: isExistingUser ? "login" : "signup",
+          }),
+        });
+
+        data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Verification failed. Please try again.");
+        }
       }
 
       if (data.token) {
-        await finalizeLogin(data);
+        if (isMobile && !isExistingUser) {
+          // New mobile user: store token and ask for Name (Step 5)
+          setPendingToken(data.token);
+          setPendingUserObject(data.user);
+          setStep("mobile_name");
+        } else {
+          // Complete login
+          localStorage.setItem("token", data.token);
+          const nextUser = {
+            ...data.user,
+            email: resolvedEmail,
+            name: data.user?.name || resolvedEmail.split("@")[0],
+            full_name: data.user?.full_name || data.user?.name,
+            role: data.user?.role || "customer",
+            isAdmin: data.user?.role === "admin",
+            authSource: "backend",
+          };
+          localStorage.setItem("user", JSON.stringify(nextUser));
+          setUser(nextUser);
+          showToast(isExistingUser ? `Successfully logged in!` : `Account created! Welcome to the pack ◆`);
+          setPage("account");
+        }
       }
     } catch (err) {
-      const msg = err.message || "";
-      if (msg.includes("invalid") || msg.includes("expired") || msg.includes("Invalid")) {
-        setError("Invalid or expired code. Please request a new one.");
-      } else {
-        setError(msg || "Verification failed. Please try again.");
-      }
+      setError(err.message || "Verification failed.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Resend OTP code
   const handleResend = async () => {
     if (resendTimer > 0) return;
-
     setOtp(["", "", "", "", "", ""]);
     setError("");
 
     try {
-      const res = await fetch(apiUrl("/auth/resend-otp"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email.toLowerCase().trim(), kind: "login" }),
-      });
+      const isMobile = resolvedEmail.endsWith("@mobile.velvetwolf.in");
+      if (isMobile && isFirebaseAvailable && auth) {
+        const mobileNumber = resolvedEmail.split("@")[0];
+        const phoneNumber = `+91${mobileNumber}`;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Resend failed");
+        if (window.recaptchaVerifier) {
+          try {
+            window.recaptchaVerifier.clear();
+          } catch (e) {
+            console.error("Error clearing recaptcha verifier:", e);
+          }
+          window.recaptchaVerifier = null;
+        }
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => { },
+          'expired-callback': () => { }
+        });
+
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        setConfirmationResult(confirmation);
+        showToast("New OTP code sent ✓");
+        startResendTimer();
+      } else {
+        const res = await fetch(apiUrl("/auth/resend-otp"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: resolvedEmail,
+            kind: isExistingUser ? "login" : "signup",
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Resend failed");
+        }
+
+        showToast("New code sent ✓");
+        startResendTimer();
       }
-
-      showToast("New code sent");
-      startResendTimer();
     } catch (err) {
       setError(err.message || "Could not resend code. Please try again.");
+    }
+  };
+
+  // Complete profile name for mobile signup
+  const handleMobileNameSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!fullName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const mobileNumber = resolvedEmail.split("@")[0];
+      const profile = await updateProfile(pendingUserObject.id, {
+        fullName: fullName.trim(),
+        phone: mobileNumber,
+      });
+
+      localStorage.setItem("token", pendingToken);
+      const nextUser = {
+        ...pendingUserObject,
+        ...profile,
+        email: resolvedEmail,
+        name: fullName.trim(),
+        full_name: fullName.trim(),
+        role: pendingUserObject.role || "customer",
+        isAdmin: pendingUserObject.role === "admin",
+        authSource: "backend",
+      };
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      setUser(nextUser);
+      showToast(`Account created! Welcome to the pack ◆`);
+      setPage("account");
+    } catch (err) {
+      setError(err.message || "Failed to save profile name.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -239,13 +499,13 @@ export function Login() {
     setOtp(nextOtp);
 
     if (nextDigit && index < 5) {
-      document.getElementById(`otp-li-${index + 1}`)?.focus();
+      document.getElementById(`otp-val-${index + 1}`)?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
-      document.getElementById(`otp-li-${index - 1}`)?.focus();
+      document.getElementById(`otp-val-${index - 1}`)?.focus();
     }
   };
 
@@ -257,199 +517,319 @@ export function Login() {
     e.preventDefault();
   };
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
-    setError("");
-    window.location.replace(googleAuthUrl("login"));
-  };
-
   return (
     <>
-    <Navbar activePage="" onNavigate={setPage} />
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--obsidian)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "110px 20px 60px",
-      position: "relative",
-      overflow: "hidden",
-    }}>
+      <Navbar activePage="" onNavigate={setPage} />
       <div style={{
-        position: "absolute",
-        top: "20%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: 500,
-        height: 300,
-        borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }}/>
-      <div style={{ position: "absolute", top: "10%", right: "8%", width: 260, height: 260, border: "1px solid rgba(201,168,76,0.07)", transform: "rotate(45deg)", pointerEvents: "none", animation: "float 6s ease-in-out infinite" }}/>
-      <div style={{ position: "absolute", bottom: "12%", left: "6%", width: 140, height: 140, border: "1px solid rgba(201,168,76,0.07)", transform: "rotate(20deg)", pointerEvents: "none", animation: "float 4s ease-in-out infinite reverse" }}/>
+        minHeight: "100vh",
+        background: "var(--obsidian)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "110px 20px 60px",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          position: "absolute",
+          top: "20%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: 500,
+          height: 300,
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
 
-      <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-            <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+        <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <img src="/vw-logo.png" alt="VelvetWolf logo" style={{ width: 30, height: 30, objectFit: "contain" }} />
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="auth-box" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
-          {step === 1 && (
-            <>
-              <div style={{ marginBottom: 26 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                  <div style={{ width: 16, height: 1, background: "var(--gold)" }}/>WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }}/>
-                </div>
-                <h1 style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: 4, color: "var(--ivory)", margin: 0, lineHeight: 1 }}>SIGN IN</h1>
+          <div className="auth-box" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
+            {error && (
+              <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 11, marginBottom: 18, letterSpacing: 0.5 }}>
+                ✕ {error}
               </div>
+            )}
 
-              {error && (
-                <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 12, marginBottom: 18, letterSpacing: 0.5 }}>
-                  ✕ {error}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleGoogle}
-                disabled={googleLoading || loading}
-                style={{ width: "100%", background: "transparent", border: "1px solid var(--smoke)", color: "var(--ash)", padding: "12px 16px", cursor: googleLoading ? "not-allowed" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18, transition: "all 0.25s", opacity: googleLoading ? 0.6 : 1 }}
-                onMouseEnter={e => { if (!googleLoading) { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.color = "var(--gold)"; }}}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.color = "var(--ash)"; }}
-              >
-                <GoogleIcon />
-                {googleLoading ? "REDIRECTING..." : "CONTINUE WITH GOOGLE"}
-              </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-                <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)" }}>OR</span>
-                <div style={{ flex: 1, height: 1, background: "var(--smoke)" }}/>
-              </div>
-
-              <form onSubmit={handleLogin} noValidate>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL ADDRESS</label>
-                  <input
-                    className="input-dark"
-                    type="email"
-                    placeholder="you@email.com"
-                    value={form.email}
-                    onChange={e => update("email", e.target.value)}
-                    autoComplete="email"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      className="input-dark"
-                      type={showPw ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={form.password}
-                      onChange={e => update("password", e.target.value)}
-                      autoComplete="current-password"
-                      disabled={loading}
-                      style={{ paddingRight: 44 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw(prev => !prev)}
-                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
-                    >
-                      <EyeIcon visible={showPw} />
-                    </button>
+            {/* STEP 1: IDENTIFIER */}
+            {step === "identifier" && (
+              <>
+                <div style={{ marginBottom: 26 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME TO VELVETWOLF<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
                   </div>
+                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 4, color: "var(--ivory)", margin: 0, lineHeight: 1.1 }}>SIGN IN / SIGN UP</h1>
                 </div>
 
-                <div style={{ height: 6, width: "100%", background: "#eee", borderRadius: 5, marginBottom: 5 }}>
-                  <div style={{ height: "100%", width: `${(strengthScore / 5) * 100}%`, background: getColor(), borderRadius: 5, transition: "0.3s" }} />
-                </div>
-
-                <p style={{ textAlign: "left", marginTop: 18, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
-                  Strength: {getStrength()}
-                </p>
-
-                <ul style={{ textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--silver)", opacity: 0.5 }}>
-                  <li style={{ color: checks.uppercase ? "green" : "gray" }}>Uppercase letter (A-Z)</li>
-                  <li style={{ color: checks.lowercase ? "green" : "gray" }}>Lowercase letter (a-z)</li>
-                  <li style={{ color: checks.number ? "green" : "gray" }}>Number (0-9)</li>
-                  <li style={{ color: checks.special ? "green" : "gray" }}>Special character (!@#$)</li>
-                  <li style={{ color: checks.length ? "green" : "gray" }}>Minimum 8 characters</li>
-                </ul>
-
-                <div style={{ textAlign: "right", marginBottom: 24 }}>
-                  <button
-                    type="button"
-                    onClick={() => setPage("forgetpassword")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)" }}
-                  >
-                    FORGOT PASSWORD?
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-gold"
-                  disabled={loading}
-                  style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
-                >
-                  {loading ? "SENDING OTP..." : "SIGN IN →"}
-                </button>
-              </form>
-
-              <div style={{ marginTop: 22, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)" }}>
-                Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setPage("signup")}
-                  style={{ all: "unset", cursor: "pointer", color: "var(--gold)", letterSpacing: 1 }}
+                  onClick={handleGoogle}
+                  disabled={googleLoading || loading}
+                  style={{ width: "100%", background: "var(--ivory)", border: "none", color: "var(--obsidian)", padding: "14px 16px", cursor: googleLoading ? "not-allowed" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18, transition: "all 0.25s", fontWeight: "bold" }}
                 >
-                  CREATE ONE
+                  <GoogleIcon />
+                  {googleLoading ? "REDIRECTING..." : "CONTINUE WITH GOOGLE"}
                 </button>
-              </div>
-            </>
-          )}
 
-          {step === 2 && (
-            <AuthOtpStep
-              title="VERIFY LOGIN"
-              email={form.email}
-              error={error}
-              otp={otp}
-              loading={loading}
-              resendTimer={resendTimer}
-              onSubmit={handleVerifyOtp}
-              onOtpChange={handleOtpChange}
-              onOtpKeyDown={handleOtpKeyDown}
-              onOtpPaste={handleOtpPaste}
-              onResend={handleResend}
-              onBack={() => {
-                setStep(1);
-                setError("");
-                setOtp(["", "", "", "", "", ""]);
-                setPendingUser(null);
-              }}
-              submitLabel="VERIFY & SIGN IN →"
-              loadingLabel="VERIFYING..."
-              idPrefix="otp-li"
-            />
-          )}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 3, color: "var(--silver)" }}>OR</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--smoke)" }} />
+                </div>
+
+                <form onSubmit={handleIdentifierSubmit}>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>EMAIL OR MOBILE NUMBER</label>
+                    <input
+                      className="input-dark"
+                      type="text"
+                      placeholder="you@email.com or 9876543210"
+                      value={identifier}
+                      onChange={e => setIdentifier(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-gold"
+                    disabled={loading}
+                    style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4 }}
+                  >
+                    {loading ? "CHECKING..." : "CONTINUE →"}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* STEP 2: PASSWORD */}
+            {step === "password" && (
+              <>
+                <div style={{ marginBottom: 26 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
+                  </div>
+                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>SIGN IN</h1>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Enter password for: {resolvedEmail}</p>
+                </div>
+
+                <form onSubmit={handlePasswordSubmit}>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        className="input-dark"
+                        type={showPw ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        disabled={loading}
+                        style={{ paddingRight: 44 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw(prev => !prev)}
+                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                      >
+                        <EyeIcon visible={showPw} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: "right", marginBottom: 24 }}>
+                    <button
+                      type="button"
+                      onClick={() => setPage("forgetpassword")}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)" }}
+                    >
+                      FORGOT PASSWORD?
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-gold"
+                    disabled={loading}
+                    style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4 }}
+                  >
+                    {loading ? "SIGNING IN..." : "SIGN IN →"}
+                  </button>
+                </form>
+
+                <div style={{ textAlign: "center", marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => setStep("identifier")}
+                    style={{ all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}
+                  >
+                    ← BACK
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* STEP 3: REGISTER EMAIL */}
+            {step === "register_email" && (
+              <>
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />CREATE YOUR ACCOUNT<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
+                  </div>
+                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>SIGN UP</h1>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Signing up as: {resolvedEmail}</p>
+                </div>
+
+                <form onSubmit={handleEmailRegisterSubmit}>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>FULL NAME</label>
+                    <input
+                      className="input-dark"
+                      type="text"
+                      placeholder="Your full name"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        className="input-dark"
+                        type={showPw ? "text" : "password"}
+                        placeholder="Min. 8 characters"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        disabled={loading}
+                        style={{ paddingRight: 44 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw(prev => !prev)}
+                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                      >
+                        <EyeIcon visible={showPw} />
+                      </button>
+                    </div>
+                    {password && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ display: "flex", gap: 3, height: 3, background: "var(--smoke)", borderRadius: 2, overflow: "hidden" }}>
+                          {[1, 2, 3, 4].map(n => (
+                            <div key={n} style={{ flex: 1, height: "100%", background: n <= strengthScore ? getStrengthColor() : "transparent" }} />
+                          ))}
+                        </div>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: getStrengthColor(), marginTop: 4, display: "block" }}>STRENGTH: {getStrength()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 20 }}>
+                    <div onClick={() => setAgree(!agree)} style={{ width: 16, height: 16, flexShrink: 0, marginTop: 2, cursor: "pointer", border: `1px solid ${agree ? "var(--gold)" : "var(--smoke)"}`, background: agree ? "var(--gold)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                      {agree && <span style={{ color: "var(--obsidian)", fontSize: 9, fontWeight: "bold" }}>✓</span>}
+                    </div>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", margin: 0, lineHeight: 1.6 }}>
+                      I agree to VelvetWolf's{" "}
+                      <button type="button" onClick={() => setPage("termspage")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>Terms</button>
+                      {" & "}
+                      <button type="button" onClick={() => setPage("privacypolicy")} style={{ all: "unset", cursor: "pointer", color: "var(--gold)" }}>Privacy Policy</button>
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-gold"
+                    disabled={loading}
+                    style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4 }}
+                  >
+                    {loading ? "CREATING..." : "CREATE ACCOUNT →"}
+                  </button>
+                </form>
+
+                <div style={{ textAlign: "center", marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => setStep("identifier")}
+                    style={{ all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}
+                  >
+                    ← BACK
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* STEP 4: OTP */}
+            {step === "otp" && (
+              <AuthOtpStep
+                title={resolvedEmail.endsWith("@mobile.velvetwolf.in") ? "VERIFY OTP" : "VERIFY EMAIL"}
+                email={resolvedEmail.endsWith("@mobile.velvetwolf.in") ? resolvedEmail.split("@")[0] : resolvedEmail}
+                error={error}
+                otp={otp}
+                loading={loading}
+                resendTimer={resendTimer}
+                onSubmit={handleVerifyOtpSubmit}
+                onOtpChange={handleOtpChange}
+                onOtpKeyDown={handleOtpKeyDown}
+                onOtpPaste={handleOtpPaste}
+                onResend={handleResend}
+                onBack={() => setStep("identifier")}
+                submitLabel={isExistingUser ? "VERIFY & SIGN IN →" : "VERIFY & CONTINUE →"}
+                loadingLabel="VERIFYING..."
+                idPrefix="otp-val"
+              />
+            )}
+
+            {/* STEP 5: MOBILE NAME */}
+            {step === "mobile_name" && (
+              <>
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME TO THE PACK ◆<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
+                  </div>
+                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>ENTER NAME</h1>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Tell us your name to complete registration.</p>
+                </div>
+
+                <form onSubmit={handleMobileNameSubmit}>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>FULL NAME</label>
+                    <input
+                      className="input-dark"
+                      type="text"
+                      placeholder="Your name"
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-gold"
+                    disabled={loading}
+                    style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4 }}
+                  >
+                    {loading ? "SAVING..." : "COMPLETE SIGNUP →"}
+                  </button>
+                </form>
+              </>
+            )}
+            <div id="recaptcha-container"></div>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

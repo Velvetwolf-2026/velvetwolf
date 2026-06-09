@@ -11,7 +11,7 @@ export async function getCart(query, event) {
 
 export async function addItem(body, event) {
   const data = validate(cartAddSchema)(body);
-  const result = await cartService.addCartItemByUserId(data.userId, data.productId, data.quantity);
+  const result = await cartService.addCartItemByUserId(data.userId, data.productId, data.quantity, data.size, data.color);
   return jsonResponse(200, result, {}, event);
 }
 

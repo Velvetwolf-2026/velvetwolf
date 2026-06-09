@@ -8,3 +8,9 @@ export async function getProducts(query, event) {
   });
   return jsonResponse(200, { products }, {}, event);
 }
+
+export async function getProductBySlug(slug, event) {
+  const product = await productService.getProductBySlug(slug);
+  return jsonResponse(200, { product }, {}, event);
+}
+

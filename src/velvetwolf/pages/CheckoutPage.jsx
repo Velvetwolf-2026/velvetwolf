@@ -1,9 +1,10 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
+import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, setCart, setPage, user, showToast } = useContext(AppContext);
+  const { cart, cartTotal, setCart, setPage, user, showToast, clearCart } = useContext(AppContext);
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState({ 
     name: user?.full_name || user?.name || "", 
@@ -15,12 +16,58 @@ export default function CheckoutPage() {
   const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
   const [processing, setProcessing] = useState(false);
 
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
   const shipping = cartTotal >= 1999 ? 0 : 149;
   const tax = Math.round(cartTotal * 0.18);
-  const total = cartTotal + shipping + tax;
+  
+  let discount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_type === "percentage") {
+      discount = Math.round((cartTotal * Number(appliedCoupon.discount_value)) / 100);
+    } else if (appliedCoupon.discount_type === "fixed") {
+      discount = Number(appliedCoupon.discount_value);
+    }
+    discount = Math.min(discount, cartTotal);
+  }
+
+  const total = Math.max(0, cartTotal - discount + shipping + tax);
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      trackBeginCheckout(cart, total);
+    }
+  }, []);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch(apiUrl('/checkout/coupon/validate'), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput, subtotal: cartTotal })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Invalid coupon");
+      
+      setAppliedCoupon(data);
+      showToast(`Discount applied: ${data.code} ✓`);
+    } catch (err) {
+      showToast(err.message, "error");
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
 
   const handleOrder = async () => {
     setProcessing(true);
+    // Save to session storage for analytics tracking on success
+    sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
+    sessionStorage.setItem("vw_last_checkout_total", String(total));
     try {
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
@@ -33,7 +80,8 @@ export default function CheckoutPage() {
           shipping_amount: shipping, 
           tax_amount: tax, 
           payment_method: paymentMethod, 
-          user_id: user?.id
+          user_id: user?.id,
+          couponCode: appliedCoupon?.code || null
         })
       });
 
@@ -41,9 +89,21 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(data.error || "Failed to initiate checkout");
 
       if (paymentMethod === "cod") {
-        setCart([]);
+        // Track purchase
+        const lastCartVal = sessionStorage.getItem("vw_last_checkout_cart");
+        const lastTotalVal = sessionStorage.getItem("vw_last_checkout_total");
+        if (lastCartVal) {
+          const lastCart = JSON.parse(lastCartVal);
+          const lastTotal = Number(lastTotalVal || 0);
+          trackPurchase(data.orderId, lastCart, lastTotal, "cod");
+          sessionStorage.removeItem("vw_last_checkout_cart");
+          sessionStorage.removeItem("vw_last_checkout_total");
+        }
+
+        clearCart();
         showToast(`🎉 Order placed successfully!`);
-        setPage('account');
+        window.history.replaceState({}, "", `${window.location.pathname}?order_id=${data.orderId}&method=cod`);
+        setPage('payment-status');
         return;
       }
 
@@ -172,10 +232,53 @@ export default function CheckoutPage() {
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>₹{(item.price * item.qty).toLocaleString()}</div>
               </div>
             ))}
+            {/* Coupon Code Input */}
+            <div style={{ padding: "16px 0", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", letterSpacing: 1, marginBottom: 8 }}>PROMO CODE</div>
+              {appliedCoupon ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(201,168,76,0.1)", padding: "8px 12px", border: "1px solid var(--gold)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", fontWeight: "bold" }}>{appliedCoupon.code} APPLIED</span>
+                  <button onClick={() => { setAppliedCoupon(null); setCouponInput(""); }} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>REMOVE</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    className="input-dark"
+                    placeholder="ENTER CODE (e.g. WOLF10)"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    style={{ flex: 1, padding: "8px 12px", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon}
+                    style={{
+                      background: "var(--gold)",
+                      border: "none",
+                      color: "var(--obsidian)",
+                      padding: "0 16px",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      cursor: "pointer",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {validatingCoupon ? "..." : "APPLY"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{ marginTop: 16 }}>
-              {[["Subtotal", `₹${cartTotal.toLocaleString()}`], ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`], ["GST (18%)", `₹${tax.toLocaleString()}`]].map(([label, val]) => (
+              {[
+                ["Subtotal", `₹${cartTotal.toLocaleString()}`],
+                ...(discount > 0 ? [["Discount", `-₹${discount.toLocaleString()}`]] : []),
+                ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`],
+                ["GST (18%)", `₹${tax.toLocaleString()}`]
+              ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>
-                  <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : "var(--ash)" }}>{val}</span>
+                  <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : val.startsWith("-") ? "#ff6b6b" : "var(--ash)" }}>{val}</span>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--gold)" }}>

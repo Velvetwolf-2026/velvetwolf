@@ -47,3 +47,10 @@ export { S, PageHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
 
 // ── Constants ──
 export { THEME, CATEGORIES, NAV_LINKS, POLICY_PAGES } from "./velvetwolf/utils/constants";
+
+// ── Main Page Components ──
+export { default as HomePage } from "./velvetwolf/pages/HomePage";
+export { default as ShopPage } from "./velvetwolf/pages/ShopPage";
+export { default as CustomDesignPage } from "./velvetwolf/pages/CustomDesignPage";
+export { default as BulkOrderPage } from "./velvetwolf/pages/BulkOrderPage";
+export { default as ProductDetailPage } from "./velvetwolf/pages/ProductDetailPage";

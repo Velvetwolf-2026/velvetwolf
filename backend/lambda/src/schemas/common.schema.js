@@ -7,13 +7,14 @@ export const cartAddSchema = z.object({
     .number({ required_error: "Quantity is required", invalid_type_error: "Quantity must be a number" })
     .int("Quantity must be a whole number")
     .positive("Quantity must be at least 1"),
+  size: z.string().optional().nullable(),
+  color: z.string().optional().nullable(),
 });
 
 export const cartUpdateSchema = z.object({
   cartItemId: z
-    .number({ required_error: "Cart item ID is required", invalid_type_error: "Cart item ID must be a number" })
-    .int()
-    .positive("Cart item ID is invalid"),
+    .string({ required_error: "Cart item ID is required" })
+    .uuid("Cart item ID must be a valid UUID"),
   quantity: z
     .number({ required_error: "Quantity is required", invalid_type_error: "Quantity must be a number" })
     .int()
@@ -22,9 +23,8 @@ export const cartUpdateSchema = z.object({
 
 export const cartRemoveSchema = z.object({
   cartItemId: z
-    .number({ required_error: "Cart item ID is required", invalid_type_error: "Cart item ID must be a number" })
-    .int()
-    .positive("Cart item ID is invalid"),
+    .string({ required_error: "Cart item ID is required" })
+    .uuid("Cart item ID must be a valid UUID"),
 });
 
 export const wishlistToggleSchema = z.object({

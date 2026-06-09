@@ -7,6 +7,12 @@ export async function handleAuthRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/auth/login")
     return authController.login(body, event);
 
+  if (method === "POST" && route === "/auth/discover")
+    return authController.discover(body, event);
+
+  if (method === "POST" && route === "/auth/firebase-login")
+    return authController.firebaseLogin(body, event);
+
   if (method === "POST" && route === "/auth/verify-otp")
     return authController.verifyOtp(body, event);
 
@@ -27,6 +33,12 @@ export async function handleAuthRoutes(method, route, body, query, event) {
 
   if (method === "GET" && route.endsWith("/auth/verify-otp-link"))
     return authController.verifyOtpLink(query, event);
+
+  if (method === "POST" && route === "/auth/logout")
+    return authController.logout(body, event);
+
+  if (method === "GET" && route === "/auth/session")
+    return authController.getSession(body, event);
 
   return null;
 }

@@ -94,7 +94,11 @@ export function ForgetPassword() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error || "Failed to send reset code. Please try again.");
+        const errMsg = data.error || "Failed to send reset code. Please try again.";
+        if (errMsg.toLowerCase().includes("not registered")) {
+          showToast("Account not found — please register first.");
+        }
+        setError(errMsg);
         return;
       }
 

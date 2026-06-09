@@ -10,12 +10,24 @@ loadBackendEnv();
  * Throws ApiError(401) if the token is missing or invalid.
  */
 export function requireAuth(event) {
-  const authHeader =
-    event.headers?.authorization ||
-    event.headers?.Authorization ||
-    "";
+  const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
+  let token = "";
 
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  if (cookieHeader) {
+    const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="));
+    if (match) {
+      token = match.split("=")[1]?.trim();
+    }
+  }
+
+  if (!token) {
+    const authHeader =
+      event.headers?.authorization ||
+      event.headers?.Authorization ||
+      "";
+    token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  }
+
 
   if (!token) {
     logWarn("Request missing Authorization header", {

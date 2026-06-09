@@ -92,19 +92,28 @@ export const getCorsHeaders = (event) => {
     .filter(Boolean);
 
   let selectedOrigin = "";
-  if (configuredOrigins.length === 0) {
-    selectedOrigin = "*";
-  } else if (requestOrigin && configuredOrigins.includes(requestOrigin)) {
-    selectedOrigin = requestOrigin;
-  } else if (!requestOrigin && configuredOrigins.length >= 1) {
+  if (requestOrigin) {
+    if (configuredOrigins.length === 0 || configuredOrigins.includes(requestOrigin) || requestOrigin.startsWith("http://localhost:")) {
+      selectedOrigin = requestOrigin;
+    }
+  } else if (configuredOrigins.length >= 1) {
     selectedOrigin = configuredOrigins[0];
+  } else {
+    selectedOrigin = "*";
   }
-  // else: origin present but not in allowlist → stays ""
 
-  return {
-    "Access-Control-Allow-Origin": selectedOrigin,
+  const headers = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     Vary: "Origin",
   };
+
+  if (selectedOrigin && selectedOrigin !== "*") {
+    headers["Access-Control-Allow-Origin"] = selectedOrigin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  } else {
+    headers["Access-Control-Allow-Origin"] = "*";
+  }
+
+  return headers;
 };

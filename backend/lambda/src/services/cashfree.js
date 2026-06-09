@@ -1,13 +1,30 @@
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
-// Using the environment variables from your configuration
-// We switch between SANDBOX and PRODUCTION based on CASHFREE_ENVIRONMENT
-Cashfree.XClientId = process.env.CASHFREE_APP_ID;
-Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY;
-Cashfree.XEnvironment =
-  process.env.CASHFREE_ENVIRONMENT === "PRODUCTION"
-    ? CFEnvironment.PRODUCTION
-    : CFEnvironment.SANDBOX;
+let cashfreeInstance = null;
+
+function getCashfree() {
+  if (!cashfreeInstance) {
+    // Switch between SANDBOX and PRODUCTION based on CASHFREE_ENVIRONMENT
+    const environment =
+      process.env.CASHFREE_ENVIRONMENT === "PRODUCTION"
+        ? CFEnvironment.PRODUCTION
+        : CFEnvironment.SANDBOX;
+
+    cashfreeInstance = new Cashfree(
+      environment,
+      process.env.CASHFREE_APP_ID,
+      process.env.CASHFREE_SECRET_KEY,
+      undefined, // XPartnerKey
+      undefined, // XClientSignature
+      undefined, // XPartnerMerchantId
+      false      // XEnableErrorAnalytics - disabled to prevent Zone Allocation / Sentry OOM crashes
+    );
+
+    // Explicitly set the API version to ensure consistency with existing usage
+    cashfreeInstance.XApiVersion = "2023-08-01";
+  }
+  return cashfreeInstance;
+}
 
 /**
  * Create a new payment order using Cashfree PG
@@ -39,8 +56,9 @@ export const createPaymentOrder = async (orderData) => {
       },
     };
 
-    // The API version is required, 2023-08-01 is currently supported by the SDK
-    const response = await Cashfree.PGCreateOrder("2023-08-01", request);
+    const cashfree = getCashfree();
+    // PGCreateOrder is an instance method in v5 SDK
+    const response = await cashfree.PGCreateOrder(request);
     return response.data;
   } catch (error) {
     console.error("Cashfree Create Order Error:", error.response?.data || error.message);
@@ -55,10 +73,14 @@ export const createPaymentOrder = async (orderData) => {
  */
 export const verifyPayment = async (orderId) => {
   try {
-    const response = await Cashfree.PGOrderFetchPayments("2023-08-01", orderId);
+    const cashfree = getCashfree();
+    // PGOrderFetchPayments is an instance method in v5 SDK
+    const response = await cashfree.PGOrderFetchPayments(orderId);
     return response.data; // This returns a list of payments for the order
   } catch (error) {
     console.error("Cashfree Verify Order Error:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || "Payment verification failed");
   }
 };
+
+
