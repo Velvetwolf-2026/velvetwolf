@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
+import { useLanguage } from "./LanguageContext";
 
 function QuantityButton({ children, onClick }) {
   return (
@@ -22,6 +23,7 @@ function QuantityButton({ children, onClick }) {
 }
 
 function CartItemCard({ item, onQtyChange, onRemove }) {
+  const { t } = useLanguage();
   return (
     <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
       <div>
@@ -29,7 +31,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
           {item.name}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginBottom: 14 }}>
-          SIZE {item.size} · COLOR {item.color}
+          {t("size").toUpperCase()} {item.size} · {t("color").toUpperCase()} {item.color}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <QuantityButton onClick={() => onQtyChange(item.qty - 1)}>-</QuantityButton>
@@ -49,7 +51,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
               letterSpacing: 2,
             }}
           >
-            REMOVE
+            {t("remove")}
           </button>
         </div>
       </div>
@@ -58,7 +60,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
           ₹{(Number(item.price) * Number(item.qty)).toLocaleString()}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>
-          ₹{Number(item.price).toLocaleString()} each
+          ₹{Number(item.price).toLocaleString()} {t("shop") === "दुकान" ? "प्रत्येक" : (t("shop") === "கடை" ? "ஒன்று" : "each")}
         </div>
       </div>
     </div>
@@ -67,6 +69,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
 
 export default function CartPage() {
   const { cart, cartCount, cartTotal, updateCartQty, removeFromCart, setPage, user } = useContext(AppContext);
+  const { t } = useLanguage();
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
@@ -77,16 +80,16 @@ export default function CartPage() {
       >
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>
-            {user?.id ? "SYNCED WITH YOUR ACCOUNT" : "GUEST CART"}
+            {user?.id ? (t("shop") === "दुकान" ? "आपके खाते से सिंक किया गया" : (t("shop") === "கடை" ? "உங்கள் கணக்குடன் ஒத்திசைக்கப்பட்டது" : "SYNCED WITH YOUR ACCOUNT")) : (t("shop") === "दुकान" ? "अतिथि कार्ट" : (t("shop") === "கடை" ? "விருந்தினர் கூடை" : "GUEST CART"))}
           </div>
           <h1
             className="cart-header page-hero-title"
             style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4, marginBottom: 8 }}
           >
-            YOUR CART
+            {t("cart")}
           </h1>
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)" }}>
-            {cartCount} items ready for checkout
+            {cartCount} {t("shop") === "दुकान" ? "वस्तुएं चेकआउट के लिए तैयार हैं" : (t("shop") === "கடை" ? "பொருட்கள் செக்அவுட்டிற்கு தயாராக உள்ளன" : "items ready for checkout")}
           </p>
         </div>
       </div>
@@ -115,13 +118,13 @@ export default function CartPage() {
               }}
             >
               <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 8vw, 58px)", opacity: 0.2, marginBottom: 12 }}>
-                EMPTY
+                {t("shop") === "दुकान" ? "खाली" : (t("shop") === "கடை" ? "வெற்று" : "EMPTY")}
               </div>
               <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginBottom: 24 }}>
-                Your cart is waiting for its first piece.
+                {t("emptyCart")}
               </p>
               <button className="btn-gold" onClick={() => setPage("shop")}>
-                SHOP NOW
+                {t("discoverNow")}
               </button>
             </div>
           ) : (
@@ -151,14 +154,14 @@ export default function CartPage() {
               top: 92,
             }}
           >
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>SUMMARY</div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: 2, marginBottom: 24 }}>{t("shop") === "दुकान" ? "सारांश" : (t("shop") === "கடை" ? "சுருக்கம்" : "SUMMARY")}</div>
 
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>
-              <span>ITEMS</span>
+              <span>{t("qty").toUpperCase()}</span>
               <span>{cartCount}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>
-              <span>SUBTOTAL</span>
+              <span>{t("subtotal")}</span>
               <span>₹{cartTotal.toLocaleString()}</span>
             </div>
             <div
@@ -172,22 +175,22 @@ export default function CartPage() {
                 color: cartTotal >= 1999 ? "#81c784" : "var(--silver)",
               }}
             >
-              <span>SHIPPING</span>
-              <span>{cartTotal >= 1999 ? "FREE" : "₹149"}</span>
+              <span>{t("shop") === "दुकान" ? "शिपिंग" : (t("shop") === "கடை" ? "ஷிப்பிங்" : "SHIPPING")}</span>
+              <span>{cartTotal >= 1999 ? (t("shop") === "दुकान" ? "मुफ़्त" : (t("shop") === "கடை" ? "இலவசம்" : "FREE")) : "₹149"}</span>
             </div>
 
             <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 18, display: "flex", justifyContent: "space-between", marginBottom: 22 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 24 }}>TOTAL</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 24 }}>{t("shop") === "दुकान" ? "कुल" : (t("shop") === "கடை" ? "மொத்தம்" : "TOTAL")}</span>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--gold)" }}>
                 ₹{(cartTotal + (cartTotal >= 1999 ? 0 : 149)).toLocaleString()}
               </span>
             </div>
 
             <button className="btn-gold" style={{ width: "100%", marginBottom: 12 }} onClick={() => setPage("checkout")}>
-              PROCEED TO CHECKOUT
+              {t("checkout")}
             </button>
             <button className="btn-ghost" style={{ width: "100%" }} onClick={() => setPage("shop")}>
-              CONTINUE SHOPPING
+              {t("continueShopping")}
             </button>
           </div>
         )}

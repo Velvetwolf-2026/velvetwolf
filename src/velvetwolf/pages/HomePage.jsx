@@ -1,11 +1,13 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "./AppContext";
+import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
 
 export default function HomePage() {
   const { setPage, products, openShop } = useContext(AppContext);
+  const { t } = useLanguage();
   const [heroIndex, setHeroIndex] = useState(0);
   const heroSlides = [
     { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2024", collection: "silent-luxury" },
@@ -41,9 +43,9 @@ export default function HomePage() {
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
               <button className="btn-gold" onClick={() => openShop(slide.collection)}>
-                EXPLORE COLLECTION
+                {t("discoverNow")}
               </button>
-              <button className="btn-outline" onClick={() => openShop()}>SHOP ALL</button>
+              <button className="btn-outline" onClick={() => openShop()}>{t("shop")}</button>
             </div>
           </div>
           {/* Hero slide indicators */}
@@ -81,10 +83,10 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>{t("ourPromise")}</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>{t("featuredProducts")}</h2>
             </div>
-            <button className="btn-outline" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12} /></button>
+            <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
           </div>
           <FeaturedCoverflow products={featured} />
         </div>

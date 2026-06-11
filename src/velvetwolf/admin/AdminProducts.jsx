@@ -4,7 +4,7 @@ import { fetchAdminProducts, createProduct, updateProduct, deleteProduct } from 
 import { COLLECTIONS } from "../pages/Collections";
 import { supabase } from "../utils/supabase";
 
-const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "" };
+const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [] };
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
 
@@ -72,9 +72,8 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
         sizes: editProduct.sizes,
         colors: editProduct.colors,
         image: editProduct.image,
-        imageBase64: editProduct.imageBase64,
-        imageFileName: editProduct.imageFileName,
-        imageContentType: editProduct.imageContentType,
+        images: editProduct.images,
+        newImages: editProduct.newImages,
       });
       setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.product : p));
       setEditProduct(null);
@@ -101,35 +100,45 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
   };
 
   const handleImageUpload = async (e, isEdit = false) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
     try {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const newUploads = await Promise.all(files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            resolve({ base64, fileName, contentType: file.type, previewUrl: URL.createObjectURL(file) });
+          };
+          reader.readAsDataURL(file);
+        });
+      }));
 
-        if (isEdit) {
-          setEditProduct((ep) => ({ 
-            ...ep, 
-            imageBase64: base64, 
-            imageFileName: fileName, 
-            imageContentType: file.type 
-          }));
-        } else {
-          setForm((f) => ({ 
-            ...f, 
-            imageBase64: base64, 
-            imageFileName: fileName, 
-            imageContentType: file.type 
-          }));
-        }
-        showToast("Image ready for upload! Please save/add product to upload.");
-      };
-      reader.readAsDataURL(file);
+      if (isEdit) {
+        setEditProduct((ep) => ({ 
+          ...ep, 
+          newImages: [...(ep.newImages || []), ...newUploads]
+        }));
+      } else {
+        setForm((f) => ({ 
+          ...f, 
+          newImages: [...(f.newImages || []), ...newUploads]
+        }));
+      }
+      showToast(`${newUploads.length} image(s) ready for upload!`);
     } catch {
-      showToast("Failed to process image.", "error");
+      showToast("Failed to process images.", "error");
+    }
+  };
+
+  const removeNewImage = (index, isEdit = false) => {
+    if (isEdit) {
+      setEditProduct((ep) => ({ ...ep, newImages: ep.newImages.filter((_, i) => i !== index) }));
+    } else {
+      setForm((f) => ({ ...f, newImages: f.newImages.filter((_, i) => i !== index) }));
     }
   };
 
@@ -167,18 +176,22 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
-            <div style={{ display: "flex", gap: 8, gridColumn: "1/-1", alignItems: "center" }}>
-              {(form.imageBase64 || form.image) && (
-                <img 
-                  src={form.imageBase64 ? `data:${form.imageContentType};base64,${form.imageBase64}` : form.image} 
-                  alt="Preview" 
-                  style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
-                />
+            <div style={{ display: "flex", gap: 8, gridColumn: "1/-1", alignItems: "center", flexWrap: "wrap" }}>
+              {/* Existing URLs or manually entered primary image */}
+              {form.image && (
+                <img src={form.image} alt="Primary" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)", border: "1px solid var(--gold)" }} />
               )}
-              <input className="input-dark" placeholder="IMAGE URL" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value, imageBase64: null }))} style={{ flex: 1 }} />
+              {/* New pending images */}
+              {(form.newImages || []).map((img, i) => (
+                <div key={i} style={{ position: "relative" }}>
+                  <img src={img.previewUrl} alt={`New ${i}`} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                  <button onClick={() => removeNewImage(i, false)} style={{ position: "absolute", top: -6, right: -6, background: "var(--wolf-red)", color: "#fff", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                </div>
+              ))}
+              <input className="input-dark" placeholder="PRIMARY IMAGE URL (optional)" value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} style={{ flex: 1, minWidth: 200 }} />
               <label className="btn-ghost" style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0 16px", fontSize: 12, height: 40, boxSizing: "border-box" }}>
-                UPLOAD FILE
-                <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, false)} />
+                UPLOAD FILE(S)
+                <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => handleImageUpload(e, false)} />
               </label>
             </div>
             <textarea className="input-dark" placeholder="DESCRIPTION" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} style={{ gridColumn: "1/-1" }} />
@@ -212,18 +225,22 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
                     {editProduct?.id === p.id
                       ? <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            {(editProduct.imageBase64 || editProduct.image) && (
-                              <img 
-                                src={editProduct.imageBase64 ? `data:${editProduct.imageContentType};base64,${editProduct.imageBase64}` : editProduct.image} 
-                                alt="Preview" 
-                                style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} 
-                              />
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
+                            {editProduct.image && (
+                              <img src={editProduct.image} alt="Primary" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
                             )}
-                            <input className="input-dark" placeholder="IMAGE URL" value={editProduct.image || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, image: e.target.value, imageBase64: null }))} style={{ padding: "6px 10px", fontSize: 11, flex: 1 }} />
+                            {(editProduct.images || []).map((url, i) => url !== editProduct.image && (
+                              <img key={i} src={url} alt={`Gallery ${i}`} style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                            ))}
+                            {(editProduct.newImages || []).map((img, i) => (
+                              <div key={i} style={{ position: "relative" }}>
+                                <img src={img.previewUrl} alt={`New ${i}`} style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                                <button onClick={() => removeNewImage(i, true)} style={{ position: "absolute", top: -4, right: -4, background: "var(--wolf-red)", color: "#fff", border: "none", borderRadius: "50%", width: 12, height: 12, fontSize: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                              </div>
+                            ))}
                             <label className="btn-ghost" style={{ cursor: "pointer", padding: "0 8px", fontSize: 10, display: "flex", alignItems: "center", height: 30, boxSizing: "border-box" }}>
-                              FILE
-                              <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleImageUpload(e, true)} />
+                              + FILE(S)
+                              <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => handleImageUpload(e, true)} />
                             </label>
                           </div>
                         </div>

@@ -257,8 +257,8 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   .admin-sidebar { width: 200px; }
   .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 40px !important; }
   .footer-brand-col { grid-column: 1 / -1; }
-  .page-hero-title { font-size: clamp(40px, 8vw, 72px) !important; }
-  .page-hero-pad { padding: 48px 24px 32px !important; }
+  .page-hero-title { font-size: clamp(48px, 8vw, 80px) !important; }
+  .page-hero-pad { padding: 64px 24px 48px !important; }
   .page-content-pad { padding: 40px 24px !important; }
   .collections-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; justify-content: unset !important; }
   .cart-layout { grid-template-columns: 1fr !important; }
@@ -282,8 +282,8 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
   .footer-links { flex-wrap: wrap !important; gap: 12px !important; }
   .footer-pad { padding: 48px 20px 32px !important; }
-  .page-hero-title { font-size: clamp(36px, 10vw, 56px) !important; }
-  .page-hero-pad { padding: 32px 20px 24px !important; }
+  .page-hero-title { font-size: clamp(40px, 11vw, 64px) !important; }
+  .page-hero-pad { padding: 48px 20px 36px !important; }
   .page-content-pad { padding: 28px 20px !important; }
   .collections-grid { grid-template-columns: 1fr !important; }
   .cart-layout { grid-template-columns: 1fr !important; }

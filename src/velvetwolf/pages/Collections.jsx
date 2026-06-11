@@ -67,11 +67,10 @@ export default function CollectionsPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>EXPLORE</div>
-          <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
-        </div>
+      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>EXPLORE THE UNIVERSE</div>
+        <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>ALL COLLECTIONS</h1>
+        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Every drop tells a story. Find yours.</p>
       </div>
 
       <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "60px 40px" }}>
@@ -100,13 +99,13 @@ export default function CollectionsPage() {
               }}
             >
               <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }} />
-              <div style={{ fontSize: 48, marginBottom: 20, textAlign: "center" }}>{col.icon}</div>
+              <div style={{ fontSize: 48, marginBottom: 20, textAlign: "center" }}><col.icon fontSize="inherit" /></div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12, textAlign: "center" }}>{col.name.toUpperCase()}</h2>
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2 }}>
                 EXPLORE <ArrowIcon size={12} color={col.color} />
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { loadBackendEnv } from "../config/env.js";
 import { normalizeOtpKind } from "../config/otp-template.js";
-import { sendOTP } from "../config/ses.js";
+import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 
@@ -557,48 +557,58 @@ export async function verifyFirebaseIdToken(idToken) {
   }
 }
 
-export async function firebaseLogin({ phone, token }) {
+export async function firebaseLogin({ identifier, phone, token }) {
   // 1. Verify the Firebase ID Token
   const payload = await verifyFirebaseIdToken(token);
   
-  // Extract and verify the phone number matches
-  const firebasePhone = payload.phone_number;
-  if (!firebasePhone) {
-    throw new ApiError(400, "Firebase ID token does not contain a phone number.");
+  const isEmail = !!payload.email;
+  const isPhone = !!payload.phone_number;
+
+  let finalEmail = "";
+  let name = "User";
+  let type = "Firebase";
+  
+  if (isPhone) {
+    const verifiedMobile = payload.phone_number.replace(/\D/g, "").slice(-10);
+    const providedMobile = (phone || identifier || "").replace(/\D/g, "").slice(-10);
+    
+    if (providedMobile && verifiedMobile !== providedMobile) {
+      throw new ApiError(400, "Phone number verification mismatch.");
+    }
+    finalEmail = `${verifiedMobile}@mobile.velvetwolf.in`;
+    name = `Mobile ${verifiedMobile}`;
+    type = "Mobile";
+  } else if (isEmail) {
+    finalEmail = normalizeEmail(payload.email);
+    name = payload.name || finalEmail.split("@")[0] || "User";
+    type = "Google";
+  } else {
+    throw new ApiError(400, "Firebase ID token must contain an email or phone number.");
   }
-
-  const verifiedMobile = firebasePhone.replace(/\D/g, "").slice(-10);
-  const providedMobile = phone.replace(/\D/g, "").slice(-10);
-
-  if (verifiedMobile !== providedMobile) {
-    throw new ApiError(400, "Phone number verification mismatch.");
-  }
-
-  const email = `${verifiedMobile}@mobile.velvetwolf.in`;
 
   // 2. Discover or upsert the user in users table
   const { data: existingUser, error: lookupError } = await supabaseAdmin
-    .from("users").select("id, email, name, role").eq("email", email).maybeSingle();
+    .from("users").select("id, email, name, role").eq("email", finalEmail).maybeSingle();
 
   if (lookupError) throw new ApiError(400, lookupError.message);
 
   let user = existingUser;
 
   if (!user) {
-    // Sign up new mobile user
+    // Sign up new user from Firebase
     const googlePasswordHash = await bcrypt.hash(crypto.randomUUID(), 10);
     const { data: insertedRows, error: insertError } = await supabaseAdmin.from("users").insert({
-      name: `Mobile ${verifiedMobile}`,
-      email,
+      name,
+      email: finalEmail,
       password_hash: googlePasswordHash,
       role: "customer",
-      type: "Mobile",
+      type,
       last_login: new Date().toISOString(),
       is_verified: true, // Firebase verified it!
     }).select("id, email, name, role").limit(1);
 
     if (insertError) {
-      logError("Firebase user insert failed", authLogContext({ email, error: insertError }));
+      logError("Firebase user insert failed", authLogContext({ email: finalEmail, error: insertError }));
       throw new ApiError(400, insertError.message);
     }
     user = insertedRows?.[0];

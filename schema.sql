@@ -242,3 +242,12 @@ UPDATE public.products
 SET slug = lower(regexp_replace(name, '[^a-zA-Z0-9]+', '-', 'g'))
 WHERE slug IS NULL;
 
+-- ==========================================
+-- MIGRATION: EXTEND ORDERS TABLE WITH SHIPROCKET FIELDS
+-- ==========================================
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shiprocket_order_id TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shiprocket_shipment_id TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS awb_number TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS courier_name TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_status TEXT;
+

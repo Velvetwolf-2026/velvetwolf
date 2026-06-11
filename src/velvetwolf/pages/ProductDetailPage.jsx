@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { AppContext } from "./AppContext";
+import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
 import ProductImage from "../components/ProductImage";
@@ -10,6 +11,7 @@ import { trackViewItem, trackAddToCart } from "../utils/analytics";
 export default function ProductDetailPage() {
   const slug = useParams().slug;
   const { addToCart, toggleWishlist, wishlist, showToast } = useContext(AppContext);
+  const { t } = useLanguage();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -109,9 +111,10 @@ export default function ProductDetailPage() {
 
   const sizes = Array.isArray(product.sizes) ? product.sizes : [];
   const colors = Array.isArray(product.colors) ? product.colors : [];
-  const gallery = Array.isArray(product.images) && product.images.length > 0
-    ? product.images
-    : (product.image ? [product.image] : []);
+  const rawGallery = Array.isArray(product.images) ? product.images : [];
+  const gallery = product.image && !rawGallery.includes(product.image) 
+    ? [product.image, ...rawGallery] 
+    : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
   const activeImage = selectedImage || product.image || (gallery[0] || null);
 
   const inWishlist = wishlist.some((i) => i.id === product.id);
@@ -172,7 +175,7 @@ export default function ProductDetailPage() {
             
             <div style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 24 }}>
               {[1, 2, 3, 4, 5].map((s) => <Icon key={s} name="star" size={14} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} reviews)</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} {t("shop") === "दुकान" ? "समीक्षाएं" : (t("shop") === "கடை" ? "மதிப்புரைகள்" : "reviews")})</span>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28 }}>
@@ -187,7 +190,7 @@ export default function ProductDetailPage() {
             {/* Colors selection */}
             {colors.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>COLOR: {color.toUpperCase()}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("color")}: {color.toUpperCase()}</div>
                 <div style={{ display: "flex", gap: 10 }}>
                   {colors.map((c) => (
                     <button
@@ -211,7 +214,7 @@ export default function ProductDetailPage() {
             {/* Sizes selection */}
             {sizes.length > 0 && (
               <div style={{ marginBottom: 28 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>SIZE: {size}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("size")}: {size}</div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {sizes.map((s) => (
                     <button
@@ -239,7 +242,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity selection */}
             <div style={{ marginBottom: 36 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>QUANTITY</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("qty")}</div>
               <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)", width: "fit-content" }}>
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 16px" }}><Icon name="minus" size={14} /></button>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--ivory)", padding: "0 20px" }}>{qty}</span>
@@ -249,7 +252,7 @@ export default function ProductDetailPage() {
 
             {/* Actions */}
             <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" style={{ flex: 1, padding: "18px 40px" }} onClick={handleAddToCart}>ADD TO CART</button>
+              <button className="btn-gold" style={{ flex: 1, padding: "18px 40px" }} onClick={handleAddToCart}>{t("addToCart")}</button>
               <button
                 onClick={() => toggleWishlist(product)}
                 style={{

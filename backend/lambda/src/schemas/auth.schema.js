@@ -58,6 +58,7 @@ export const resetPasswordSchema = z.object({
     .string({ required_error: "New password is required" })
     .min(8, "Password must be at least 8 characters"),
 });export const firebaseLoginSchema = z.object({
-  phone: z.string({ required_error: "Phone number is required" }).min(1, "Phone number is required"),
+  identifier: z.string().optional(),
+  phone: z.string().optional(), // keeping for backward compatibility
   token: z.string({ required_error: "Firebase token is required" }).min(1, "Firebase token is required"),
 });

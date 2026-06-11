@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ProductImage({ product, height = 280 }) {
+export default function ProductImage({ product, height = 280, selectedColor = null }) {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -16,28 +16,48 @@ export default function ProductImage({ product, height = 280 }) {
 
   // Parse product image
   let imageUrl = null;
-  if (product.image) {
-    if (typeof product.image === "string") {
-      if (product.image.trim().startsWith("[")) {
-        try {
-          const parsed = JSON.parse(product.image);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            imageUrl = parsed[0];
-          }
-        } catch (e) {
-          imageUrl = product.image;
-        }
-      } else {
-        imageUrl = product.image;
-      }
-    } else if (Array.isArray(product.image) && product.image.length > 0) {
-      imageUrl = product.image[0];
+
+  // 1. Try to find a color-specific image if selectedColor is provided
+  if (selectedColor && Array.isArray(product.images)) {
+    const matched = product.images.find(
+      (img) => typeof img === "string" && img.startsWith(`${selectedColor}::`)
+    );
+    if (matched) {
+      imageUrl = matched.split("::")[1];
     }
   }
 
-  // Fallback to images array if available
-  if (!imageUrl && Array.isArray(product.images) && product.images.length > 0) {
-    imageUrl = product.images[0];
+  // 2. Fall back to standard logic
+  if (!imageUrl) {
+    if (product.image) {
+      if (typeof product.image === "string") {
+        if (product.image.trim().startsWith("[")) {
+          try {
+            const parsed = JSON.parse(product.image);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              imageUrl = parsed[0];
+            }
+          } catch (e) {
+            imageUrl = product.image;
+          }
+        } else {
+          imageUrl = product.image;
+        }
+      } else if (Array.isArray(product.image) && product.image.length > 0) {
+        imageUrl = product.image[0];
+      }
+    }
+
+    // Fallback to images array if available
+    if (!imageUrl && Array.isArray(product.images) && product.images.length > 0) {
+      const firstNonPrefixed = product.images.find(img => typeof img === "string" && !img.includes("::"));
+      imageUrl = firstNonPrefixed || product.images[0];
+    }
+  }
+
+  // Strip prefix if any remain
+  if (typeof imageUrl === "string" && imageUrl.includes("::")) {
+    imageUrl = imageUrl.split("::")[1];
   }
 
   if (imageUrl) {
