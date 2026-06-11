@@ -4,6 +4,7 @@ import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
+import CinematicParallaxReveal from "../components/CinematicParallaxReveal";
 
 export default function HomePage() {
   const { setPage, products, openShop } = useContext(AppContext);
@@ -33,10 +34,10 @@ export default function HomePage() {
         <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }} />
         <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }} />
 
-        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
-          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
+        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "40px" }}>
+          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease", flex: "1 1 500px", zIndex: 2 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(56px, 9vw, 130px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
@@ -48,6 +49,11 @@ export default function HomePage() {
               <button className="btn-outline" onClick={() => openShop()}>{t("shop")}</button>
             </div>
           </div>
+
+          <div className="hero-mockup-col" style={{ flex: "1 1 400px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2 }}>
+            <CinematicParallaxReveal activeIndex={heroIndex} />
+          </div>
+
           {/* Hero slide indicators */}
           <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
             {heroSlides.map((_, i) => (

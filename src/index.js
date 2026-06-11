@@ -45,7 +45,7 @@ export { default as CartPage } from "./velvetwolf/pages/CartPage";
 export { default as WishlistPage } from "./velvetwolf/pages/WishlistPage";
 
 // ── Shared Style Helpers ──
-export { S, PageHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
+export { S, PageHeader, HeroHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
 
 // ── Constants ──
 export { THEME, CATEGORIES, NAV_LINKS, POLICY_PAGES } from "./velvetwolf/utils/constants";

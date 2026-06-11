@@ -5,6 +5,7 @@ import { useLanguage } from "./LanguageContext";
 import ProductCard from "../components/ProductCard";
 import Icon from "../components/Icon";
 import { COLLECTIONS, getCollectionById } from "./Collections";
+import { HeroHeader } from "../styles/shared";
 
 export default function ShopPage() {
   const { products, searchQuery } = useContext(AppContext);
@@ -48,16 +49,11 @@ export default function ShopPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      {/* Header */}
-      <div style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>VELVETWOLF STORE</div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(48px, 7vw, 80px)", letterSpacing: 4, lineHeight: 1 }}>
-          {activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : t("shop")}
-        </h1>
-        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>
-          {filtered.length} {t("shop") === "दुकान" ? "टुकड़े उपलब्ध" : (t("shop") === "கடை" ? "தயாரிப்புகள் உள்ளன" : "pieces available in this drop.")}
-        </p>
-      </div>
+      <HeroHeader
+        eyebrow="VELVETWOLF STORE"
+        title={activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : t("shop").toUpperCase()}
+        sub={`${filtered.length} ${t("shop") === "दुकान" ? "टुकड़े उपलब्ध" : (t("shop") === "கடை" ? "தயாரிப்புகள் உள்ளன" : "pieces available in this drop.")}`}
+      />
 
       <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "40px 40px", display: "flex", gap: 40, flexWrap: "wrap" }}>
         {/* Sidebar filters */}

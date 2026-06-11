@@ -1,21 +1,34 @@
 import React, { useContext, useState, useRef } from "react";
 import { AppContext } from "./AppContext";
 import Icon from "../components/Icon";
+import { HeroHeader } from "../styles/shared";
 
 export default function CustomDesignPage() {
   const { user, setPage, showToast } = useContext(AppContext);
-  const [uploaded, setUploaded] = useState(false);
-  const [fileName, setFileName] = useState("");
+  const [images, setImages] = useState([]);
   const [form, setForm] = useState({ fabric: "220gsm", color: "#0a0a0a", size: "M", qty: 1, note: "" });
-  const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploaded(true);
-      setFileName(file.name);
-      showToast("Design selected successfully! ✓");
-    }
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      if (!file.type.startsWith("image/")) {
+        showToast("Only image files are allowed", "error");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("Image size must be less than 5MB", "error");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImages(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmitOrderRequest = () => {
@@ -25,7 +38,7 @@ export default function CustomDesignPage() {
       return;
     }
 
-    if (!uploaded) {
+    if (images.length === 0) {
       showToast("Upload your design before submitting the request.", "error");
       return;
     }
@@ -41,35 +54,83 @@ export default function CustomDesignPage() {
     }
 
     showToast("Custom order request submitted!");
+    setImages([]);
   };
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "80px 40px 60px", borderBottom: "1px solid var(--smoke)", textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>YOUR VISION, OUR CRAFT</div>
-        <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>CUSTOM<br/>DESIGN</h1>
-        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Upload your artwork. We print it on luxury-grade fabric.</p>
-      </div>
+      <HeroHeader
+        eyebrow="YOUR VISION, OUR CRAFT"
+        title="CUSTOM DESIGN"
+        sub="Upload your artwork. We print it on luxury-grade fabric."
+      />
 
       <div className="page-content-pad" style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px" }}>
         <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
           {/* Upload zone */}
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>UPLOAD DESIGN</h2>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: "none" }} 
-              accept="image/*" 
-              onChange={handleFileChange}
-            />
-            <div style={{ border: `2px dashed ${uploaded ? "var(--gold)" : "var(--smoke)"}`, padding: "60px 40px", textAlign: "center", cursor: "pointer", transition: "all 0.3s", background: uploaded ? "rgba(201,168,76,0.05)" : "transparent" }}
-              onClick={() => fileInputRef.current?.click()}>
-              <Icon name="upload" size={40} color={uploaded ? "var(--gold)" : "var(--silver)"}/>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, letterSpacing: 2, marginTop: 20, color: uploaded ? "var(--gold)" : "var(--silver)" }}>
-                {uploaded ? (fileName ? `UPLOADED: ${fileName.toUpperCase()} ✓` : "DESIGN UPLOADED ✓") : "CLICK TO UPLOAD"}
-              </div>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 10, color: "var(--silver)", letterSpacing: 2, marginTop: 8 }}>PNG, JPG, SVG · MAX 50MB</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <label htmlFor="design-images" style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1px dashed var(--smoke)",
+                padding: "40px 20px",
+                cursor: "pointer",
+                background: "rgba(255,255,255,0.01)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: 1,
+                color: "var(--silver)",
+                textAlign: "center"
+              }}>
+                <Icon name="upload" size={32} color="var(--silver)" style={{ marginBottom: 12 }} />
+                <span>✦ Select images (multiple)</span>
+                <span style={{ fontSize: 9, color: "var(--ash)", marginTop: 4 }}>PNG, JPG, JPEG up to 5MB each</span>
+              </label>
+              <input
+                id="design-images"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+
+              {images.length > 0 && (
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", background: "rgba(255,255,255,0.02)", padding: 12, border: "1px solid var(--smoke)" }}>
+                  {images.map((img, idx) => (
+                    <div key={idx} style={{ position: "relative", width: 64, height: 64, border: "1px solid var(--smoke)", background: "#000" }}>
+                      <img src={img} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        style={{
+                          position: "absolute",
+                          top: -4,
+                          right: -4,
+                          background: "#c0392b",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: 16,
+                          height: 16,
+                          fontSize: 9,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ marginTop: 20 }}>
               {["✦ DTG Printing (all colors)", "✦ Screen Printing (bulk)", "✦ Embroidery (luxury tier)"].map(t => (

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
+import { HeroHeader } from "../styles/shared";
 
 export default function BulkOrderPage() {
   const { showToast, user } = useContext(AppContext);
@@ -117,11 +118,11 @@ export default function BulkOrderPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "80px 40px 60px", textAlign: "center", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>For teams &amp; organizations</div>
-        <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 80, letterSpacing: 4 }}>Bulk &amp;<br/>Corporate</h1>
-        <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 18, color: "var(--silver)", fontStyle: "italic", marginTop: 16 }}>Outfit your entire team in VelvetWolf luxury.</p>
-      </div>
+      <HeroHeader
+        eyebrow="For teams & organizations"
+        title="BULK & CORPORATE"
+        sub="Outfit your entire team in VelvetWolf luxury."
+      />
 
       <div className="contact-grid page-content-pad" style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
         <div>

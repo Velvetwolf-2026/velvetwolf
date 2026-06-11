@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ProductImage({ product, height = 280, selectedColor = null }) {
+export default function ProductImage({ product, height = 280, selectedColor = null, isParentHovered = false }) {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -61,6 +61,7 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
   }
 
   if (imageUrl) {
+    const showModel = Boolean(isParentHovered && product.modelImage);
     return (
       <div
         style={{
@@ -80,12 +81,29 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            transition: "transform 0.5s ease"
+            transition: "transform 0.5s ease, opacity 0.3s ease",
+            opacity: showModel ? 0 : 1,
+            transform: isParentHovered ? "scale(1.05)" : "scale(1)"
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
           loading="lazy"
         />
+        {product.modelImage && (
+          <img
+            src={product.modelImage}
+            alt={`${product.name} Model Preview`}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transition: "transform 0.5s ease, opacity 0.3s ease",
+              opacity: showModel ? 1 : 0,
+              transform: isParentHovered ? "scale(1.05)" : "scale(1.02)",
+              pointerEvents: "none"
+            }}
+          />
+        )}
         <div
           style={{
             position: "absolute",
@@ -94,6 +112,7 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
             right: 0,
             height: 60,
             background: "linear-gradient(transparent, rgba(10,10,10,0.8))",
+            zIndex: 3
           }}
         />
       </div>

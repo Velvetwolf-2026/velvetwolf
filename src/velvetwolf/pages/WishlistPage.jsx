@@ -1,16 +1,19 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
+import { useBreakpoint } from "../utils/breakpoints";
+import { HeroHeader } from "../styles/shared";
 
 function WishlistItemCard({ item, onAddToCart, onRemove }) {
+  const { isMobile } = useBreakpoint();
   return (
-    <div className="vw-wishlist-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
+    <div className="vw-wishlist-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr auto", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 1, marginBottom: 8 }}>{item.name}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 2, marginBottom: 12 }}>
           {item.tag} · {item.sizes?.join(" / ")}
         </div>
         <p style={{ fontFamily: "var(--font-serif)", color: "var(--silver)", lineHeight: 1.6, marginBottom: 18 }}>{item.description}</p>
-        <div className="vw-wishlist-actions" style={{ display: "flex", gap: 12 }}>
+        <div className="vw-wishlist-actions" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button className="btn-gold" onClick={onAddToCart}>ADD TO CART</button>
           <button
             onClick={onRemove}
@@ -20,7 +23,7 @@ function WishlistItemCard({ item, onAddToCart, onRemove }) {
           </button>
         </div>
       </div>
-      <div className="vw-wishlist-price" style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div className="vw-wishlist-price" style={{ textAlign: isMobile ? "left" : "right", display: "flex", flexDirection: isMobile ? "row" : "column", justifyContent: "space-between", gap: isMobile ? 8 : 0, alignItems: isMobile ? "center" : "initial", borderTop: isMobile ? "1px solid var(--smoke)" : "none", paddingTop: isMobile ? 12 : 0 }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>₹{Number(item.price).toLocaleString()}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", letterSpacing: 1 }}>SAVE FOR LATER</div>
       </div>
@@ -45,13 +48,11 @@ export default function WishlistPage() {
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SYNCED WITH YOUR ACCOUNT</div>
-          <h1 className="page-hero-title" style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4, marginBottom: 8 }}>YOUR WISHLIST</h1>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)" }}>{wishlist.length} saved pieces</p>
-        </div>
-      </div>
+      <HeroHeader
+        eyebrow="SYNCED WITH YOUR ACCOUNT"
+        title="YOUR WISHLIST"
+        sub={`${wishlist.length} saved pieces`}
+      />
 
       <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "48px 40px" }}>
         {wishlist.length === 0 ? (

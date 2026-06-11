@@ -1,6 +1,8 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
+import { useBreakpoint } from "../utils/breakpoints";
+import { HeroHeader } from "../styles/shared";
 
 function QuantityButton({ children, onClick }) {
   return (
@@ -24,8 +26,9 @@ function QuantityButton({ children, onClick }) {
 
 function CartItemCard({ item, onQtyChange, onRemove }) {
   const { t } = useLanguage();
+  const { isMobile } = useBreakpoint();
   return (
-    <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20 }}>
+    <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr auto", gap: 20 }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 4vw, 26px)", letterSpacing: 1, marginBottom: 6 }}>
           {item.name}
@@ -55,7 +58,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
           </button>
         </div>
       </div>
-      <div style={{ textAlign: "right", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+      <div style={{ textAlign: isMobile ? "left" : "right", display: "flex", flexDirection: isMobile ? "row" : "column", justifyContent: "space-between", gap: isMobile ? 8 : 0, alignItems: isMobile ? "center" : "initial" }}>
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px, 4vw, 28px)", color: "var(--gold)" }}>
           ₹{(Number(item.price) * Number(item.qty)).toLocaleString()}
         </div>
@@ -71,28 +74,19 @@ export default function CartPage() {
   const { cart, cartCount, cartTotal, updateCartQty, removeFromCart, setPage, user } = useContext(AppContext);
   const { t } = useLanguage();
 
+  const eyebrowText = user?.id 
+    ? (t("shop") === "दुकान" ? "आपके खाते से सिंक किया गया" : (t("shop") === "கடை" ? "உங்கள் கணக்குடன் ஒத்திசைக்கப்பட்டது" : "SYNCED WITH YOUR ACCOUNT")) 
+    : (t("shop") === "दुकान" ? "अतिथि कार्ट" : (t("shop") === "கடை" ? "விருந்தினர் கூடை" : "GUEST CART"));
+
+  const subText = `${cartCount} ${t("shop") === "दुकान" ? "वस्तुएं चेकआउट के लिए तैयार हैं" : (t("shop") === "கடை" ? "பொருட்கள் செக்அவுட்டிற்கு தயாராக உள்ளன" : "items ready for checkout")}`;
+
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      {/* Hero header */}
-      <div
-        className="page-hero-pad"
-        style={{ background: "var(--graphite)", padding: "60px 40px 40px", borderBottom: "1px solid var(--smoke)" }}
-      >
-        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>
-            {user?.id ? (t("shop") === "दुकान" ? "आपके खाते से सिंक किया गया" : (t("shop") === "கடை" ? "உங்கள் கணக்குடன் ஒத்திசைக்கப்பட்டது" : "SYNCED WITH YOUR ACCOUNT")) : (t("shop") === "दुकान" ? "अतिथि कार्ट" : (t("shop") === "கடை" ? "விருந்தினர் கூடை" : "GUEST CART"))}
-          </div>
-          <h1
-            className="cart-header page-hero-title"
-            style={{ fontFamily: "var(--font-display)", fontSize: 72, letterSpacing: 4, marginBottom: 8 }}
-          >
-            {t("cart")}
-          </h1>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--silver)" }}>
-            {cartCount} {t("shop") === "दुकान" ? "वस्तुएं चेकआउट के लिए तैयार हैं" : (t("shop") === "கடை" ? "பொருட்கள் செக்அவுட்டிற்கு தயாராக உள்ளன" : "items ready for checkout")}
-          </p>
-        </div>
-      </div>
+      <HeroHeader
+        eyebrow={eyebrowText}
+        title={t("cart").toUpperCase()}
+        sub={subText}
+      />
 
       {/* Cart layout — stacks to single column on tablet/mobile via .cart-layout class */}
       <div

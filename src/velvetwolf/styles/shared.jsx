@@ -43,6 +43,57 @@ export function PageHeader({ eyebrow, title, sub }) {
   );
 }
 
+/** Reusable hero banner header block for main landing/shop/cart pages */
+export function HeroHeader({ eyebrow, title, sub }) {
+  return (
+    <div
+      className="page-hero-pad"
+      style={{
+        background: "var(--graphite)",
+        padding: "80px 40px 60px",
+        textAlign: "center",
+        borderBottom: "1px solid var(--smoke)",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          letterSpacing: 4,
+          color: "var(--gold)",
+          marginBottom: 16,
+        }}
+      >
+        {eyebrow}
+      </div>
+      <h1
+        className="page-hero-title"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "clamp(48px, 8vw, 80px)",
+          letterSpacing: 4,
+          lineHeight: 1,
+          margin: 0,
+        }}
+      >
+        {title}
+      </h1>
+      <p
+        style={{
+          fontFamily: "'Roboto', sans-serif",
+          fontSize: 18,
+          color: "var(--silver)",
+          fontStyle: "italic",
+          marginTop: 16,
+          marginBottom: 0,
+        }}
+      >
+        {sub}
+      </p>
+    </div>
+  );
+}
+
 /** Reusable H2 section */
 export function Sec({ title, children }) {
   return (

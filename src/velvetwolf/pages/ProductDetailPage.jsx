@@ -7,9 +7,18 @@ import Icon from "../components/Icon";
 import ProductImage from "../components/ProductImage";
 import { getCollectionById } from "./Collections";
 import { trackViewItem, trackAddToCart } from "../utils/analytics";
+import { useBreakpoint } from "../utils/breakpoints";
+
+const COLOR_MAP = {
+  "Black": "#0a0a0a",
+  "White": "#faf9f7",
+  "Beige/Sand": "#d2b48c",
+  "Forest Green": "#1e4620"
+};
 
 export default function ProductDetailPage() {
   const slug = useParams().slug;
+  const { isMobile, isMobileOrTablet } = useBreakpoint();
   const { addToCart, toggleWishlist, wishlist, showToast } = useContext(AppContext);
   const { t } = useLanguage();
   const [product, setProduct] = useState(null);
@@ -91,6 +100,31 @@ export default function ProductDetailPage() {
     ogImage.content = defaultImg || "";
   }, [product]);
 
+  // Reset selected image when color selection changes
+  useEffect(() => {
+    if (!product || !color) return;
+    const rawGallery = Array.isArray(product.images) ? product.images : [];
+    const gallery = product.image && !rawGallery.includes(product.image) 
+      ? [product.image, ...rawGallery] 
+      : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
+
+    const colorSpecific = gallery.find(
+      (img) => typeof img === "string" && img.startsWith(`${color}::`)
+    );
+    if (colorSpecific) {
+      setSelectedImage(colorSpecific.split("::")[1]);
+    } else {
+      const firstUnprefixed = gallery.find(
+        (img) => typeof img === "string" && !img.includes("::")
+      );
+      if (firstUnprefixed) {
+        setSelectedImage(firstUnprefixed);
+      } else {
+        setSelectedImage(null);
+      }
+    }
+  }, [color, product]);
+
   if (loading) {
     return (
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--obsidian)" }}>
@@ -115,7 +149,26 @@ export default function ProductDetailPage() {
   const gallery = product.image && !rawGallery.includes(product.image) 
     ? [product.image, ...rawGallery] 
     : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
-  const activeImage = selectedImage || product.image || (gallery[0] || null);
+
+  // Filter and clean gallery based on selected color
+  let filteredGallery = [];
+  if (color) {
+    const colorSpecific = gallery.filter(
+      (img) => typeof img === "string" && img.startsWith(`${color}::`)
+    );
+    if (colorSpecific.length > 0) {
+      filteredGallery = colorSpecific.map((img) => img.split("::")[1]);
+    } else {
+      filteredGallery = gallery
+        .filter((img) => typeof img === "string" && !img.includes("::"))
+        .map((img) => img);
+    }
+  }
+  if (filteredGallery.length === 0) {
+    filteredGallery = gallery.map((img) => (typeof img === "string" && img.includes("::") ? img.split("::")[1] : img));
+  }
+
+  const activeImage = selectedImage || (filteredGallery[0] || null);
 
   const inWishlist = wishlist.some((i) => i.id === product.id);
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
@@ -126,8 +179,8 @@ export default function ProductDetailPage() {
 
   return (
     <div style={{ paddingTop: 90, minHeight: "100vh", background: "var(--obsidian)" }}>
-      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, flexWrap: "wrap" }}>
+      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "20px 16px" : "40px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : (isTablet ? 32 : 60) }}>
           {/* Left - Image Gallery */}
           <div>
             <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", position: "relative", overflow: "hidden", height: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -144,9 +197,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail grid */}
-            {gallery.length > 1 && (
+            {filteredGallery.length > 1 && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 16 }}>
-                {gallery.map((img, i) => (
+                {filteredGallery.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(img)}
@@ -200,7 +253,7 @@ export default function ProductDetailPage() {
                         width: 32,
                         height: 32,
                         borderRadius: "50%",
-                        background: c,
+                        background: COLOR_MAP[c] || c,
                         border: color === c ? "2px solid var(--gold)" : "2px solid transparent",
                         cursor: "pointer",
                         outline: "2px solid var(--smoke)"
@@ -268,7 +321,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Features list */}
-            <div style={{ borderTop: "1px solid var(--smoke)", marginTop: 40, paddingTop: 24, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div style={{ borderTop: "1px solid var(--smoke)", marginTop: 40, paddingTop: 24, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {[
                 ["🛡️ SECURE CHECKOUT", "UPI, Cards, EMI, COD"],
                 ["⚡ EXPRESS DELIVERY", "Dispatch within 48 hours"],

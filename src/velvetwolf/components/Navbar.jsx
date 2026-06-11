@@ -572,7 +572,7 @@ export default function Navbar({ activePage }) {
               <button
                 key={pg}
                 onClick={() => goToPage(pg)}
-                className={`vw-mobile-link vw-mobile-bulk${activePage === pg ? " active" : ""}`}
+                className={`vw-mobile-link${activePage === pg ? " active" : ""}`}
               >
                 <span>{t(label)}</span>
                 <span className="vw-link-arrow">›</span>
