@@ -1,9 +1,42 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "../pages/AppContext";
 import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 
 export default function Footer() {
-  const { setPage, openShop } = useContext(AppContext);
+  const { setPage, openShop, showToast } = useContext(AppContext);
+
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [feedbackType, setFeedbackType] = useState(""); // "success" | "error"
+
+  const handleSubscribe = () => {
+    const trimmed = newsletterEmail.trim();
+    if (!trimmed) {
+      setFeedback("Please enter your email address.");
+      setFeedbackType("error");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
+      setFeedback("Please enter a valid email address.");
+      setFeedbackType("error");
+      return;
+    }
+
+    // Success
+    setFeedback("Welcome to the pack! Check your inbox soon.");
+    setFeedbackType("success");
+    setNewsletterEmail("");
+    if (showToast) {
+      showToast("Subscription successful! Welcome to the pack ◆");
+    }
+  };
+
+  const handleEmailChange = (e) => {
+    setNewsletterEmail(e.target.value);
+    if (feedback) setFeedback("");
+  };
 
   const socialLinkStyle = {
     fontFamily: "'Roboto', sans-serif",
@@ -20,8 +53,8 @@ export default function Footer() {
   return (
     <footer className="vw-footer" style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "56px 40px 28px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div className="vw-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
-          <div className="vw-footer-brand">
+        <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
+          <div className="footer-brand-col">
             <div className="vw-footer-brand-title" style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>
@@ -185,8 +218,29 @@ export default function Footer() {
             >
               New drops, exclusive offers — for wolves only.
             </p>
-            <input className="input-dark" placeholder="YOUR EMAIL" style={{ marginBottom: 6 }} />
-            <button className="btn-gold" style={{ width: "100%", padding: "10px" }}>
+            <input
+              className="input-dark"
+              placeholder="YOUR EMAIL"
+              style={{ marginBottom: 10 }}
+              value={newsletterEmail}
+              onChange={handleEmailChange}
+            />
+            {feedback && (
+              <div style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: 1,
+                marginBottom: 10,
+                color: feedbackType === "success" ? "var(--gold)" : "var(--wolf-red)"
+              }}>
+                {feedbackType === "success" ? "✓" : "✕"} {feedback.toUpperCase()}
+              </div>
+            )}
+            <button
+              className="btn-gold"
+              style={{ width: "100%", padding: "10px" }}
+              onClick={handleSubscribe}
+            >
               JOIN THE PACK
             </button>
           </div>

@@ -1,0 +1,22 @@
+{
+  "short_name": "Velvetwolf",
+  "name": "Velvetwolf Luxury Streetwear",
+  "description": "Premium luxury streetwear built for the modern generation.",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/vw-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

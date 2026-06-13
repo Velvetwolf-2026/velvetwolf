@@ -2,10 +2,12 @@ import * as authService from "../services/auth.service.js";
 import {
   signupSchema, loginSchema, verifyOtpSchema,
   resendOtpSchema, forgotPasswordSchema, resetPasswordSchema,
+  firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
 import { jsonResponse, redirectResponse } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export async function signup(body, event) {
   const data = validate(signupSchema)(body);
@@ -17,16 +19,24 @@ export async function signup(body, event) {
 export async function login(body, event) {
   const data = validate(loginSchema)(body);
   const result = await authService.login(data);
-  return jsonResponse(200, result, {}, event);
+  const headers = {};
+  if (result.token) {
+    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    delete result.token;
+  }
+  return jsonResponse(200, result, headers, event);
 }
 
 export async function verifyOtp(body, event) {
   const data = validate(verifyOtpSchema)(body);
   const result = await authService.verifyOtp(data);
+  const headers = {};
   if (result.token) {
     await auditLog({ action: "user.login", resource: "users", meta: { email: data.email, type: data.type } });
+    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    delete result.token;
   }
-  return jsonResponse(200, result, {}, event);
+  return jsonResponse(200, result, headers, event);
 }
 
 export async function resendOtp(body, event) {
@@ -53,16 +63,62 @@ export function googleRedirect(query, event) {
 }
 
 export async function googleCallback(query, event) {
-  const location = await authService.googleCallback({
+  const result = await authService.googleCallback({
     code: query.code,
     state: query.state,
     error: query.error,
     errorDescription: query.error_description,
   });
-  return redirectResponse(location, 302, {}, event);
+  const headers = {};
+  if (result.token) {
+    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+  }
+  return redirectResponse(result.redirect, 302, headers, event);
 }
 
 export async function verifyOtpLink(query, event) {
   const result = await authService.verifyOtpLink(query.t);
-  return redirectResponse(result.redirect, 302, {}, event);
+  const headers = {};
+  if (result.token) {
+    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+  }
+  return redirectResponse(result.redirect, 302, headers, event);
 }
+
+export async function discover(body, event) {
+  const { email } = body;
+  if (!email) {
+    return jsonResponse(400, { error: "Email/identifier is required" }, {}, event);
+  }
+  const result = await authService.discoverUser({ email });
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function firebaseLogin(body, event) {
+  const data = validate(firebaseLoginSchema)(body);
+  const result = await authService.firebaseLogin(data);
+  const headers = {};
+  if (result.token) {
+    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    delete result.token;
+  }
+  await auditLog({ action: "user.login", resource: "users", meta: { phone: data.phone, type: "Mobile" } });
+  return jsonResponse(200, result, headers, event);
+}
+
+export async function logout(body, event) {
+  const headers = {
+    "Set-Cookie": authService.getLogoutCookieHeader(),
+  };
+  return jsonResponse(200, { success: true, message: "Logged out successfully." }, headers, event);
+}
+
+export async function getSession(body, event) {
+  try {
+    const user = requireAuth(event);
+    return jsonResponse(200, { authenticated: true, user }, {}, event);
+  } catch {
+    return jsonResponse(200, { authenticated: false, user: null }, {}, event);
+  }
+}
+

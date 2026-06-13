@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import { loadBackendEnv } from "./env.js";
 import { buildOtpEmail } from "./otp-template.js";
-import { isEmailSuppressed } from "../services/bounce.service.js";
 import { ApiError, logError } from "../utils/http.js";
 
 loadBackendEnv();
@@ -35,8 +34,9 @@ function parseSmtpError(err) {
 }
 
 export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
-  if (await isEmailSuppressed(email)) {
-    throw new ApiError(400, "This email address cannot receive messages. Please contact support.");
+  if (email.endsWith("@mobile.velvetwolf.in")) {
+    console.log(`[MOCK SMS OTP] To mobile user: ${email}, OTP: ${otp}`);
+    return { messageId: "mock-message-id" };
   }
   const emailContent = buildOtpEmail({ otp, kind, verifyUrl });
   const transporter = createTransporter();
@@ -50,29 +50,62 @@ export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
     });
   } catch (err) {
     logError("SMTP sendOTP failed", { email, kind, errorCode: err?.code, errorMessage: err?.message });
+    
+    const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
+                    (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
+                    process.env.PORT === "5000";
+
+    if (isLocal) {
+      console.log("\n=========================================");
+      console.log(`[DEVELOPMENT FALLBACK] Failed to send email via SMTP.`);
+      console.log(`To: ${email}`);
+      console.log(`OTP Code: ${otp}`);
+      console.log(`Verify Link: ${verifyUrl}`);
+      console.log("=========================================\n");
+      return { messageId: "dev-fallback-mock-message-id" };
+    }
+
     throw new ApiError(502, parseSmtpError(err));
   }
 }
 
-export async function sendEmail({ to, subject, html, text, replyTo }) {
+export async function sendEmail({ to, cc, subject, html, text, replyTo, attachments }) {
   const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
-  const suppressed = await Promise.all(recipients.map(isEmailSuppressed));
-  const allowed = recipients.filter((_, i) => !suppressed[i]);
+  const allowed = recipients;
   if (allowed.length === 0) {
-    throw new ApiError(400, "All recipients are suppressed from receiving emails.");
+    throw new ApiError(400, "No recipients provided.");
   }
   const transporter = createTransporter();
   try {
     return await transporter.sendMail({
       from: process.env.EMAIL_FROM || "info@velvetwolf.in",
       to: allowed.join(", "),
+      ...(cc && { cc }),
       subject,
       html,
       text,
       ...(replyTo && { replyTo }),
+      ...(attachments && { attachments }),
     });
   } catch (err) {
     logError("SMTP sendEmail failed", { to: allowed, errorCode: err?.code, errorMessage: err?.message });
+    
+    const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
+                    (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
+                    process.env.PORT === "5000" ||
+                    process.env.NODE_ENV === "development";
+
+    if (isLocal) {
+      console.log("\n=========================================");
+      console.log(`[DEVELOPMENT FALLBACK] Failed to send email via SMTP.`);
+      console.log(`To: ${allowed.join(", ")}`);
+      if (cc) console.log(`CC: ${cc}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Attachments: ${(attachments || []).length} files`);
+      console.log("=========================================\n");
+      return { messageId: "dev-fallback-mock-message-id" };
+    }
+
     throw new ApiError(502, parseSmtpError(err));
   }
 }

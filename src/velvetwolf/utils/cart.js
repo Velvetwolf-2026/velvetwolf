@@ -14,7 +14,7 @@ export async function loadCartFromDB(userId) {
   return Array.isArray(payload.items) ? payload.items : [];
 }
 
-export async function addCartItemDB(userId, product, qty = 1) {
+export async function addCartItemDB(userId, product, qty = 1, size = null, color = null) {
   const response = await fetch(apiUrl('/cart/add'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -22,6 +22,8 @@ export async function addCartItemDB(userId, product, qty = 1) {
       userId,
       productId: product?.id,
       quantity: qty,
+      size,
+      color,
     }),
   });
 
@@ -67,7 +69,7 @@ export async function mergeGuestCart(userId) {
   const guestCart = JSON.parse(localStorage.getItem('vw_guest_cart') || '[]');
 
   for (const item of guestCart) {
-    await addCartItemDB(userId, item, item.qty);
+    await addCartItemDB(userId, item, item.qty, item.size, item.color);
   }
 
   localStorage.removeItem('vw_guest_cart');

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./AppContext";
 import { supabase } from "../utils/supabase";
 import { getUserOrders } from "../utils/order";
-import { updateProfile } from "../utils/profile";
+import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
 
 export function AccountPage() {
   const { user, setUser, setPage, wishlist, cart, signOutUser, showToast } = useContext(AppContext);
@@ -12,6 +12,73 @@ export function AccountPage() {
   const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
   const [savingSettings, setSavingSettings] = useState(false);
   const databaseUserId = user?.id || null;
+
+  const [showEmailUpdate, setShowEmailUpdate] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const handleSendEmailOtp = async () => {
+    if (!newEmail.trim()) {
+      setEmailError("Email address is required.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    
+    setSendingEmailOtp(true);
+    setEmailError("");
+    try {
+      await sendEmailUpdateOtp(newEmail.trim());
+      setEmailOtpSent(true);
+      showToast("Verification code sent to your email.");
+    } catch (err) {
+      setEmailError(err.message || "Failed to send verification code.");
+    } finally {
+      setSendingEmailOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (emailOtp.length !== 6) {
+      setEmailError("Verification code must be 6 digits.");
+      return;
+    }
+
+    setVerifyingEmailOtp(true);
+    setEmailError("");
+    try {
+      const result = await verifyEmailUpdateOtp(newEmail.trim(), emailOtp);
+      
+      if (result.token) {
+        localStorage.setItem("token", result.token);
+      }
+      
+      const nextUser = {
+        ...user,
+        ...result.user,
+      };
+
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      
+      showToast("Email address updated successfully!");
+      setShowEmailUpdate(false);
+      setEmailOtpSent(false);
+      setNewEmail("");
+      setEmailOtp("");
+    } catch (err) {
+      setEmailError(err.message || "Invalid or expired verification code.");
+    } finally {
+      setVerifyingEmailOtp(false);
+    }
+  };
 
   useEffect(() => {
     if (!databaseUserId || tab !== "orders") return;
@@ -191,28 +258,164 @@ export function AccountPage() {
         {tab === "settings" && (
           <div className="vw-account-settings-panel" style={{ maxWidth: 500 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 32 }}>ACCOUNT SETTINGS</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
-              <input
-                className="input-dark"
-                value={settings.fullName}
-                onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value }))}
-                placeholder="FULL NAME"
-              />
-              <input
-                className="input-dark"
-                type="email"
-                value={settings.email}
-                readOnly
-                placeholder="EMAIL"
-                style={{ opacity: 0.75, cursor: "not-allowed" }}
-              />
-              <input
-                className="input-dark"
-                type="tel"
-                value={settings.phone}
-                onChange={(e) => setSettings((prev) => ({ ...prev, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 10) }))}
-                placeholder="PHONE NUMBER"
-              />
+            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 32 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>FULL NAME</label>
+                <input
+                  className="input-dark"
+                  value={settings.fullName}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="FULL NAME"
+                />
+              </div>
+
+              {(() => {
+                const isMobileEmail = settings.email?.endsWith("@mobile.velvetwolf.in");
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>EMAIL ADDRESS</label>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ flex: 1, position: "relative" }}>
+                        <input
+                          className="input-dark"
+                          type="email"
+                          value={isMobileEmail ? "No email linked" : settings.email}
+                          readOnly
+                          placeholder="EMAIL"
+                          style={{ width: "100%", opacity: 0.75, cursor: "not-allowed", border: isMobileEmail ? "1px dashed var(--gold)" : "1px solid var(--smoke)" }}
+                        />
+                        {isMobileEmail && (
+                          <span className="badge" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(201, 168, 76, 0.15)", color: "var(--gold)", border: "1px solid var(--gold)", fontSize: 8 }}>
+                            UNLINKED
+                          </span>
+                        )}
+                      </div>
+                      <button 
+                        type="button"
+                        className="btn-ghost" 
+                        style={{ padding: "12px 20px", fontSize: 10, letterSpacing: 2, height: "100%", whiteSpace: "nowrap" }}
+                        onClick={() => {
+                          setShowEmailUpdate(!showEmailUpdate);
+                          setEmailOtpSent(false);
+                          setNewEmail("");
+                          setEmailOtp("");
+                          setEmailError("");
+                        }}
+                      >
+                        {isMobileEmail ? "LINK EMAIL" : "UPDATE"}
+                      </button>
+                    </div>
+
+                    {showEmailUpdate && (
+                      <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 24, marginTop: 16, position: "relative" }}>
+                        <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>
+                          {isMobileEmail ? "LINK PERSONAL EMAIL" : "UPDATE EMAIL ADDRESS"}
+                        </h3>
+                        
+                        {!emailOtpSent ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <p style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.5, fontFamily: "var(--font-serif)" }}>
+                              {isMobileEmail 
+                                ? "Link a secure email address to receive order confirmations, track delivery status, and log in securely." 
+                                : "Enter your new email address. We'll send a 6-digit verification code to confirm ownership."}
+                            </p>
+                            <input
+                              className="input-dark"
+                              type="email"
+                              value={newEmail}
+                              onChange={(e) => {
+                                setNewEmail(e.target.value);
+                                setEmailError("");
+                              }}
+                              placeholder="NEW EMAIL ADDRESS"
+                              disabled={sendingEmailOtp}
+                            />
+                            {emailError && (
+                              <div style={{ color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
+                                ✕ {emailError}
+                              </div>
+                            )}
+                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                              <button 
+                                type="button"
+                                className="btn-gold" 
+                                style={{ padding: "10px 20px", fontSize: 10 }}
+                                onClick={handleSendEmailOtp}
+                                disabled={sendingEmailOtp}
+                              >
+                                {sendingEmailOtp ? "SENDING CODE..." : "SEND CODE"}
+                              </button>
+                              <button 
+                                type="button"
+                                className="btn-ghost" 
+                                style={{ padding: "10px 20px", fontSize: 10 }}
+                                onClick={() => setShowEmailUpdate(false)}
+                                disabled={sendingEmailOtp}
+                              >
+                                CANCEL
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <p style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.5, fontFamily: "var(--font-serif)" }}>
+                              A 6-digit verification code has been sent to <strong style={{ color: "var(--ivory)" }}>{newEmail}</strong>. Enter the code below to complete the update.
+                            </p>
+                            <input
+                              className="input-dark"
+                              type="text"
+                              value={emailOtp}
+                              onChange={(e) => {
+                                setEmailOtp(e.target.value.replace(/[^\d]/g, "").slice(0, 6));
+                                setEmailError("");
+                              }}
+                              placeholder="6-DIGIT CODE"
+                              style={{ letterSpacing: 8, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 18 }}
+                              disabled={verifyingEmailOtp}
+                            />
+                            {emailError && (
+                              <div style={{ color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
+                                ✕ {emailError}
+                              </div>
+                            )}
+                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                              <button 
+                                type="button"
+                                className="btn-gold" 
+                                style={{ padding: "10px 20px", fontSize: 10 }}
+                                onClick={handleVerifyEmailOtp}
+                                disabled={verifyingEmailOtp}
+                              >
+                                {verifyingEmailOtp ? "VERIFYING..." : "VERIFY & UPDATE"}
+                              </button>
+                              <button 
+                                type="button"
+                                className="btn-ghost" 
+                                style={{ padding: "10px 20px", fontSize: 10 }}
+                                onClick={() => setEmailOtpSent(false)}
+                                disabled={verifyingEmailOtp}
+                              >
+                                BACK
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>PHONE NUMBER</label>
+                <input
+                  className="input-dark"
+                  type="tel"
+                  value={settings.phone}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 10) }))}
+                  placeholder="PHONE NUMBER"
+                />
+              </div>
             </div>
             <button className="btn-gold" style={{ marginBottom: 16, opacity: savingSettings ? 0.7 : 1, cursor: savingSettings ? "not-allowed" : "pointer" }} onClick={handleSaveSettings} disabled={savingSettings}>
               {savingSettings ? "SAVING..." : "SAVE CHANGES"}

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // ─────────────────────────────────────────────
 // VelvetWolf — Category SVG Logos
 // Each logo accepts { size, color } props.

@@ -6,9 +6,9 @@ import { handleCartRoutes } from "./routes/cart.routes.js";
 import { handleWishlistRoutes } from "./routes/wishlist.routes.js";
 import { handleProfileRoutes } from "./routes/profile.routes.js";
 import { handleContactRoutes } from "./routes/contact.routes.js";
-import { handleSesRoutes } from "./routes/ses.routes.js";
 import { handleAdminRoutes } from "./routes/admin.routes.js";
 import { handleCheckoutRoutes } from "./routes/checkout.routes.js";
+import { handleShippingRoutes } from "./routes/shipping.routes.js";
 
 loadBackendEnv();
 
@@ -65,9 +65,9 @@ const ROUTE_HANDLERS = [
   handleWishlistRoutes,
   handleProfileRoutes,
   handleContactRoutes,
-  handleSesRoutes,
   handleAdminRoutes,
   handleCheckoutRoutes,
+  handleShippingRoutes,
 ];
 
 async function dispatch(method, route, body, query, requestId, event) {
