@@ -28,6 +28,8 @@ function mapProduct(row) {
     images: Array.isArray(row.images) ? row.images : [],
     isActive: row.is_active ?? true,
     isLimited: row.is_limited ?? false,
+    style: row.style ?? 'Unisex',
+    fit: row.fit ?? 'Oversized',
   };
 }
 

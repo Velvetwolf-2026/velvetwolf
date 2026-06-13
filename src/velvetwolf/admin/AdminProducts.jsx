@@ -5,7 +5,7 @@ import { COLLECTIONS } from "../utils/collectionsData";
 import Icon from "../components/Icon";
 import { TAG_COLORS } from "../utils/constants";
 
-const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [] };
+const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", fit: "Oversized" };
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
 
@@ -93,6 +93,9 @@ export default function AdminProducts() {
     try {
       const res = await updateProduct(editProduct.id, {
         name: editProduct.name,
+        collection: editProduct.collection,
+        style: editProduct.style || "Unisex",
+        fit: editProduct.fit || "Oversized",
         price: Number(editProduct.price),
         original_price: Number(editProduct.original_price ?? editProduct.originalPrice ?? editProduct.price),
         stock: Number(editProduct.stock ?? 0),
@@ -211,6 +214,12 @@ export default function AdminProducts() {
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
+            <select className="input-dark" value={form.style} onChange={(e) => setForm((f) => ({ ...f, style: e.target.value }))}>
+              {["Unisex", "Men's Fit", "Women's Fit"].map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select className="input-dark" value={form.fit} onChange={(e) => setForm((f) => ({ ...f, fit: e.target.value }))}>
+              {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
             <div style={{ gridColumn: "1/-1" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
                 <input 
@@ -313,6 +322,23 @@ export default function AdminProducts() {
                     {editProduct?.id === p.id
                       ? <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           <input className="input-dark" value={editProduct.name} onChange={(e) => setEditProduct((ep) => ({ ...ep, name: e.target.value }))} style={{ padding: "6px 10px", fontSize: 11 }} />
+                          
+                          <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                            <select className="input-dark" value={editProduct.collection} onChange={(e) => setEditProduct((ep) => ({ ...ep, collection: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
+                              {COLLECTIONS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <select className="input-dark" value={editProduct.tag || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, tag: e.target.value || null }))} style={{ padding: "4px 8px", fontSize: 10 }}>
+                              <option value="">NO TAG</option>
+                              {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <select className="input-dark" value={editProduct.style || "Unisex"} onChange={(e) => setEditProduct((ep) => ({ ...ep, style: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
+                              {["Unisex", "Men's Fit", "Women's Fit"].map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <select className="input-dark" value={editProduct.fit || "Oversized"} onChange={(e) => setEditProduct((ep) => ({ ...ep, fit: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
+                              {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
+                            </select>
+                          </div>
+
                           <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontFamily: "var(--font-mono)", cursor: "pointer" }}>
                             <input 
                               type="checkbox" 

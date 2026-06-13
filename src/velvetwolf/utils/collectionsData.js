@@ -10,16 +10,22 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import FilterNoneIcon from "@mui/icons-material/FilterNone";
 
 export const COLLECTIONS = [
   { id: "ai-tech", name: "AI & Tech Humor", icon: MemoryIcon, color: "#4fc3f7" },
-  { id: "anime", name: "Anime Anarchy", icon: AutoAwesomeIcon, color: "#f06292" },
+  { id: "anime", name: "Anime", icon: AutoAwesomeIcon, color: "#f06292" },
   { id: "xp-mode", name: "XP Mode: Activated", icon: SportsEsportsIcon, color: "#81c784" },
   { id: "beast-mode", name: "Beast Mode Grind", icon: FitnessCenterIcon, color: "#ff8a65" },
   { id: "mind-mayhem", name: "Mind Over Mayhem", icon: PsychologyIcon, color: "#ce93d8" },
   { id: "silent-luxury", name: "Silent Luxury", icon: DiamondIcon, color: "#c9a84c" },
   { id: "savage-quotes", name: "Savage Quotes", icon: WhatshotIcon, color: "#ef5350" },
   { id: "founder", name: "Founder Energy", icon: RocketLaunchIcon, color: "#ffd54f" },
+  { id: "cars", name: "Cars", icon: DirectionsCarIcon, color: "#e57373" },
+  { id: "motivation", name: "Motivation", icon: EmojiEventsIcon, color: "#ffb74d" },
+  { id: "minimalist", name: "Minimalist", icon: FilterNoneIcon, color: "#e0e0e0" },
   { id: "trending", name: "Trending Now", icon: TrendingUpIcon, color: "#80cbc4" },
   { id: "limited", name: "Limited Edition", icon: LocalOfferIcon, color: "#ffab91" },
   { id: "most-loved", name: "Most Loved", icon: FavoriteIcon, color: "#f48fb1" },
