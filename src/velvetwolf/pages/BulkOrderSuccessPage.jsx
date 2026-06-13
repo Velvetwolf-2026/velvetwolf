@@ -1,10 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "./AppContext";
-import { useLanguage } from "./LanguageContext";
 
 export default function BulkOrderSuccessPage() {
   const { setPage, user } = useContext(AppContext);
-  const { t } = useLanguage();
   const [details, setDetails] = useState(null);
 
   useEffect(() => {

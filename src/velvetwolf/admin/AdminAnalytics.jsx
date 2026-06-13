@@ -15,6 +15,7 @@ export default function AdminAnalytics() {
         else showToast("Failed to load analytics.", "error");
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {

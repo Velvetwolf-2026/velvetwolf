@@ -117,7 +117,7 @@ export async function getSession(body, event) {
   try {
     const user = requireAuth(event);
     return jsonResponse(200, { authenticated: true, user }, {}, event);
-  } catch (err) {
+  } catch {
     return jsonResponse(200, { authenticated: false, user: null }, {}, event);
   }
 }

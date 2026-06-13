@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { loadCartFromDB, addCartItemDB, mergeGuestCart } from "../velvetwolf/utils/cart";
+import { loadCartFromDB, mergeGuestCart } from "../velvetwolf/utils/cart";
 
 describe("Cart Utility Tests", () => {
   beforeEach(() => {

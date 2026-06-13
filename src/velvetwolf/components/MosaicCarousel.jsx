@@ -17,7 +17,7 @@ import CategoryTile from "./CategoryTile";
 import { CATEGORIES, THEME } from "../utils/constants";
 import { LOGO_MAP } from "./CategoryLogos";
 
-const { gold, goldLight, muted, border } = THEME;
+const { gold } = THEME;
 const getMosaicMetrics = (viewportWidth) => {
   if (viewportWidth <= 480) {
     return {

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
-import { apiUrl, googleAuthUrl } from "../utils/api";
+import { apiUrl } from "../utils/api";
 import { updateProfile } from "../utils/profile";
 import { auth, isFirebaseAvailable } from "../utils/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWithPopup } from "firebase/auth";

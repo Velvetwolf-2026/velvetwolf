@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
 import { fetchAdminProducts, createProduct, updateProduct, deleteProduct } from "../utils/adminApi";
-import { COLLECTIONS } from "../pages/Collections";
-import { supabase } from "../utils/supabase";
+import { COLLECTIONS } from "../utils/collectionsData";
+import Icon from "../components/Icon";
+import { TAG_COLORS } from "../utils/constants";
 
 const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [] };
 
@@ -17,7 +18,7 @@ const COLOR_MAP = {
 
 const T_SHIRT_COLORS = ["Black", "White", "Beige/Sand", "Forest Green"];
 
-export default function AdminProducts({ Icon, TAG_COLORS }) {
+export default function AdminProducts() {
   const { setPage, showToast } = useContext(AppContext);
   const [products, setProducts] = useState([]);
   const [total, setTotal]       = useState(0);
@@ -56,6 +57,7 @@ export default function AdminProducts({ Icon, TAG_COLORS }) {
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(""); }, []);
 
   const handleAdd = async () => {

@@ -37,7 +37,7 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
             if (Array.isArray(parsed) && parsed.length > 0) {
               imageUrl = parsed[0];
             }
-          } catch (e) {
+          } catch {
             imageUrl = product.image;
           }
         } else {

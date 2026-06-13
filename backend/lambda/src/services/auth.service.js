@@ -434,7 +434,7 @@ export async function verifyOtpLink(token) {
   let payload;
   try {
     payload = jwt.verify(token, getLinkSecret());
-  } catch (err) {
+  } catch {
     throw new ApiError(400, "This verification link has expired or is invalid.");
   }
 
@@ -483,7 +483,7 @@ export async function resetPassword({ resetToken, newPassword }) {
   let payload;
   try {
     payload = jwt.verify(resetToken, getResetSecret());
-  } catch (err) {
+  } catch {
     throw new ApiError(400, "Your reset link has expired. Please request a new one.");
   }
 

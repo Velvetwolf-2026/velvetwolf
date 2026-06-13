@@ -5,8 +5,8 @@ import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
 import ProductImage from "../components/ProductImage";
-import { getCollectionById } from "./Collections";
-import { trackViewItem, trackAddToCart } from "../utils/analytics";
+import { getCollectionById } from "../utils/collectionsData";
+import { trackViewItem } from "../utils/analytics";
 import { useBreakpoint } from "../utils/breakpoints";
 
 const COLOR_MAP = {
@@ -18,8 +18,8 @@ const COLOR_MAP = {
 
 export default function ProductDetailPage() {
   const slug = useParams().slug;
-  const { isMobile, isMobileOrTablet } = useBreakpoint();
-  const { addToCart, toggleWishlist, wishlist, showToast } = useContext(AppContext);
+  const { isMobile, isTablet, isMobileOrTablet } = useBreakpoint();
+  const { addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const { t } = useLanguage();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);

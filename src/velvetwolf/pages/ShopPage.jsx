@@ -4,7 +4,7 @@ import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
 import ProductCard from "../components/ProductCard";
 import Icon from "../components/Icon";
-import { COLLECTIONS, getCollectionById } from "./Collections";
+import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { HeroHeader } from "../styles/shared";
 
 export default function ShopPage() {

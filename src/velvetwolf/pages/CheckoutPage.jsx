@@ -5,7 +5,7 @@ import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, setCart, setPage, user, showToast, clearCart } = useContext(AppContext);
+  const { cart, cartTotal, setPage, user, showToast, clearCart } = useContext(AppContext);
   const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState({ 
@@ -15,7 +15,7 @@ export default function CheckoutPage() {
     address: "", city: "", district: "", state: "", pincode: "" 
   });
   const [paymentMethod, setPaymentMethod] = useState("card");
-  const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
+
   const [processing, setProcessing] = useState(false);
   const [pincodeLocations, setPincodeLocations] = useState([]);
   const [loadingPincode, setLoadingPincode] = useState(false);
@@ -43,6 +43,7 @@ export default function CheckoutPage() {
     if (cart.length > 0) {
       trackBeginCheckout(cart, total);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleApplyCoupon = async () => {

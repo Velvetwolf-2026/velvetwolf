@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";
-import { getCollectionById } from "../pages/Collections";
+import { getCollectionById } from "../utils/collectionsData";
 import { useBreakpoint } from "../utils/breakpoints";
 
 const COLOR_MAP = {
@@ -16,13 +16,14 @@ export default function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const { isMobile, isMobileOrTablet } = useBreakpoint();
   
-  if (!p) return null;
-  
-  const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
-  const colors = Array.isArray(p.colors) && p.colors.length ? p.colors : [];
+  const sizes  = Array.isArray(p?.sizes)  && p.sizes.length  ? p.sizes  : [];
+  const colors = Array.isArray(p?.colors) && p.colors.length ? p.colors : [];
   const [size, setSize]   = useState(sizes[0]  ?? "M");
   const [color, setColor] = useState(colors[0] ?? "#0a0a0a");
   const [qty, setQty] = useState(1);
+
+  if (!p) return null;
+  
   const inWishlist = wishlist.find(i => i.id === p.id);
 
   return (

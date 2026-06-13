@@ -1,9 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 // ─────────────────────────────────────────────
 // VelvetWolf — Shared Inline Style Tokens
 // ─────────────────────────────────────────────
 import { THEME } from "../utils/constants";
 
-const { gold, bg, surface, border, muted, text } = THEME;
+const { gold, bg, border, muted, text } = THEME;
 
 export const S = {
   page:     { background: bg, minHeight: "100vh", color: text, fontFamily: "'Georgia', serif" },

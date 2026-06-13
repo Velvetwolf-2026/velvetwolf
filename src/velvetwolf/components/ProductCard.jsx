@@ -3,18 +3,9 @@ import { Link } from "react-router-dom";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";
-import { getCollectionById } from "../pages/Collections";
+import { getCollectionById } from "../utils/collectionsData";
 import { useBreakpoint } from "../utils/breakpoints";
-
-export const TAG_COLORS = {
-  "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
-  "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
-  "NEW": { bg: "#1a3a1a", color: "#81c784" },
-  "TRENDING": { bg: "#1a1a3a", color: "#4fc3f7" },
-  "HOT": { bg: "#3a1a0a", color: "#ff8a65" },
-  "MOST LOVED": { bg: "#3a0a1a", color: "#f48fb1" },
-  "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
-};
+import { TAG_COLORS } from "../utils/constants";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);

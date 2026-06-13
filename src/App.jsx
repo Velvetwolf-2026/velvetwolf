@@ -4,8 +4,7 @@ import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, ForgetPassword, Login, AccountPage, CheckoutPage, PaymentStatusPage, CollectionsPage } from "./index";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
 import { HomePage, ShopPage, CustomDesignPage, BulkOrderPage, BulkOrderSuccessPage, ProductDetailPage, CartPage, WishlistPage } from "./index";
-import { supabase } from "./velvetwolf/utils/supabase";
-import { getProfile } from "./velvetwolf/utils/auth";
+
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
 import { loadProductsFromAPI } from "./velvetwolf/utils/products";
@@ -22,10 +21,7 @@ import { trackAddToCart } from "./velvetwolf/utils/analytics";
 // Admin layout lazy-loaded
 const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
 
-const loadedCartUsers = new Set();
-const loadedWishlistUsers = new Set();
-const inFlightCartLoads = new Map();
-const inFlightWishlistLoads = new Map();
+
 let productsLoadPromise = null;
 
 // Shared layout wrapper for rendering Navbar & Footer
@@ -175,7 +171,7 @@ export default function VelvetWolf() {
     try {
       const items = await loadCartFromDB(userId);
       setCart(items);
-      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { }
+      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
       console.error('[syncCartFromDB]', err.message);
     }
@@ -395,6 +391,7 @@ export default function VelvetWolf() {
       const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", nextUrl);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync cart and wishlist reactively on user state change
@@ -408,6 +405,7 @@ export default function VelvetWolf() {
       setCart(getGuestCart());
       setWishlist([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Initial products load
@@ -440,6 +438,7 @@ export default function VelvetWolf() {
         showToast("Admin access required.", "error");
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, user, canAccessAdmin]);
 
   return (
@@ -505,7 +504,7 @@ export default function VelvetWolf() {
           />
         </Routes>
 
-        {selectedProduct && <ProductModal />}
+        {selectedProduct && <ProductModal key={selectedProduct.id} />}
         {cartOpen && <CartSidebar />}
         {wishlistOpen && <WishlistSidebar />}
       </AppContext.Provider>
