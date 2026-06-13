@@ -132,7 +132,7 @@ export async function getAdminProducts({ collection, search, page = 1, limit = 1
 }
 
 export async function createAdminProduct(productData, adminId) {
-  const { name, collection, price, original_price, description, tag, sizes, colors, stock, image, images = [], newImages = [] } = productData;
+  const { name, collection, price, original_price, description, tag, sizes, colors, stock, image, images = [], newImages = [], style, fit } = productData;
 
   logInfo("Creating product", adminLogContext({ name, collection, adminId }));
 
@@ -182,6 +182,8 @@ export async function createAdminProduct(productData, adminId) {
     stock: Number(stock ?? 0),
     image: finalImageUrl,
     images: finalImagesArray,
+    style: style || "Unisex",
+    fit: fit || "Oversized",
   }).select().single();
 
   if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, "Failed to create product."); }
@@ -221,7 +223,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   logInfo("Updating product", adminLogContext({ productId, adminId }));
 
-  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images"];
+  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images", "style", "fit"];
   const updates = {};
   for (const key of allowed) {
     if (productData[key] !== undefined) updates[key] = productData[key];

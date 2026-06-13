@@ -17,6 +17,8 @@ export default function ShopPage() {
   const [sort, setSort] = useState("featured");
   const [priceRange] = useState([0, 10000]);
   const [selectedSizes, setSelectedSizes] = useState([]);
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [selectedFits, setSelectedFits] = useState([]);
 
   const handleCollectionClick = (colId) => {
     if (colId) {
@@ -40,6 +42,8 @@ export default function ShopPage() {
     })
     .filter(p => Number(p.price) >= priceRange[0] && Number(p.price) <= priceRange[1])
     .filter(p => selectedSizes.length === 0 || p.sizes?.some(s => selectedSizes.includes(s)))
+    .filter(p => selectedStyles.length === 0 || selectedStyles.includes(p.style))
+    .filter(p => selectedFits.length === 0 || selectedFits.includes(p.fit))
     .sort((a, b) => {
       if (sort === "price-asc") return Number(a.price) - Number(b.price);
       if (sort === "price-desc") return Number(b.price) - Number(a.price);
@@ -78,6 +82,92 @@ export default function ShopPage() {
               {["XS","S","M","L","XL","XXL"].map(size => (
                 <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid var(--gold)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--gold)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
               ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("style").toUpperCase()}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Unisex", "Men's Fit", "Women's Fit"].map(styleVal => {
+                const isSelected = selectedStyles.includes(styleVal);
+                return (
+                  <button
+                    key={styleVal}
+                    onClick={() => setSelectedStyles(prev => isSelected ? prev.filter(s => s !== styleVal) : [...prev, styleVal])}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: isSelected ? "var(--gold)" : "#cfcdcd",
+                      fontFamily: "'Roboto', sans-serif",
+                      fontSize: 12,
+                      letterSpacing: 1,
+                      textAlign: "left",
+                      padding: "4px 0",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      transition: "color 0.2s"
+                    }}
+                  >
+                    <span style={{
+                      width: 12,
+                      height: 12,
+                      border: "1px solid var(--gold)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isSelected ? "var(--gold)" : "transparent",
+                      color: "var(--obsidian)",
+                      fontSize: 8,
+                      fontWeight: "bold"
+                    }}>{isSelected && "✓"}</span>
+                    {styleVal}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("fit").toUpperCase()}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Oversized", "Regular Fit", "Relaxed Fit"].map(fitVal => {
+                const isSelected = selectedFits.includes(fitVal);
+                return (
+                  <button
+                    key={fitVal}
+                    onClick={() => setSelectedFits(prev => isSelected ? prev.filter(f => f !== fitVal) : [...prev, fitVal])}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: isSelected ? "var(--gold)" : "#cfcdcd",
+                      fontFamily: "'Roboto', sans-serif",
+                      fontSize: 12,
+                      letterSpacing: 1,
+                      textAlign: "left",
+                      padding: "4px 0",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      transition: "color 0.2s"
+                    }}
+                  >
+                    <span style={{
+                      width: 12,
+                      height: 12,
+                      border: "1px solid var(--gold)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isSelected ? "var(--gold)" : "transparent",
+                      color: "var(--obsidian)",
+                      fontSize: 8,
+                      fontWeight: "bold"
+                    }}>{isSelected && "✓"}</span>
+                    {fitVal}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

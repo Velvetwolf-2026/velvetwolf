@@ -42,6 +42,8 @@ export const createProductSchema = z.object({
     previewUrl: z.string().optional(),
     color: z.string().optional(),
   })).optional().default([]),
+  style: z.string().optional().default("Unisex"),
+  fit: z.string().optional().default("Oversized"),
 });
 
 export const updateProductSchema = z.object({
@@ -63,6 +65,8 @@ export const updateProductSchema = z.object({
     previewUrl: z.string().optional(),
     color: z.string().optional(),
   })).optional(),
+  style: z.string().optional(),
+  fit: z.string().optional(),
 });
 
 export const getOrdersSchema = z.object({

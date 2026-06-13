@@ -226,9 +226,19 @@ export default function ProductDetailPage() {
             </div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 5vw, 56px)", letterSpacing: 2, marginBottom: 16, lineHeight: 1 }}>{product.name}</h1>
             
-            <div style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 24 }}>
-              {[1, 2, 3, 4, 5].map((s) => <Icon key={s} name="star" size={14} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} {t("shop") === "दुकान" ? "समीक्षाएं" : (t("shop") === "கடை" ? "மதிப்புரைகள்" : "reviews")})</span>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                {[1, 2, 3, 4, 5].map((s) => <Icon key={s} name="star" size={14} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} {t("shop") === "दुकान" ? "समीक्षाएं" : (t("shop") === "கடை" ? "மதிப்புரைகள்" : "reviews")})</span>
+              </div>
+              <div style={{ width: 1, height: 12, background: "var(--smoke)" }} />
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)" }}>
+                {t("style").toUpperCase()}: <span style={{ color: "var(--gold)" }}>{product.style?.toUpperCase() || "UNISEX"}</span>
+              </div>
+              <div style={{ width: 1, height: 12, background: "var(--smoke)" }} />
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)" }}>
+                {t("fit").toUpperCase()}: <span style={{ color: "var(--gold)" }}>{product.fit?.toUpperCase() || "OVERSIZED"}</span>
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28 }}>
