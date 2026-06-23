@@ -1,11 +1,14 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "./AppContext";
+import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
+import CinematicParallaxReveal from "../components/CinematicParallaxReveal";
 
 export default function HomePage() {
   const { setPage, products, openShop } = useContext(AppContext);
+  const { t } = useLanguage();
   const [heroIndex, setHeroIndex] = useState(0);
   const heroSlides = [
     { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2024", collection: "silent-luxury" },
@@ -31,21 +34,26 @@ export default function HomePage() {
         <div style={{ position: "absolute", bottom: "25%", left: "50%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.15)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse" }} />
         <div style={{ position: "absolute", top: "50%", right: "15%", width: 2, height: 300, background: "linear-gradient(transparent, var(--gold), transparent)" }} />
 
-        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%" }}>
-          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease" }}>
+        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "40px" }}>
+          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease", flex: "1 1 500px", zIndex: 2 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(72px, 12vw, 160px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(56px, 9vw, 130px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
               <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
               <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
             </h1>
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
             <div style={{ display: "flex", gap: 16 }}>
               <button className="btn-gold" onClick={() => openShop(slide.collection)}>
-                EXPLORE COLLECTION
+                {t("discoverNow")}
               </button>
-              <button className="btn-outline" onClick={() => openShop()}>SHOP ALL</button>
+              <button className="btn-outline" onClick={() => openShop()}>{t("shop")}</button>
             </div>
           </div>
+
+          <div className="hero-mockup-col" style={{ flex: "1 1 400px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2 }}>
+            <CinematicParallaxReveal activeIndex={heroIndex} />
+          </div>
+
           {/* Hero slide indicators */}
           <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
             {heroSlides.map((_, i) => (
@@ -81,10 +89,10 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PIECES</h2>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>{t("ourPromise")}</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>{t("featuredProducts")}</h2>
             </div>
-            <button className="btn-outline" onClick={() => openShop()}>VIEW ALL <Icon name="arrowRight" size={12} /></button>
+            <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
           </div>
           <FeaturedCoverflow products={featured} />
         </div>

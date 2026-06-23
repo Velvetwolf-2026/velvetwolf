@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { createPaymentOrder, verifyPayment } from "./cashfree.js";
 import { ApiError, logError } from "../utils/http.js";
-import { sendEmail } from "../config/ses.js";
+import { sendEmail } from "../config/smtp.js";
 import { buildOrderEmail } from "../config/order-template.js";
 import { createShiprocketOrder } from "./shiprocket.service.js";
 
@@ -34,14 +34,18 @@ const sanitizeEmail = (email) => {
 async function getVariantForItem(productId, size, color) {
   let query = supabaseAdmin
     .from("product_variants")
-    .select("id, stock, size, color")
+    .select("id, stock_qty, size, color, color_hex")
     .eq("product_id", productId);
 
   if (size) {
     query = query.eq("size", size);
   }
   if (color) {
-    query = query.eq("color", color);
+    if (color.startsWith("#")) {
+      query = query.eq("color_hex", color);
+    } else {
+      query = query.or(`color.eq.${color},color_hex.eq.${color}`);
+    }
   }
 
   const { data, error } = await query;
@@ -49,7 +53,7 @@ async function getVariantForItem(productId, size, color) {
     // If no exact match, fallback to any variant for the product
     const { data: fallbackData } = await supabaseAdmin
       .from("product_variants")
-      .select("id, stock, size, color")
+      .select("id, stock_qty, size, color, color_hex")
       .eq("product_id", productId);
 
     if (fallbackData && fallbackData.length > 0) {
@@ -136,10 +140,10 @@ async function confirmOrder(orderId) {
   for (const item of items) {
     const variant = await getVariantForItem(item.product_id, item.size, item.color);
     if (variant) {
-      const newStock = Math.max(0, variant.stock - item.quantity);
+      const newStock = Math.max(0, variant.stock_qty - item.quantity);
       const { error: updateError } = await supabaseAdmin
         .from("product_variants")
-        .update({ stock: newStock })
+        .update({ stock_qty: newStock })
         .eq("id", variant.id);
 
       if (updateError) {
@@ -200,8 +204,8 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     if (!variant) {
       throw new ApiError(400, `Selected variant for item ${item.name} is not available.`);
     }
-    if (variant.stock < item.qty) {
-      throw new ApiError(400, `Insufficient stock for item ${item.name}. Only ${variant.stock} left.`);
+    if (variant.stock_qty < item.qty) {
+      throw new ApiError(400, `Insufficient stock for item ${item.name}. Only ${variant.stock_qty} left.`);
     }
   }
 

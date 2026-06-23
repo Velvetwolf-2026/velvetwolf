@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ProductImage({ product, height = 280 }) {
+export default function ProductImage({ product, height = 280, selectedColor = null, isParentHovered = false }) {
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -16,31 +16,52 @@ export default function ProductImage({ product, height = 280 }) {
 
   // Parse product image
   let imageUrl = null;
-  if (product.image) {
-    if (typeof product.image === "string") {
-      if (product.image.trim().startsWith("[")) {
-        try {
-          const parsed = JSON.parse(product.image);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            imageUrl = parsed[0];
-          }
-        } catch (e) {
-          imageUrl = product.image;
-        }
-      } else {
-        imageUrl = product.image;
-      }
-    } else if (Array.isArray(product.image) && product.image.length > 0) {
-      imageUrl = product.image[0];
+
+  // 1. Try to find a color-specific image if selectedColor is provided
+  if (selectedColor && Array.isArray(product.images)) {
+    const matched = product.images.find(
+      (img) => typeof img === "string" && img.startsWith(`${selectedColor}::`)
+    );
+    if (matched) {
+      imageUrl = matched.split("::")[1];
     }
   }
 
-  // Fallback to images array if available
-  if (!imageUrl && Array.isArray(product.images) && product.images.length > 0) {
-    imageUrl = product.images[0];
+  // 2. Fall back to standard logic
+  if (!imageUrl) {
+    if (product.image) {
+      if (typeof product.image === "string") {
+        if (product.image.trim().startsWith("[")) {
+          try {
+            const parsed = JSON.parse(product.image);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              imageUrl = parsed[0];
+            }
+          } catch {
+            imageUrl = product.image;
+          }
+        } else {
+          imageUrl = product.image;
+        }
+      } else if (Array.isArray(product.image) && product.image.length > 0) {
+        imageUrl = product.image[0];
+      }
+    }
+
+    // Fallback to images array if available
+    if (!imageUrl && Array.isArray(product.images) && product.images.length > 0) {
+      const firstNonPrefixed = product.images.find(img => typeof img === "string" && !img.includes("::"));
+      imageUrl = firstNonPrefixed || product.images[0];
+    }
+  }
+
+  // Strip prefix if any remain
+  if (typeof imageUrl === "string" && imageUrl.includes("::")) {
+    imageUrl = imageUrl.split("::")[1];
   }
 
   if (imageUrl) {
+    const showModel = Boolean(isParentHovered && product.modelImage);
     return (
       <div
         style={{
@@ -60,12 +81,29 @@ export default function ProductImage({ product, height = 280 }) {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            transition: "transform 0.5s ease"
+            transition: "transform 0.5s ease, opacity 0.3s ease",
+            opacity: showModel ? 0 : 1,
+            transform: isParentHovered ? "scale(1.05)" : "scale(1)"
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
           loading="lazy"
         />
+        {product.modelImage && (
+          <img
+            src={product.modelImage}
+            alt={`${product.name} Model Preview`}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transition: "transform 0.5s ease, opacity 0.3s ease",
+              opacity: showModel ? 1 : 0,
+              transform: isParentHovered ? "scale(1.05)" : "scale(1.02)",
+              pointerEvents: "none"
+            }}
+          />
+        )}
         <div
           style={{
             position: "absolute",
@@ -74,6 +112,7 @@ export default function ProductImage({ product, height = 280 }) {
             right: 0,
             height: 60,
             background: "linear-gradient(transparent, rgba(10,10,10,0.8))",
+            zIndex: 3
           }}
         />
       </div>

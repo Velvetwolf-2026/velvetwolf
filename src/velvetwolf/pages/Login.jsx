@@ -1,11 +1,12 @@
 import { useState, useContext, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
-import { apiUrl, googleAuthUrl } from "../utils/api";
+import { apiUrl } from "../utils/api";
 import { updateProfile } from "../utils/profile";
 import { auth, isFirebaseAvailable } from "../utils/firebase";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 function GoogleIcon() {
   return (
@@ -33,6 +34,11 @@ function EyeIcon({ visible }) {
 
 export function Login() {
   const { user, setPage, setUser, showToast } = useContext(AppContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const query = new URLSearchParams(location.search);
+  const redirect = query.get("redirect");
 
   const [step, setStep] = useState("identifier"); // identifier, password, register_email, otp, mobile_name
   const [identifier, setIdentifier] = useState("");
@@ -55,9 +61,13 @@ export function Login() {
 
   useEffect(() => {
     if (user) {
-      setPage("account");
+      if (redirect) {
+        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+      } else {
+        setPage("account");
+      }
     }
-  }, [user, setPage]);
+  }, [user, setPage, navigate, redirect]);
 
   // Password strength helper
   const checks = {
@@ -92,11 +102,48 @@ export function Login() {
     }, 1000);
   };
 
-  // Google OAuth
+  // Google OAuth via Firebase
   const handleGoogle = async () => {
+    if (!isFirebaseAvailable || !auth) {
+      setError("Google Login is not available at the moment.");
+      return;
+    }
     setGoogleLoading(true);
     setError("");
-    window.location.replace(googleAuthUrl("login"));
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      
+      const res = await fetch(apiUrl("/auth/firebase-login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: idToken, identifier: result.user.email })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google login failed.");
+      
+      localStorage.setItem("token", data.token);
+      const nextUser = {
+        ...data.user,
+        role: data.user?.role || "customer",
+        isAdmin: data.user?.role === "admin",
+        authSource: "firebase",
+      };
+      localStorage.setItem("user", JSON.stringify(nextUser));
+      setUser(nextUser);
+      showToast(`Successfully logged in with Google!`);
+      if (redirect) {
+        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+      } else {
+        setPage("home");
+      }
+    } catch (err) {
+      setError(err.message || "Google sign in failed.");
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   // Discovery step: checks if email or mobile exists
@@ -251,7 +298,11 @@ export function Login() {
         localStorage.setItem("user", JSON.stringify(nextUser));
         setUser(nextUser);
         showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
-        setPage("account");
+        if (redirect) {
+          navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+        } else {
+          setPage("home");
+        }
       }
     } catch (err) {
       const msg = err.message || "Login failed. Please try again.";
@@ -389,7 +440,11 @@ export function Login() {
           localStorage.setItem("user", JSON.stringify(nextUser));
           setUser(nextUser);
           showToast(isExistingUser ? `Successfully logged in!` : `Account created! Welcome to the pack ◆`);
-          setPage("account");
+          if (redirect) {
+            navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+          } else {
+            setPage("home");
+          }
         }
       }
     } catch (err) {
@@ -484,7 +539,11 @@ export function Login() {
       localStorage.setItem("user", JSON.stringify(nextUser));
       setUser(nextUser);
       showToast(`Account created! Welcome to the pack ◆`);
-      setPage("account");
+      if (redirect) {
+        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+      } else {
+        setPage("home");
+      }
     } catch (err) {
       setError(err.message || "Failed to save profile name.");
     } finally {

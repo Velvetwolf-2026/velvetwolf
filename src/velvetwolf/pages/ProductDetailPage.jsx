@@ -1,15 +1,26 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { AppContext } from "./AppContext";
+import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
 import ProductImage from "../components/ProductImage";
-import { getCollectionById } from "./Collections";
-import { trackViewItem, trackAddToCart } from "../utils/analytics";
+import { getCollectionById } from "../utils/collectionsData";
+import { trackViewItem } from "../utils/analytics";
+import { useBreakpoint } from "../utils/breakpoints";
+
+const COLOR_MAP = {
+  "Black": "#0a0a0a",
+  "White": "#faf9f7",
+  "Beige/Sand": "#d2b48c",
+  "Forest Green": "#1e4620"
+};
 
 export default function ProductDetailPage() {
   const slug = useParams().slug;
-  const { addToCart, toggleWishlist, wishlist, showToast } = useContext(AppContext);
+  const { isMobile, isTablet, isMobileOrTablet } = useBreakpoint();
+  const { addToCart, toggleWishlist, wishlist } = useContext(AppContext);
+  const { t } = useLanguage();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -89,6 +100,31 @@ export default function ProductDetailPage() {
     ogImage.content = defaultImg || "";
   }, [product]);
 
+  // Reset selected image when color selection changes
+  useEffect(() => {
+    if (!product || !color) return;
+    const rawGallery = Array.isArray(product.images) ? product.images : [];
+    const gallery = product.image && !rawGallery.includes(product.image) 
+      ? [product.image, ...rawGallery] 
+      : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
+
+    const colorSpecific = gallery.find(
+      (img) => typeof img === "string" && img.startsWith(`${color}::`)
+    );
+    if (colorSpecific) {
+      setSelectedImage(colorSpecific.split("::")[1]);
+    } else {
+      const firstUnprefixed = gallery.find(
+        (img) => typeof img === "string" && !img.includes("::")
+      );
+      if (firstUnprefixed) {
+        setSelectedImage(firstUnprefixed);
+      } else {
+        setSelectedImage(null);
+      }
+    }
+  }, [color, product]);
+
   if (loading) {
     return (
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--obsidian)" }}>
@@ -109,10 +145,30 @@ export default function ProductDetailPage() {
 
   const sizes = Array.isArray(product.sizes) ? product.sizes : [];
   const colors = Array.isArray(product.colors) ? product.colors : [];
-  const gallery = Array.isArray(product.images) && product.images.length > 0
-    ? product.images
-    : (product.image ? [product.image] : []);
-  const activeImage = selectedImage || product.image || (gallery[0] || null);
+  const rawGallery = Array.isArray(product.images) ? product.images : [];
+  const gallery = product.image && !rawGallery.includes(product.image) 
+    ? [product.image, ...rawGallery] 
+    : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
+
+  // Filter and clean gallery based on selected color
+  let filteredGallery = [];
+  if (color) {
+    const colorSpecific = gallery.filter(
+      (img) => typeof img === "string" && img.startsWith(`${color}::`)
+    );
+    if (colorSpecific.length > 0) {
+      filteredGallery = colorSpecific.map((img) => img.split("::")[1]);
+    } else {
+      filteredGallery = gallery
+        .filter((img) => typeof img === "string" && !img.includes("::"))
+        .map((img) => img);
+    }
+  }
+  if (filteredGallery.length === 0) {
+    filteredGallery = gallery.map((img) => (typeof img === "string" && img.includes("::") ? img.split("::")[1] : img));
+  }
+
+  const activeImage = selectedImage || (filteredGallery[0] || null);
 
   const inWishlist = wishlist.some((i) => i.id === product.id);
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
@@ -123,8 +179,8 @@ export default function ProductDetailPage() {
 
   return (
     <div style={{ paddingTop: 90, minHeight: "100vh", background: "var(--obsidian)" }}>
-      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, flexWrap: "wrap" }}>
+      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "20px 16px" : "40px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr", gap: isMobile ? 24 : (isTablet ? 32 : 60) }}>
           {/* Left - Image Gallery */}
           <div>
             <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", position: "relative", overflow: "hidden", height: 500, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -141,9 +197,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail grid */}
-            {gallery.length > 1 && (
+            {filteredGallery.length > 1 && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 16 }}>
-                {gallery.map((img, i) => (
+                {filteredGallery.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(img)}
@@ -170,9 +226,19 @@ export default function ProductDetailPage() {
             </div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 5vw, 56px)", letterSpacing: 2, marginBottom: 16, lineHeight: 1 }}>{product.name}</h1>
             
-            <div style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 24 }}>
-              {[1, 2, 3, 4, 5].map((s) => <Icon key={s} name="star" size={14} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} reviews)</span>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 24, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                {[1, 2, 3, 4, 5].map((s) => <Icon key={s} name="star" size={14} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginLeft: 8 }}>({product.reviews || 0} {t("shop") === "दुकान" ? "समीक्षाएं" : (t("shop") === "கடை" ? "மதிப்புரைகள்" : "reviews")})</span>
+              </div>
+              <div style={{ width: 1, height: 12, background: "var(--smoke)" }} />
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)" }}>
+                {t("style").toUpperCase()}: <span style={{ color: "var(--gold)" }}>{product.style?.toUpperCase() || "UNISEX"}</span>
+              </div>
+              <div style={{ width: 1, height: 12, background: "var(--smoke)" }} />
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)" }}>
+                {t("fit").toUpperCase()}: <span style={{ color: "var(--gold)" }}>{product.fit?.toUpperCase() || "OVERSIZED"}</span>
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 28 }}>
@@ -187,7 +253,7 @@ export default function ProductDetailPage() {
             {/* Colors selection */}
             {colors.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>COLOR: {color.toUpperCase()}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("color")}: {color.toUpperCase()}</div>
                 <div style={{ display: "flex", gap: 10 }}>
                   {colors.map((c) => (
                     <button
@@ -197,7 +263,7 @@ export default function ProductDetailPage() {
                         width: 32,
                         height: 32,
                         borderRadius: "50%",
-                        background: c,
+                        background: COLOR_MAP[c] || c,
                         border: color === c ? "2px solid var(--gold)" : "2px solid transparent",
                         cursor: "pointer",
                         outline: "2px solid var(--smoke)"
@@ -211,7 +277,7 @@ export default function ProductDetailPage() {
             {/* Sizes selection */}
             {sizes.length > 0 && (
               <div style={{ marginBottom: 28 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>SIZE: {size}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("size")}: {size}</div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {sizes.map((s) => (
                     <button
@@ -239,7 +305,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity selection */}
             <div style={{ marginBottom: 36 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>QUANTITY</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>{t("qty")}</div>
               <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)", width: "fit-content" }}>
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 16px" }}><Icon name="minus" size={14} /></button>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--ivory)", padding: "0 20px" }}>{qty}</span>
@@ -249,7 +315,7 @@ export default function ProductDetailPage() {
 
             {/* Actions */}
             <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" style={{ flex: 1, padding: "18px 40px" }} onClick={handleAddToCart}>ADD TO CART</button>
+              <button className="btn-gold" style={{ flex: 1, padding: "18px 40px" }} onClick={handleAddToCart}>{t("addToCart")}</button>
               <button
                 onClick={() => toggleWishlist(product)}
                 style={{
@@ -265,7 +331,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Features list */}
-            <div style={{ borderTop: "1px solid var(--smoke)", marginTop: 40, paddingTop: 24, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div style={{ borderTop: "1px solid var(--smoke)", marginTop: 40, paddingTop: 24, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {[
                 ["🛡️ SECURE CHECKOUT", "UPI, Cards, EMI, COD"],
                 ["⚡ EXPRESS DELIVERY", "Dispatch within 48 hours"],

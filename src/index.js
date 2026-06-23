@@ -41,9 +41,11 @@ export { default as ContactPage    } from "./velvetwolf/pages/ContactPage";
 export { default as CollectionsPage } from "./velvetwolf/pages/Collections";
 export { default as CheckoutPage } from "./velvetwolf/pages/CheckoutPage";
 export { default as PaymentStatusPage } from "./velvetwolf/pages/PaymentStatusPage";
+export { default as CartPage } from "./velvetwolf/pages/CartPage";
+export { default as WishlistPage } from "./velvetwolf/pages/WishlistPage";
 
 // ── Shared Style Helpers ──
-export { S, PageHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
+export { S, PageHeader, HeroHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";
 
 // ── Constants ──
 export { THEME, CATEGORIES, NAV_LINKS, POLICY_PAGES } from "./velvetwolf/utils/constants";
@@ -54,3 +56,8 @@ export { default as ShopPage } from "./velvetwolf/pages/ShopPage";
 export { default as CustomDesignPage } from "./velvetwolf/pages/CustomDesignPage";
 export { default as BulkOrderPage } from "./velvetwolf/pages/BulkOrderPage";
 export { default as ProductDetailPage } from "./velvetwolf/pages/ProductDetailPage";
+export { default as BulkOrderSuccessPage } from "./velvetwolf/pages/BulkOrderSuccessPage";
+
+// NOTE: LanguageProvider and useLanguage are intentionally NOT re-exported here.
+// Import them directly from "./velvetwolf/pages/LanguageContext" to avoid
+// duplicate module instances (which cause "Invalid hook call" crashes in Vite).

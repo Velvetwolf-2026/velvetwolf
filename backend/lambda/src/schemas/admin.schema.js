@@ -34,9 +34,16 @@ export const createProductSchema = z.object({
   colors: z.array(z.string()).default([]),
   stock: z.number({ invalid_type_error: "Stock must be a number" }).int().min(0, "Stock cannot be negative").default(0),
   image: z.string().optional().nullable(),
-  imageBase64: z.string().optional().nullable(),
-  imageFileName: z.string().optional().nullable(),
-  imageContentType: z.string().optional().nullable(),
+  images: z.array(z.string()).optional().default([]),
+  newImages: z.array(z.object({
+    base64: z.string(),
+    fileName: z.string(),
+    contentType: z.string().optional(),
+    previewUrl: z.string().optional(),
+    color: z.string().optional(),
+  })).optional().default([]),
+  style: z.string().optional().default("Unisex"),
+  fit: z.string().optional().default("Oversized"),
 });
 
 export const updateProductSchema = z.object({
@@ -50,9 +57,16 @@ export const updateProductSchema = z.object({
   colors: z.array(z.string()).optional(),
   stock: z.number().int().min(0).optional(),
   image: z.string().optional().nullable(),
-  imageBase64: z.string().optional().nullable(),
-  imageFileName: z.string().optional().nullable(),
-  imageContentType: z.string().optional().nullable(),
+  images: z.array(z.string()).optional(),
+  newImages: z.array(z.object({
+    base64: z.string(),
+    fileName: z.string(),
+    contentType: z.string().optional(),
+    previewUrl: z.string().optional(),
+    color: z.string().optional(),
+  })).optional(),
+  style: z.string().optional(),
+  fit: z.string().optional(),
 });
 
 export const getOrdersSchema = z.object({

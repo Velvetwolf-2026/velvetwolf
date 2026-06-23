@@ -35,20 +35,21 @@ export async function getWishlistByUserId(userId) {
 export async function toggleWishlistByUserId(userId, productId) {
   logInfo("Toggling wishlist item", wishlistLogContext({ userId, productId }));
 
-  const { data: existing, error: existingError } = await supabaseAdmin
+  const { data: existingItems, error: existingError } = await supabaseAdmin
     .from("wishlist_items")
     .select("id")
     .eq("user_id", userId)
-    .eq("product_id", productId)
-    .maybeSingle();
+    .eq("product_id", productId);
 
   if (existingError) {
     logError("Wishlist lookup before toggle failed", wishlistLogContext({ userId, productId, error: existingError }));
     throw toWishlistApiError(existingError, "Failed to check wishlist item.");
   }
 
-  if (existing?.id) {
-    const { error: deleteError } = await supabaseAdmin.from("wishlist_items").delete().eq("id", existing.id);
+  if (existingItems && existingItems.length > 0) {
+    // Delete all matches to "untoggle" it
+    const idsToDelete = existingItems.map(item => item.id);
+    const { error: deleteError } = await supabaseAdmin.from("wishlist_items").delete().in("id", idsToDelete);
     if (deleteError) {
       logError("Wishlist delete failed", wishlistLogContext({ userId, productId, error: deleteError }));
       throw toWishlistApiError(deleteError, "Failed to remove wishlist item.");

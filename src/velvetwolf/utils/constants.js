@@ -74,3 +74,13 @@ export const POLICY_PAGES = [
   { id: "faq",       label: "FAQ",                    icon: "❓" },
   { id: "contact",   label: "Contact Us",             icon: "✉"  },
 ];
+
+export const TAG_COLORS = {
+  "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
+  "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
+  "NEW": { bg: "#1a3a1a", color: "#81c784" },
+  "TRENDING": { bg: "#1a1a3a", color: "#4fc3f7" },
+  "HOT": { bg: "#3a1a0a", color: "#ff8a65" },
+  "MOST LOVED": { bg: "#3a0a1a", color: "#f48fb1" },
+  "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
+};

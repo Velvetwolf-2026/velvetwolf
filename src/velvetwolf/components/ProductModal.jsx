@@ -2,27 +2,37 @@ import React, { useContext, useState } from "react";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";
-import { getCollectionById } from "../pages/Collections";
+import { getCollectionById } from "../utils/collectionsData";
+import { useBreakpoint } from "../utils/breakpoints";
+
+const COLOR_MAP = {
+  "Black": "#0a0a0a",
+  "White": "#faf9f7",
+  "Beige/Sand": "#d2b48c",
+  "Forest Green": "#1e4620"
+};
 
 export default function ProductModal() {
   const { selectedProduct: p, setSelectedProduct, addToCart, toggleWishlist, wishlist } = useContext(AppContext);
+  const { isMobile, isMobileOrTablet } = useBreakpoint();
   
-  if (!p) return null;
-  
-  const sizes  = Array.isArray(p.sizes)  && p.sizes.length  ? p.sizes  : [];
-  const colors = Array.isArray(p.colors) && p.colors.length ? p.colors : [];
+  const sizes  = Array.isArray(p?.sizes)  && p.sizes.length  ? p.sizes  : [];
+  const colors = Array.isArray(p?.colors) && p.colors.length ? p.colors : [];
   const [size, setSize]   = useState(sizes[0]  ?? "M");
   const [color, setColor] = useState(colors[0] ?? "#0a0a0a");
   const [qty, setQty] = useState(1);
+
+  if (!p) return null;
+  
   const inWishlist = wishlist.find(i => i.id === p.id);
 
   return (
     <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
-      <div className="modal-box" style={{ maxWidth: 880, display: "flex", overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+      <div className="modal-box" style={{ maxWidth: 880, display: "flex", flexDirection: isMobileOrTablet ? "column" : "row", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
         <div style={{ flex: 1, flexShrink: 0 }}>
-          <ProductImage product={p} height={420} />
+          <ProductImage product={p} height={isMobileOrTablet ? 300 : 420} selectedColor={color} />
         </div>
-        <div style={{ flex: 1, padding: 40, overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: isMobile ? 24 : 40, position: "relative" }}>
           <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", top: 20, right: 20, background: "none", border: "none", cursor: "pointer", color: "var(--silver)" }}><Icon name="x" size={20}/></button>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>
             {getCollectionById(p.collection)?.name?.toUpperCase() || p.collection?.toUpperCase()}
@@ -46,7 +56,7 @@ export default function ProductModal() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, color: "var(--ash)", marginBottom: 10 }}>COLOR</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {colors.map(c => (
-                  <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
+                  <button key={c} onClick={() => setColor(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: COLOR_MAP[c] || c, border: color === c ? "2px solid var(--gold)" : "2px solid transparent", cursor: "pointer", outline: "2px solid var(--smoke)" }}/>
                 ))}
               </div>
             </div>

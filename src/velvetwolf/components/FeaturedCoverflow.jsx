@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import Icon from "./Icon";
+import { useBreakpoint } from "../utils/breakpoints";
 
 export default function FeaturedCoverflow({ products }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [isActiveHovered, setIsActiveHovered] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const { isMobile, isTablet } = useBreakpoint();
 
   useEffect(() => {
     if (!products.length) return;
@@ -19,6 +23,12 @@ export default function FeaturedCoverflow({ products }) {
     return () => clearInterval(timer);
   }, [isHovered, products.length]);
 
+  useEffect(() => {
+    setTransitioning(true);
+    const timer = setTimeout(() => setTransitioning(false), 550);
+    return () => clearTimeout(timer);
+  }, [activeIndex]);
+
   if (!products.length) return null;
 
   const getOffset = (index) => {
@@ -29,41 +39,91 @@ export default function FeaturedCoverflow({ products }) {
     return offset;
   };
 
+  const cardWidth = isMobile ? 270 : (isTablet ? 310 : 340);
+  const containerHeight = isMobile ? 480 : (isTablet ? 520 : 560);
+  const offsetStep = isMobile ? 180 : (isTablet ? 220 : 250);
+
   return (
     <div style={{ position: "relative", padding: "20px 0 8px" }}>
+      <style>{`
+        @keyframes subtleFloatCarousel {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+      `}</style>
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        style={{ position: "relative", height: 560, overflow: "hidden" }}
+        style={{
+          position: "relative",
+          height: containerHeight,
+          overflow: "hidden",
+          animation: "subtleFloatCarousel 7s ease-in-out infinite",
+        }}
       >
         {products.map((product, index) => {
           const offset = getOffset(index);
           const distance = Math.abs(offset);
           const isActive = offset === 0;
-          const translateX = offset * 250;
-          const scale = isActive ? 1 : Math.max(0.72, 0.88 - distance * 0.12);
-          const opacity = distance > 2 ? 0 : Math.max(0.24, 1 - distance * 0.28);
-          const rotateY = offset * -18;
+          const translateX = offset * offsetStep;
+
+          // Cinematic depth shift and visibility calculations
+          const scale = isActive
+            ? (transitioning ? 0.94 : 1)
+            : (transitioning ? 0.78 : Math.max(0.82, 0.88 - distance * 0.08));
+
+          const opacity = distance > 2
+            ? 0
+            : (isActive ? 1 : (distance === 1 ? 0.68 : 0.35));
+
+          const rotateY = offset * -15;
+
+          // Spotlight, scale and blur calculations
+          const filterValue = isActive
+            ? `drop-shadow(0 ${isActiveHovered ? 35 : 28}px ${isActiveHovered ? 70 : 60}px rgba(0,0,0,0.5)) blur(${transitioning ? "1.5px" : "0px"}) brightness(${isActiveHovered ? 1.08 : 1})`
+            : `drop-shadow(0 12px 28px rgba(0,0,0,0.3)) blur(${transitioning ? "2.5px" : "0.8px"}) brightness(0.85)`;
 
           return (
             <div
               key={product.id}
               onClick={() => setActiveIndex(index)}
+              onMouseEnter={() => { if (isActive) setIsActiveHovered(true); }}
+              onMouseLeave={() => { if (isActive) setIsActiveHovered(false); }}
               style={{
                 position: "absolute",
                 top: 12,
                 left: "50%",
-                width: 340,
+                width: cardWidth,
                 cursor: "pointer",
-                zIndex: 20 - distance,
+                zIndex: isActive ? 30 : 20 - distance,
                 opacity,
                 transform: `translateX(calc(-50% + ${translateX}px)) scale(${scale}) perspective(1400px) rotateY(${rotateY}deg)`,
                 transformOrigin: "center center",
-                transition: "transform 0.55s ease, opacity 0.45s ease",
-                filter: isActive ? "drop-shadow(0 28px 60px rgba(0,0,0,0.45))" : "drop-shadow(0 12px 28px rgba(0,0,0,0.28))",
+                transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.55s ease, filter 0.55s ease, border-color 0.4s ease, box-shadow 0.4s ease",
+                filter: filterValue,
                 pointerEvents: distance > 2 ? "none" : "auto",
+                border: isActive ? (isActiveHovered ? "1.5px solid var(--gold)" : "1px solid rgba(201,168,76,0.25)") : "1px solid rgba(255,255,255,0.05)",
+                borderRadius: "16px",
+                boxShadow: isActive && isActiveHovered
+                  ? "0 30px 70px rgba(0,0,0,0.6), 0 0 30px rgba(201,168,76,0.2)"
+                  : "none",
               }}
             >
+              {/* Luxury Spotlight radial glow backdrop */}
+              {isActive && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: "-50px",
+                    borderRadius: "50%",
+                    background: "radial-gradient(circle, rgba(201,168,76,0.18) 0%, transparent 70%)",
+                    opacity: isActiveHovered ? 1 : 0,
+                    transition: "opacity 0.5s ease",
+                    pointerEvents: "none",
+                    zIndex: -1,
+                  }}
+                />
+              )}
               <ProductCard product={product} />
             </div>
           );

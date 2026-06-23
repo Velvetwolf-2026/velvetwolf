@@ -53,8 +53,8 @@ export default function Footer() {
   return (
     <footer className="vw-footer" style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", padding: "56px 40px 28px" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div className="vw-footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
-          <div className="vw-footer-brand">
+        <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
+          <div className="footer-brand-col">
             <div className="vw-footer-brand-title" style={{ fontFamily: "'Roboto', sans-serif", fontSize: 28, letterSpacing: 6, marginBottom: 4 }}>
               VELVETWOLF
             </div>

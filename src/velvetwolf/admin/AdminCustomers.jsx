@@ -20,6 +20,7 @@ export default function AdminCustomers() {
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(""); }, []);
 
   const handleSearch = (e) => {

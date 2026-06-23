@@ -1,10 +1,10 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, ForgetPassword, Login, AccountPage, CheckoutPage, PaymentStatusPage, CollectionsPage } from "./index";
-import { HomePage, ShopPage, CustomDesignPage, BulkOrderPage, ProductDetailPage } from "./index";
-import { supabase } from "./velvetwolf/utils/supabase";
-import { getProfile } from "./velvetwolf/utils/auth";
+import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
+import { HomePage, ShopPage, CustomDesignPage, BulkOrderPage, BulkOrderSuccessPage, ProductDetailPage, CartPage, WishlistPage } from "./index";
+
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
 import { loadProductsFromAPI } from "./velvetwolf/utils/products";
@@ -21,10 +21,7 @@ import { trackAddToCart } from "./velvetwolf/utils/analytics";
 // Admin layout lazy-loaded
 const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
 
-const loadedCartUsers = new Set();
-const loadedWishlistUsers = new Set();
-const inFlightCartLoads = new Map();
-const inFlightWishlistLoads = new Map();
+
 let productsLoadPromise = null;
 
 // Shared layout wrapper for rendering Navbar & Footer
@@ -99,7 +96,7 @@ export default function VelvetWolf() {
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
-  };
+  }, []);
 
   // Compatibility page routing mapping
   const setPage = (nextPage) => {
@@ -114,6 +111,7 @@ export default function VelvetWolf() {
       "payment-status": "/payment-status",
       custom: "/custom",
       bulk: "/bulk",
+      "bulk-success": "/bulk/success",
       contactus: "/contact",
       faq: "/faq",
       privacypolicy: "/privacy-policy",
@@ -173,9 +171,18 @@ export default function VelvetWolf() {
     try {
       const items = await loadCartFromDB(userId);
       setCart(items);
-      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { }
+      try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
       console.error('[syncCartFromDB]', err.message);
+    }
+  };
+
+  const syncWishlistFromDB = async (userId) => {
+    try {
+      const items = await loadWishlistFromDB(userId);
+      setWishlist(items);
+    } catch (err) {
+      console.error('[syncWishlistFromDB]', err.message);
     }
   };
 
@@ -206,7 +213,7 @@ export default function VelvetWolf() {
       if (backendUserId) {
         const item = cart.find(i => i.id === id && i.size === size && i.color === color);
         if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
-        await refreshCartFromDB(backendUserId);
+        await syncCartFromDB(backendUserId);
       } else {
         saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       }
@@ -217,23 +224,31 @@ export default function VelvetWolf() {
   };
 
   const updateCartQty = async (id, size, color, qty) => {
-    const backendUserId = getBackendUserId(user);
-    if (backendUserId) {
-      const item = cart.find(i => i.id === id && i.size === size && i.color === color);
-      if (item?.cart_item_id) {
-        if (qty < 1) {
-          await removeCartItemDB(item.cart_item_id);
-        } else {
-          await updateCartQtyDB(item.cart_item_id, qty);
+    try {
+      const backendUserId = getBackendUserId(user);
+      if (backendUserId) {
+        const item = cart.find(i => i.id === id && i.size === size && i.color === color);
+        if (item?.cart_item_id) {
+          if (qty < 1) {
+            await removeCartItemDB(item.cart_item_id);
+          } else {
+            await updateCartQtyDB(item.cart_item_id, qty);
+          }
+          await syncCartFromDB(backendUserId);
         }
-        await refreshCartFromDB(backendUserId);
-      }
-    } else {
-      if (qty < 1) {
-        saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
       } else {
-        saveGuestCart(cart.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
+        if (qty < 1) {
+          saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
+        } else {
+          saveGuestCart(cart.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
+        }
       }
+    } catch (err) {
+      showToast('Could not update quantity.', 'error');
+      console.error('[updateCartQty]', err.message);
+      // Force sync to recover from any desync state (like deleted items)
+      const backendUserId = getBackendUserId(user);
+      if (backendUserId) await syncCartFromDB(backendUserId);
     }
   };
 
@@ -376,6 +391,7 @@ export default function VelvetWolf() {
       const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", nextUrl);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync cart and wishlist reactively on user state change
@@ -389,6 +405,7 @@ export default function VelvetWolf() {
       setCart(getGuestCart());
       setWishlist([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Initial products load
@@ -421,72 +438,76 @@ export default function VelvetWolf() {
         showToast("Admin access required.", "error");
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, user, canAccessAdmin]);
 
   return (
-    <AppContext.Provider value={ctx}>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    <LanguageProvider>
+      <AppContext.Provider value={ctx}>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <Routes>
-        {/* Admin chunk lazy-loaded */}
-        <Route
-          path="/admin/*"
-          element={
-            canAccessAdmin ? (
-              <Suspense fallback={
-                <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
-                </div>
-              }>
-                <AdminLayout Icon={Icon} />
-              </Suspense>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        <Routes>
+          {/* Admin chunk lazy-loaded */}
+          <Route
+            path="/admin/*"
+            element={
+              canAccessAdmin ? (
+                <Suspense fallback={
+                  <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
+                  </div>
+                }>
+                  <AdminLayout Icon={Icon} />
+                </Suspense>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
 
-        {/* Standalone Auth Pages */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Login />} />
-        <Route path="/forget-password" element={<ForgetPassword />} />
+          {/* Standalone Auth Pages */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Login />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
 
-        {/* Pages wrapped with Header & Footer */}
-        <Route
-          path="*"
-          element={
-            <Layout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/shop" element={<ShopPage />} />
-                <Route path="/shop/:collection" element={<ShopPage />} />
-                <Route path="/product/:slug" element={<ProductDetailPage />} />
-                <Route path="/collections" element={<CollectionsPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/wishlist" element={<WishlistPage />} />
-                <Route path="/account" element={<AccountPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/payment-status" element={<PaymentStatusPage />} />
-                <Route path="/custom" element={<CustomDesignPage />} />
-                <Route path="/bulk" element={<BulkOrderPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FAQPage />} />
-                <Route path="/privacy-policy" element={<Policy />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/shipping-policy" element={<ShoppingPolicy />} />
-                <Route path="/returns" element={<ReturnsPage />} />
-                <Route path="/size-guide" element={<SizeGuide />} />
-                <Route path="/track-order" element={<TrackOrder />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          }
-        />
-      </Routes>
+          {/* Pages wrapped with Header & Footer */}
+          <Route
+            path="*"
+            element={
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/shop" element={<ShopPage />} />
+                  <Route path="/shop/:collection" element={<ShopPage />} />
+                  <Route path="/product/:slug" element={<ProductDetailPage />} />
+                  <Route path="/collections" element={<CollectionsPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                  <Route path="/account" element={<AccountPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/payment-status" element={<PaymentStatusPage />} />
+                  <Route path="/custom" element={<CustomDesignPage />} />
+                  <Route path="/bulk" element={<BulkOrderPage />} />
+                  <Route path="/bulk/success" element={<BulkOrderSuccessPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
+                  <Route path="/privacy-policy" element={<Policy />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/shipping-policy" element={<ShoppingPolicy />} />
+                  <Route path="/returns" element={<ReturnsPage />} />
+                  <Route path="/size-guide" element={<SizeGuide />} />
+                  <Route path="/track-order" element={<TrackOrder />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            }
+          />
+        </Routes>
 
-      {selectedProduct && <ProductModal />}
-      {cartOpen && <CartSidebar />}
-      {wishlistOpen && <WishlistSidebar />}
-    </AppContext.Provider>
+        {selectedProduct && <ProductModal key={selectedProduct.id} />}
+        {cartOpen && <CartSidebar />}
+        {wishlistOpen && <WishlistSidebar />}
+      </AppContext.Provider>
+    </LanguageProvider>
   );
 }

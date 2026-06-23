@@ -53,3 +53,31 @@ export const contactSchema = z.object({
     .max(5000)
     .trim(),
 });
+
+export const bulkOrderSchema = z.object({
+  type: z.string({ required_error: "Order type is required" }).min(1).trim(),
+  org: z
+    .string({ required_error: "Organization name is required" })
+    .min(2, "Please enter organization name")
+    .max(200)
+    .trim(),
+  contact: z
+    .string({ required_error: "Contact person is required" })
+    .min(2, "Please enter contact person name")
+    .max(100)
+    .trim(),
+  email: z
+    .string({ required_error: "Email is required" })
+    .email("Please enter a valid email address")
+    .transform((v) => v.toLowerCase().trim()),
+  qty: z.coerce
+    .number({ required_error: "Quantity is required" })
+    .int()
+    .min(5, "Minimum quantity should be 5"),
+  message: z
+    .string({ required_error: "Requirements are required" })
+    .min(10, "Requirements must be at least 10 characters")
+    .max(5000)
+    .trim(),
+  images: z.array(z.string()).optional(),
+});

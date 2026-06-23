@@ -15,8 +15,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import CategoryTile from "./CategoryTile";
 import { CATEGORIES, THEME } from "../utils/constants";
+import { LOGO_MAP } from "./CategoryLogos";
 
-const { gold, goldLight, muted, border } = THEME;
+const { gold } = THEME;
 const getMosaicMetrics = (viewportWidth) => {
   if (viewportWidth <= 480) {
     return {
@@ -159,7 +160,6 @@ function ActiveBanner({ cat, onClose, onShopNow }) {
         <div style={{ fontSize:26, filter:`drop-shadow(0 0 10px ${cat.glow}aa)` }}>
           {/* Logo inline */}
           {(() => {
-            const { LOGO_MAP } = require("./CategoryLogos");
             const L = LOGO_MAP[cat.id];
             return L ? <L size={26} color={cat.accent}/> : null;
           })()}

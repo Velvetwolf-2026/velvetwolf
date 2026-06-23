@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
-import { sendOTP } from "../config/ses.js";
+import { sendOTP } from "../config/smtp.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 

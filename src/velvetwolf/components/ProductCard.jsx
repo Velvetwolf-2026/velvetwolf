@@ -1,39 +1,38 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";
-import { getCollectionById } from "../pages/Collections";
-
-export const TAG_COLORS = {
-  "BESTSELLER": { bg: "#c9a84c", color: "#0a0a0a" },
-  "LIMITED": { bg: "#8b1a1a", color: "#faf9f7" },
-  "NEW": { bg: "#1a3a1a", color: "#81c784" },
-  "TRENDING": { bg: "#1a1a3a", color: "#4fc3f7" },
-  "HOT": { bg: "#3a1a0a", color: "#ff8a65" },
-  "MOST LOVED": { bg: "#3a0a1a", color: "#f48fb1" },
-  "SIGNATURE": { bg: "#2a1a0a", color: "#c9a84c" },
-};
+import { getCollectionById } from "../utils/collectionsData";
+import { useBreakpoint } from "../utils/breakpoints";
+import { TAG_COLORS } from "../utils/constants";
 
 export default function ProductCard({ product }) {
   const { addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
+  const [isHovered, setIsHovered] = useState(false);
   const inWishlist = wishlist.find(i => i.id === product.id);
   const tagStyle = TAG_COLORS[product.tag] || { bg: "var(--smoke)", color: "var(--ash)" };
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
   const defaultSize = product.sizes?.[0] || "M";
   const defaultColor = product.colors?.[0] || "#0a0a0a";
+  const { isMobile } = useBreakpoint();
 
   const productUrl = `/product/${product.slug || product.id}`;
 
   return (
-    <div className="product-card" style={{ display: "flex", flexDirection: "column" }}>
+    <div 
+      className="product-card" 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ display: "flex", flexDirection: "column" }}
+    >
       <div style={{ position: "relative" }}>
         <Link
           to={productUrl}
           style={{ textDecoration: "none", display: "block" }}
           aria-label={`View ${product.name}`}
         >
-          <ProductImage product={product} />
+          <ProductImage product={product} selectedColor={product.colors?.[0]} isParentHovered={isHovered} />
         </Link>
         {product.tag && (
           <div style={{ position: "absolute", top: 12, left: 12 }}>
@@ -62,7 +61,7 @@ export default function ProductCard({ product }) {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10, marginTop: 18 }}>
           <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
             QUICK VIEW
           </button>
