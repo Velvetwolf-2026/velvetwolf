@@ -251,3 +251,93 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS awb_number TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS courier_name TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_status TEXT;
 
+-- ==========================================
+-- MIGRATION: EXTEND PRODUCTS TABLE FOR SMART FILTERS
+-- ==========================================
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'Unisex';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS fabric_type TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sleeve_type TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS neck_type TEXT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_new_arrival BOOLEAN DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_best_seller BOOLEAN DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS rating NUMERIC(3, 2) DEFAULT 4.5;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS review_count INT DEFAULT 0;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS original_price NUMERIC(10, 2);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS gsm INT DEFAULT 220;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS tag TEXT;
+
+-- ==========================================
+-- NEW TABLE: COUPONS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.coupons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code TEXT UNIQUE NOT NULL,
+    discount_percent INT NOT NULL CHECK (discount_percent > 0 AND discount_percent <= 100),
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for coupons
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE POLICY "Allow select coupons" ON public.coupons FOR SELECT USING (true);
+CREATE OR REPLACE POLICY "Allow write coupons" ON public.coupons FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- NEW TABLE: PRODUCT REVIEWS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.product_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for product_reviews
+ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE POLICY "Allow select product_reviews" ON public.product_reviews FOR SELECT USING (true);
+CREATE OR REPLACE POLICY "Allow write product_reviews" ON public.product_reviews FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- NEW TABLE: COLLECTIONS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.collections (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for collections
+ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE POLICY "Allow select collections" ON public.collections FOR SELECT USING (true);
+CREATE OR REPLACE POLICY "Allow write collections" ON public.collections FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+
+-- ==========================================
+-- STYLE PERSONALIZATION UPGRADES
+-- ==========================================
+
+-- Add personality_type column to users table
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS personality_type VARCHAR(50);
+
+-- Create table for storing detailed style profiles
+CREATE TABLE IF NOT EXISTS public.user_style_profiles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    personality_type VARCHAR(50) NOT NULL,
+    quiz_score JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for user_style_profiles
+ALTER TABLE public.user_style_profiles ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (true);
+CREATE OR REPLACE POLICY "Allow write user_style_profiles" ON public.user_style_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+
+

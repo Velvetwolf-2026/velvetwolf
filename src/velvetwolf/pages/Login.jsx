@@ -63,6 +63,8 @@ export function Login() {
     if (user) {
       if (redirect) {
         navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+      } else if (user.isAdmin) {
+        navigate("/admin");
       } else {
         setPage("account");
       }
@@ -300,6 +302,8 @@ export function Login() {
         showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
         if (redirect) {
           navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
+        } else if (nextUser.isAdmin) {
+          navigate("/admin");
         } else {
           setPage("home");
         }

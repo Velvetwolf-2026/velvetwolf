@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
@@ -6,6 +6,19 @@ import ProductCard from "../components/ProductCard";
 import Icon from "../components/Icon";
 import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { HeroHeader } from "../styles/shared";
+import { apiUrl } from "../utils/api";
+
+const AVAILABLE_COLORS = [
+  { name: "Black", value: "#0a0a0a" },
+  { name: "White", value: "#faf9f7" },
+  { name: "Beige/Sand", value: "#d2b48c" },
+  { name: "Forest Green", value: "#1e4620" }
+];
+
+const FABRIC_TYPES = ["Egyptian Cotton", "Supima Cotton", "French Terry", "Heavyweight Jersey"];
+const SLEEVE_TYPES = ["Half Sleeve", "Full Sleeve", "Sleeveless"];
+const NECK_TYPES = ["Crew Neck", "Round Neck", "Hooded"];
+const CATEGORIES = ["tshirt", "cargo", "hoodie", "cap"];
 
 export default function ShopPage() {
   const { products, searchQuery } = useContext(AppContext);
@@ -14,11 +27,54 @@ export default function ShopPage() {
   const { t } = useLanguage();
   
   const activeCollection = routeCollection || null;
-  const [sort, setSort] = useState("featured");
-  const [priceRange] = useState([0, 10000]);
+  const [sort, setSort] = useState("recommended");
+  
+  // Advanced Filter states
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedGender, setSelectedGender] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedStyles, setSelectedStyles] = useState([]);
   const [selectedFits, setSelectedFits] = useState([]);
+  const [priceMax, setPriceMax] = useState(4000);
+  const [selectedFabric, setSelectedFabric] = useState(null);
+  const [selectedSleeve, setSelectedSleeve] = useState(null);
+  const [selectedNeck, setSelectedNeck] = useState(null);
+  const [availabilityOnly, setAvailabilityOnly] = useState(false);
+  const [newArrivalsOnly, setNewArrivalsOnly] = useState(false);
+  const [bestSellersOnly, setBestSellersOnly] = useState(false);
+
+  // AI Search states
+  const [aiProducts, setAiProducts] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Fetch AI Search intent-based query results
+  useEffect(() => {
+    if (!searchQuery || !searchQuery.trim()) {
+      setAiProducts(null);
+      return;
+    }
+
+    setAiLoading(true);
+    const delayDebounce = setTimeout(() => {
+      fetch(apiUrl("/ai/search"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery })
+      })
+      .then(res => res.json())
+      .then(data => {
+        setAiProducts(data.products || []);
+        setAiLoading(false);
+      })
+      .catch(err => {
+        console.error("AI search failed, using local fallback", err);
+        setAiProducts(null);
+        setAiLoading(false);
+      });
+    }, 450);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   const handleCollectionClick = (colId) => {
     if (colId) {
@@ -28,173 +84,295 @@ export default function ShopPage() {
     }
   };
 
-  const filtered = products
+  const baseList = aiProducts !== null ? aiProducts : products;
+
+  const filtered = baseList
     .filter(p => !activeCollection || p.collection === activeCollection)
-    .filter(p => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.collection?.toLowerCase().includes(q) ||
-        p.tag?.toLowerCase().includes(q)
-      );
-    })
-    .filter(p => Number(p.price) >= priceRange[0] && Number(p.price) <= priceRange[1])
+    .filter(p => !selectedCategory || p.category === selectedCategory || p.name.toLowerCase().includes(selectedCategory))
+    .filter(p => !selectedGender || p.style === selectedGender || p.gender === selectedGender)
+    .filter(p => !selectedColor || p.colors?.includes(selectedColor) || p.colors?.some(c => c.toLowerCase().includes(selectedColor.toLowerCase())))
     .filter(p => selectedSizes.length === 0 || p.sizes?.some(s => selectedSizes.includes(s)))
-    .filter(p => selectedStyles.length === 0 || selectedStyles.includes(p.style))
     .filter(p => selectedFits.length === 0 || selectedFits.includes(p.fit))
+    .filter(p => Number(p.price) <= priceMax)
+    .filter(p => !selectedFabric || p.fabric === selectedFabric || p.description?.includes(selectedFabric))
+    .filter(p => !selectedSleeve || p.sleeve_type === selectedSleeve || p.description?.includes(selectedSleeve))
+    .filter(p => !selectedNeck || p.neck_type === selectedNeck || p.description?.includes(selectedNeck))
+    .filter(p => !availabilityOnly || (p.stock && Number(p.stock) > 0))
+    .filter(p => !newArrivalsOnly || p.tag === "NEW" || p.is_new_arrival)
+    .filter(p => !bestSellersOnly || p.tag === "BESTSELLER" || p.is_best_seller)
     .sort((a, b) => {
       if (sort === "price-asc") return Number(a.price) - Number(b.price);
       if (sort === "price-desc") return Number(b.price) - Number(a.price);
       if (sort === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
-      return 0;
+      if (sort === "newest") return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      if (sort === "popular") return Number(b.reviews || 0) - Number(a.reviews || 0);
+      if (sort === "trending") return Number(b.rating || 0) * Number(b.reviews || 0) - Number(a.rating || 0) * Number(a.reviews || 0);
+      return 0; // Default Recommended
     });
 
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
+    <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--obsidian)" }}>
       <HeroHeader
         eyebrow="VELVETWOLF STORE"
         title={activeCollection ? getCollectionById(activeCollection)?.name?.toUpperCase() : t("shop").toUpperCase()}
-        sub={`${filtered.length} ${t("shop") === "दुकान" ? "टुकड़े उपलब्ध" : (t("shop") === "கடை" ? "தயாரிப்புகள் உள்ளன" : "pieces available in this drop.")}`}
+        sub={`${filtered.length} items matching your selections.`}
       />
 
       <div className="page-content-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "40px 40px", display: "flex", gap: 40, flexWrap: "wrap" }}>
+        
         {/* Sidebar filters */}
-        <div className="shop-sidebar" style={{ width: 220, flexShrink: 0 }}>
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("collections")}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button onClick={() => handleCollectionClick(null)} style={{ background: "none", border: "none", cursor: "pointer", color: !activeCollection ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, textAlign: "left", padding: "4px 0" }}>{t("all")}</button>
-              {COLLECTIONS.map(col => {
-                const IconComponent = col.icon;
-                return (
-                  <button key={col.id} onClick={() => handleCollectionClick(activeCollection === col.id ? null : col.id)} style={{ background: "none", border: "none", cursor: "pointer", color: activeCollection === col.id ? "var(--gold)" : "#cfcdcd", fontFamily: "'Roboto', sans-serif", fontSize: 12, letterSpacing: 1, textAlign: "left", padding: "4px 0", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span><IconComponent /></span>{col.name}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="shop-sidebar" style={{ width: 250, flexShrink: 0, background: "var(--graphite)", padding: 24, border: "1px solid var(--smoke)" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, letterSpacing: 2, color: "var(--gold)", fontWeight: "bold" }}>SMART FILTERS</span>
+            <button 
+              onClick={() => {
+                setSelectedCategory(null);
+                setSelectedGender(null);
+                setSelectedColor(null);
+                setSelectedSizes([]);
+                setSelectedFits([]);
+                setPriceMax(4000);
+                setSelectedFabric(null);
+                setSelectedSleeve(null);
+                setSelectedNeck(null);
+                setAvailabilityOnly(false);
+                setNewArrivalsOnly(false);
+                setBestSellersOnly(false);
+              }}
+              style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", fontSize: 10, fontFamily: "var(--font-mono)" }}
+            >
+              CLEAR ALL
+            </button>
           </div>
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("size")}</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {["XS","S","M","L","XL","XXL"].map(size => (
-                <button key={size} onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])} style={{ background: selectedSizes.includes(size) ? "var(--gold)" : "transparent", border: "1px solid var(--gold)", color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--gold)", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>{size}</button>
+
+          {/* Category Filter */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>CATEGORY</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: 10,
+                    fontFamily: "var(--font-mono)",
+                    border: "1px solid",
+                    borderColor: selectedCategory === cat ? "var(--gold)" : "var(--smoke)",
+                    background: selectedCategory === cat ? "var(--gold)" : "transparent",
+                    color: selectedCategory === cat ? "var(--obsidian)" : "var(--silver)",
+                    cursor: "pointer",
+                    textTransform: "uppercase"
+                  }}
+                >
+                  {cat}
+                </button>
               ))}
             </div>
           </div>
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("style").toUpperCase()}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {["Unisex", "Men's Fit", "Women's Fit"].map(styleVal => {
-                const isSelected = selectedStyles.includes(styleVal);
-                return (
-                  <button
-                    key={styleVal}
-                    onClick={() => setSelectedStyles(prev => isSelected ? prev.filter(s => s !== styleVal) : [...prev, styleVal])}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: isSelected ? "var(--gold)" : "#cfcdcd",
-                      fontFamily: "'Roboto', sans-serif",
-                      fontSize: 12,
-                      letterSpacing: 1,
-                      textAlign: "left",
-                      padding: "4px 0",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      transition: "color 0.2s"
-                    }}
-                  >
-                    <span style={{
-                      width: 12,
-                      height: 12,
-                      border: "1px solid var(--gold)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: isSelected ? "var(--gold)" : "transparent",
-                      color: "var(--obsidian)",
-                      fontSize: 8,
-                      fontWeight: "bold"
-                    }}>{isSelected && "✓"}</span>
-                    {styleVal}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>{t("fit").toUpperCase()}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {["Oversized", "Regular Fit", "Relaxed Fit"].map(fitVal => {
-                const isSelected = selectedFits.includes(fitVal);
-                return (
-                  <button
-                    key={fitVal}
-                    onClick={() => setSelectedFits(prev => isSelected ? prev.filter(f => f !== fitVal) : [...prev, fitVal])}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: isSelected ? "var(--gold)" : "#cfcdcd",
-                      fontFamily: "'Roboto', sans-serif",
-                      fontSize: 12,
-                      letterSpacing: 1,
-                      textAlign: "left",
-                      padding: "4px 0",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      transition: "color 0.2s"
-                    }}
-                  >
-                    <span style={{
-                      width: 12,
-                      height: 12,
-                      border: "1px solid var(--gold)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: isSelected ? "var(--gold)" : "transparent",
-                      color: "var(--obsidian)",
-                      fontSize: 8,
-                      fontWeight: "bold"
-                    }}>{isSelected && "✓"}</span>
-                    {fitVal}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
 
-        {/* Products grid */}
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
-            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>{filtered.length} {t("shop") === "दुकान" ? "परिणाम" : (t("shop") === "கடை" ? "முடிவுகள்" : "RESULTS")}</div>
-            <select className="input-dark" value={sort} onChange={e => setSort(e.target.value)} style={{ width: "auto", padding: "8px 16px" }}>
-              <option value="featured">{t("featured")}</option>
-              <option value="price-asc">{t("priceLowHigh")}</option>
-              <option value="price-desc">{t("priceHighLow")}</option>
-              <option value="rating">{t("rating")}</option>
+          {/* Gender Filter */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>GENDER</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {["Unisex", "Men's Fit", "Women's Fit"].map(gender => (
+                <label key={gender} style={{ fontSize: 12, color: "var(--silver)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedGender === gender}
+                    onChange={() => setSelectedGender(selectedGender === gender ? null : gender)}
+                    style={{ accentColor: "var(--gold)" }}
+                  />
+                  {gender}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Color Filter */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>COLOR</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              {AVAILABLE_COLORS.map(color => (
+                <button
+                  key={color.name}
+                  onClick={() => setSelectedColor(selectedColor === color.name ? null : color.name)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: color.value,
+                    border: selectedColor === color.name ? "2px solid var(--gold)" : "1px solid var(--smoke)",
+                    cursor: "pointer",
+                    outline: selectedColor === color.name ? "1px solid #fff" : "none"
+                  }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Size Filter */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>SIZE</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {["XS", "S", "M", "L", "XL", "XXL"].map(size => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])}
+                  style={{
+                    padding: "6px 10px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    border: "1px solid",
+                    borderColor: selectedSizes.includes(size) ? "var(--gold)" : "var(--smoke)",
+                    background: selectedSizes.includes(size) ? "var(--gold)" : "transparent",
+                    color: selectedSizes.includes(size) ? "var(--obsidian)" : "var(--silver)",
+                    cursor: "pointer"
+                  }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Fit Filter */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>FIT</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {["Oversized", "Regular Fit", "Relaxed Fit"].map(fit => (
+                <label key={fit} style={{ fontSize: 12, color: "var(--silver)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedFits.includes(fit)}
+                    onChange={() => setSelectedFits(prev => prev.includes(fit) ? prev.filter(f => f !== fit) : [...prev, fit])}
+                    style={{ accentColor: "var(--gold)" }}
+                  />
+                  {fit}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Price Range */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>
+              <span>MAX PRICE</span>
+              <span>₹{priceMax}</span>
+            </div>
+            <input
+              type="range"
+              min="500"
+              max="4000"
+              step="100"
+              value={priceMax}
+              onChange={e => setPriceMax(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "var(--gold)" }}
+            />
+          </div>
+
+          {/* Fabric Type */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>FABRIC</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {FABRIC_TYPES.map(fabric => (
+                <label key={fabric} style={{ fontSize: 12, color: "var(--silver)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="fabric"
+                    checked={selectedFabric === fabric}
+                    onChange={() => setSelectedFabric(selectedFabric === fabric ? null : fabric)}
+                    onClick={() => { if (selectedFabric === fabric) setSelectedFabric(null); }}
+                    style={{ accentColor: "var(--gold)" }}
+                  />
+                  {fabric}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Sleeve & Neck Type */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>SLEEVE TYPE</div>
+            <select 
+              value={selectedSleeve || ""} 
+              onChange={e => setSelectedSleeve(e.target.value || null)}
+              style={{ width: "100%", padding: 8, background: "#0a0a0a", border: "1px solid var(--smoke)", color: "var(--silver)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+            >
+              <option value="">ALL SLEEVES</option>
+              {SLEEVE_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
-          {filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "80px 0", color: "var(--silver)" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.3, marginBottom: 16 }}>{t("shop") === "दुकान" ? "खाली" : (t("shop") === "கடை" ? "வெற்று" : "EMPTY")}</div>
-              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>{t("noProducts")}</p>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>NECK TYPE</div>
+            <select 
+              value={selectedNeck || ""} 
+              onChange={e => setSelectedNeck(e.target.value || null)}
+              style={{ width: "100%", padding: 8, background: "#0a0a0a", border: "1px solid var(--smoke)", color: "var(--silver)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+            >
+              <option value="">ALL NECKS</option>
+              {NECK_TYPES.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+
+          {/* Quick Badges filters */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--smoke)", paddingTop: 18 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
+              <input type="checkbox" checked={availabilityOnly} onChange={e => setAvailabilityOnly(e.target.checked)} style={{ accentColor: "var(--gold)" }} />
+              IN STOCK ONLY
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
+              <input type="checkbox" checked={newArrivalsOnly} onChange={e => setNewArrivalsOnly(e.target.checked)} style={{ accentColor: "var(--gold)" }} />
+              NEW ARRIVALS
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
+              <input type="checkbox" checked={bestSellersOnly} onChange={e => setBestSellersOnly(e.target.checked)} style={{ accentColor: "var(--gold)" }} />
+              BEST SELLERS
+            </label>
+          </div>
+
+        </div>
+
+        {/* Products Grid Column */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
+            <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>
+              {aiLoading ? "SEARCHING FOR INTENT..." : `${filtered.length} RESULTS FOUND`}
+            </div>
+            <select 
+              className="input-dark" 
+              value={sort} 
+              onChange={e => setSort(e.target.value)} 
+              style={{ width: "auto", padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 12 }}
+            >
+              <option value="recommended">RECOMMENDED</option>
+              <option value="trending">TRENDING</option>
+              <option value="newest">NEWEST ARRIVALS</option>
+              <option value="popular">MOST POPULAR</option>
+              <option value="price-asc">PRICE: LOW TO HIGH</option>
+              <option value="price-desc">PRICE: HIGH TO LOW</option>
+            </select>
+          </div>
+
+          {aiLoading ? (
+            <div style={{ textAlign: "center", padding: "120px 0", color: "var(--gold)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, letterSpacing: 4 }}>AI DECODING YOUR STYLING INTENT...</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "120px 0", color: "var(--silver)" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.2, marginBottom: 16 }}>EMPTY DROP</div>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No pieces match your filters. Try clearing some selections.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 32 }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

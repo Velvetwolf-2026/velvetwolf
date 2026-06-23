@@ -35,3 +35,25 @@ export async function verifyEmailOtp(body, event) {
   return jsonResponse(200, result, {}, event);
 }
 
+export async function getStyleProfile(query, event) {
+  const user = requireAuth(event);
+  const profile = await profileService.getStyleProfile(user.id);
+  return jsonResponse(200, { profile }, {}, event);
+}
+
+export async function saveStyleProfile(body, event) {
+  const user = requireAuth(event);
+  const { personalityType, quizScore } = body;
+  if (!personalityType) throw new ApiError(400, "personalityType is required.");
+  if (!quizScore) throw new ApiError(400, "quizScore is required.");
+
+  const profile = await profileService.saveStyleProfile(user.id, { personalityType, quizScore });
+  return jsonResponse(200, { profile }, {}, event);
+}
+
+export async function clearStyleProfile(body, event) {
+  const user = requireAuth(event);
+  const result = await profileService.clearStyleProfile(user.id);
+  return jsonResponse(200, result, {}, event);
+}
+
