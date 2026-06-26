@@ -389,6 +389,10 @@ export default function TrackOrder() {
             <span style={{ fontFamily: "'Roboto', sans-serif" }}>48</span> hours, contact us at{" "}
             <a
               href="mailto:info@velvetwolf.in"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "mailto:info@velvetwolf.in";
+              }}
               style={{ color: gold, textDecoration: "none" }}
             >
               info@velvetwolf.in

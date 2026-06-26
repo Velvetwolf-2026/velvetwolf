@@ -3,7 +3,7 @@ import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, ForgetPassword, Login, AccountPage, CheckoutPage, PaymentStatusPage, CollectionsPage } from "./index";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
-import { HomePage, ShopPage, CustomDesignPage, BulkOrderPage, BulkOrderSuccessPage, ProductDetailPage, CartPage, WishlistPage } from "./index";
+import { HomePage, ShopPage, QuizPage, CustomDesignPage, BulkOrderPage, BulkOrderSuccessPage, ProductDetailPage, CartPage, WishlistPage } from "./index";
 
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
@@ -17,6 +17,7 @@ import WishlistSidebar from "./velvetwolf/components/WishlistSidebar";
 import Toast from "./velvetwolf/components/Toast";
 import Icon from "./velvetwolf/components/Icon";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
+import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 
 // Admin layout lazy-loaded
 const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
@@ -110,6 +111,7 @@ export default function VelvetWolf() {
       checkout: "/checkout",
       "payment-status": "/payment-status",
       custom: "/custom",
+      quiz: "/quiz",
       bulk: "/bulk",
       "bulk-success": "/bulk/success",
       contactus: "/contact",
@@ -311,6 +313,7 @@ export default function VelvetWolf() {
         localStorage.removeItem(`vw_cart_${user.id}`);
       }
       localStorage.removeItem("user");
+      localStorage.removeItem("vw_guest_style_profile");
       // Call backend logout endpoint to clear HttpOnly cookie
       await fetch(apiUrl("/auth/logout"), { method: "POST" });
       setUser(null);
@@ -401,6 +404,36 @@ export default function VelvetWolf() {
       syncCartFromDB(backendUserId);
       syncWishlistFromDB(backendUserId);
       mergeGuestCartToDB(backendUserId);
+
+      // Sync guest style profile if present
+      const localProfile = localStorage.getItem("vw_guest_style_profile");
+      if (localProfile) {
+        try {
+          const { personalityType, quizScore } = JSON.parse(localProfile);
+          fetch(apiUrl("/user/style-profile"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({ personalityType, quizScore })
+          })
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Sync failed");
+          })
+          .then(data => {
+            localStorage.removeItem("vw_guest_style_profile");
+            showToast(`Synced your personality type (${personalityType}) to your account!`);
+            setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);
+          })
+          .catch(err => {
+            console.error("Failed to sync guest style profile to backend", err);
+          });
+        } catch (e) {
+          console.error("Failed to parse guest style profile JSON", e);
+        }
+      }
     } else {
       setCart(getGuestCart());
       setWishlist([]);
@@ -477,6 +510,7 @@ export default function VelvetWolf() {
               <Layout>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/quiz" element={<QuizPage />} />
                   <Route path="/shop" element={<ShopPage />} />
                   <Route path="/shop/:collection" element={<ShopPage />} />
                   <Route path="/product/:slug" element={<ProductDetailPage />} />
@@ -507,6 +541,7 @@ export default function VelvetWolf() {
         {selectedProduct && <ProductModal key={selectedProduct.id} />}
         {cartOpen && <CartSidebar />}
         {wishlistOpen && <WishlistSidebar />}
+        <AiFashionAssistant />
       </AppContext.Provider>
     </LanguageProvider>
   );

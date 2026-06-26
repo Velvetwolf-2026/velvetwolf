@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../pages/AppContext";
-import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaTwitter } from "react-icons/fa";
 
 export default function Footer() {
   const { setPage, openShop, showToast } = useContext(AppContext);
@@ -104,9 +104,15 @@ export default function Footer() {
               >
                 <FaFacebook /> Facebook
               </a>
-              <span style={socialLinkStyle}>
-                <FaYoutube /> YouTube
-              </span>
+              <a
+                href="https://twitter.com/velvetwolf_in"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={socialLinkStyle}
+                className="vw-footer-social-link"
+              >
+                <FaTwitter /> Twitter
+              </a>
             </div>
           </div>
 

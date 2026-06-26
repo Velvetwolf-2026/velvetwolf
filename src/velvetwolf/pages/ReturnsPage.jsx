@@ -94,7 +94,14 @@ export default function ReturnsPage() {
                   {s.email ? (
                     <>
                       Send an email to{" "}
-                      <a href={`mailto:${s.email}`} style={{ color: gold }}>
+                      <a 
+                        href={`mailto:${s.email}`} 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.href = `mailto:${s.email}`;
+                        }}
+                        style={{ color: gold }}
+                      >
                         {s.email}
                       </a>{" "}
                       {formatText(s.desc)}

@@ -6,6 +6,9 @@ import AdminOrders    from "./AdminOrders";
 import AdminCustomers from "./AdminCustomers";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminSettings  from "./AdminSettings";
+import AdminCategories from "./AdminCategories";
+import AdminCoupons from "./AdminCoupons";
+import AdminInventory from "./AdminInventory";
 
 export default function AdminLayout({ Icon, TAG_COLORS }) {
   const { setPage, adminPage, setAdminPage } = useContext(AppContext);
@@ -13,6 +16,9 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
   const navItems = [
     ["dashboard", "DASHBOARD", "chart"],
     ["products",  "PRODUCTS",  "package"],
+    ["inventory", "INVENTORY", "archive"],
+    ["categories","COLLECTIONS","package"],
+    ["coupons",   "COUPONS",    "tag"],
     ["orders",    "ORDERS",    "cart"],
     ["customers", "CUSTOMERS", "users"],
     ["analytics", "ANALYTICS", "chart"],
@@ -78,6 +84,9 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
       <div className="vw-admin-main" style={{ flex: 1, overflowY: "auto", padding: "40px" }}>
         {adminPage === "dashboard" && <AdminDashboard />}
         {adminPage === "products"  && <AdminProducts Icon={Icon} TAG_COLORS={TAG_COLORS} />}
+        {adminPage === "inventory" && <AdminInventory />}
+        {adminPage === "categories" && <AdminCategories />}
+        {adminPage === "coupons"   && <AdminCoupons />}
         {adminPage === "orders"    && <AdminOrders />}
         {adminPage === "customers" && <AdminCustomers />}
         {adminPage === "analytics" && <AdminAnalytics />}

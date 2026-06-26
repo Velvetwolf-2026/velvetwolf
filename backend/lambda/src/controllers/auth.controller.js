@@ -22,7 +22,6 @@ export async function login(body, event) {
   const headers = {};
   if (result.token) {
     headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
-    delete result.token;
   }
   return jsonResponse(200, result, headers, event);
 }
@@ -34,7 +33,6 @@ export async function verifyOtp(body, event) {
   if (result.token) {
     await auditLog({ action: "user.login", resource: "users", meta: { email: data.email, type: data.type } });
     headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
-    delete result.token;
   }
   return jsonResponse(200, result, headers, event);
 }
@@ -100,7 +98,6 @@ export async function firebaseLogin(body, event) {
   const headers = {};
   if (result.token) {
     headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
-    delete result.token;
   }
   await auditLog({ action: "user.login", resource: "users", meta: { phone: data.phone, type: "Mobile" } });
   return jsonResponse(200, result, headers, event);

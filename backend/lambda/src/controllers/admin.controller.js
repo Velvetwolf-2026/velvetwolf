@@ -74,3 +74,56 @@ export async function getAnalytics(admin, event) {
   const result = await adminService.getAdminAnalytics();
   return jsonResponse(200, result, {}, event);
 }
+
+export async function getCoupons(admin, event) {
+  const result = await adminService.getAdminCoupons();
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function createCoupon(admin, body, event) {
+  const result = await adminService.createAdminCoupon(body);
+  await auditLog({ action: "coupon.create", adminId: admin.id, resource: "coupons", resourceId: result.id });
+  return jsonResponse(201, result, {}, event);
+}
+
+export async function updateCoupon(couponId, admin, body, event) {
+  const result = await adminService.updateAdminCoupon(couponId, body);
+  await auditLog({ action: "coupon.update", adminId: admin.id, resource: "coupons", resourceId: couponId });
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function deleteCoupon(couponId, admin, event) {
+  const result = await adminService.deleteAdminCoupon(couponId);
+  await auditLog({ action: "coupon.delete", adminId: admin.id, resource: "coupons", resourceId: couponId });
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function getCategories(admin, event) {
+  const result = await adminService.getAdminCategories();
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function createCategory(admin, body, event) {
+  const result = await adminService.createAdminCategory(body);
+  await auditLog({ action: "category.create", adminId: admin.id, resource: "collections", resourceId: result.id });
+  return jsonResponse(201, result, {}, event);
+}
+
+export async function deleteCategory(categoryId, admin, event) {
+  const result = await adminService.deleteAdminCategory(categoryId);
+  await auditLog({ action: "category.delete", adminId: admin.id, resource: "collections", resourceId: categoryId });
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function updateOrderShiprocket(orderId, admin, body, event) {
+  const result = await adminService.updateAdminOrderShiprocket(orderId, body);
+  await auditLog({ action: "order.shiprocket_update", adminId: admin.id, resource: "orders", resourceId: orderId });
+  return jsonResponse(200, result, {}, event);
+}
+
+export async function updateProductInventory(productId, admin, body, event) {
+  const result = await adminService.updateAdminProductInventory(productId, body);
+  await auditLog({ action: "product.inventory_update", adminId: admin.id, resource: "products", resourceId: productId });
+  return jsonResponse(200, result, {}, event);
+}
+

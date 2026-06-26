@@ -4,6 +4,7 @@ import { AppContext } from "../pages/AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
 import { useLanguage } from "../pages/LanguageContext";
 import Icon from "./Icon";
+import { COLLECTIONS } from "../utils/collectionsData";
 
 /* ─── Inline styles that need keyframes ─────────────────────────────────────── */
 const GLOBAL_STYLE = `
@@ -207,6 +208,9 @@ export default function Navbar({ activePage }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [categoriesHovered, setCategoriesHovered] = useState(false);
+  const [accountHovered, setAccountHovered] = useState(false);
+
   const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop, searchQuery, setSearchQuery } =
     useContext(AppContext);
   const { language, setLanguage, t } = useLanguage();
@@ -228,6 +232,7 @@ export default function Navbar({ activePage }) {
     ["shop",          "shop"],
     ["collections",   "collection"],
     ["customDesign",  "custom"],
+    ["styleQuiz",     "quiz"],
   ];
 
   const goToPage = (pg) => {
@@ -346,18 +351,142 @@ export default function Navbar({ activePage }) {
             </div>
           </div>
 
+          {/* ── Center-aligned Search Bar (Desktop Only) ─────────────────── */}
+          {!isMobileOrTablet && (
+            <div style={{ flex: 1, display: "flex", justifyContent: "center", maxWidth: 360, margin: "0 24px", position: "relative" }}>
+              <div style={{ position: "relative", width: "100%" }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  placeholder={t("searchPlaceholder") || "SEARCH THE WILD..."}
+                  style={{
+                    width: "100%",
+                    padding: "8px 16px 8px 36px",
+                    fontSize: 12,
+                    fontFamily: "var(--font-mono)",
+                    border: "1px solid var(--smoke)",
+                    borderRadius: 20,
+                    background: "rgba(255, 255, 255, 0.04)",
+                    color: "var(--ivory)",
+                    outline: "none",
+                    letterSpacing: 1,
+                    transition: "all 0.3s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--gold)";
+                    e.target.style.background = "rgba(0,0,0,0.6)";
+                    e.target.style.boxShadow = "0 0 10px rgba(201,168,76,0.2)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "var(--smoke)";
+                    e.target.style.background = "rgba(255, 255, 255, 0.04)";
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ash)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
+                  <Icon name="search" size={14} />
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* ── Desktop nav links ─────────────────────────────────────────── */}
           {!isMobileOrTablet && (
             <div className="nav-links" style={{ display: "flex", gap: 16, alignItems: "center" }}>
-              {regularLinks.map(([label, pg]) => (
-                <button
-                  key={pg}
-                  onClick={() => goToPage(pg)}
-                  className={`vw-bulk-btn${activePage === pg ? " active" : ""}`}
-                >
-                  {t(label)}
+              {/* Shop */}
+              <button onClick={() => goToPage("shop")} className={`vw-bulk-btn${activePage === "shop" ? " active" : ""}`}>
+                {t("shop")}
+              </button>
+
+              {/* Hover Categories Dropdown */}
+              <div
+                onMouseEnter={() => setCategoriesHovered(true)}
+                onMouseLeave={() => setCategoriesHovered(false)}
+                style={{ position: "relative" }}
+              >
+                <button className={`vw-bulk-btn${activePage === "collection" ? " active" : ""}`}>
+                  CATEGORIES <span style={{ fontSize: 9 }}>▼</span>
                 </button>
-              ))}
+                {categoriesHovered && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 480,
+                      background: "rgba(10, 10, 10, 0.98)",
+                      backdropFilter: "blur(20px)",
+                      border: "1px solid var(--gold)",
+                      borderRadius: 4,
+                      padding: "20px",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(201,168,76,0.15)",
+                      zIndex: 999,
+                      animation: "vw-drawer-slide 0.2s ease"
+                    }}
+                  >
+                    {COLLECTIONS.slice(0, 8).map(col => (
+                      <div
+                        key={col.id}
+                        onClick={() => {
+                          openShop(col.id);
+                          setCategoriesHovered(false);
+                        }}
+                        style={{
+                          padding: "8px 12px",
+                          cursor: "pointer",
+                          borderRadius: 2,
+                          transition: "all 0.2s ease",
+                          textAlign: "left"
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = "rgba(201,168,76,0.08)";
+                          e.currentTarget.style.transform = "translateX(4px)";
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.transform = "translateX(0)";
+                        }}
+                      >
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", fontWeight: "bold" }}>
+                          {col.name}
+                        </div>
+                        <div style={{ fontSize: 10, color: "var(--ash)", marginTop: 2 }}>
+                          Premium Drop.
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      onClick={() => {
+                        goToPage("collections");
+                        setCategoriesHovered(false);
+                      }}
+                      style={{
+                        gridColumn: "span 2",
+                        borderTop: "1px solid var(--smoke)",
+                        paddingTop: 10,
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        color: "var(--gold)",
+                        cursor: "pointer",
+                        letterSpacing: 2
+                      }}
+                    >
+                      VIEW ALL COLLECTIONS →
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Design */}
+              <button onClick={() => goToPage("custom")} className={`vw-bulk-btn${activePage === "custom" ? " active" : ""}`}>
+                {t("customDesign")}
+              </button>
 
               {/* BULK ORDER — special CTA button */}
               <button
@@ -400,39 +529,41 @@ export default function Navbar({ activePage }) {
           {/* ── Right side ───────────────────────────────────────────────── */}
           <div style={{ display: "flex", gap: isMobile ? 8 : 14, alignItems: "center" }}>
 
-            {/* Search */}
-            {searchOpen ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder={t("searchPlaceholder")}
-                  autoFocus
-                  style={{
-                    width: isMobile ? 110 : 160,
-                    padding: "5px 10px",
-                    fontSize: 12,
-                    fontFamily: "var(--font-mono)",
-                    border: "1px solid var(--gold)",
-                    borderRadius: 2,
-                    background: "rgba(0,0,0,0.7)",
-                    color: "var(--ivory)",
-                    outline: "none",
-                    letterSpacing: 1,
-                  }}
-                />
-                <button
-                  onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-                  className="vw-icon-btn"
-                >
-                  <Icon name="x" size={15} />
+            {/* Mobile Search Input */}
+            {isMobileOrTablet && (
+              searchOpen ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder={t("searchPlaceholder")}
+                    autoFocus
+                    style={{
+                      width: isMobile ? 110 : 160,
+                      padding: "5px 10px",
+                      fontSize: 12,
+                      fontFamily: "var(--font-mono)",
+                      border: "1px solid var(--gold)",
+                      borderRadius: 2,
+                      background: "rgba(0,0,0,0.7)",
+                      color: "var(--ivory)",
+                      outline: "none",
+                      letterSpacing: 1,
+                    }}
+                  />
+                  <button
+                    onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                    className="vw-icon-btn"
+                  >
+                    <Icon name="x" size={15} />
+                  </button>
+                </div>
+              ) : (
+                <button className="vw-icon-btn" onClick={() => setSearchOpen(true)} title="Search">
+                  <Icon name="search" size={isMobile ? 19 : 21} />
                 </button>
-              </div>
-            ) : (
-              <button className="vw-icon-btn" onClick={() => setSearchOpen(true)} title="Search">
-                <Icon name="search" size={isMobile ? 19 : 21} />
-              </button>
+              )
             )}
 
             {/* Wishlist */}
@@ -491,21 +622,85 @@ export default function Navbar({ activePage }) {
                   ))}
                 </div>
 
-                {/* User greeting / login */}
+                {/* User greeting / dropdown menu */}
                 {greetingName ? (
-                  <button className="vw-user-pill" onClick={() => setPage("account")}>
-                    {greetWord}, {greetingName}
-                  </button>
+                  <div
+                    onMouseEnter={() => setAccountHovered(true)}
+                    onMouseLeave={() => setAccountHovered(false)}
+                    style={{ position: "relative" }}
+                  >
+                    <button className="vw-user-pill" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {greetWord}, {greetingName} <span style={{ fontSize: 8 }}>▼</span>
+                    </button>
+
+                    {accountHovered && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          right: 0,
+                          width: 180,
+                          background: "rgba(10, 10, 10, 0.98)",
+                          backdropFilter: "blur(20px)",
+                          border: "1px solid var(--gold)",
+                          borderRadius: 2,
+                          padding: "8px 0",
+                          boxShadow: "0 10px 25px rgba(0,0,0,0.8)",
+                          zIndex: 999,
+                          display: "flex",
+                          flexDirection: "column",
+                          animation: "vw-drawer-slide 0.15s ease"
+                        }}
+                      >
+                        {[
+                          ["Profile", "account", "user"],
+                          ["My Orders", "account", "package"],
+                          ["Sign Out", "logout", "logout"]
+                        ].map(([label, action, iconName]) => (
+                          <button
+                            key={label}
+                            onClick={() => {
+                              setAccountHovered(false);
+                              if (action === "logout") {
+                                signOutUser();
+                              } else {
+                                setPage(action);
+                              }
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              padding: "10px 16px",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 11,
+                              color: label === "Sign Out" ? "#ff8080" : "var(--ash)",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              width: "100%",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = label === "Sign Out" ? "rgba(255,80,80,0.08)" : "rgba(201,168,76,0.08)";
+                              e.currentTarget.style.color = label === "Sign Out" ? "#ff8080" : "var(--gold)";
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.color = label === "Sign Out" ? "#ff8080" : "var(--ash)";
+                            }}
+                          >
+                            <Icon name={iconName} size={14} />
+                            {label.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <button className="vw-icon-btn" onClick={() => setPage("login")} title="Login">
                     <Icon name="user" size={21} />
-                  </button>
-                )}
-
-                {/* Sign out */}
-                {user && (
-                  <button className="vw-signout-btn" onClick={signOutUser}>
-                    {t("logout")}
                   </button>
                 )}
               </>
