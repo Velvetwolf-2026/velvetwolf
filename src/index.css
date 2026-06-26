@@ -248,6 +248,11 @@ body::before {
 select.input-dark { appearance: none; cursor: pointer; }
 textarea.input-dark { resize: vertical; min-height: 100px; }
 
+/* Hide Firebase reCAPTCHA badge */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+
 /* ── Responsive breakpoints ── */
 
 /* Tablet: 640px – 1023px */

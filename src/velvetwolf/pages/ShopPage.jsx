@@ -76,6 +76,26 @@ export default function ShopPage() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
+  // Auto-navigate to collection if search query matches a collection keywords
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      let matchedCol = null;
+      if (q.includes("ai") || q.includes("tech")) matchedCol = "ai-tech";
+      else if (q.includes("anime")) matchedCol = "anime";
+      else if (q.includes("beast")) matchedCol = "beast-mode";
+      else if (q.includes("silent") || q.includes("luxury")) matchedCol = "silent-luxury";
+      else if (q.includes("founder")) matchedCol = "founder";
+      else if (q.includes("savage")) matchedCol = "savage-quotes";
+      else if (q.includes("xp")) matchedCol = "xp-mode";
+      else if (q.includes("mind") || q.includes("mayhem")) matchedCol = "mind-mayhem";
+
+      if (matchedCol && matchedCol !== routeCollection) {
+        navigate(`/shop/${matchedCol}`);
+      }
+    }
+  }, [searchQuery, routeCollection, navigate]);
+
   const handleCollectionClick = (colId) => {
     if (colId) {
       navigate(`/shop/${colId}`);

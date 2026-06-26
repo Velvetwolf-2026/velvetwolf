@@ -3,7 +3,7 @@ import { S, PageHeader } from "../styles/shared";
 import { THEME } from "../utils/constants";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
-import { FaInstagram, FaFacebookF, FaYoutube } from "react-icons/fa";
+import { FaInstagram, FaFacebookF, FaTwitter } from "react-icons/fa";
 
 const { gold, goldLight, surface, border, muted, text } = THEME;
 
@@ -14,14 +14,14 @@ const CONTACTS = [
   { icon: "📦", label: "ORDER SUPPORT", val: "orders@velvetwolf.in" },
   { icon: "↩", label: "RETURNS & EXCHANGE", val: "returns@velvetwolf.in" },
   { icon: "🏢", label: "BULK & CORPORATE", val: "bulk@velvetwolf.in" },
-  { icon: "📱", label: "WHATSAPP SUPPORT", val: "+91 98765 43210" },
+  { icon: "📱", label: "WHATSAPP SUPPORT", val: "+91 93422 45724" },
 
 ];
 
 const SOCIALS = [
   { label: "Instagram", icon: <FaInstagram />, href: "https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" },
   { label: "Facebook", icon: <FaFacebookF />, href: "https://www.facebook.com/profile.php?id=61577839378533" },
-  { label: "YouTube", icon: <FaYoutube />, href: "https://youtube.com" },
+  { label: "Twitter", icon: <FaTwitter />, href: "https://twitter.com/velvetwolf_in" },
 ];
 
 const SUBJECTS = [
@@ -208,8 +208,14 @@ export default function ContactPage() {
                         ? `mailto:${c.val}`
                         : `https://wa.me/${c.val.replace(/\D/g, "")}`
                     }
-                    target="_blank"
-                    rel="noreferrer"
+                    target={c.val.includes("@") ? undefined : "_blank"}
+                    rel={c.val.includes("@") ? undefined : "noreferrer"}
+                    onClick={(e) => {
+                      if (c.val.includes("@")) {
+                        e.preventDefault();
+                        window.location.href = `mailto:${c.val}`;
+                      }
+                    }}
                     style={{
                       fontSize: 15,
                       color: gold,

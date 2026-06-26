@@ -48,7 +48,7 @@ function StepBar({ step }) {
 }
 
 export function ForgetPassword() {
-  const { setPage, showToast } = useContext(AppContext);
+  const { setPage, showToast, setUser } = useContext(AppContext);
 
   const [step, setStep] = useState(1);
   const [email, setEmailVal] = useState("");
@@ -174,6 +174,11 @@ export function ForgetPassword() {
       showToast(data.message || "Password reset successfully! ?");
       setStep(4);
       setResetToken("");
+
+      // Clear any stale session so user can log in fresh with new password
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
     } catch (err) {
       const msg = err.message || "";
       if (msg.includes("expired")) {

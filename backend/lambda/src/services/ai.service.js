@@ -118,6 +118,27 @@ export async function parseSearchIntent(queryText) {
     intent.collection = "beast-mode";
   }
 
+  // Explicit Collection matching based on display names / common terms if not already set
+  if (!intent.collection) {
+    if (q.includes("ai") || q.includes("tech") || q.includes("coding") || q.includes("developer")) {
+      intent.collection = "ai-tech";
+    } else if (q.includes("anime") || q.includes("slayer") || q.includes("demon") || q.includes("anarchy")) {
+      intent.collection = "anime";
+    } else if (q.includes("beast") || q.includes("grind")) {
+      intent.collection = "beast-mode";
+    } else if (q.includes("silent") || q.includes("luxury")) {
+      intent.collection = "silent-luxury";
+    } else if (q.includes("founder") || q.includes("hustle") || q.includes("builder")) {
+      intent.collection = "founder";
+    } else if (q.includes("savage") || q.includes("quotes")) {
+      intent.collection = "savage-quotes";
+    } else if (q.includes("xp") || q.includes("game") || q.includes("gaming")) {
+      intent.collection = "xp-mode";
+    } else if (q.includes("mind") || q.includes("mayhem")) {
+      intent.collection = "mind-mayhem";
+    }
+  }
+
   // Keywords if nothing fits
   if (!intent.color && !intent.fit && !intent.category && !intent.collection) {
     intent.searchKeyword = queryText;
@@ -167,7 +188,14 @@ export async function searchAiProducts(queryText, personalityType = null) {
     // 3. Category matching
     if (intent.category) {
       const categoryVal = (p.category || "").toLowerCase();
-      const nameHasCat = nameLower.includes(intent.category) || descLower.includes(intent.category) || categoryVal.includes(intent.category);
+      const synonyms = {
+        tshirt: ["tshirt", "t-shirt", "tee", "shirt"],
+        cargo: ["cargo", "pant", "bottom", "trouser"],
+        hoodie: ["hoodie", "sweatshirt", "jacket"],
+        cap: ["cap", "hat"]
+      }[intent.category] || [intent.category];
+
+      const nameHasCat = synonyms.some(syn => nameLower.includes(syn) || descLower.includes(syn)) || categoryVal.includes(intent.category);
       if (nameHasCat) score += 5;
       else return { product: p, score: -1 }; // strict mismatch filter
     }
@@ -199,9 +227,27 @@ export async function searchAiProducts(queryText, personalityType = null) {
     // 7. General search term fallback
     if (intent.searchKeyword) {
       const kw = intent.searchKeyword.toLowerCase();
+      const tagLower = (p.tag || "").toLowerCase();
+      
+      const collectionDisplayNames = {
+        "ai-tech": ["ai & tech humor", "ai and tech", "ai", "tech", "coding", "developer", "neural network"],
+        "anime": ["anime", "anime anarchy", "demon", "slayer"],
+        "beast-mode": ["beast mode", "beast mode grind", "fitness", "gym", "workout", "grind"],
+        "silent-luxury": ["silent luxury", "minimalist", "premium"],
+        "founder": ["founder", "founder energy", "hustle"],
+        "savage-quotes": ["savage quotes", "quotes"],
+        "xp-mode": ["xp mode", "gaming", "game"],
+        "mind-mayhem": ["mind over mayhem", "mind palace", "mayhem"],
+      };
+
+      const matchedColKeywords = collectionDisplayNames[p.collection] || [];
+      const hasCollectionNameMatch = matchedColKeywords.some(kwVal => kw.includes(kwVal) || kwVal.includes(kw));
+
       if (nameLower.includes(kw)) score += 10;
       else if (descLower.includes(kw)) score += 5;
       else if (collectionLower.includes(kw)) score += 3;
+      else if (tagLower.includes(kw) || (kw === "bestseller" && tagLower === "bestseller") || (kw === "most loved" && tagLower === "most loved") || (kw === "trending" && tagLower === "trending")) score += 8;
+      else if (hasCollectionNameMatch) score += 8;
       else return { product: p, score: -1 };
     }
 
