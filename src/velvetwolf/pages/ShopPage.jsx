@@ -96,14 +96,6 @@ export default function ShopPage() {
     }
   }, [searchQuery, routeCollection, navigate]);
 
-  const handleCollectionClick = (colId) => {
-    if (colId) {
-      navigate(`/shop/${colId}`);
-    } else {
-      navigate("/shop");
-    }
-  };
-
   const baseList = aiProducts !== null ? aiProducts : products;
 
   const filtered = baseList

@@ -25,9 +25,8 @@ async function test() {
 
   // Trigger forgot password
   console.log("5. Triggering forgot password...");
-  const { data: otpRec2 } = await supabaseAdmin.from("otps").select("otp").eq("email", email).single();
   // Wait, forgotPassword returns OTP
-  const forgotRes = await fetchForgotPasswordOtp(email);
+  await fetchForgotPasswordOtp(email);
   const { data: otpRec3 } = await supabaseAdmin.from("otps").select("otp").eq("email", email).single();
   const resetOtp = otpRec3.otp;
   console.log("Retrieved Reset OTP:", resetOtp);
@@ -55,7 +54,7 @@ async function test() {
 
 async function fetchForgotPasswordOtp(email) {
   // Simulating service call
-  const { data: user, error: userError } = await supabaseAdmin.from("users").select("id").eq("email", email).single();
+  await supabaseAdmin.from("users").select("id").eq("email", email).single();
   const otp = 999999;
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   await supabaseAdmin.from("otps").delete().eq("email", email);

@@ -444,7 +444,7 @@ export default function VelvetWolf() {
             if (res.ok) return res.json();
             throw new Error("Sync failed");
           })
-          .then(data => {
+          .then(() => {
             localStorage.removeItem("vw_guest_style_profile");
             showToast(`Synced your personality type (${personalityType}) to your account!`);
             setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);

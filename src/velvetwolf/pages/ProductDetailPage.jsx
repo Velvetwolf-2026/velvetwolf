@@ -1,7 +1,6 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AppContext } from "./AppContext";
-import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
 import { getCollectionById } from "../utils/collectionsData";
@@ -19,7 +18,6 @@ export default function ProductDetailPage() {
   const { slug } = useParams();
   const { isMobile, isMobileOrTablet } = useBreakpoint();
   const { addToCart, toggleWishlist, wishlist, products, showToast } = useContext(AppContext);
-  const { t } = useLanguage();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);

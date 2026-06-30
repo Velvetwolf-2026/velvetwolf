@@ -112,7 +112,7 @@ export default function QuizPage() {
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [quizResults, setQuizResults] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   // If user already has a style profile, we can load it or give option to retake
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function QuizPage() {
           const guestProfile = JSON.parse(guestProfileRaw);
           setQuizResults(guestProfile);
           setQuizState("results");
-        } catch (e) {
+        } catch (_e) {
           setQuizResults(null);
           setQuizState("welcome");
         }
@@ -208,7 +208,7 @@ export default function QuizPage() {
         });
 
         if (res.ok) {
-          const data = await res.json();
+          await res.json();
           showToast(`Style profile saved successfully! Wolf Type: ${personalityType}`);
           // Sync primary user personality type
           setUser((prev) => (prev ? { ...prev, personality_type: personalityType } : null));

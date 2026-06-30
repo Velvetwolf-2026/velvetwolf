@@ -471,7 +471,7 @@ export async function updateAdminProductInventory(productId, inventoryData) {
   const { size, color, stock } = inventoryData;
   
   // Update in product_variants table
-  const { data: variant, error: varError } = await supabaseAdmin
+  const { error: varError } = await supabaseAdmin
     .from("product_variants")
     .update({ stock: Number(stock) })
     .eq("product_id", productId)

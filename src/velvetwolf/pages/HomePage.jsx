@@ -10,7 +10,7 @@ import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 
 export default function HomePage() {
-  const { setPage, products, openShop, user } = useContext(AppContext);
+  const { products, openShop, user } = useContext(AppContext);
   const navigate = useNavigate();
   const { t } = useLanguage();
 

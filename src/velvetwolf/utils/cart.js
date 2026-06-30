@@ -1,6 +1,6 @@
 import { apiUrl } from './api';
 
-export async function loadCartFromDB(userId) {
+export async function loadCartFromDB(_userId) {
   const token = localStorage.getItem('token');
   const response = await fetch(
     `${apiUrl('/cart')}`, {

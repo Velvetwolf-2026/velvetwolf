@@ -169,6 +169,7 @@ export async function searchAiProducts(queryText, personalityType = null) {
     const nameLower = p.name.toLowerCase();
     const descLower = (p.description || "").toLowerCase();
     const collectionLower = (p.collection || "").toLowerCase();
+    const fitVal = (p.fit || "").toLowerCase();
 
     // 1. Color matching
     if (intent.color) {
@@ -180,7 +181,6 @@ export async function searchAiProducts(queryText, personalityType = null) {
 
     // 2. Fit matching
     if (intent.fit) {
-      const fitVal = (p.fit || "").toLowerCase();
       const hasFit = fitVal.includes(intent.fit) || nameLower.includes(intent.fit) || descLower.includes(intent.fit);
       if (hasFit) score += 3;
     }
@@ -475,7 +475,7 @@ export async function chatAssistantDialog(messages = [], personalityType = null)
         recommendedProducts = top || [];
       }
     }
-  } catch (err) {
+  } catch (_err) {
     replyText = "I ran into a small error fetching styling products, but let me know what occasion you're dressing for!";
   }
 
