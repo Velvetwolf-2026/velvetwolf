@@ -1,8 +1,13 @@
 import { apiUrl } from './api';
 
 export async function loadCartFromDB(userId) {
+  const token = localStorage.getItem('token');
   const response = await fetch(
-    `${apiUrl('/cart')}?userId=${encodeURIComponent(userId)}`
+    `${apiUrl('/cart')}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    }
   );
 
   const payload = await response.json().catch(() => ({}));
@@ -15,9 +20,13 @@ export async function loadCartFromDB(userId) {
 }
 
 export async function addCartItemDB(userId, product, qty = 1, size = null, color = null) {
+  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/add'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
     body: JSON.stringify({
       userId,
       productId: product?.id,
@@ -35,9 +44,13 @@ export async function addCartItemDB(userId, product, qty = 1, size = null, color
 }
 
 export async function updateCartQtyDB(cartItemId, qty) {
+  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/update'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
     body: JSON.stringify({
       cartItemId,
       quantity: qty,
@@ -52,9 +65,13 @@ export async function updateCartQtyDB(cartItemId, qty) {
 }
 
 export async function removeCartItemDB(cartItemId) {
+  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/remove'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
     body: JSON.stringify({ cartItemId }),
   });
 

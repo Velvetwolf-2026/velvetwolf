@@ -1,4 +1,3 @@
-import { supabase } from './supabase';
 import { apiUrl } from './api';
 
 export async function updateProfile(userId, updates) {
@@ -29,33 +28,6 @@ export async function updateProfile(userId, updates) {
   return data.profile;
 }
 
-
-export async function getAddresses(userId) {
-  const { data, error } = await supabase
-    .from('addresses')
-    .select('*')
-    .eq('user_id', userId)
-    .order('is_default', { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function saveAddress(userId, address) {
-  // Validate pincode
-  if (!/^\d{6}$/.test(address.pincode)) throw new Error('Invalid pincode');
-
-  if (address.is_default) {
-    // Unset other defaults first
-    await supabase.from('addresses').update({ is_default: false }).eq('user_id', userId);
-  }
-
-  const { data, error } = address.id
-    ? await supabase.from('addresses').update({ ...address }).eq('id', address.id).select().single()
-    : await supabase.from('addresses').insert({ ...address, user_id: userId }).select().single();
-
-  if (error) throw error;
-  return data;
-}
 
 export async function sendEmailUpdateOtp(newEmail) {
   const token = localStorage.getItem('token');

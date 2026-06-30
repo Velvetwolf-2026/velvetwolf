@@ -340,4 +340,44 @@ CREATE OR REPLACE POLICY "Allow select user_style_profiles" ON public.user_style
 CREATE OR REPLACE POLICY "Allow write user_style_profiles" ON public.user_style_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 
+-- ==========================================
+-- DATABASE PERFORMANCE & SECURITY OPTIMIZATIONS
+-- ==========================================
+
+-- 1. Index Definitions
+CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON public.cart_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON public.product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+
+-- 2. Restrict RLS Policies
+-- Users
+DROP POLICY IF EXISTS "Allow public read users" ON public.users;
+CREATE OR REPLACE POLICY "Allow matching user read users" ON public.users FOR SELECT USING (auth.uid() = id);
+
+-- Profiles
+DROP POLICY IF EXISTS "Allow profile owner select" ON public.profiles;
+CREATE OR REPLACE POLICY "Allow profile owner select" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+-- Cart Items
+DROP POLICY IF EXISTS "Allow select cart_items" ON public.cart_items;
+CREATE OR REPLACE POLICY "Allow select cart_items" ON public.cart_items FOR SELECT USING (auth.uid() = user_id);
+
+-- Wishlist Items
+DROP POLICY IF EXISTS "Allow select wishlist_items" ON public.wishlist_items;
+CREATE OR REPLACE POLICY "Allow select wishlist_items" ON public.wishlist_items FOR SELECT USING (auth.uid() = user_id);
+
+-- Orders
+DROP POLICY IF EXISTS "Allow select orders" ON public.orders;
+CREATE OR REPLACE POLICY "Allow select orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
+
+-- Order Items
+DROP POLICY IF EXISTS "Allow select order_items" ON public.order_items;
+CREATE OR REPLACE POLICY "Allow select order_items" ON public.order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()));
+
+-- User Style Profiles
+DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
+CREATE OR REPLACE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (auth.uid() = user_id);
+
+
 

@@ -129,19 +129,23 @@ export async function addCartItemByUserId(userId, productId, quantity, size = nu
   return { success: true };
 }
 
-export async function updateCartItemQuantity(cartItemId, quantity) {
-  if (quantity < 1) return removeCartItemById(cartItemId);
+export async function updateCartItemQuantity(userId, cartItemId, quantity) {
+  if (quantity < 1) return removeCartItemById(userId, cartItemId);
 
-  logInfo("Updating cart item quantity", cartLogContext({ cartItemId, quantity }));
+  logInfo("Updating cart item quantity", cartLogContext({ userId, cartItemId, quantity }));
 
   const { data: cartItem, error: cartItemError } = await supabaseAdmin
     .from("cart_items")
-    .select("variant_id, product_variants(stock_qty)")
+    .select("user_id, variant_id, product_variants(stock_qty)")
     .eq("id", cartItemId)
     .maybeSingle();
 
   if (cartItemError || !cartItem) {
     throw new ApiError(400, "Cart item not found.");
+  }
+
+  if (cartItem.user_id !== userId) {
+    throw new ApiError(403, "Access denied. Not your cart item.");
   }
 
   const stock = cartItem.product_variants?.stock_qty ?? 0;
@@ -158,8 +162,22 @@ export async function updateCartItemQuantity(cartItemId, quantity) {
   return { success: true };
 }
 
-export async function removeCartItemById(cartItemId) {
-  logInfo("Removing cart item", cartLogContext({ cartItemId }));
+export async function removeCartItemById(userId, cartItemId) {
+  logInfo("Removing cart item", cartLogContext({ userId, cartItemId }));
+
+  const { data: cartItem, error: cartItemError } = await supabaseAdmin
+    .from("cart_items")
+    .select("user_id")
+    .eq("id", cartItemId)
+    .maybeSingle();
+
+  if (cartItemError || !cartItem) {
+    throw new ApiError(400, "Cart item not found.");
+  }
+
+  if (cartItem.user_id !== userId) {
+    throw new ApiError(403, "Access denied. Not your cart item.");
+  }
 
   const { error } = await supabaseAdmin.from("cart_items").delete().eq("id", cartItemId);
   if (error) {

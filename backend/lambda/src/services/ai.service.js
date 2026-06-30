@@ -156,7 +156,7 @@ export async function searchAiProducts(queryText, personalityType = null) {
   const { data: allProducts, error } = await supabaseAdmin
     .from("products")
     .select("*")
-    .eq("is_active", true);
+    .eq("status", "active");
 
   if (error) {
     logError("Supabase products fetch failed for AI search", { error });

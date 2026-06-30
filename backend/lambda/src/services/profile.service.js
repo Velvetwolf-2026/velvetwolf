@@ -343,3 +343,23 @@ export async function clearStyleProfile(userId) {
   return { success: true };
 }
 
+export async function getUserOrders(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new ApiError(400, "User ID is required.");
+
+  logInfo("Fetching user orders from DB", profileLogContext({ userId: normalizedUserId }));
+
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("user_id", normalizedUserId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    logError("Failed to fetch user orders", profileLogContext({ userId: normalizedUserId, error }));
+    throw new ApiError(500, "Failed to load order history.");
+  }
+
+  return data || [];
+}
+

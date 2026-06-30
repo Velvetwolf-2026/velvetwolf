@@ -4,6 +4,24 @@ import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 
+function loadCashfreeScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Cashfree) {
+      resolve(window.Cashfree);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.Cashfree) resolve(window.Cashfree);
+      else reject(new Error("Cashfree SDK failed to initialize"));
+    };
+    script.onerror = () => reject(new Error("Failed to load Cashfree SDK script"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function CheckoutPage() {
   const { cart, cartTotal, setPage, user, showToast, clearCart } = useContext(AppContext);
   const { t } = useLanguage();
@@ -165,8 +183,9 @@ export default function CheckoutPage() {
 
       // Handle Cashfree Payment
       if (data.paymentSessionId) {
-        // Initialize Cashfree sdk
-        const cashfree = window.Cashfree({
+        // Initialize Cashfree sdk dynamically
+        const Cashfree = await loadCashfreeScript();
+        const cashfree = Cashfree({
           mode: "sandbox", // In production this would be "production"
         });
 

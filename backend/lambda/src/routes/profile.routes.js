@@ -4,6 +4,9 @@ export async function handleProfileRoutes(method, route, body, query, event) {
   if (method === "GET" && route.endsWith("/profile"))
     return profileController.getProfile(query, event);
 
+  if (method === "GET" && route.endsWith("/profile/orders"))
+    return profileController.getUserOrders(query, event);
+
   if (method === "POST" && route.endsWith("/profile/update"))
     return profileController.updateProfile(body, event);
 

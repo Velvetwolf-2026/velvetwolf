@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./AppContext";
-import { supabase } from "../utils/supabase";
 import { getUserOrders } from "../utils/order";
 import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
 import { apiUrl } from "../utils/api";
@@ -165,20 +164,7 @@ export function AccountPage() {
       .then(data => setUserOrders(data || []))
       .catch(err => console.error('[getUserOrders]', err.message))
       .finally(() => setOrdersLoading(false));
-
-    const channel = supabase
-      .channel(`orders:${databaseUserId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orders',
-        filter: `user_id=eq.${databaseUserId}`,
-      }, payload => {
-        setUserOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
-        showToast(`Order ${payload.new.order_number}: ${payload.new.status}`, 'info');
-      })
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  }, [databaseUserId, showToast, tab]);
+  }, [databaseUserId, tab]);
 
   const handleSignOut = async () => {
     await signOutUser();
