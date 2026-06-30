@@ -1,4 +1,4 @@
-const CACHE_NAME = "velvetwolf-cache-v1";
+const CACHE_NAME = "velvetwolf-cache-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -35,7 +35,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch events: Cache first for static assets, network first for others
+// Fetch events: Network first for navigation (HTML), Cache first for static assets
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
 
@@ -48,13 +48,35 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first strategy for navigation requests (HTML/page loads) to prevent stale index.html
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // Update cache with the latest index.html
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline fallback: try to serve cached index.html or root
+          return caches.match("/index.html") || caches.match("/");
+        })
+    );
+    return;
+  }
+
+  // Cache-first strategy for other static assets (images, fonts, scripts, stylesheets)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Fetch from network and dynamic cache
       return fetch(event.request)
         .then((networkResponse) => {
           if (
@@ -73,10 +95,7 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // If offline and request is for page routing, return cached index.html (SPA shell)
-          if (event.request.mode === "navigate") {
-            return caches.match("/index.html");
-          }
+          // No network and not in cache
         });
     })
   );
