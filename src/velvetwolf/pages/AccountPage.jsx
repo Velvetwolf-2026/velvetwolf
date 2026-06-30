@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "./AppContext";
-import { supabase } from "../utils/supabase";
 import { getUserOrders } from "../utils/order";
 import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
+import { apiUrl } from "../utils/api";
 
 export function AccountPage() {
   const { user, setUser, setPage, wishlist, cart, signOutUser, showToast } = useContext(AppContext);
@@ -12,6 +12,83 @@ export function AccountPage() {
   const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
   const [savingSettings, setSavingSettings] = useState(false);
   const databaseUserId = user?.id || null;
+
+  // Style Profile and Personalization States
+  const [styleProfile, setStyleProfile] = useState(null);
+  const [styleProfileLoading, setStyleProfileLoading] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    useRecommendations: true,
+    personalizedHomepage: true,
+    personalizedEmails: true
+  });
+
+  useEffect(() => {
+    const rec = localStorage.getItem("vw_privacy_recommendations") !== "false";
+    const hp = localStorage.getItem("vw_privacy_homepage") !== "false";
+    const em = localStorage.getItem("vw_privacy_emails") !== "false";
+    setPrivacySettings({
+      useRecommendations: rec,
+      personalizedHomepage: hp,
+      personalizedEmails: em
+    });
+  }, []);
+
+  const updatePrivacySetting = (key, val) => {
+    setPrivacySettings(prev => ({ ...prev, [key]: val }));
+    const storageKeys = {
+      useRecommendations: "vw_privacy_recommendations",
+      personalizedHomepage: "vw_privacy_homepage",
+      personalizedEmails: "vw_privacy_emails"
+    };
+    localStorage.setItem(storageKeys[key], String(val));
+    showToast("Privacy settings updated.");
+  };
+
+  useEffect(() => {
+    if (tab === "style" && user?.personality_type && !styleProfile) {
+      setStyleProfileLoading(true);
+      const token = localStorage.getItem("token");
+      fetch(apiUrl("/user/style-profile"), {
+        headers: {
+          "Authorization": token ? `Bearer ${token}` : ""
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.profile) {
+          setStyleProfile(data.profile);
+        }
+      })
+      .catch(err => console.error("Failed to load style profile in account page", err))
+      .finally(() => setStyleProfileLoading(false));
+    }
+  }, [tab, user?.personality_type, styleProfile]);
+
+  const handleClearStyleProfile = async () => {
+    if (!window.confirm("Are you sure you want to clear your style profile? This will reset all personalized views.")) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(apiUrl("/user/style-profile"), {
+        method: "DELETE",
+        headers: {
+          "Authorization": token ? `Bearer ${token}` : ""
+        }
+      });
+      
+      if (res.ok) {
+        showToast("Style profile cleared successfully.");
+        setUser(prev => ({ ...prev, personality_type: null }));
+        setStyleProfile(null);
+        localStorage.removeItem("vw_guest_style_profile");
+      } else {
+        showToast("Failed to clear style profile.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error clearing style profile.", "error");
+    }
+  };
 
   const [showEmailUpdate, setShowEmailUpdate] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -87,20 +164,7 @@ export function AccountPage() {
       .then(data => setUserOrders(data || []))
       .catch(err => console.error('[getUserOrders]', err.message))
       .finally(() => setOrdersLoading(false));
-
-    const channel = supabase
-      .channel(`orders:${databaseUserId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'orders',
-        filter: `user_id=eq.${databaseUserId}`,
-      }, payload => {
-        setUserOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
-        showToast(`Order ${payload.new.order_number}: ${payload.new.status}`, 'info');
-      })
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  }, [databaseUserId, showToast, tab]);
+  }, [databaseUserId, tab]);
 
   const handleSignOut = async () => {
     await signOutUser();
@@ -177,7 +241,7 @@ export function AccountPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
-            {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"]].map(([t, label]) => (
+            {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"], ["style", "STYLE PROFILE"]].map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 20px", cursor: "pointer" }}>{label}</button>
             ))}
           </div>
@@ -425,6 +489,119 @@ export function AccountPage() {
                 SIGN OUT
               </button>
             </div>
+          </div>
+        )}
+
+        {tab === "style" && (
+          <div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>YOUR STYLE DNA</h2>
+            
+            {styleProfileLoading ? (
+              <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>
+                LOADING STYLE PROFILE...
+              </div>
+            ) : !user.personality_type ? (
+              <div style={{ textAlign: "center", padding: "60px 24px", background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--silver)", marginBottom: 12 }}>AESTHETIC DNA UNDISCOVERED</div>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
+                  Take our 5-question interactive quiz to discover your Wolf Type (Builder, Alpha, Creator, or Shadow) and unlock tailored storefront panels, custom AI filters, and personalized recommendations.
+                </p>
+                <button className="btn-gold" onClick={() => setPage("quiz")}>TAKE THE QUIZ</button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
+                {/* Profile Card */}
+                <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>
+                      ACTIVE PROFILE ARCHETYPE
+                    </div>
+                    <h3 className="gold-text" style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 3, margin: "0 0 16px 0", lineHeight: 1.1 }}>
+                      THE {user.personality_type.toUpperCase()} WOLF
+                    </h3>
+                    <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", lineHeight: 1.6, marginBottom: 20 }}>
+                      {user.personality_type.toUpperCase() === "BUILDER" && "Focused. Disciplined. Always creating. You thrive on structure, design, and building the future. Your style is functional, technical, and precise."}
+                      {user.personality_type.toUpperCase() === "ALPHA" && "Ambitious. Powerful. Leading the pack. You represent power, persistence, and presence. Your style commands attention."}
+                      {user.personality_type.toUpperCase() === "SHADOW" && "Mysterious. Calculated. Quiet luxury. You operate in the background with silent strength. Your style is monochromatic and premium."}
+                      {user.personality_type.toUpperCase() === "CREATOR" && "Artistic. Experimental. Cultured. You are constantly redefining aesthetics. Your style is expressive, oversized, and boundary-pushing."}
+                    </p>
+                  </div>
+                  
+                  <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+                    <button className="btn-gold" style={{ fontSize: 11, letterSpacing: 2, padding: "10px 20px" }} onClick={() => setPage("quiz")}>
+                      RETAKE QUIZ
+                    </button>
+                    <button 
+                      className="btn-ghost" 
+                      style={{ fontSize: 11, letterSpacing: 2, borderColor: "var(--crimson)", color: "var(--wolf-red)", padding: "10px 20px" }} 
+                      onClick={handleClearStyleProfile}
+                    >
+                      RESET PROFILE
+                    </button>
+                  </div>
+                </div>
+
+                {/* Score Breakdown & Privacy */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {styleProfile?.quiz_score && (
+                    <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28 }}>
+                      <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>
+                        PROFILE MATRIX
+                      </h4>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {Object.entries(styleProfile.quiz_score).map(([key, val]) => (
+                          <div key={key}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1, color: "var(--ash)", textTransform: "uppercase", marginBottom: 4 }}>
+                              <span>{key} wolf</span>
+                              <span>{val}%</span>
+                            </div>
+                            <div style={{ height: 4, background: "var(--smoke)", width: "100%" }}>
+                              <div style={{ height: "100%", background: key.toUpperCase() === user.personality_type.toUpperCase() ? "var(--gold)" : "var(--silver)", width: `${val}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Privacy Options */}
+                  <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 28 }}>
+                    <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>
+                      PERSONALIZATION & PRIVACY
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={privacySettings.useRecommendations}
+                          onChange={(e) => updatePrivacySetting("useRecommendations", e.target.checked)}
+                          style={{ accentColor: "var(--gold)" }}
+                        />
+                        Use my style profile for recommendations
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={privacySettings.personalizedHomepage}
+                          onChange={(e) => updatePrivacySetting("personalizedHomepage", e.target.checked)}
+                          style={{ accentColor: "var(--gold)" }}
+                        />
+                        Personalized homepage shelves
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={privacySettings.personalizedEmails}
+                          onChange={(e) => updatePrivacySetting("personalizedEmails", e.target.checked)}
+                          style={{ accentColor: "var(--gold)" }}
+                        />
+                        Personalized email newsletters
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

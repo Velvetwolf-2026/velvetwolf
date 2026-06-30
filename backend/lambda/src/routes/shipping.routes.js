@@ -6,5 +6,9 @@ export async function handleShippingRoutes(method, route, body, query, event) {
     return shippingController.trackShipment(orderId, event);
   }
 
+  if (method === "GET" && route === "/shipping/serviceability") {
+    return shippingController.checkServiceability(query, event);
+  }
+
   return null;
 }

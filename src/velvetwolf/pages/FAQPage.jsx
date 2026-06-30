@@ -31,7 +31,16 @@ function FAQAnswer({ faq, formatText }) {
       <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
         Orders can be modified or cancelled within{" "}
         <span style={{ fontFamily: "'Roboto', sans-serif" }}>1</span> hour by emailing{" "}
-        <a href="mailto:orders@velvetwolf.in" style={{ color: gold }}>orders@velvetwolf.in</a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
+        <a 
+          href="mailto:orders@velvetwolf.in" 
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = "mailto:orders@velvetwolf.in";
+          }}
+          style={{ color: gold }}
+        >
+          orders@velvetwolf.in
+        </a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
       </p>
     );
   }
@@ -39,7 +48,16 @@ function FAQAnswer({ faq, formatText }) {
   if (faq.type === "shipping-help") {
     return (
       <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Contact us at <a href="mailto:support@velvetwolf.in" style={{ color: gold }}>support@velvetwolf.in</a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within{" "}
+        Contact us at <a 
+          href="mailto:support@velvetwolf.in" 
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = "mailto:support@velvetwolf.in";
+          }}
+          style={{ color: gold }}
+        >
+          support@velvetwolf.in
+        </a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within{" "}
         <span style={{ fontFamily: "'Roboto', sans-serif" }}>4</span> hours.
       </p>
     );
@@ -116,7 +134,7 @@ export default function FAQPage() {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {[
               { label: "EMAIL SUPPORT", val: "info@velvetwolf.in", type: "email" },
-              { label: "WHATSAPP", val: "+91 98765 43210", type: "phone" }
+              { label: "WHATSAPP", val: "+91 93422 45724", type: "phone" }
             ].map((c, i) => (
               <div key={i} style={{ border: `1px solid ${gold}55`, padding: "10px 20px", textAlign: "left" }}>
 
@@ -127,13 +145,17 @@ export default function FAQPage() {
                 {c.type === "email" ? (
                   <a
                     href={`mailto:${c.val}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = `mailto:${c.val}`;
+                    }}
                     style={{ fontSize: 13, color: gold, textDecoration: "none" }}
                   >
                     {c.val}
                   </a>
                 ) : (
                   <a
-                    href={`https://wa.me/919876543210`}
+                    href={`https://wa.me/919342245724`}
                     target="_blank"
                     style={{ fontSize: 13, color: gold, textDecoration: "none" }}
                   >

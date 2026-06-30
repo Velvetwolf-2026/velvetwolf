@@ -369,3 +369,139 @@ export async function getAdminAnalytics() {
 
   return { dailyRevenue, monthlyRevenue, ordersByStatus, topProducts };
 }
+
+// ─── COUPONS ──────────────────────────────────────────────────────────────────
+
+export async function getAdminCoupons() {
+  const { data, error } = await supabaseAdmin.from("coupons").select("*").order("created_at", { ascending: false });
+  if (error) throw new ApiError(500, `Failed to load coupons: ${error.message}`);
+  return data || [];
+}
+
+export async function createAdminCoupon(couponData) {
+  const { code, discount_percent, active } = couponData;
+  const { data, error } = await supabaseAdmin
+    .from("coupons")
+    .insert({ code: code.toUpperCase().trim(), discount_percent: Number(discount_percent), active: active !== false })
+    .select()
+    .single();
+  if (error) throw new ApiError(400, `Failed to create coupon: ${error.message}`);
+  return data;
+}
+
+export async function updateAdminCoupon(couponId, couponData) {
+  const { code, discount_percent, active } = couponData;
+  const updates = {};
+  if (code !== undefined) updates.code = code.toUpperCase().trim();
+  if (discount_percent !== undefined) updates.discount_percent = Number(discount_percent);
+  if (active !== undefined) updates.active = active;
+
+  const { data, error } = await supabaseAdmin
+    .from("coupons")
+    .update(updates)
+    .eq("id", couponId)
+    .select()
+    .single();
+  if (error) throw new ApiError(400, `Failed to update coupon: ${error.message}`);
+  return data;
+}
+
+export async function deleteAdminCoupon(couponId) {
+  const { error } = await supabaseAdmin.from("coupons").delete().eq("id", couponId);
+  if (error) throw new ApiError(400, `Failed to delete coupon: ${error.message}`);
+  return { success: true };
+}
+
+// ─── CATEGORIES / COLLECTIONS ──────────────────────────────────────────────────
+
+export async function getAdminCategories() {
+  const { data, error } = await supabaseAdmin.from("collections").select("*").order("name", { ascending: true });
+  if (error) {
+    return [
+      { id: "ai-tech", name: "AI & Tech Humor", icon: "Memory" },
+      { id: "anime", name: "Anime", icon: "AutoAwesome" },
+      { id: "beast-mode", name: "Beast Mode Grind", icon: "FitnessCenter" },
+      { id: "mind-mayhem", name: "Mind Over Mayhem", icon: "Psychology" },
+      { id: "silent-luxury", name: "Silent Luxury", icon: "Diamond" },
+      { id: "savage-quotes", name: "Savage Quotes", icon: "Whatshot" }
+    ];
+  }
+  return data || [];
+}
+
+export async function createAdminCategory(catData) {
+  const { id, name, description, icon } = catData;
+  const { data, error } = await supabaseAdmin
+    .from("collections")
+    .insert({ id: id.trim().toLowerCase(), name: name.trim(), description: description?.trim() || null, icon: icon?.trim() || null })
+    .select()
+    .single();
+  if (error) throw new ApiError(400, `Failed to create collection: ${error.message}`);
+  return data;
+}
+
+export async function deleteAdminCategory(catId) {
+  const { error } = await supabaseAdmin.from("collections").delete().eq("id", catId);
+  if (error) throw new ApiError(400, `Failed to delete collection: ${error.message}`);
+  return { success: true };
+}
+
+// ─── SHIPROCKET DETAILS ────────────────────────────────────────────────────────
+
+export async function updateAdminOrderShiprocket(orderId, trackingData) {
+  const { awb_number, courier_name, shipping_status } = trackingData;
+  const updates = {
+    awb_number: awb_number?.trim() || null,
+    courier_name: courier_name?.trim() || null,
+    shipping_status: shipping_status?.trim() || null
+  };
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .update(updates)
+    .eq("id", orderId)
+    .select()
+    .single();
+  if (error) throw new ApiError(400, `Failed to update tracking info: ${error.message}`);
+  return data;
+}
+
+// ─── INVENTORY VARIANT STOCK ───────────────────────────────────────────────────
+
+export async function updateAdminProductInventory(productId, inventoryData) {
+  const { size, color, stock } = inventoryData;
+  
+  // Update in product_variants table
+  const { error: varError } = await supabaseAdmin
+    .from("product_variants")
+    .update({ stock: Number(stock) })
+    .eq("product_id", productId)
+    .eq("size", size)
+    .eq("color", color)
+    .select();
+
+  if (varError) {
+    logError("Failed to update variant stock", { productId, size, color, error: varError });
+  }
+
+  // Recalculate total product stock
+  const { data: allVariants } = await supabaseAdmin
+    .from("product_variants")
+    .select("stock")
+    .eq("product_id", productId);
+
+  let totalStock = Number(stock);
+  if (allVariants && allVariants.length > 0) {
+    totalStock = allVariants.reduce((sum, v) => sum + Number(v.stock || 0), 0);
+  }
+
+  const { data: product, error: prodError } = await supabaseAdmin
+    .from("products")
+    .update({ stock: totalStock })
+    .eq("id", productId)
+    .select()
+    .single();
+
+  if (prodError) throw new ApiError(400, `Failed to update product stock: ${prodError.message}`);
+  return { success: true, product };
+}
+

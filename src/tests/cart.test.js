@@ -28,7 +28,8 @@ describe("Cart Utility Tests", () => {
 
     const items = await loadCartFromDB("user-uuid");
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/cart?userId=user-uuid")
+      expect.stringContaining("/cart"),
+      expect.any(Object)
     );
     expect(items).toEqual(mockItems);
   });

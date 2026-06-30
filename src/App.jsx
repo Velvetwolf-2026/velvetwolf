@@ -1,9 +1,31 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { AppContext } from "./velvetwolf/pages/AppContext";
-import { FAQPage, Policy, ShoppingPolicy, ContactPage, ReturnsPage, SizeGuide, TermsPage, TrackOrder, ForgetPassword, Login, AccountPage, CheckoutPage, PaymentStatusPage, CollectionsPage } from "./index";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
-import { HomePage, ShopPage, CustomDesignPage, BulkOrderPage, BulkOrderSuccessPage, ProductDetailPage, CartPage, WishlistPage } from "./index";
+const FAQPage = lazy(() => import("./velvetwolf/pages/FAQPage"));
+const Policy = lazy(() => import("./velvetwolf/pages/Policy"));
+const ShoppingPolicy = lazy(() => import("./velvetwolf/pages/ShoppingPolicy"));
+const ContactPage = lazy(() => import("./velvetwolf/pages/ContactPage"));
+const ReturnsPage = lazy(() => import("./velvetwolf/pages/ReturnsPage"));
+const SizeGuide = lazy(() => import("./velvetwolf/pages/SizeGuide"));
+const TermsPage = lazy(() => import("./velvetwolf/pages/TermsPage"));
+const TrackOrder = lazy(() => import("./velvetwolf/pages/TrackOrder"));
+const ForgetPassword = lazy(() => import("./velvetwolf/pages/ForgetPassword"));
+const Login = lazy(() => import("./velvetwolf/pages/Login"));
+const AccountPage = lazy(() => import("./velvetwolf/pages/AccountPage"));
+const CheckoutPage = lazy(() => import("./velvetwolf/pages/CheckoutPage"));
+const PaymentStatusPage = lazy(() => import("./velvetwolf/pages/PaymentStatusPage"));
+const CollectionsPage = lazy(() => import("./velvetwolf/pages/Collections"));
+
+const HomePage = lazy(() => import("./velvetwolf/pages/HomePage"));
+const ShopPage = lazy(() => import("./velvetwolf/pages/ShopPage"));
+const QuizPage = lazy(() => import("./velvetwolf/pages/QuizPage"));
+const CustomDesignPage = lazy(() => import("./velvetwolf/pages/CustomDesignPage"));
+const BulkOrderPage = lazy(() => import("./velvetwolf/pages/BulkOrderPage"));
+const BulkOrderSuccessPage = lazy(() => import("./velvetwolf/pages/BulkOrderSuccessPage"));
+const ProductDetailPage = lazy(() => import("./velvetwolf/pages/ProductDetailPage"));
+const CartPage = lazy(() => import("./velvetwolf/pages/CartPage"));
+const WishlistPage = lazy(() => import("./velvetwolf/pages/WishlistPage"));
 
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
@@ -17,6 +39,7 @@ import WishlistSidebar from "./velvetwolf/components/WishlistSidebar";
 import Toast from "./velvetwolf/components/Toast";
 import Icon from "./velvetwolf/components/Icon";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
+import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 
 // Admin layout lazy-loaded
 const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
@@ -110,6 +133,7 @@ export default function VelvetWolf() {
       checkout: "/checkout",
       "payment-status": "/payment-status",
       custom: "/custom",
+      quiz: "/quiz",
       bulk: "/bulk",
       "bulk-success": "/bulk/success",
       contactus: "/contact",
@@ -311,6 +335,7 @@ export default function VelvetWolf() {
         localStorage.removeItem(`vw_cart_${user.id}`);
       }
       localStorage.removeItem("user");
+      localStorage.removeItem("vw_guest_style_profile");
       // Call backend logout endpoint to clear HttpOnly cookie
       await fetch(apiUrl("/auth/logout"), { method: "POST" });
       setUser(null);
@@ -401,6 +426,36 @@ export default function VelvetWolf() {
       syncCartFromDB(backendUserId);
       syncWishlistFromDB(backendUserId);
       mergeGuestCartToDB(backendUserId);
+
+      // Sync guest style profile if present
+      const localProfile = localStorage.getItem("vw_guest_style_profile");
+      if (localProfile) {
+        try {
+          const { personalityType, quizScore } = JSON.parse(localProfile);
+          fetch(apiUrl("/user/style-profile"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({ personalityType, quizScore })
+          })
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Sync failed");
+          })
+          .then(() => {
+            localStorage.removeItem("vw_guest_style_profile");
+            showToast(`Synced your personality type (${personalityType}) to your account!`);
+            setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);
+          })
+          .catch(err => {
+            console.error("Failed to sync guest style profile to backend", err);
+          });
+        } catch (e) {
+          console.error("Failed to parse guest style profile JSON", e);
+        }
+      }
     } else {
       setCart(getGuestCart());
       setWishlist([]);
@@ -446,67 +501,75 @@ export default function VelvetWolf() {
       <AppContext.Provider value={ctx}>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-        <Routes>
-          {/* Admin chunk lazy-loaded */}
-          <Route
-            path="/admin/*"
-            element={
-              canAccessAdmin ? (
-                <Suspense fallback={
-                  <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
-                  </div>
-                }>
-                  <AdminLayout Icon={Icon} />
-                </Suspense>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
+        <Suspense fallback={
+          <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING VELVETWOLF...</div>
+          </div>
+        }>
+          <Routes>
+            {/* Admin chunk lazy-loaded */}
+            <Route
+              path="/admin/*"
+              element={
+                canAccessAdmin ? (
+                  <Suspense fallback={
+                    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
+                    </div>
+                  }>
+                    <AdminLayout Icon={Icon} />
+                  </Suspense>
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
 
-          {/* Standalone Auth Pages */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login />} />
-          <Route path="/forget-password" element={<ForgetPassword />} />
+            {/* Standalone Auth Pages */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Login />} />
+            <Route path="/forget-password" element={<ForgetPassword />} />
 
-          {/* Pages wrapped with Header & Footer */}
-          <Route
-            path="*"
-            element={
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/shop/:collection" element={<ShopPage />} />
-                  <Route path="/product/:slug" element={<ProductDetailPage />} />
-                  <Route path="/collections" element={<CollectionsPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/wishlist" element={<WishlistPage />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/payment-status" element={<PaymentStatusPage />} />
-                  <Route path="/custom" element={<CustomDesignPage />} />
-                  <Route path="/bulk" element={<BulkOrderPage />} />
-                  <Route path="/bulk/success" element={<BulkOrderSuccessPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/privacy-policy" element={<Policy />} />
-                  <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/shipping-policy" element={<ShoppingPolicy />} />
-                  <Route path="/returns" element={<ReturnsPage />} />
-                  <Route path="/size-guide" element={<SizeGuide />} />
-                  <Route path="/track-order" element={<TrackOrder />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            }
-          />
-        </Routes>
+            {/* Pages wrapped with Header & Footer */}
+            <Route
+              path="*"
+              element={
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/quiz" element={<QuizPage />} />
+                    <Route path="/shop" element={<ShopPage />} />
+                    <Route path="/shop/:collection" element={<ShopPage />} />
+                    <Route path="/product/:slug" element={<ProductDetailPage />} />
+                    <Route path="/collections" element={<CollectionsPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/wishlist" element={<WishlistPage />} />
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/payment-status" element={<PaymentStatusPage />} />
+                    <Route path="/custom" element={<CustomDesignPage />} />
+                    <Route path="/bulk" element={<BulkOrderPage />} />
+                    <Route path="/bulk/success" element={<BulkOrderSuccessPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/faq" element={<FAQPage />} />
+                    <Route path="/privacy-policy" element={<Policy />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/shipping-policy" element={<ShoppingPolicy />} />
+                    <Route path="/returns" element={<ReturnsPage />} />
+                    <Route path="/size-guide" element={<SizeGuide />} />
+                    <Route path="/track-order" element={<TrackOrder />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              }
+            />
+          </Routes>
+        </Suspense>
 
         {selectedProduct && <ProductModal key={selectedProduct.id} />}
         {cartOpen && <CartSidebar />}
         {wishlistOpen && <WishlistSidebar />}
+        <AiFashionAssistant />
       </AppContext.Provider>
     </LanguageProvider>
   );

@@ -85,3 +85,41 @@ export async function fetchAdminCustomers({ search, page = 1, limit = 50 } = {})
 export async function fetchAdminAnalytics() {
   return adminFetch('GET', '/admin/analytics');
 }
+
+// ─── COUPONS ──────────────────────────────────────────────────────────────────
+
+export async function fetchAdminCoupons() {
+  return adminFetch('GET', '/admin/coupons');
+}
+
+export async function createAdminCoupon(data) {
+  return adminFetch('POST', '/admin/coupons', data);
+}
+
+export async function updateAdminCoupon(couponId, data) {
+  return adminFetch('PUT', `/admin/coupons/${couponId}`, data);
+}
+
+export async function deleteAdminCoupon(couponId) {
+  return adminFetch('DELETE', `/admin/coupons/${couponId}`);
+}
+
+// ─── CATEGORIES ───────────────────────────────────────────────────────────────
+
+export async function fetchAdminCategories() {
+  return adminFetch('GET', '/admin/categories');
+}
+
+export async function createAdminCategory(data) {
+  return adminFetch('POST', '/admin/categories', data);
+}
+
+export async function deleteAdminCategory(categoryId) {
+  return adminFetch('DELETE', `/admin/categories/${categoryId}`);
+}
+
+// ─── INVENTORY ────────────────────────────────────────────────────────────────
+
+export async function updateProductInventory(productId, data) {
+  return adminFetch('PATCH', `/admin/products/${productId}/inventory`, data);
+}

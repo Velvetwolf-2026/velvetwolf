@@ -255,3 +255,111 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
   };
 }
 
+// ─── STYLE PROFILE PERSONALIZATION ──────────────────────────────────────────────
+
+export async function getStyleProfile(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new ApiError(400, "User ID is required.");
+
+  logInfo("Fetching style profile", profileLogContext({ userId: normalizedUserId }));
+
+  const { data, error } = await supabaseAdmin
+    .from("user_style_profiles")
+    .select("personality_type, quiz_score, created_at, updated_at")
+    .eq("user_id", normalizedUserId)
+    .maybeSingle();
+
+  if (error) {
+    logError("Failed to fetch style profile", profileLogContext({ userId: normalizedUserId, error }));
+    throw new ApiError(500, "Failed to load style profile.");
+  }
+
+  return data;
+}
+
+export async function saveStyleProfile(userId, { personalityType, quizScore }) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new ApiError(400, "User ID is required.");
+  if (!personalityType) throw new ApiError(400, "Personality type is required.");
+  if (!quizScore) throw new ApiError(400, "Quiz score is required.");
+
+  logInfo("Saving style profile", profileLogContext({ userId: normalizedUserId, personalityType }));
+
+  // Upsert into user_style_profiles
+  const { data, error } = await supabaseAdmin
+    .from("user_style_profiles")
+    .upsert({
+      user_id: normalizedUserId,
+      personality_type: personalityType,
+      quiz_score: quizScore,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" })
+    .select()
+    .single();
+
+  if (error) {
+    logError("Failed to save style profile", profileLogContext({ userId: normalizedUserId, error }));
+    throw new ApiError(500, `Failed to save style profile: ${error.message}`);
+  }
+
+  // Update primary users table
+  const { error: userError } = await supabaseAdmin
+    .from("users")
+    .update({ personality_type: personalityType })
+    .eq("id", normalizedUserId);
+
+  if (userError) {
+    logError("Failed to update user personality type", profileLogContext({ userId: normalizedUserId, error: userError }));
+  }
+
+  return data;
+}
+
+export async function clearStyleProfile(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new ApiError(400, "User ID is required.");
+
+  logInfo("Clearing style profile", profileLogContext({ userId: normalizedUserId }));
+
+  const { error: deleteError } = await supabaseAdmin
+    .from("user_style_profiles")
+    .delete()
+    .eq("user_id", normalizedUserId);
+
+  if (deleteError) {
+    logError("Failed to delete style profile", profileLogContext({ userId: normalizedUserId, error: deleteError }));
+    throw new ApiError(500, "Failed to clear style profile.");
+  }
+
+  const { error: userError } = await supabaseAdmin
+    .from("users")
+    .update({ personality_type: null })
+    .eq("id", normalizedUserId);
+
+  if (userError) {
+    logError("Failed to clear user personality type", profileLogContext({ userId: normalizedUserId, error: userError }));
+  }
+
+  return { success: true };
+}
+
+export async function getUserOrders(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new ApiError(400, "User ID is required.");
+
+  logInfo("Fetching user orders from DB", profileLogContext({ userId: normalizedUserId }));
+
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("user_id", normalizedUserId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    logError("Failed to fetch user orders", profileLogContext({ userId: normalizedUserId, error }));
+    throw new ApiError(500, "Failed to load order history.");
+  }
+
+  return data || [];
+}
+
