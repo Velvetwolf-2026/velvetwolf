@@ -1,6 +1,6 @@
 import { apiUrl } from './api';
 
-export async function loadWishlistFromDB(_userId) {
+export async function loadWishlistFromDB() {
   const token = localStorage.getItem('token');
   const response = await fetch(
     `${apiUrl('/wishlist')}`, {

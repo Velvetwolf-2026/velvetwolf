@@ -52,7 +52,7 @@ export const createPaymentOrder = async (orderData) => {
       },
       order_meta: {
         // Adjust this return URL based on your frontend route
-        return_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/payment-status?order_id={order_id}`,
+        return_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/?order_id={order_id}`,
       },
     };
 
