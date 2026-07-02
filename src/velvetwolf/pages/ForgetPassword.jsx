@@ -371,3 +371,5 @@ export function ForgetPassword() {
     </>
   );
 }
+
+export default ForgetPassword;

@@ -6,6 +6,7 @@ import Icon from "../components/Icon";
 import { getCollectionById } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
 import { useBreakpoint } from "../utils/breakpoints";
+import ProductCard from "../components/ProductCard";
 
 const COLOR_MAP = {
   "Black": "#0a0a0a",

@@ -62,9 +62,13 @@ self.addEventListener("fetch", (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
+        .catch(async () => {
           // Offline fallback: try to serve cached index.html or root
-          return caches.match("/index.html") || caches.match("/");
+          const cachedIndex = await caches.match("/index.html");
+          if (cachedIndex) return cachedIndex;
+          const cachedRoot = await caches.match("/");
+          if (cachedRoot) return cachedRoot;
+          return new Response("Offline", { status: 503, statusText: "Service Unavailable" });
         })
     );
     return;
@@ -95,7 +99,8 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // No network and not in cache
+          // No network and not in cache, return fallback response
+          return new Response("Network error", { status: 480, statusText: "Network Error" });
         });
     })
   );
