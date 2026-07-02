@@ -1,6 +1,6 @@
 import { apiUrl } from './api';
 
-export async function getUserOrders(_userId) {
+export async function getUserOrders() {
   const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/profile/orders'), {
     headers: {

@@ -131,7 +131,7 @@ export default function QuizPage() {
           const guestProfile = JSON.parse(guestProfileRaw);
           setQuizResults(guestProfile);
           setQuizState("results");
-        } catch (_e) {
+        } catch {
           setQuizResults(null);
           setQuizState("welcome");
         }

@@ -475,7 +475,7 @@ export async function chatAssistantDialog(messages = [], personalityType = null)
         recommendedProducts = top || [];
       }
     }
-  } catch (_err) {
+  } catch {
     replyText = "I ran into a small error fetching styling products, but let me know what occasion you're dressing for!";
   }
 

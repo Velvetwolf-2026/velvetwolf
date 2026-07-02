@@ -393,6 +393,7 @@ export default function VelvetWolf() {
     const authError = query.get("auth_error");
     const authMode = query.get("mode");
     const resetToken = query.get("reset_token");
+    const orderId = query.get("order_id");
 
     if (provider === "google") {
       checkSession().then(() => {
@@ -404,6 +405,9 @@ export default function VelvetWolf() {
     } else if (authError) {
       showToast(decodeURIComponent(authError), "info");
       navigate(authMode === "signup" ? "/signup" : "/login");
+    } else if (orderId && location.pathname === "/") {
+      checkSession();
+      navigate(`/payment-status?order_id=${orderId}`);
     } else {
       checkSession();
     }
