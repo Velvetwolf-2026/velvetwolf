@@ -41,8 +41,10 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 -- Enable RLS for users
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow admin write users" ON public.users FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public read users" ON public.users;
+CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin write users" ON public.users;
+CREATE POLICY "Allow admin write users" ON public.users FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 2. Profiles Table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -57,8 +59,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- Enable RLS for profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow profile owner select" ON public.profiles FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow profile owner write" ON public.profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow profile owner select" ON public.profiles;
+CREATE POLICY "Allow profile owner select" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow profile owner write" ON public.profiles;
+CREATE POLICY "Allow profile owner write" ON public.profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 3. Products Table
 CREATE TABLE IF NOT EXISTS public.products (
@@ -79,8 +83,10 @@ CREATE TABLE IF NOT EXISTS public.products (
 
 -- Enable RLS for products
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow public select products" ON public.products FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow service role write products" ON public.products FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public select products" ON public.products;
+CREATE POLICY "Allow public select products" ON public.products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow service role write products" ON public.products;
+CREATE POLICY "Allow service role write products" ON public.products FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 4. Product Variants Table
 CREATE TABLE IF NOT EXISTS public.product_variants (
@@ -94,8 +100,10 @@ CREATE TABLE IF NOT EXISTS public.product_variants (
 
 -- Enable RLS for product_variants
 ALTER TABLE public.product_variants ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow public select product_variants" ON public.product_variants FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow service role write product_variants" ON public.product_variants FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public select product_variants" ON public.product_variants;
+CREATE POLICY "Allow public select product_variants" ON public.product_variants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow service role write product_variants" ON public.product_variants;
+CREATE POLICY "Allow service role write product_variants" ON public.product_variants FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 5. Cart Items Table
 CREATE TABLE IF NOT EXISTS public.cart_items (
@@ -110,8 +118,10 @@ CREATE TABLE IF NOT EXISTS public.cart_items (
 
 -- Enable RLS for cart_items
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow all cart_items access to service role" ON public.cart_items FOR ALL TO service_role USING (true) WITH CHECK (true);
-CREATE OR REPLACE POLICY "Allow select cart_items" ON public.cart_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow all cart_items access to service role" ON public.cart_items;
+CREATE POLICY "Allow all cart_items access to service role" ON public.cart_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select cart_items" ON public.cart_items;
+CREATE POLICY "Allow select cart_items" ON public.cart_items FOR SELECT USING (true);
 
 -- 6. Wishlist Items Table
 CREATE TABLE IF NOT EXISTS public.wishlist_items (
@@ -124,8 +134,10 @@ CREATE TABLE IF NOT EXISTS public.wishlist_items (
 
 -- Enable RLS for wishlist_items
 ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select wishlist_items" ON public.wishlist_items FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write wishlist_items" ON public.wishlist_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select wishlist_items" ON public.wishlist_items;
+CREATE POLICY "Allow select wishlist_items" ON public.wishlist_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write wishlist_items" ON public.wishlist_items;
+CREATE POLICY "Allow write wishlist_items" ON public.wishlist_items FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 7. Orders Table
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -143,8 +155,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
 
 -- Enable RLS for orders
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select orders" ON public.orders FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write orders" ON public.orders FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select orders" ON public.orders;
+CREATE POLICY "Allow select orders" ON public.orders FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write orders" ON public.orders;
+CREATE POLICY "Allow write orders" ON public.orders FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 8. Order Items Table
 CREATE TABLE IF NOT EXISTS public.order_items (
@@ -162,8 +176,10 @@ CREATE TABLE IF NOT EXISTS public.order_items (
 
 -- Enable RLS for order_items
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select order_items" ON public.order_items FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write order_items" ON public.order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select order_items" ON public.order_items;
+CREATE POLICY "Allow select order_items" ON public.order_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write order_items" ON public.order_items;
+CREATE POLICY "Allow write order_items" ON public.order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 9. Rate Limits Table
 CREATE TABLE IF NOT EXISTS public.rate_limits (
@@ -175,7 +191,8 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
 
 -- Enable RLS for rate_limits
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow service role all rate_limits" ON public.rate_limits FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow service role all rate_limits" ON public.rate_limits;
+CREATE POLICY "Allow service role all rate_limits" ON public.rate_limits FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 10. OTPs Table
 CREATE TABLE IF NOT EXISTS public.otps (
@@ -190,7 +207,8 @@ CREATE TABLE IF NOT EXISTS public.otps (
 
 -- Enable RLS for otps
 ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow service role all otps" ON public.otps FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow service role all otps" ON public.otps;
+CREATE POLICY "Allow service role all otps" ON public.otps FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 11. Suppressed Emails Table
 CREATE TABLE IF NOT EXISTS public.suppressed_emails (
@@ -202,7 +220,8 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
 
 -- Enable RLS for suppressed_emails
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow service role all suppressed_emails" ON public.suppressed_emails FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow service role all suppressed_emails" ON public.suppressed_emails;
+CREATE POLICY "Allow service role all suppressed_emails" ON public.suppressed_emails FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 12. Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.audit_logs (
@@ -215,7 +234,8 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 
 -- Enable RLS for audit_logs
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow service role all audit_logs" ON public.audit_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow service role all audit_logs" ON public.audit_logs;
+CREATE POLICY "Allow service role all audit_logs" ON public.audit_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Helper RPC for Rate Limiting attempts
 CREATE OR REPLACE FUNCTION public.increment_rate_limit(p_key TEXT)
@@ -280,8 +300,10 @@ CREATE TABLE IF NOT EXISTS public.coupons (
 
 -- Enable RLS for coupons
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select coupons" ON public.coupons FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write coupons" ON public.coupons FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select coupons" ON public.coupons;
+CREATE POLICY "Allow select coupons" ON public.coupons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write coupons" ON public.coupons;
+CREATE POLICY "Allow write coupons" ON public.coupons FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ==========================================
 -- NEW TABLE: PRODUCT REVIEWS
@@ -297,8 +319,10 @@ CREATE TABLE IF NOT EXISTS public.product_reviews (
 
 -- Enable RLS for product_reviews
 ALTER TABLE public.product_reviews ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select product_reviews" ON public.product_reviews FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write product_reviews" ON public.product_reviews FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select product_reviews" ON public.product_reviews;
+CREATE POLICY "Allow select product_reviews" ON public.product_reviews FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write product_reviews" ON public.product_reviews;
+CREATE POLICY "Allow write product_reviews" ON public.product_reviews FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ==========================================
 -- NEW TABLE: COLLECTIONS
@@ -313,8 +337,10 @@ CREATE TABLE IF NOT EXISTS public.collections (
 
 -- Enable RLS for collections
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select collections" ON public.collections FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write collections" ON public.collections FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select collections" ON public.collections;
+CREATE POLICY "Allow select collections" ON public.collections FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write collections" ON public.collections;
+CREATE POLICY "Allow write collections" ON public.collections FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 
 -- ==========================================
@@ -336,8 +362,10 @@ CREATE TABLE IF NOT EXISTS public.user_style_profiles (
 
 -- Enable RLS for user_style_profiles
 ALTER TABLE public.user_style_profiles ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (true);
-CREATE OR REPLACE POLICY "Allow write user_style_profiles" ON public.user_style_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
+CREATE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow write user_style_profiles" ON public.user_style_profiles;
+CREATE POLICY "Allow write user_style_profiles" ON public.user_style_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 
 -- ==========================================
@@ -353,31 +381,38 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_
 -- 2. Restrict RLS Policies
 -- Users
 DROP POLICY IF EXISTS "Allow public read users" ON public.users;
-CREATE OR REPLACE POLICY "Allow matching user read users" ON public.users FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Allow matching user read users" ON public.users;
+CREATE POLICY "Allow matching user read users" ON public.users FOR SELECT USING (auth.uid() = id);
 
 -- Profiles
 DROP POLICY IF EXISTS "Allow profile owner select" ON public.profiles;
-CREATE OR REPLACE POLICY "Allow profile owner select" ON public.profiles FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Allow profile owner select" ON public.profiles;
+CREATE POLICY "Allow profile owner select" ON public.profiles FOR SELECT USING (auth.uid() = id);
 
 -- Cart Items
 DROP POLICY IF EXISTS "Allow select cart_items" ON public.cart_items;
-CREATE OR REPLACE POLICY "Allow select cart_items" ON public.cart_items FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow select cart_items" ON public.cart_items;
+CREATE POLICY "Allow select cart_items" ON public.cart_items FOR SELECT USING (auth.uid() = user_id);
 
 -- Wishlist Items
 DROP POLICY IF EXISTS "Allow select wishlist_items" ON public.wishlist_items;
-CREATE OR REPLACE POLICY "Allow select wishlist_items" ON public.wishlist_items FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow select wishlist_items" ON public.wishlist_items;
+CREATE POLICY "Allow select wishlist_items" ON public.wishlist_items FOR SELECT USING (auth.uid() = user_id);
 
 -- Orders
 DROP POLICY IF EXISTS "Allow select orders" ON public.orders;
-CREATE OR REPLACE POLICY "Allow select orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow select orders" ON public.orders;
+CREATE POLICY "Allow select orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
 
 -- Order Items
 DROP POLICY IF EXISTS "Allow select order_items" ON public.order_items;
-CREATE OR REPLACE POLICY "Allow select order_items" ON public.order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()));
+DROP POLICY IF EXISTS "Allow select order_items" ON public.order_items;
+CREATE POLICY "Allow select order_items" ON public.order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()));
 
 -- User Style Profiles
 DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
-CREATE OR REPLACE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
+CREATE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (auth.uid() = user_id);
 
 
 

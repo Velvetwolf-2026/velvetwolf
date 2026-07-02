@@ -1,9 +1,12 @@
 import { apiUrl } from './api';
 
-export async function loadCartFromDB() {
+export async function loadCartFromDB(userId) {
   const token = localStorage.getItem('token');
+  const url = userId 
+    ? `${apiUrl('/cart')}?userId=${encodeURIComponent(userId)}`
+    : `${apiUrl('/cart')}`;
   const response = await fetch(
-    `${apiUrl('/cart')}`, {
+    url, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       }
