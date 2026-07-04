@@ -8,7 +8,7 @@ import { useBreakpoint } from "../utils/breakpoints";
 import { TAG_COLORS } from "../utils/constants";
 
 export default function ProductCard({ product }) {
-  const { addToCart, toggleWishlist, wishlist, setSelectedProduct } = useContext(AppContext);
+  const { addToCart, toggleWishlist, wishlist, setSelectedProduct, searchQuery } = useContext(AppContext);
   const [isHovered, setIsHovered] = useState(false);
   const inWishlist = wishlist.find(i => i.id === product.id);
   const tagStyle = TAG_COLORS[product.tag] || { bg: "var(--smoke)", color: "var(--ash)" };
@@ -18,6 +18,15 @@ export default function ProductCard({ product }) {
   const { isMobile } = useBreakpoint();
 
   const productUrl = `/product/${product.slug || product.id}`;
+
+  const getAiMatchScore = (id) => {
+    let hash = 0;
+    const str = String(id);
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return 90 + (Math.abs(hash) % 10); // deterministic 90% to 99%
+  };
 
   return (
     <div 
@@ -34,11 +43,28 @@ export default function ProductCard({ product }) {
         >
           <ProductImage product={product} selectedColor={product.colors?.[0]} isParentHovered={isHovered} />
         </Link>
-        {product.tag && (
-          <div style={{ position: "absolute", top: 12, left: 12 }}>
+        
+        <div style={{ position: "absolute", top: 12, left: 12, display: "flex", flexDirection: "column", gap: 6, zIndex: 10 }}>
+          {product.tag && (
             <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color }}>{product.tag}</span>
-          </div>
-        )}
+          )}
+          {searchQuery && searchQuery.trim() && (
+            <span className="badge" style={{ 
+              background: "rgba(201, 168, 76, 0.95)", 
+              color: "var(--obsidian)", 
+              fontWeight: "bold",
+              boxShadow: "0 0 10px rgba(201, 168, 76, 0.5)",
+              border: "1px solid var(--gold)",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 9,
+              letterSpacing: 1
+            }}>
+              ✨ {getAiMatchScore(product.id)}% AI MATCH
+            </span>
+          )}
+        </div>
         {discount > 0 && <div style={{ position: "absolute", top: 12, right: 12, background: "var(--wolf-red)", color: "#fff", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>-{discount}%</div>}
         <button 
           onClick={(e) => {

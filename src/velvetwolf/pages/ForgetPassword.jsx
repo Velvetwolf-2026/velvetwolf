@@ -344,7 +344,7 @@ export function ForgetPassword() {
                       <button type="button" onClick={() => setShowConfirm((v) => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}><EyeIcon visible={showConfirm} /></button>
                     </div>
                     {pwNoMatch && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#e07070", marginTop: 5 }}>Passwords do not match</p>}
-                    {pwMatch && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#5db87a", marginTop: 5 }}>? Passwords match</p>}
+                    {pwMatch && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#5db87a", marginTop: 5 }}> Passwords match</p>}
                   </div>
                   <button type="submit" className="btn-gold" disabled={loading} style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
                     {loading ? "RESETTING..." : "RESET PASSWORD ?"}

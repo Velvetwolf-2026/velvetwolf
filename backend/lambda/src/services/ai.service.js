@@ -463,6 +463,17 @@ export async function chatAssistantDialog(messages = [], personalityType = null)
       const budget = numMatch ? Number.parseInt(numMatch[0], 10) : 1000;
       replyText = `Here are some of our finest premium streetwear pieces priced under ₹${budget}:`;
       recommendedProducts = await searchAiProducts(`under ${budget}`, personalityType);
+    } else if (text.includes("have a") || text.includes("have") || text.includes("with a") || text.includes("pair with")) {
+      if (text.includes("cargo") || text.includes("pant") || text.includes("jeans") || text.includes("trouser") || text.includes("bottom")) {
+        replyText = "Excellent base! The volume of cargo pants pairs perfectly with a boxy, oversized silhouette. I highly recommend trying these oversized graphic and premium tees to complete your look. They balance the proportions beautifully:";
+        recommendedProducts = await searchAiProducts("oversized tshirt", personalityType);
+      } else if (text.includes("tee") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("top") || text.includes("shirt") || text.includes("hoodie")) {
+        replyText = "Oversized and regular tees look outstanding when paired with tactical cargoes. Complete your streetwear look with our multi-pocket utility cargoes for a rugged, structured vibe:";
+        recommendedProducts = await searchAiProducts("cargo", personalityType);
+      } else {
+        replyText = "Got it! Try pairing your pieces with these top-trending VelvetWolf streetwear items to elevate your look:";
+        recommendedProducts = await searchAiProducts("bestseller", personalityType);
+      }
     } else {
       // General NLP search matching
       recommendedProducts = await searchAiProducts(lastMessage, personalityType);

@@ -205,7 +205,8 @@ export default function MosaicCarousel({ onCategoryClick }) {
 
   const fade = useCallback(() => {
     const el = trackRef.current; if (!el) return;
-    setShowL(el.scrollLeft > 20);
+    const nextShowL = el.scrollLeft > 20;
+    setShowL(prev => prev === nextShowL ? prev : nextShowL);
   }, []);
 
   useEffect(() => {

@@ -134,7 +134,7 @@ export function AccountPage() {
       const result = await verifyEmailUpdateOtp(newEmail.trim(), emailOtp);
       
       if (result.token) {
-        localStorage.setItem("token", result.token);
+        // Cookie is handled automatically, no localStorage token required
       }
       
       const nextUser = {

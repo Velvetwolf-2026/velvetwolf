@@ -6,10 +6,12 @@ export async function updateProfile(userId, updates) {
     throw new Error('Enter a valid 10-digit Indian mobile number');
   }
 
+  const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/update'), {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
       id: userId,

@@ -62,7 +62,7 @@ export default function PaymentStatusPage() {
     };
 
     checkPayment();
-  }, [clearCart, showToast]);
+  }, []);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -76,7 +76,7 @@ export default function PaymentStatusPage() {
         
         {status === "success" && (
           <>
-            <div style={{ fontSize: 60, marginBottom: 20 }}>✓</div>
+            <img src="/payment-success.png" alt="Order Successful" style={{ width: 140, height: 140, objectFit: "contain", marginBottom: 20 }} />
             <div style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 16, color: "#81c784" }}>ORDER SUCCESSFUL</div>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginBottom: 32 }}>Your order is confirmed. We will dispatch it soon!</p>
             
@@ -105,7 +105,7 @@ export default function PaymentStatusPage() {
 
         {status === "failed" && (
           <>
-            <div style={{ fontSize: 60, marginBottom: 20 }}>✕</div>
+            <img src="/payment-error.png" alt="Payment Failed" style={{ width: 140, height: 140, objectFit: "contain", marginBottom: 20 }} />
             <div style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 16, color: "var(--wolf-red)" }}>PAYMENT FAILED</div>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginBottom: 32 }}>Your payment could not be processed. Please try again.</p>
             <button className="btn-ghost" style={{ padding: "14px 32px" }} onClick={() => {

@@ -5,13 +5,30 @@ import VelvetWolf from './App.jsx'
 import './index.css'
 import { API_BASE_URL } from './velvetwolf/utils/api'
 
-// Global fetch interceptor to inject credentials: 'include' for HttpOnly cookies
+// Helper to extract csrf_token value from cookies
+function getCsrfTokenFromCookie() {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(^|;)\s*csrf_token\s*=\s*([^;]+)/);
+  return match ? match[2] : "";
+}
+
+// Global fetch interceptor to inject credentials: 'include' and X-CSRF-Token header
 const originalFetch = window.fetch;
 window.fetch = function (url, options) {
   const urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.href : '');
   if (urlStr.startsWith('/') || urlStr.includes(API_BASE_URL)) {
     options = options || {};
     options.credentials = 'include';
+
+    // Inject CSRF token for state-changing requests
+    const method = String(options.method || 'GET').toUpperCase();
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      const csrfToken = getCsrfTokenFromCookie();
+      if (csrfToken) {
+        options.headers = options.headers || {};
+        options.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
   }
   return originalFetch(url, options);
 };

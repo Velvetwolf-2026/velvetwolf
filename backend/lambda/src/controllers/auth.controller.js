@@ -5,12 +5,19 @@ import {
   firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
-import { jsonResponse, redirectResponse } from "../utils/http.js";
+import { jsonResponse, redirectResponse, ApiError } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
 import { requireAuth } from "../middleware/auth.js";
+import { verifyRecaptcha } from "../services/recaptcha.service.js";
 
 export async function signup(body, event) {
   const data = validate(signupSchema)(body);
+  
+  const isHuman = await verifyRecaptcha(data.recaptchaToken);
+  if (!isHuman) {
+    throw new ApiError(400, "reCAPTCHA verification failed. Please try again.");
+  }
+
   const result = await authService.signup(data);
   await auditLog({ action: "user.signup", resource: "users", meta: { email: data.email } });
   return jsonResponse(200, result, {}, event);
@@ -18,10 +25,21 @@ export async function signup(body, event) {
 
 export async function login(body, event) {
   const data = validate(loginSchema)(body);
+
+  const isHuman = await verifyRecaptcha(data.recaptchaToken);
+  if (!isHuman) {
+    throw new ApiError(400, "reCAPTCHA verification failed. Please try again.");
+  }
+
   const result = await authService.login(data);
   const headers = {};
   if (result.token) {
-    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    const csrfToken = authService.generateCsrfToken();
+    result.csrfToken = csrfToken;
+    headers["Set-Cookie"] = [
+      authService.getAuthCookieHeader(result.token),
+      authService.getCsrfCookieHeader(csrfToken)
+    ];
   }
   return jsonResponse(200, result, headers, event);
 }
@@ -32,7 +50,12 @@ export async function verifyOtp(body, event) {
   const headers = {};
   if (result.token) {
     await auditLog({ action: "user.login", resource: "users", meta: { email: data.email, type: data.type } });
-    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    const csrfToken = authService.generateCsrfToken();
+    result.csrfToken = csrfToken;
+    headers["Set-Cookie"] = [
+      authService.getAuthCookieHeader(result.token),
+      authService.getCsrfCookieHeader(csrfToken)
+    ];
   }
   return jsonResponse(200, result, headers, event);
 }
@@ -61,24 +84,41 @@ export function googleRedirect(query, event) {
 }
 
 export async function googleCallback(query, event) {
-  const result = await authService.googleCallback({
-    code: query.code,
-    state: query.state,
-    error: query.error,
-    errorDescription: query.error_description,
-  });
-  const headers = {};
-  if (result.token) {
-    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+  try {
+    const result = await authService.googleCallback({
+      code: query.code,
+      state: query.state,
+      error: query.error,
+      errorDescription: query.error_description,
+    });
+    const headers = {};
+    if (result.token) {
+      const csrfToken = authService.generateCsrfToken();
+      headers["Set-Cookie"] = [
+        authService.getAuthCookieHeader(result.token),
+        authService.getCsrfCookieHeader(csrfToken)
+      ];
+      result.redirect = `${result.redirect.replace(/\/$/, "")}${result.redirect.includes("?") ? "&" : "?"}csrf_token=${encodeURIComponent(csrfToken)}`;
+    }
+    return redirectResponse(result.redirect, 302, headers, event);
+  } catch (err) {
+    const mode = (query.state && String(query.state).includes("signup")) ? "signup" : "login";
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const redirectUrl = `${frontendUrl.replace(/\/$/, "")}?provider=google&mode=${mode}&auth_error=${encodeURIComponent(err.message)}`;
+    return redirectResponse(redirectUrl, 302, {}, event);
   }
-  return redirectResponse(result.redirect, 302, headers, event);
 }
 
 export async function verifyOtpLink(query, event) {
   const result = await authService.verifyOtpLink(query.t);
   const headers = {};
   if (result.token) {
-    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    const csrfToken = authService.generateCsrfToken();
+    headers["Set-Cookie"] = [
+      authService.getAuthCookieHeader(result.token),
+      authService.getCsrfCookieHeader(csrfToken)
+    ];
+    result.redirect = `${result.redirect.replace(/\/$/, "")}${result.redirect.includes("?") ? "&" : "?"}csrf_token=${encodeURIComponent(csrfToken)}`;
   }
   return redirectResponse(result.redirect, 302, headers, event);
 }
@@ -97,7 +137,12 @@ export async function firebaseLogin(body, event) {
   const result = await authService.firebaseLogin(data);
   const headers = {};
   if (result.token) {
-    headers["Set-Cookie"] = authService.getAuthCookieHeader(result.token);
+    const csrfToken = authService.generateCsrfToken();
+    result.csrfToken = csrfToken;
+    headers["Set-Cookie"] = [
+      authService.getAuthCookieHeader(result.token),
+      authService.getCsrfCookieHeader(csrfToken)
+    ];
   }
   await auditLog({ action: "user.login", resource: "users", meta: { phone: data.phone, type: "Mobile" } });
   return jsonResponse(200, result, headers, event);
@@ -105,7 +150,10 @@ export async function firebaseLogin(body, event) {
 
 export async function logout(body, event) {
   const headers = {
-    "Set-Cookie": authService.getLogoutCookieHeader(),
+    "Set-Cookie": [
+      authService.getLogoutCookieHeader(),
+      authService.getLogoutCsrfCookieHeader()
+    ],
   };
   return jsonResponse(200, { success: true, message: "Logged out successfully." }, headers, event);
 }
@@ -113,7 +161,11 @@ export async function logout(body, event) {
 export async function getSession(body, event) {
   try {
     const user = requireAuth(event);
-    return jsonResponse(200, { authenticated: true, user }, {}, event);
+    const csrfToken = authService.generateCsrfToken();
+    const headers = {
+      "Set-Cookie": authService.getCsrfCookieHeader(csrfToken)
+    };
+    return jsonResponse(200, { authenticated: true, user, csrfToken }, headers, event);
   } catch {
     return jsonResponse(200, { authenticated: false, user: null }, {}, event);
   }

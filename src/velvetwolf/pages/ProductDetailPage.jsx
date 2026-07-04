@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
@@ -17,6 +17,7 @@ const COLOR_MAP = {
 
 export default function ProductDetailPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { isMobile, isMobileOrTablet } = useBreakpoint();
   const { addToCart, toggleWishlist, wishlist, products, showToast } = useContext(AppContext);
   
@@ -58,6 +59,34 @@ export default function ProductDetailPage() {
   // Smart Bundles & Recently Viewed
   const [bundles, setBundles] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
+
+  // Pincode & Delivery Estimate
+  const [pincode, setPincode] = useState("");
+  const [loadingPincode, setLoadingPincode] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+
+  // Purchase activity simulated alerts
+  const [purchaseAlert, setPurchaseAlert] = useState(null);
+
+  useEffect(() => {
+    const locations = ["Delhi", "Mumbai", "Bangalore", "Chennai", "Hyderabad", "Pune", "Kolkata", "Ahmedabad", "Jaipur"];
+    const names = ["Aarav S.", "Meera K.", "Vikram R.", "Rohan D.", "Ananya M.", "Karan P.", "Neha G.", "Siddharth V."];
+    
+    const triggerAlert = () => {
+      const randLoc = locations[Math.floor(Math.random() * locations.length)];
+      const randName = names[Math.floor(Math.random() * names.length)];
+      setPurchaseAlert({ name: randName, city: randLoc, time: "just now" });
+      setTimeout(() => setPurchaseAlert(null), 5000);
+    };
+
+    const tStart = setTimeout(triggerAlert, 4000);
+    const interval = setInterval(triggerAlert, 20000);
+    
+    return () => {
+      clearTimeout(tStart);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Fetch product and dependencies
   useEffect(() => {
@@ -200,6 +229,62 @@ export default function ProductDetailPage() {
     showToast("Whole bundle added to your cart with drop discount! ✓");
   };
 
+  const handlePincodeChange = async (e) => {
+    const pin = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setPincode(pin);
+    
+    if (pin.length === 6) {
+      setLoadingPincode(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const data = await res.json();
+        if (data && data[0] && data[0].Status === "Success") {
+          const postOffices = data[0].PostOffice;
+          if (postOffices && postOffices.length > 0) {
+            const po = postOffices[0];
+            const getFormat = (d) => {
+              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+            };
+            const minDate = new Date();
+            minDate.setDate(minDate.getDate() + 3);
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 5);
+            const deliveryWindow = `${getFormat(minDate)} - ${getFormat(maxDate)}`;
+            
+            setDeliveryInfo({
+              available: true,
+              city: po.District || po.Name,
+              state: po.State,
+              date: deliveryWindow
+            });
+          } else {
+            setDeliveryInfo({
+              available: false,
+              message: "Invalid Pincode"
+            });
+          }
+        } else {
+          setDeliveryInfo({
+            available: false,
+            message: "Invalid Pincode"
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        setDeliveryInfo({
+          available: false,
+          message: "Failed to estimate delivery date"
+        });
+      } finally {
+        setLoadingPincode(false);
+      }
+    } else {
+      setDeliveryInfo(null);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--obsidian)" }}>
@@ -334,6 +419,57 @@ export default function ProductDetailPage() {
 
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 15, color: "var(--silver)", lineHeight: 1.8, marginBottom: 32 }}>{product.description}</p>
 
+            {/* Fabric Specs */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28, background: "rgba(255,255,255,0.02)", border: "1px solid var(--smoke)", padding: 16 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>FABRIC WEIGHT</div>
+                <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--gold)", fontWeight: "bold", marginTop: 4 }}>{product.gsm || "220"} GSM</div>
+              </div>
+              <div style={{ textAlign: "center", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)" }}>
+                <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>FABRIC FEEL</div>
+                <div style={{ fontSize: 11, fontFamily: "var(--font-serif)", color: "var(--ivory)", fontWeight: "bold", marginTop: 4 }}>{product.fabric || "Buttery Soft"}</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>STRETCH LEVEL</div>
+                <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--gold)", fontWeight: "bold", marginTop: 4 }}>Medium-Low</div>
+              </div>
+            </div>
+
+            {/* Fit Meter */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ash)", marginBottom: 8, letterSpacing: 1 }}>
+                <span>FIT SPECTRUM</span>
+                <span style={{ color: "var(--gold)" }}>{product.fit || "Oversized"} Fit</span>
+              </div>
+              <div style={{ position: "relative", height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3 }}>
+                <div style={{ 
+                  position: "absolute", 
+                  left: 0, 
+                  top: 0, 
+                  height: "100%", 
+                  width: product.fit === "Slim Fit" ? "20%" : product.fit === "Regular" ? "50%" : "85%", 
+                  background: "var(--gold)", 
+                  borderRadius: 3 
+                }} />
+                <div style={{ 
+                  position: "absolute", 
+                  left: product.fit === "Slim Fit" ? "20%" : product.fit === "Regular" ? "50%" : "85%", 
+                  top: -3, 
+                  width: 12, 
+                  height: 12, 
+                  borderRadius: "50%", 
+                  background: "var(--ivory)", 
+                  border: "2px solid var(--gold)", 
+                  transform: "translateX(-50%)" 
+                }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--silver)", marginTop: 6, letterSpacing: 0.5 }}>
+                <span>SLIM FIT</span>
+                <span>REGULAR</span>
+                <span>OVERSIZED FIT</span>
+              </div>
+            </div>
+
             {/* Color selector */}
             {colors.length > 0 && (
               <div style={{ marginBottom: 24 }}>
@@ -357,6 +493,14 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Live Stock Alert */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, padding: "10px 14px", background: "rgba(192, 57, 43, 0.08)", border: "1px solid rgba(192, 57, 43, 0.3)" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--wolf-red)", animation: "vw-badge-pulse 2s infinite" }} />
+              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>
+                ⚡ HURRY! ONLY <span style={{ color: "var(--gold)", fontWeight: "bold" }}>{product.stock && product.stock < 15 ? product.stock : 4} PIECES LEFT</span> IN SIZE {size || "M"}!
+              </span>
+            </div>
 
             {/* Size selector & Advisor links */}
             {sizes.length > 0 && (
@@ -403,13 +547,14 @@ export default function ProductDetailPage() {
             )}
 
             {/* Qty and Actions */}
-            <div style={{ display: "flex", gap: 16, marginBottom: 36 }}>
+            <div style={{ display: "flex", gap: 12, marginBottom: 36, flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)" }}>
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 14px" }}><Icon name="minus" size={12} /></button>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ivory)", padding: "0 14px" }}>{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 14px" }}><Icon name="plus" size={12} /></button>
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 12px" }}><Icon name="minus" size={12} /></button>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ivory)", padding: "0 12px" }}>{qty}</span>
+                <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 12px" }}><Icon name="plus" size={12} /></button>
               </div>
-              <button className="btn-gold" style={{ flex: 1, padding: "16px" }} onClick={() => { addToCart(product, size, color, qty); showToast("Added to Cart ✓"); }}>ADD TO CART</button>
+              <button className="btn-outline" style={{ flex: 1, padding: "16px", minWidth: 120, fontSize: 11 }} onClick={() => { addToCart(product, size, color, qty); showToast("Added to Cart ✓"); }}>ADD TO CART</button>
+              <button className="btn-gold" style={{ flex: 1, padding: "16px", minWidth: 120, fontSize: 11 }} onClick={() => { addToCart(product, size, color, qty); setTimeout(() => navigate("/checkout"), 100); }}>BUY NOW</button>
               <button
                 onClick={() => toggleWishlist(product)}
                 style={{
@@ -422,6 +567,62 @@ export default function ProductDetailPage() {
               >
                 <Icon name={inWishlist ? "heartFill" : "heart"} size={18} color={inWishlist ? "#c0392b" : "var(--silver)"} />
               </button>
+            </div>
+
+            {/* Payment Method Trust Badges */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "flex-start", padding: "14px 20px", border: "1px dashed var(--smoke)", marginBottom: 20, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 1, marginRight: 6 }}>SECURE PROTOCOLS:</span>
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
+                <path d="M11.2 6.5l-1.3 4.8h-.1L8.2 6.5H6l2.4 6.7h1.9l3.1-6.7H11.2zM16.5 6.5l-1.1 4.5-.4-1.9-.3-1.6c-.1-.7-.6-1-1.2-1H12v.4c.5.1.9.3 1.2.6l1.2 4.1h2l2.6-6.7h-2.5zM22.5 7.6c-.3-.3-.8-.5-1.4-.5-1.2 0-2 .6-2 1.3 0 .7.8.9 1.3 1.1.4.1.8.3.8.5 0 .2-.4.4-.9.4-.6 0-1-.2-1.3-.4l-.2-.1-.2 1.1c.3.1.9.2 1.5.2 1.3 0 2.2-.6 2.2-1.4 0-.7-.8-1-1.4-1.1-.4-.1-.8-.3-.8-.5 0-.2.4-.4.8-.4.5 0 .9.1 1.2.3l.2.1.2-1.1zM26.2 6.5h-1.6c-.4 0-.7.2-.8.5l-2.4 6.2h2l.4-1h2.2l.2 1h1.8l-1.8-6.7zm-2 4l.8-2 .4 2h-1.2z" fill="var(--ivory)" />
+              </svg>
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
+                <circle cx="13.5" cy="10" r="5" fill="var(--ivory)" fillOpacity="0.4" />
+                <circle cx="18.5" cy="10" r="5" fill="var(--ivory)" fillOpacity="0.8" />
+              </svg>
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
+                <path d="M7 6.5h2.5c1.2 0 2 .7 2 1.6v.1c0 1-1 1.6-2 1.6H8.5v4h-1.5V6.5zm2.5 2.2c.4 0 .6-.2.6-.5V8c0-.3-.2-.5-.6-.5H8.5V8.7h1zM11.5 10l2 3.8H12L10.2 10h1.3zM15 6.5h1.5l.8 2.5.8-2.5H19.5l-2.2 6.7h-1.2L15 6.5z" fill="var(--ivory)" />
+              </svg>
+              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
+                <path d="M7 6.5h1.2v4.8c0 .8.5 1.3 1.3 1.3s1.3-.5 1.3-1.3V6.5h1.2v4.8c0 1.5-1 2.5-2.5 2.5s-2.5-1-2.5-2.5V6.5zM14.5 6.5h1.8c1 0 1.7.6 1.7 1.4v.1c0 .8-.7 1.4-1.7 1.4h-.6v4.4h-1.2V6.5zm1.8 1.9c.3 0 .5-.2.5-.5v-.1c0-.3-.2-.5-.5-.5h-.6v1.1h.6zM20.5 6.5h1.2v7.3h-1.2V6.5z" fill="var(--ivory)" />
+              </svg>
+            </div>
+
+            {/* Delivery Estimate */}
+            <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "18px 20px", marginBottom: 36 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>ESTIMATE DELIVERY DATE</div>
+              <div style={{ display: "flex", gap: 10, position: "relative" }}>
+                <input 
+                  className="input-dark" 
+                  type="text" 
+                  placeholder="Enter 6-digit Pincode" 
+                  value={pincode} 
+                  onChange={handlePincodeChange}
+                  maxLength={6} 
+                  style={{ flex: 1, padding: "10px 14px", fontSize: 13 }}
+                />
+                {loadingPincode && (
+                  <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>
+                    ...
+                  </span>
+                )}
+              </div>
+              
+              {deliveryInfo && (
+                <div style={{ marginTop: 12, fontFamily: "var(--font-mono)", fontSize: 11, color: deliveryInfo.available ? "#81c784" : "#e07070" }}>
+                  {deliveryInfo.available ? (
+                    <div>
+                      <div>✓ Deliverable to <span style={{ color: "var(--ivory)", fontWeight: 600 }}>{deliveryInfo.city}, {deliveryInfo.state}</span></div>
+                      <div style={{ marginTop: 6, color: "var(--silver)" }}>Estimated Delivery: <span style={{ color: "var(--gold)", fontWeight: 600 }}>{deliveryInfo.date}</span></div>
+                    </div>
+                  ) : (
+                    <div>✕ {deliveryInfo.message}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Collapsible Accordion details */}
@@ -500,6 +701,71 @@ export default function ProductDetailPage() {
             </div>
           </section>
         )}
+
+        {/* CUSTOMER LOOKBOOK & VIDEO REVIEWS */}
+        <section style={{ marginBottom: 60, borderTop: "1px solid var(--smoke)", paddingTop: 40 }}>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 28 }}>STYLING VERDICTS</h2>
+          
+          <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr", gap: 32, marginBottom: 40 }}>
+            {/* Customer Photos */}
+            <div>
+              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>CUSTOMER LOOKBOOK (FIT PICS)</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                {[
+                  "/mockup_silent.png",
+                  "/mockup_founder.png",
+                  "/mockup_beast.png"
+                ].map((img, idx) => (
+                  <div key={idx} style={{ aspectRatio: "0.8", background: "var(--onyx)", border: "1px solid var(--smoke)", overflow: "hidden", position: "relative" }}>
+                    <img src={img} alt={`Lookbook ${idx}`} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} />
+                    <span style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--gold)", background: "rgba(0,0,0,0.6)", padding: "2px 6px" }}>
+                      @user_{(idx + 1) * 23}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Video Reviews */}
+            <div>
+              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>COMMUNITY REELS (VIDEO REVIEWS)</h3>
+              <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 10 }}>
+                {[
+                  { name: "Rohit D.", duration: "0:45", views: "14.2K", title: "Heavyweight 220 GSM Fit check" },
+                  { name: "Meera K.", duration: "1:12", views: "28.5K", title: "Silent Luxury style guide" }
+                ].map((vid, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => showToast(`Playing video review by ${vid.name}...`)}
+                    style={{ 
+                      flex: "0 0 160px", 
+                      aspectRatio: "0.6", 
+                      background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(9,9,9,0.9) 100%)", 
+                      border: "1px solid var(--smoke)", 
+                      position: "relative",
+                      cursor: "pointer",
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end"
+                    }}
+                  >
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(201,168,76,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="arrowRight" size={16} color="var(--obsidian)" />
+                    </div>
+                    <div style={{ position: "absolute", top: 12, left: 12, fontSize: 8, fontFamily: "var(--font-mono)", color: "#faf9f7", background: "rgba(0,0,0,0.5)", padding: "2px 6px" }}>
+                      {vid.duration} · {vid.views} VIEWS
+                    </div>
+                    <div style={{ zIndex: 2 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)" }}>{vid.name}</div>
+                      <div style={{ fontSize: 9, color: "var(--silver)", marginTop: 4, lineHeight: 1.2 }}>{vid.title}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* CUSTOMER REVIEWS AND RATINGS */}
         <section style={{ marginBottom: 60 }}>
@@ -700,6 +966,31 @@ export default function ProductDetailPage() {
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* purchaseAlert */}
+      {purchaseAlert && (
+        <div style={{
+          position: "fixed",
+          bottom: 24,
+          left: 24,
+          background: "rgba(10,10,10,0.95)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid var(--gold)",
+          padding: "12px 20px",
+          zIndex: 999,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+          animation: "vw-drawer-slide 0.3s ease"
+        }}>
+          <div style={{ fontSize: 16 }}>🛍️</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
+            <div style={{ color: "var(--gold)", fontWeight: "bold" }}>RECENT PURCHASE</div>
+            <div style={{ color: "var(--ivory)", marginTop: 2 }}>{purchaseAlert.name} from {purchaseAlert.city} bought this item!</div>
           </div>
         </div>
       )}

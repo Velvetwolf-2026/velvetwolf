@@ -4,6 +4,30 @@ import Icon from "./Icon";
 import { apiUrl } from "../utils/api";
 
 export default function AiFashionAssistant() {
+  const getProductImageUrl = (p) => {
+    if (!p) return null;
+    if (p.image) {
+      if (typeof p.image === "string") {
+        if (p.image.trim().startsWith("[")) {
+          try {
+            const parsed = JSON.parse(p.image);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+          } catch (err) {
+            console.warn("Failed parsing image JSON in AI Assistant", err);
+          }
+        }
+        return p.image;
+      } else if (Array.isArray(p.image) && p.image.length > 0) {
+        return p.image[0];
+      }
+    }
+    if (Array.isArray(p.images) && p.images.length > 0) {
+      const firstNonPrefixed = p.images.find(img => typeof img === "string" && !img.includes("::"));
+      return firstNonPrefixed || p.images[0];
+    }
+    return null;
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -170,7 +194,35 @@ export default function AiFashionAssistant() {
                         onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
                         onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
                       >
-                        <div style={{ width: 44, height: 44, background: "var(--smoke)", flexShrink: 0 }} />
+                        {getProductImageUrl(p) ? (
+                          <img 
+                            src={getProductImageUrl(p)} 
+                            alt={p.name} 
+                            style={{ 
+                              width: 44, 
+                              height: 44, 
+                              objectFit: "cover", 
+                              flexShrink: 0,
+                              border: "1px solid var(--smoke)"
+                            }} 
+                          />
+                        ) : (
+                          <div style={{ 
+                            width: 44, 
+                            height: 44, 
+                            background: "var(--graphite)", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center", 
+                            fontSize: 9, 
+                            fontFamily: "var(--font-mono)", 
+                            color: "var(--gold)",
+                            flexShrink: 0,
+                            border: "1px solid var(--smoke)"
+                          }}>
+                            VW
+                          </div>
+                        )}
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 12, fontWeight: "bold", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{p.name}</div>
                           <div style={{ fontSize: 11, color: "var(--gold)", fontFamily: "var(--font-mono)", marginTop: 2 }}>₹{p.price}</div>

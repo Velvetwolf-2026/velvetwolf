@@ -32,6 +32,10 @@ const sanitizeEmail = (email) => {
 
 // Get product variant by size and color
 async function getVariantForItem(productId, size, color) {
+  if (!productId || !isValidUuid(productId)) {
+    // Return a dummy variant for custom designs to bypass database check
+    return { id: crypto.randomUUID(), stock_qty: 99999, size: size || "M", color: color || "Black" };
+  }
   let query = supabaseAdmin
     .from("product_variants")
     .select("id, stock_qty, size, color, color_hex")
@@ -138,6 +142,7 @@ async function confirmOrder(orderId) {
 
   // 3. Decrement stock of product variants
   for (const item of items) {
+    if (!item.product_id || !isValidUuid(item.product_id)) continue; // Skip custom/deleted items
     const variant = await getVariantForItem(item.product_id, item.size, item.color);
     if (variant) {
       const newStock = Math.max(0, variant.stock_qty - item.quantity);
@@ -254,7 +259,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
   // Insert order items
   const orderItems = cart.map(item => ({
     order_id: orderId,
-    product_id: item.id,
+    product_id: isValidUuid(item.id) ? item.id : null,
     product_name: item.name,
     size: item.size,
     color: item.color,

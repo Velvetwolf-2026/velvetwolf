@@ -276,14 +276,14 @@ export default function VelvetWolf() {
     }
   };
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     localStorage.removeItem("vw_guest_cart");
     const backendUserId = getBackendUserId(user);
     if (backendUserId) {
       localStorage.removeItem(`vw_cart_${backendUserId}`);
     }
     setCart([]);
-  };
+  }, [user]);
 
   const mergeGuestCartToDB = async (userId) => {
     try {
@@ -335,6 +335,7 @@ export default function VelvetWolf() {
         localStorage.removeItem(`vw_cart_${user.id}`);
       }
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       localStorage.removeItem("vw_guest_style_profile");
       // Call backend logout endpoint to clear HttpOnly cookie
       await fetch(apiUrl("/auth/logout"), { method: "POST" });

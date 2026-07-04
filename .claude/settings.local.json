@@ -9,7 +9,17 @@
       "Bash(rm v:/Coding/velvetwolf/backend/shared/auth-service.js v:/Coding/velvetwolf/backend/shared/http.js v:/Coding/velvetwolf/backend/shared/config/env.js v:/Coding/velvetwolf/backend/shared/config/ses.js v:/Coding/velvetwolf/backend/shared/config/supabase.js)",
       "Bash(rmdir v:/Coding/velvetwolf/backend/shared/config)",
       "Bash(rmdir v:/Coding/velvetwolf/backend/shared)",
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "WebFetch(domain:velvetwolf.in)",
+      "WebFetch(domain:www.thesouledstore.com)",
+      "WebFetch(domain:www.velvetwolf.in)",
+      "WebFetch(domain:thesouledstore.com)",
+      "WebSearch",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(npx eslint *)",
+      "Bash(ls -la .env*)",
+      "Bash(find . -maxdepth 2 -iname \".env*\" -not -path \"*/node_modules/*\")"
     ]
   }
 }

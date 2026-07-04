@@ -59,6 +59,21 @@ export function getLogoutCookieHeader() {
   return `token=; HttpOnly; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
 }
 
+export function getCsrfCookieHeader(token) {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  // Non-HttpOnly so client-side JavaScript can read it
+  return `csrf_token=${token}; Path=/; SameSite=Lax; Max-Age=604800${secure}`;
+}
+
+export function getLogoutCsrfCookieHeader() {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `csrf_token=; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
+}
+
+export function generateCsrfToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
 
 async function checkRateLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_SECS) {
   logInfo("Checking rate limit", authLogContext({ key, max, windowSecs }));
@@ -166,11 +181,14 @@ async function upsertGoogleUser(profile) {
   const name = String(profile.name || email.split("@")[0] || "User").trim();
 
   const { data: existingUser, error: existingUserError } = await supabaseAdmin
-    .from("users").select("id, email, name, role").eq("email", email).single();
+    .from("users").select("id, email, name, role, type").eq("email", email).maybeSingle();
 
-  if (existingUserError && existingUserError.code !== "PGRST116") throw new ApiError(400, existingUserError.message);
+  if (existingUserError) throw new ApiError(400, existingUserError.message);
 
   if (existingUser) {
+    if (existingUser.type === "Signup") {
+      throw new ApiError(400, "You signed up with email and password. Please log in using your password.");
+    }
     await supabaseAdmin.from("users").update({ name, last_login: new Date().toISOString() }).eq("id", existingUser.id);
     return { id: existingUser.id, email: existingUser.email, name, role: existingUser.role || "customer" };
   }
@@ -287,12 +305,16 @@ export async function login({ email, password }) {
     await checkRateLimit(`login:${normalizedEmail}`, 5, 900);
 
     const { data: user, error: userError } = await supabaseAdmin
-      .from("users").select("id, email, name, role, password_hash, last_login, is_verified")
+      .from("users").select("id, email, name, role, password_hash, last_login, is_verified, type")
       .eq("email", normalizedEmail).single();
 
     if (userError && userError.code !== "PGRST116") throw new ApiError(400, userError.message);
     if (!user) { await recordRateAttempt(`login:${normalizedEmail}`); throw new ApiError(401, "User not registered. Please complete registration."); }
     if (!user.is_verified) throw new ApiError(403, "Email not verified. Please complete your signup by verifying your email.");
+
+    if (user.type === "Google") {
+      throw new ApiError(400, "You signed up with Google. Please log in using Google.");
+    }
 
     const isMobileEmail = normalizedEmail.endsWith("@mobile.velvetwolf.in");
     if (!isMobileEmail) {
@@ -502,7 +524,7 @@ export async function discoverUser({ email }) {
   const normalizedEmail = normalizeEmail(email);
   const { data: user, error } = await supabaseAdmin
     .from("users")
-    .select("id, email, name")
+    .select("id, email, name, type")
     .eq("email", normalizedEmail)
     .maybeSingle();
 
@@ -511,7 +533,7 @@ export async function discoverUser({ email }) {
     throw new ApiError(400, error.message);
   }
 
-  return { exists: Boolean(user), email: normalizedEmail, name: user?.name || null };
+  return { exists: Boolean(user), email: normalizedEmail, name: user?.name || null, type: user?.type || null };
 }
 
 export async function verifyFirebaseIdToken(idToken) {
@@ -588,11 +610,15 @@ export async function firebaseLogin({ identifier, phone, token }) {
 
   // 2. Discover or upsert the user in users table
   const { data: existingUser, error: lookupError } = await supabaseAdmin
-    .from("users").select("id, email, name, role").eq("email", finalEmail).maybeSingle();
+    .from("users").select("id, email, name, role, type").eq("email", finalEmail).maybeSingle();
 
   if (lookupError) throw new ApiError(400, lookupError.message);
 
   let user = existingUser;
+
+  if (user && user.type === "Signup") {
+    throw new ApiError(400, "You signed up with email and password. Please log in using your password.");
+  }
 
   if (!user) {
     // Sign up new user from Firebase

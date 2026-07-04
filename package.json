@@ -52,5 +52,11 @@
   "bugs": {
     "url": "https://github.com/Velvetwolf-2026/velvetwolf/issues"
   },
-  "homepage": "https://github.com/Velvetwolf-2026/velvetwolf#readme"
+  "homepage": "https://github.com/Velvetwolf-2026/velvetwolf#readme",
+  "allowScripts": {
+    "@firebase/util@1.15.1": true,
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.1": true,
+    "protobufjs@7.6.4": true
+  }
 }

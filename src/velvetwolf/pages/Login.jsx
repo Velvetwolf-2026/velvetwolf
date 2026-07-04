@@ -4,9 +4,10 @@ import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
 import { apiUrl } from "../utils/api";
-import { updateProfile } from "../utils/profile";
 import { auth, isFirebaseAvailable } from "../utils/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { executeRecaptcha } from "../utils/recaptcha";
+import { updateProfile } from "../utils/profile";
 
 function GoogleIcon() {
   return (
@@ -15,6 +16,16 @@ function GoogleIcon() {
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
     </svg>
   );
 }
@@ -49,6 +60,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [agree, setAgree] = useState(false);
 
@@ -112,9 +124,11 @@ export function Login() {
     }
     setGoogleLoading(true);
     setError("");
+    setInfoMessage("");
+    let result = null;
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       
       const res = await fetch(apiUrl("/auth/firebase-login"), {
@@ -126,7 +140,7 @@ export function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Google login failed.");
       
-      localStorage.setItem("token", data.token);
+      // Cookie is handled automatically, no localStorage token required
       const nextUser = {
         ...data.user,
         role: data.user?.role || "customer",
@@ -136,16 +150,53 @@ export function Login() {
       localStorage.setItem("user", JSON.stringify(nextUser));
       setUser(nextUser);
       showToast(`Successfully logged in with Google!`);
-      if (redirect) {
-        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
-      } else {
-        setPage("home");
-      }
+      navigate("/");
     } catch (err) {
-      setError(err.message || "Google sign in failed.");
+      if (err.message && err.message.includes("email and password")) {
+        setInfoMessage("You signed up with email and password. Redirecting to password sign-in...");
+        const googleEmail = result?.user?.email;
+        if (googleEmail) {
+          setResolvedEmail(googleEmail);
+        }
+        setTimeout(() => {
+          setStep("password");
+        }, 1500);
+      } else {
+        setError(err.message || "Google sign in failed.");
+      }
     } finally {
       setGoogleLoading(false);
     }
+  };
+
+  // Maps Firebase Phone Auth error codes to user-friendly messages
+  const formatAuthError = (err) => {
+    const code = err?.code || "";
+    if (code === "auth/invalid-phone-number") return "Please enter a valid mobile number.";
+    if (code === "auth/too-many-requests") return "Too many attempts. Please try again later.";
+    if (code === "auth/invalid-app-credential" || code === "auth/captcha-check-failed") {
+      return "Phone verification is temporarily unavailable. Please try again in a moment.";
+    }
+    if (code === "auth/quota-exceeded") return "SMS quota exceeded. Please try again later.";
+    return err?.message || "An error occurred. Please try again.";
+  };
+
+  const resendEmailOtp = async () => {
+    const res = await fetch(apiUrl("/auth/resend-otp"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: resolvedEmail,
+        kind: isExistingUser ? "login" : "signup",
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to resend code.");
+    }
+    showToast("New OTP code sent ✓");
+    startResendTimer();
   };
 
   // Discovery step: checks if email or mobile exists
@@ -184,63 +235,46 @@ export function Login() {
       setResolvedEmail(emailQuery);
 
       if (isMobile) {
-        if (isFirebaseAvailable && auth) {
-          // Firebase Phone Auth integration
-          const phoneNumber = `+91${input}`;
-
-          if (window.recaptchaVerifier) {
-            try {
-              window.recaptchaVerifier.clear();
-            } catch (err) {
-              console.error("Error clearing existing recaptcha verifier:", err);
-            }
-            window.recaptchaVerifier = null;
-          }
-
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': () => { },
-            'expired-callback': () => { }
-          });
-
-          const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-          setConfirmationResult(confirmation);
-
-          setStep("otp");
-          setOtp(["", "", "", "", "", ""]);
-          startResendTimer();
-          showToast("OTP code has been sent!");
-        } else {
-          // Fallback Flow: trigger passwordless login or signup to send OTP (mock SMS)
-          const endpoint = data.exists ? "/auth/login" : "/auth/signup";
-          const body = data.exists
-            ? { email: emailQuery }
-            : { email: emailQuery, name: "Mobile User" };
-
-          const optRes = await fetch(apiUrl(endpoint), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-
-          const optData = await optRes.json();
-          if (!optRes.ok) {
-            const errMsg = optData.error || "Failed to trigger login/signup OTP.";
-            if (errMsg.toLowerCase().includes("not registered")) {
-              showToast("Account not found — please sign up first.");
-            }
-            throw new Error(errMsg);
-          }
-
-          setStep("otp");
-          setOtp(["", "", "", "", "", ""]);
-          startResendTimer();
-          showToast("Mock OTP code has been sent! (Use bypass 123456)");
+        if (!isFirebaseAvailable || !auth) {
+          throw new Error("Phone sign-in is currently unavailable. Please use your email to continue.");
         }
+
+        // Firebase Phone Auth integration
+        const phoneNumber = `+91${input}`;
+
+        if (window.recaptchaVerifier) {
+          try {
+            window.recaptchaVerifier.clear();
+          } catch (err) {
+            console.error("Error clearing existing recaptcha verifier:", err);
+          }
+          window.recaptchaVerifier = null;
+        }
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => { },
+          'expired-callback': () => { }
+        });
+
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        setConfirmationResult(confirmation);
+
+        setStep("otp");
+        setOtp(["", "", "", "", "", ""]);
+        startResendTimer();
+        showToast("OTP code has been sent!");
       } else {
         // Email Flow
         if (data.exists) {
-          setStep("password");
+          if (data.type === "Google") {
+            setInfoMessage("You signed up with Google. Redirecting to Google sign-in...");
+            setTimeout(() => {
+              handleGoogle();
+            }, 1500);
+          } else {
+            setStep("password");
+          }
         } else {
           setStep("register_email");
         }
@@ -254,7 +288,7 @@ export function Login() {
         }
         window.recaptchaVerifier = null;
       }
-      setError(err.message || "An error occurred. Please try again.");
+      setError(formatAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -271,12 +305,14 @@ export function Login() {
 
     setLoading(true);
     try {
+      const token = await executeRecaptcha("login");
       const res = await fetch(apiUrl("/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: resolvedEmail,
           password: password,
+          recaptchaToken: token,
         }),
       });
 
@@ -287,7 +323,7 @@ export function Login() {
 
       // Email password login returns JWT directly (No OTP)
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        // Cookie is handled automatically, no localStorage token required
         const nextUser = {
           ...data.user,
           email: data.user.email || resolvedEmail,
@@ -300,17 +336,20 @@ export function Login() {
         localStorage.setItem("user", JSON.stringify(nextUser));
         setUser(nextUser);
         showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
-        if (redirect) {
-          navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
-        } else if (nextUser.isAdmin) {
+        if (nextUser.isAdmin) {
           navigate("/admin");
         } else {
-          setPage("home");
+          navigate("/");
         }
       }
     } catch (err) {
       const msg = err.message || "Login failed. Please try again.";
-      if (msg.toLowerCase().includes("not registered")) {
+      if (msg.includes("signed up with Google") || msg.includes("using Google")) {
+        setInfoMessage("You signed up with Google. Redirecting to Google sign-in...");
+        setTimeout(() => {
+          handleGoogle();
+        }, 1500);
+      } else if (msg.toLowerCase().includes("not registered")) {
         showToast("Account not found — please sign up first.");
         setError("User not registered. Please complete registration.");
       } else {
@@ -340,6 +379,7 @@ export function Login() {
 
     setLoading(true);
     try {
+      const token = await executeRecaptcha("signup");
       const res = await fetch(apiUrl("/auth/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -347,6 +387,7 @@ export function Login() {
           name: fullName.trim(),
           email: resolvedEmail,
           password: password,
+          recaptchaToken: token,
         }),
       });
 
@@ -431,7 +472,7 @@ export function Login() {
           setStep("mobile_name");
         } else {
           // Complete login
-          localStorage.setItem("token", data.token);
+          // Cookie is handled automatically, no localStorage token required
           const nextUser = {
             ...data.user,
             email: resolvedEmail,
@@ -444,11 +485,7 @@ export function Login() {
           localStorage.setItem("user", JSON.stringify(nextUser));
           setUser(nextUser);
           showToast(isExistingUser ? `Successfully logged in!` : `Account created! Welcome to the pack ◆`);
-          if (redirect) {
-            navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
-          } else {
-            setPage("home");
-          }
+          navigate("/");
         }
       }
     } catch (err) {
@@ -466,7 +503,11 @@ export function Login() {
 
     try {
       const isMobile = resolvedEmail.endsWith("@mobile.velvetwolf.in");
-      if (isMobile && isFirebaseAvailable && auth) {
+      if (isMobile) {
+        if (!isFirebaseAvailable || !auth) {
+          throw new Error("Phone sign-in is currently unavailable. Please use your email to continue.");
+        }
+
         const mobileNumber = resolvedEmail.split("@")[0];
         const phoneNumber = `+91${mobileNumber}`;
 
@@ -490,25 +531,10 @@ export function Login() {
         showToast("New OTP code sent ✓");
         startResendTimer();
       } else {
-        const res = await fetch(apiUrl("/auth/resend-otp"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: resolvedEmail,
-            kind: isExistingUser ? "login" : "signup",
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || "Resend failed");
-        }
-
-        showToast("New code sent ✓");
-        startResendTimer();
+        await resendEmailOtp();
       }
     } catch (err) {
-      setError(err.message || "Could not resend code. Please try again.");
+      setError(formatAuthError(err));
     }
   };
 
@@ -524,12 +550,12 @@ export function Login() {
     setLoading(true);
     try {
       const mobileNumber = resolvedEmail.split("@")[0];
+      // Note: We bypass setting localStorage token here since it's HttpOnly. 
+      // During registration completion, the browser cookie was already set in verifyOtp/firebaseLogin step!
       const profile = await updateProfile(pendingUserObject.id, {
         fullName: fullName.trim(),
         phone: mobileNumber,
       });
-
-      localStorage.setItem("token", pendingToken);
       const nextUser = {
         ...pendingUserObject,
         ...profile,
@@ -543,11 +569,7 @@ export function Login() {
       localStorage.setItem("user", JSON.stringify(nextUser));
       setUser(nextUser);
       showToast(`Account created! Welcome to the pack ◆`);
-      if (redirect) {
-        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
-      } else {
-        setPage("home");
-      }
+      navigate("/");
     } catch (err) {
       setError(err.message || "Failed to save profile name.");
     } finally {
@@ -625,6 +647,13 @@ export function Login() {
               </div>
             )}
 
+            {infoMessage && (
+              <div style={{ background: "rgba(41,128,185,0.12)", border: "1px solid rgba(41,128,185,0.3)", color: "#70b0e0", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 11, marginBottom: 18, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: "8px" }}>
+                <InfoIcon />
+                <span>{infoMessage}</span>
+              </div>
+            )}
+
             {/* STEP 1: IDENTIFIER */}
             {step === "identifier" && (
               <>
@@ -659,7 +688,11 @@ export function Login() {
                       type="text"
                       placeholder="you@email.com or 9876543210"
                       value={identifier}
-                      onChange={e => setIdentifier(e.target.value)}
+                      onChange={e => {
+                        setIdentifier(e.target.value);
+                        setError("");
+                        setInfoMessage("");
+                      }}
                       disabled={loading}
                     />
                   </div>
@@ -696,7 +729,11 @@ export function Login() {
                         type={showPw ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={e => {
+                          setPassword(e.target.value);
+                          setError("");
+                          setInfoMessage("");
+                        }}
                         autoComplete="current-password"
                         disabled={loading}
                         style={{ paddingRight: 44 }}

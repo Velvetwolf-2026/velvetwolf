@@ -10,13 +10,24 @@ import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 
 export default function HomePage() {
-  const { products, openShop, user } = useContext(AppContext);
+  const { products, openShop, user, showToast } = useContext(AppContext);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
   const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
   const guestProfile = guestProfileRaw ? JSON.parse(guestProfileRaw) : null;
   const activePersonality = user?.personality_type || guestProfile?.personalityType;
+
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
+  const [comingSoonNotifySuccess, setComingSoonNotifySuccess] = useState({});
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("vw_recently_viewed") || "[]");
+    if (stored.length > 0) {
+      const matched = products.filter(p => stored.includes(p.slug) || stored.includes(p.id));
+      setRecentlyViewedProducts(matched.slice(0, 4));
+    }
+  }, [products]);
 
   const getPersonalizedProducts = (type) => {
     if (!type) return [];
@@ -53,10 +64,66 @@ export default function HomePage() {
   const slide = heroSlides[heroIndex];
   const featured = products.slice(0, 7);
 
-  // Grouped products
-  const newArrivals = products.filter(p => p.tag === "NEW" || p.is_new_arrival).slice(0, 4);
-  const bestSellers = products.filter(p => p.tag === "BESTSELLER" || p.tag === "MOST LOVED" || p.is_best_seller).slice(0, 4);
-  const hotDeals = products.filter(p => (p.originalPrice && p.originalPrice > p.price) || p.tag === "HOT" || p.tag === "LIMITED").slice(0, 4);
+  // Grouped products for Dynamic Sections
+  const trendingToday = products
+    .filter(p => p.tag === "BESTSELLER" || p.tag === "TRENDING" || p.is_best_seller || p.rating >= 4.8)
+    .slice(0, 4);
+
+  const aiPicks = personalizedProducts.length > 0 
+    ? personalizedProducts 
+    : products.filter(p => p.tag === "MOST LOVED" || p.collection === "silent-luxury").slice(0, 4);
+
+  const similarToStyle = products.filter(p => {
+    if (activePersonality === "BUILDER") return ["ai-tech", "founder", "silent-luxury"].includes(p.collection);
+    if (activePersonality === "ALPHA") return ["beast-mode", "savage-quotes"].includes(p.collection);
+    if (activePersonality === "SHADOW") return ["silent-luxury"].includes(p.collection);
+    if (activePersonality === "CREATOR") return ["anime", "ai-tech"].includes(p.collection);
+    return ["mind-mayhem", "xp-mode"].includes(p.collection);
+  }).slice(0, 4);
+
+  const teesList = products.filter(p => p.category === "tshirt" || p.name.toLowerCase().includes("tee") || p.name.toLowerCase().includes("tshirt"));
+  const cargoList = products.filter(p => p.category === "cargo" || p.name.toLowerCase().includes("cargo") || p.name.toLowerCase().includes("pant"));
+  const capList = products.filter(p => p.category === "cap" || p.name.toLowerCase().includes("cap") || p.name.toLowerCase().includes("hat"));
+  
+  const completeTheLook = [];
+  if (teesList.length > 0) completeTheLook.push(teesList[0]);
+  if (cargoList.length > 0) completeTheLook.push(cargoList[0]);
+  if (capList.length > 0) completeTheLook.push(capList[0]);
+  if (teesList.length > 1) completeTheLook.push(teesList[1]);
+
+  const limitedDrops = products
+    .filter(p => p.tag === "LIMITED" || p.tag === "HOT" || p.isLimited || (p.stock && p.stock <= 20))
+    .slice(0, 4);
+
+  const comingSoonItems = [
+    {
+      id: "cs-1",
+      name: "Cyberpunk Tech Hoodie",
+      collection: "anime",
+      price: 2499,
+      description: "Dropping soon. 420 GSM Ultra-heavy cotton fleece, neon decals, cybernetic style.",
+      releaseDate: "OCT 12",
+      image: "/mockup_silent.png"
+    },
+    {
+      id: "cs-2",
+      name: "Tactical Alpha Utility Cargo",
+      collection: "beast-mode",
+      price: 2999,
+      description: "Dropping soon. High-grade tactical canvas, utility snap pockets, relaxed taper fit.",
+      releaseDate: "OCT 28",
+      image: "/mockup_beast.png"
+    }
+  ];
+
+  const handleComingSoonNotify = (itemId, email) => {
+    if (!email || !email.includes("@")) {
+      showToast("Please enter a valid email.", "error");
+      return;
+    }
+    setComingSoonNotifySuccess(prev => ({ ...prev, [itemId]: true }));
+    showToast("You've subscribed for early launch notification! ✦");
+  };
 
   const reviews = [
     { name: "Aarav S.", rating: 5, comment: "The weight of the 220 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
@@ -284,59 +351,210 @@ export default function HomePage() {
         }}
       />
 
-      {/* NEW ARRIVALS */}
-      {newArrivals.length > 0 && (
+      {/* 1. TRENDING TODAY */}
+      {trendingToday.length > 0 && (
         <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FRESH FROM THE PACK</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>NEW ARRIVALS</h2>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>REAL-TIME PACK HEAT</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>TRENDING TODAY</h2>
               </div>
               <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {newArrivals.map(p => <ProductCard key={p.id} product={p} />)}
+              {trendingToday.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </div>
         </section>
       )}
 
-      {/* BEST SELLERS */}
-      {bestSellers.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--obsidian)" }}>
+      {/* 2. AI PICKS */}
+      {aiPicks.length > 0 && (
+        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>POPULAR CHOICES</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>BEST SELLERS</h2>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>✦ RECOMMENDED LOOKS FOR YOU</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>AI PICKS</h2>
               </div>
               <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {bestSellers.map(p => <ProductCard key={p.id} product={p} />)}
+              {aiPicks.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </div>
         </section>
       )}
 
-      {/* HOT DEALS */}
-      {hotDeals.length > 0 && (
+      {/* 3. RECENTLY VIEWED */}
+      {recentlyViewedProducts.length > 0 && (
         <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>LIMITED QUANTITIES</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>HOT DEALS & DEALS</h2>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>CONTINUE BROWSING</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>RECENTLY VIEWED</h2>
               </div>
-              <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {hotDeals.map(p => <ProductCard key={p.id} product={p} />)}
+              {recentlyViewedProducts.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </div>
         </section>
       )}
+
+      {/* 4. SIMILAR TO YOUR STYLE */}
+      {similarToStyle.length > 0 && (
+        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>MATCHING YOUR STYLE ARCHETYPE</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>SIMILAR TO YOUR STYLE</h2>
+              </div>
+              <button className="btn-outline" onClick={() => navigate("/quiz")}>RETAKE QUIZ</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+              {similarToStyle.map(p => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 5. COMPLETE THE LOOK */}
+      {completeTheLook.length > 0 && (
+        <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>COORDINATE YOUR OUTFIT</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>COMPLETE THE LOOK</h2>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+              {completeTheLook.map(p => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 6. LIMITED DROPS */}
+      {limitedDrops.length > 0 && (
+        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SCARCE EDITIONS · HEAVYWEIGHTS</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+              {limitedDrops.map(p => {
+                const pct = Math.max(10, Math.min(90, (p.stock || 12) * 2.2));
+                return (
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column" }}>
+                    <ProductCard product={p} />
+                    <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--gold)", marginBottom: 6 }}>
+                        <span>STOCK STATUS</span>
+                        <span>{p.stock || 12} PCS LEFT</span>
+                      </div>
+                      <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.06)" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #c0392b, var(--gold))" }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 7. COMING SOON */}
+      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 54 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FUTURE DROPS</div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>COMING SOON</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 32 }}>
+            {comingSoonItems.map(item => (
+              <div 
+                key={item.id} 
+                style={{ 
+                  background: "var(--onyx)", 
+                  border: "1px solid var(--smoke)", 
+                  padding: 32, 
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16
+                }}
+              >
+                <div style={{ position: "absolute", top: 20, right: 20, background: "var(--gold)", color: "var(--obsidian)", fontFamily: "var(--font-mono)", fontSize: 10, padding: "2px 8px", letterSpacing: 1 }}>
+                  LAUNCHING {item.releaseDate}
+                </div>
+                <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                  <div style={{ 
+                    width: 100, 
+                    height: 100, 
+                    background: "rgba(255,255,255,0.02)", 
+                    border: "1px dashed var(--smoke)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    position: "relative"
+                  }}>
+                    <Icon name="lock" size={24} color="var(--gold)" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, margin: "0 0 4px 0" }}>{item.name}</h3>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)" }}>EST. PRICE: ₹{item.price}</div>
+                  </div>
+                </div>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--silver)", lineHeight: 1.6, margin: 0 }}>
+                  {item.description}
+                </p>
+                {comingSoonNotifySuccess[item.id] ? (
+                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+                    ✓ Subscribed for early drops access.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                    <input 
+                      type="email" 
+                      placeholder="ENTER EMAIL"
+                      id={`email-${item.id}`}
+                      style={{ 
+                        flex: 1, 
+                        background: "#0a0a0a", 
+                        border: "1px solid var(--smoke)", 
+                        color: "var(--ivory)", 
+                        padding: "8px 12px", 
+                        fontFamily: "var(--font-mono)", 
+                        fontSize: 11,
+                        outline: "none"
+                      }}
+                    />
+                    <button 
+                      className="btn-gold" 
+                      style={{ padding: "8px 16px", fontSize: 10 }}
+                      onClick={() => {
+                        const emailInput = document.getElementById(`email-${item.id}`);
+                        handleComingSoonNotify(item.id, emailInput?.value);
+                      }}
+                    >
+                      NOTIFY ME
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* CUSTOMER REVIEWS */}
       <section style={{ padding: "100px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
