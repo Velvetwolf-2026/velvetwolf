@@ -5,6 +5,7 @@ import { useLanguage } from "./LanguageContext";
 import { useBreakpoint } from "../utils/breakpoints";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
+import { getSupabaseLogoUrl } from "../utils/supabase";
 
 function loadCashfreeScript() {
   return new Promise((resolve, reject) => {
@@ -367,14 +368,14 @@ export default function CheckoutPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }} />
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <img src={icon} alt={label} style={{ width: 20, height: 20, objectFit: "contain" }} />
+                      <img src={getSupabaseLogoUrl(icon)} alt={label} style={{ width: 20, height: 20, objectFit: "contain" }} />
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
                     </div>
                   </div>
                   {val === "card" && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 28, flexWrap: "wrap", marginTop: 8 }}>
                       {/* Visa */}
-                      <img src="/visa.png" alt="Visa" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+                      <img src={getSupabaseLogoUrl("/visa.png")} alt="Visa" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
 
                       {/* Mastercard */}
                       <div style={{
@@ -389,11 +390,11 @@ export default function CheckoutPage() {
                         boxSizing: "border-box",
                         border: "1px solid rgba(0,0,0,0.05)"
                       }}>
-                        <img src="/mastercard.webp" alt="Mastercard" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                        <img src={getSupabaseLogoUrl("/mastercard.webp")} alt="Mastercard" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                       </div>
 
                       {/* RuPay */}
-                      <img src="/rupay.png" alt="RuPay" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+                      <img src={getSupabaseLogoUrl("/rupay.png")} alt="RuPay" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
                     </div>
                   )}
                 </label>
@@ -641,8 +642,8 @@ export default function CheckoutPage() {
                   style={{ width: "100%", padding: 12 }}
                   disabled={expressProcessing || !expressUpiId.includes("@")}
                   onClick={async () => {
-                    const { name, email, phone, address: addr, city, pincode } = address;
-                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !pincode.trim()) {
+                    const { name, email, phone, address: addr, city, district, state, pincode } = address;
+                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !district.trim() || !state.trim() || !pincode.trim()) {
                       showToast("Please fill in your delivery details first.", "error");
                       setShowExpressModal(null);
                       return;
@@ -674,8 +675,8 @@ export default function CheckoutPage() {
                   style={{ width: "100%", padding: 14 }}
                   disabled={expressProcessing}
                   onClick={async () => {
-                    const { name, email, phone, address: addr, city, pincode } = address;
-                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !pincode.trim()) {
+                    const { name, email, phone, address: addr, city, district, state, pincode } = address;
+                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !district.trim() || !state.trim() || !pincode.trim()) {
                       showToast("Please fill in your delivery details first.", "error");
                       setShowExpressModal(null);
                       return;

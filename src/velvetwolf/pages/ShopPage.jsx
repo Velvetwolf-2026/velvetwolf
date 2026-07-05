@@ -100,6 +100,18 @@ export default function ShopPage() {
 
   const filtered = baseList
     .filter(p => !activeCollection || p.collection === activeCollection)
+    .filter(p => {
+      if (!searchQuery || !searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      // Match against name, description, tags, category, or collection
+      return (
+        String(p.name || "").toLowerCase().includes(q) ||
+        String(p.description || "").toLowerCase().includes(q) ||
+        String(p.tag || "").toLowerCase().includes(q) ||
+        String(p.category || "").toLowerCase().includes(q) ||
+        String(p.collection || "").toLowerCase().includes(q)
+      );
+    })
     .filter(p => !selectedCategory || p.category === selectedCategory || p.name.toLowerCase().includes(selectedCategory))
     .filter(p => !selectedGender || p.style === selectedGender || p.gender === selectedGender)
     .filter(p => !selectedColor || p.colors?.includes(selectedColor) || p.colors?.some(c => c.toLowerCase().includes(selectedColor.toLowerCase())))

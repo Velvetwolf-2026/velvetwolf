@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
 import { AppContext } from "../pages/AppContext";
+import { getSupabaseLogoUrl } from "../utils/supabase";
 
 export default function Footer() {
   const { setPage, openShop, showToast } = useContext(AppContext);
@@ -92,7 +93,7 @@ export default function Footer() {
                 style={socialLinkStyle}
                 className="vw-footer-social-link"
               >
-                <img src="/instagram.png" alt="Instagram" style={{ width: 20, height: 20, objectFit: "contain" }} /> Instagram
+                <img src={getSupabaseLogoUrl("/instagram.png")} alt="Instagram" style={{ width: 20, height: 20, objectFit: "contain" }} /> Instagram
               </a>
               <a
                 href="https://www.facebook.com/profile.php?id=61577839378533"
@@ -101,7 +102,7 @@ export default function Footer() {
                 style={socialLinkStyle}
                 className="vw-footer-social-link"
               >
-                <img src="/facebook.png" alt="Facebook" style={{ width: 20, height: 20, objectFit: "contain" }} /> Facebook
+                <img src={getSupabaseLogoUrl("/facebook.png")} alt="Facebook" style={{ width: 20, height: 20, objectFit: "contain" }} /> Facebook
               </a>
               <a
                 href="https://twitter.com/velvetwolf_in"
@@ -110,7 +111,7 @@ export default function Footer() {
                 style={socialLinkStyle}
                 className="vw-footer-social-link"
               >
-                <img src="/x.png" alt="X" style={{ width: 20, height: 20, objectFit: "contain" }} /> X
+                <img src={getSupabaseLogoUrl("/x.png")} alt="X" style={{ width: 20, height: 20, objectFit: "contain" }} /> X
               </a>
             </div>
           </div>

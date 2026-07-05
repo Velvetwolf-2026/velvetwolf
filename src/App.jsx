@@ -224,7 +224,7 @@ export default function VelvetWolf() {
         else guest.push({ ...product, size, color, qty });
         saveGuestCart(guest);
       }
-      showToast("Added to cart ✓");
+      showToast("Added to cart");
     } catch (err) {
       showToast('Could not add to cart. Please try again.', 'error');
       console.error('[addToCart]', err.message);
@@ -445,18 +445,18 @@ export default function VelvetWolf() {
             },
             body: JSON.stringify({ personalityType, quizScore })
           })
-          .then(res => {
-            if (res.ok) return res.json();
-            throw new Error("Sync failed");
-          })
-          .then(() => {
-            localStorage.removeItem("vw_guest_style_profile");
-            showToast(`Synced your personality type (${personalityType}) to your account!`);
-            setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);
-          })
-          .catch(err => {
-            console.error("Failed to sync guest style profile to backend", err);
-          });
+            .then(res => {
+              if (res.ok) return res.json();
+              throw new Error("Sync failed");
+            })
+            .then(() => {
+              localStorage.removeItem("vw_guest_style_profile");
+              showToast(`Synced your personality type (${personalityType}) to your account!`);
+              setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);
+            })
+            .catch(err => {
+              console.error("Failed to sync guest style profile to backend", err);
+            });
         } catch (e) {
           console.error("Failed to parse guest style profile JSON", e);
         }

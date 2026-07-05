@@ -5,7 +5,7 @@ import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
-import CinematicParallaxReveal from "../components/CinematicParallaxReveal";
+import Cinematic3DHero from "../components/Cinematic3DHero";
 import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 
@@ -45,23 +45,10 @@ export default function HomePage() {
     return products.filter(p => targetCollections.includes((p.collection || "").toLowerCase())).slice(0, 4);
   };
   const personalizedProducts = getPersonalizedProducts(activePersonality);
-  const [heroIndex, setHeroIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
   const [newsletterError, setNewsletterError] = useState("");
 
-  const heroSlides = [
-    { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2026", collection: "silent-luxury" },
-    { headline: "BEAST", accent: "MODE ON", sub: "Grind. Hustle. Dominate.", collection: "beast-mode" },
-    { headline: "FOUNDER'S", accent: "MINDSET", sub: "Built for builders. Worn by wolves.", collection: "founder" },
-  ];
-
-  useEffect(() => {
-    const t = setInterval(() => setHeroIndex(i => (i + 1) % heroSlides.length), 5000);
-    return () => clearInterval(t);
-  }, [heroSlides.length]);
-
-  const slide = heroSlides[heroIndex];
   const featured = products.slice(0, 7);
 
   // Grouped products for Dynamic Sections
@@ -73,13 +60,19 @@ export default function HomePage() {
     ? personalizedProducts 
     : products.filter(p => p.tag === "MOST LOVED" || p.collection === "silent-luxury").slice(0, 4);
 
-  const similarToStyle = products.filter(p => {
-    if (activePersonality === "BUILDER") return ["ai-tech", "founder", "silent-luxury"].includes(p.collection);
-    if (activePersonality === "ALPHA") return ["beast-mode", "savage-quotes"].includes(p.collection);
-    if (activePersonality === "SHADOW") return ["silent-luxury"].includes(p.collection);
-    if (activePersonality === "CREATOR") return ["anime", "ai-tech"].includes(p.collection);
-    return ["mind-mayhem", "xp-mode"].includes(p.collection);
-  }).slice(0, 4);
+  const similarToStyle = activePersonality
+    ? products.filter(p => {
+        const isTee = p.category === "tshirt" || p.name.toLowerCase().includes("tee") || p.name.toLowerCase().includes("tshirt");
+        if (!isTee) return false;
+
+        const pType = activePersonality.toUpperCase();
+        if (pType === "BUILDER") return ["ai-tech", "founder", "silent-luxury"].includes(p.collection);
+        if (pType === "ALPHA") return ["beast-mode", "savage-quotes"].includes(p.collection);
+        if (pType === "SHADOW") return ["silent-luxury"].includes(p.collection);
+        if (pType === "CREATOR") return ["anime", "ai-tech"].includes(p.collection);
+        return false;
+      }).slice(0, 4)
+    : [];
 
   const teesList = products.filter(p => p.category === "tshirt" || p.name.toLowerCase().includes("tee") || p.name.toLowerCase().includes("tshirt"));
   const cargoList = products.filter(p => p.category === "cargo" || p.name.toLowerCase().includes("cargo") || p.name.toLowerCase().includes("pant"));
@@ -160,54 +153,8 @@ export default function HomePage() {
   return (
     <div style={{ background: "var(--obsidian)", color: "var(--ivory)", overflowX: "hidden" }}>
       
-      {/* CINEMATIC HERO */}
-      <section style={{ minHeight: "90vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden", paddingTop: "100px", paddingBottom: "80px" }}>
-        
-        {/* Background video loop with fallback image */}
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.18, zIndex: 0 }}
-        >
-          <source src="https://assets.mixkit.co/videos/preview/mixkit-streetwear-fashion-models-walking-42171-large.mp4" type="video/mp4" />
-        </video>
-
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(9,9,9,0.7) 0%, rgba(9,9,9,0.95) 100%)", zIndex: 0 }} />
-        
-        {/* Geometric accents */}
-        <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.08)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: "25%", left: "5%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse", pointerEvents: "none" }} />
-
-        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "40px" }}>
-          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease", flex: "1 1 500px", zIndex: 2 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(56px, 9vw, 110px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
-              <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
-              <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
-            </h1>
-            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
-            <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" onClick={() => openShop(slide.collection)}>
-                {t("discoverNow")}
-              </button>
-              <button className="btn-outline" onClick={() => openShop()}>{t("shop")}</button>
-            </div>
-          </div>
-
-          <div className="hero-mockup-col" style={{ flex: "1 1 400px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2 }}>
-            <CinematicParallaxReveal activeIndex={heroIndex} />
-          </div>
-
-          {/* Hero slide indicators */}
-          <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
-            {heroSlides.map((_, i) => (
-              <div key={i} onClick={() => setHeroIndex(i)} style={{ width: i === heroIndex ? 32 : 8, height: 2, background: i === heroIndex ? "var(--gold)" : "var(--smoke)", cursor: "pointer", transition: "all 0.4s ease" }} />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* CINEMATIC 3D HERO SHOWCASE */}
+      <Cinematic3DHero />
 
       {/* MARQUEE */}
       <div style={{ background: "var(--gold)", padding: "12px 0", overflow: "hidden" }}>
@@ -337,19 +284,7 @@ export default function HomePage() {
         </section>
       )}
       {/* MOSAIC CAROUSEL */}
-      <MosaicCarousel
-        onCategoryClick={(cat) => {
-          const CATEGORY_TO_COLLECTION_MAP = {
-            fitness: "beast-mode",
-            music: "anime",
-            food: "savage-quotes",
-            travel: "ai-tech",
-            photography: "silent-luxury",
-          };
-          const collectionId = CATEGORY_TO_COLLECTION_MAP[cat.id] || cat.id;
-          openShop(collectionId);
-        }}
-      />
+      <MosaicCarousel />
 
       {/* 1. TRENDING TODAY */}
       {trendingToday.length > 0 && (
@@ -422,7 +357,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* 5. COMPLETE THE LOOK */}
+      {/* 5. COMPLETE THE LOOK (Commented out as requested)
       {completeTheLook.length > 0 && (
         <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
@@ -438,6 +373,7 @@ export default function HomePage() {
           </div>
         </section>
       )}
+      */}
 
       {/* 6. LIMITED DROPS */}
       {limitedDrops.length > 0 && (
@@ -587,8 +523,11 @@ export default function HomePage() {
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>STYLE BOOK</div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
-            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>Tag us <span style={{ color: "var(--gold)" }}>@velvetwolf.in</span> on Instagram to get featured.</p>
+            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>
+              Tag us <a href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: "bold" }}>@velvetwolf.in</a> on Instagram to get featured.
+            </p>
           </div>
+          {/* Instagram Post Grid Hidden as requested
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
             {instagramPosts.map((post, idx) => (
               <div 
@@ -632,6 +571,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          */}
         </div>
       </section>
 
