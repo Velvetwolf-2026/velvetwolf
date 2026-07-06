@@ -3,7 +3,6 @@ import { S, PageHeader } from "../styles/shared";
 import { THEME } from "../utils/constants";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
-import { FaInstagram, FaFacebookF, FaTwitter } from "react-icons/fa";
 
 const { gold, goldLight, surface, border, muted, text } = THEME;
 
@@ -19,9 +18,9 @@ const CONTACTS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", icon: <FaInstagram />, href: "https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" },
-  { label: "Facebook", icon: <FaFacebookF />, href: "https://www.facebook.com/profile.php?id=61577839378533" },
-  { label: "Twitter", icon: <FaTwitter />, href: "https://twitter.com/velvetwolf_in" },
+  { label: "Instagram", icon: <img src="/instagram.png" alt="Instagram" style={{ width: 16, height: 16, objectFit: "contain" }} />, href: "https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" },
+  { label: "Facebook", icon: <img src="/facebook.png" alt="Facebook" style={{ width: 16, height: 16, objectFit: "contain" }} />, href: "https://www.facebook.com/profile.php?id=61577839378533" },
+  { label: "X", icon: <img src="/x.png" alt="X" style={{ width: 16, height: 16, objectFit: "contain" }} />, href: "https://twitter.com/velvetwolf_in" },
 ];
 
 const SUBJECTS = [

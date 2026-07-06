@@ -14,6 +14,7 @@ export const signupSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters")
     .optional(),
+  recaptchaToken: z.string().optional(),
 });
 
 export const loginSchema = z.object({
@@ -22,6 +23,7 @@ export const loginSchema = z.object({
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
   password: z.string().optional(),
+  recaptchaToken: z.string().optional(),
 });
 
 export const verifyOtpSchema = z.object({

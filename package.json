@@ -23,7 +23,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.6.0",
-    "react-router-dom": "^7.13.1"
+    "react-router-dom": "^7.13.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -52,5 +53,11 @@
   "bugs": {
     "url": "https://github.com/Velvetwolf-2026/velvetwolf/issues"
   },
-  "homepage": "https://github.com/Velvetwolf-2026/velvetwolf#readme"
+  "homepage": "https://github.com/Velvetwolf-2026/velvetwolf#readme",
+  "allowScripts": {
+    "@firebase/util@1.15.1": true,
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.1": true,
+    "protobufjs@7.6.4": true
+  }
 }

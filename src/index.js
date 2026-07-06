@@ -9,7 +9,6 @@
 //Login and signup pages
 export { ForgetPassword } from "./velvetwolf/pages/ForgetPassword";
 export { Login } from "./velvetwolf/pages/Login";
-export { Signup } from "./velvetwolf/pages/Signup";
 export { AccountPage } from "./velvetwolf/pages/AccountPage";
 
 

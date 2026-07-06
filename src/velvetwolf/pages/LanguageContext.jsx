@@ -17,7 +17,7 @@ const translations = {
     account: "Account",
     cart: "Cart",
     wishlist: "Wishlist",
-    searchPlaceholder: "Search streetwear...",
+    searchPlaceholder: "Search: 'I need something for the gym', 'oversized anime tees'...",
     emptyCart: "Your cart is empty",
     continueShopping: "Continue shopping",
 
@@ -96,7 +96,7 @@ const translations = {
     account: "खाता",
     cart: "कार्ट",
     wishlist: "इच्छा सूची",
-    searchPlaceholder: "सर्च करें...",
+    searchPlaceholder: "सर्च: 'मुझे जिम के लिए कुछ चाहिए', 'ओवरसाइज्ड एनीमे टीज'...",
     emptyCart: "आपकी कार्ट खाली है",
     continueShopping: "खरीदारी जारी रखें",
 
@@ -175,7 +175,7 @@ const translations = {
     account: "கணக்கு",
     cart: "கூடை",
     wishlist: "விருப்பப் பட்டியல்",
-    searchPlaceholder: "தேடுக...",
+    searchPlaceholder: "தேடுக: 'ஜிம்மிற்கு ஏதாவது தேவை', 'ஓவர்சைஸ் அனிமே டீஸ்'...",
     emptyCart: "உங்கள் கூடை காலியாக உள்ளது",
     continueShopping: "தொடர்ந்து ஷாப்பிங் செய்ய",
 

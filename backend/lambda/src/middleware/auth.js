@@ -37,6 +37,31 @@ export function requireAuth(event) {
     throw new ApiError(401, "Authentication required.");
   }
 
+  // Determine if authentication was performed via HttpOnly cookie
+  const usedCookie = !!cookieHeader && cookieHeader.split(";").some((c) => c.trim().startsWith("token="));
+
+  const method = event.requestContext?.http?.method || event.httpMethod || "GET";
+  if (usedCookie && ["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+    const csrfHeaderToken = event.headers?.["x-csrf-token"] || event.headers?.["X-CSRF-Token"] || "";
+    let csrfCookieToken = "";
+    if (cookieHeader) {
+      const match = cookieHeader.split(";").find((c) => c.trim().startsWith("csrf_token="));
+      if (match) {
+        csrfCookieToken = match.split("=")[1]?.trim();
+      }
+    }
+
+    if (!csrfCookieToken || !csrfHeaderToken || csrfCookieToken !== csrfHeaderToken) {
+      logWarn("CSRF token verification failed", {
+        service: "auth-middleware",
+        route: event.rawPath || event.path,
+        hasCookie: !!csrfCookieToken,
+        hasHeader: !!csrfHeaderToken,
+      });
+      throw new ApiError(403, "CSRF verification failed.");
+    }
+  }
+
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {

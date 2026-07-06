@@ -14,3 +14,20 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
     detectSessionInUrl: true,      // picks up OAuth redirect tokens
   },
 });
+
+/**
+ * Gets the public URL for a logo or image stored in the "logos" folder of the Supabase bucket.
+ * @param {string} localPath - The local path of the image (e.g. '/vw-logo.png' or '/LOGOS/CAR BRAND LOGOS/Benz.png').
+ * @returns {string} The public Supabase URL for the image.
+ */
+export function getSupabaseLogoUrl(localPath) {
+  if (!localPath) return "";
+  // Strip starting slash and any existing Logo/logos prefix
+  const cleanPath = localPath.replace(/^\//, '').replace(/^logos?\//i, '');
+  
+  // Ensure it targets the "Logo/" folder inside the "product-images" bucket (capital L to match bucket)
+  const finalPath = `Logo/${cleanPath}`;
+  
+  const { data } = supabase.storage.from("product-images").getPublicUrl(finalPath);
+  return data.publicUrl;
+}

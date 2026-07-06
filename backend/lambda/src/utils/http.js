@@ -63,19 +63,45 @@ export function logWarn(message, context = {}) { writeLog("warn", message, conte
 export function logError(message, context = {}) { writeLog("error", message, context); }
 
 export function jsonResponse(statusCode, payload, extraHeaders = {}, event) {
-  return {
+  const { "Set-Cookie": setCookie, ...headers } = extraHeaders;
+  const cookies = [];
+  if (setCookie) {
+    if (Array.isArray(setCookie)) cookies.push(...setCookie);
+    else cookies.push(setCookie);
+  }
+
+  const response = {
     statusCode,
-    headers: { "Content-Type": "application/json", ...getCorsHeaders(event), ...extraHeaders },
+    headers: { "Content-Type": "application/json", ...getCorsHeaders(event), ...headers },
     body: JSON.stringify(payload),
   };
+
+  if (cookies.length > 0) {
+    response.cookies = cookies;
+  }
+
+  return response;
 }
 
 export function redirectResponse(location, statusCode = 302, extraHeaders = {}, event) {
-  return {
+  const { "Set-Cookie": setCookie, ...headers } = extraHeaders;
+  const cookies = [];
+  if (setCookie) {
+    if (Array.isArray(setCookie)) cookies.push(...setCookie);
+    else cookies.push(setCookie);
+  }
+
+  const response = {
     statusCode,
-    headers: { Location: location, ...getCorsHeaders(event), ...extraHeaders },
+    headers: { Location: location, ...getCorsHeaders(event), ...headers },
     body: "",
   };
+
+  if (cookies.length > 0) {
+    response.cookies = cookies;
+  }
+
+  return response;
 }
 
 export const getCorsHeaders = (event) => {
@@ -93,7 +119,7 @@ export const getCorsHeaders = (event) => {
 
   let selectedOrigin = "";
   if (requestOrigin) {
-    if (configuredOrigins.length === 0 || configuredOrigins.includes(requestOrigin) || requestOrigin.startsWith("http://localhost:")) {
+    if (configuredOrigins.length === 0 || configuredOrigins.includes(requestOrigin) || requestOrigin.startsWith("http://localhost:") || requestOrigin.startsWith("http://127.0.0.1:")) {
       selectedOrigin = requestOrigin;
     }
   } else if (configuredOrigins.length >= 1) {

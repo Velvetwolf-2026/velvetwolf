@@ -9,5 +9,8 @@ export default defineConfig({
     // duplicate module instances caused by barrel re-exports or circular deps.
     dedupe: ['react', 'react-dom'],
   },
+  server: {
+    host: '127.0.0.1'
+  }
 })
 

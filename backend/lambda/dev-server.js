@@ -44,7 +44,15 @@ const server = http.createServer(async (req, res) => {
   try {
     const result = await handler(event);
 
-    res.writeHead(result.statusCode || 200, result.headers || {});
+    if (result.headers) {
+      for (const [key, value] of Object.entries(result.headers)) {
+        res.setHeader(key, value);
+      }
+    }
+    if (result.cookies && Array.isArray(result.cookies)) {
+      res.setHeader("Set-Cookie", result.cookies);
+    }
+    res.writeHead(result.statusCode || 200);
     res.end(result.body || "");
   } catch (err) {
     console.error("[dev-server] Unhandled error:", err);

@@ -4,8 +4,21 @@ export default function CinematicParallaxReveal({ activeIndex }) {
   const containerRef = useRef(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const [autoPos, setAutoPos] = useState({ x: 0, y: 0 });
   const autoTime = useRef(0);
+
+  useEffect(() => {
+    if (!isHovered) {
+      setIsExiting(true);
+      const timer = setTimeout(() => {
+        setIsExiting(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    } else {
+      setIsExiting(false);
+    }
+  }, [isHovered]);
 
   // Auto-orbit drift when the mouse is not hovering
   useEffect(() => {
@@ -108,7 +121,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
           backgroundSize: "40px 40px",
           backgroundPosition: "center",
           transform: `translate3d(${activeX * -25}px, ${activeY * -25}px, 0)`,
-          transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
           zIndex: 1,
         }}
       />
@@ -124,7 +137,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
           color: "transparent",
           WebkitTextStroke: "1px rgba(255, 255, 255, 0.04)",
           transform: `translate3d(${activeX * -45}px, ${activeY * -45}px, 0)`,
-          transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
           pointerEvents: "none",
           zIndex: 2,
           animation: "fadeIn 1s ease",
@@ -143,7 +156,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
           height: "70%",
           border: "1px dashed rgba(201, 168, 76, 0.15)",
           transform: `translate3d(${activeX * 12}px, ${activeY * 12}px, 0)`,
-          transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
           pointerEvents: "none",
           zIndex: 3,
         }}
@@ -159,7 +172,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
           width: "1px",
           background: "linear-gradient(transparent, var(--gold), transparent)",
           opacity: 0.35,
-          transition: isHovered ? "none" : "left 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isExiting ? "left 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
           zIndex: 4,
           pointerEvents: "none",
         }}
@@ -190,7 +203,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
             left: `calc(50% + ${activeX * 120}px)`,
             top: `calc(50% + ${activeY * 120}px)`,
             transform: "translate(-50%, -50%)",
-            transition: isHovered ? "none" : "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+            transition: isExiting ? "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 1,
             pointerEvents: "none",
           }}
@@ -208,7 +221,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
             left: `calc(50% + ${activeX * 200}px)`,
             top: `calc(50% + ${activeY * 200}px)`,
             transform: "translate(-50%, -50%)",
-            transition: isHovered ? "none" : "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+            transition: isExiting ? "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 10,
             pointerEvents: "none",
             background: "transparent",
@@ -224,7 +237,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
             justifyContent: "center",
             alignItems: "center",
             clipPath: `circle(125px at calc(50% + ${activeX * 200}px) calc(50% + ${activeY * 200}px))`,
-            transition: isHovered ? "none" : "clip-path 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+            transition: isExiting ? "clip-path 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 8,
           }}
         >
@@ -236,7 +249,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
               height: "100%",
               objectFit: "contain",
               transform: `translate3d(${activeX * 35}px, ${activeY * 35}px, 0) scale(1.08)`,
-              transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+              transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
               filter: "drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6))",
             }}
           />
@@ -262,7 +275,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
               height: "100%",
               objectFit: "contain",
               transform: `translate3d(${activeX * 10}px, ${activeY * 10}px, 0) scale(1.05)`,
-              transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+              transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
               filter: "grayscale(100%) brightness(30%)",
             }}
           />
@@ -287,7 +300,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
           letterSpacing: "3px",
           boxShadow: `0 10px 25px rgba(0,0,0,0.6), 0 0 15px ${current.shadow}`,
           transform: `translate3d(${activeX * 45}px, ${activeY * 40}px, 0)`,
-          transition: isHovered ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isExiting ? "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
           animation: "fadeUp 0.6s cubic-bezier(0.25, 1, 0.5, 1)",
         }}
       >

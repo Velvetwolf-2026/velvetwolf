@@ -3,9 +3,14 @@ import { AppContext } from "./AppContext";
 import { getUserOrders } from "../utils/order";
 import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
 import { apiUrl } from "../utils/api";
+import Icon from "../components/Icon";
 
 export function AccountPage() {
-  const { user, setUser, setPage, wishlist, cart, signOutUser, showToast } = useContext(AppContext);
+  const { 
+    user, setUser, setPage, wishlist, cart, signOutUser, showToast,
+    notifications, markAllNotificationsRead, userPreferences, saveUserPreferences
+  } = useContext(AppContext);
+
   const [tab, setTab] = useState("overview");
   const [userOrders, setUserOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -133,10 +138,6 @@ export function AccountPage() {
     try {
       const result = await verifyEmailUpdateOtp(newEmail.trim(), emailOtp);
       
-      if (result.token) {
-        localStorage.setItem("token", result.token);
-      }
-      
       const nextUser = {
         ...user,
         ...result.user,
@@ -240,9 +241,17 @@ export function AccountPage() {
               <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "#cac7c7", marginTop: 4 }}>{user.email}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 0, flexWrap: "wrap" }}>
-            {[["overview", "OVERVIEW"], ["orders", "ORDERS"], ["wishlist", "SAVED"], ["settings", "SETTINGS"], ["style", "STYLE PROFILE"]].map(([t, label]) => (
-              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 20px", cursor: "pointer" }}>{label}</button>
+          <div style={{ display: "flex", gap: 0, flexWrap: "wrap", overflowX: "auto", scrollbarWidth: "none" }} className="vw-mobile-swipe-shelf">
+            {[
+              ["overview", "OVERVIEW"], 
+              ["orders", "ORDERS"], 
+              ["wishlist", "SAVED"], 
+              ["notifications", "ALERTS"],
+              ["preferences", "FIT DNA"],
+              ["settings", "SETTINGS"], 
+              ["style", "STYLE PROFILE"]
+            ].map(([t, label]) => (
+              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 20px", cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>
             ))}
           </div>
         </div>
@@ -251,11 +260,24 @@ export function AccountPage() {
       <div className="page-content-pad" style={{ maxWidth: 1200, margin: "40px auto", padding: "0 40px" }}>
         {tab === "overview" && (
           <div>
-            <div className="account-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 40 }}>
-              {[["ORDERS", userOrders.length], ["WISHLIST", wishlist.length], ["CART ITEMS", cart.length]].map(([label, val]) => (
-                <div className="vw-account-stat-card" key={label} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 48, color: "var(--gold)" }}>{val}</div>
+            <div className="account-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginBottom: 40 }}>
+              {[
+                ["ORDERS", userOrders.length, "orders"], 
+                ["WISHLIST", wishlist.length, "wishlist"], 
+                ["CART ITEMS", cart.length, "cart"],
+                ["NOTIFICATIONS", notifications.filter(n => n.unread).length, "notifications"],
+                ["FIT DNA SETTINGS", "", "preferences"]
+              ].map(([label, val, targetTab]) => (
+                <div 
+                  className="vw-account-stat-card" 
+                  key={label} 
+                  onClick={() => targetTab === "cart" ? setPage("cart") : setTab(targetTab)}
+                  style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px", cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+                >
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 44, color: "var(--gold)" }}>{val !== "" ? val : "➔"}</div>
                 </div>
               ))}
             </div>
@@ -306,7 +328,6 @@ export function AccountPage() {
         {tab === "wishlist" && (
           <div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>SAVED PIECES</h2>
-            {/* Wishlist products grid - uses context.wishlist */}
             <div className="vw-account-wishlist-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
               {wishlist.map(p => (
                 <div key={p.id} style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "20px", textAlign: "center" }}>
@@ -316,6 +337,152 @@ export function AccountPage() {
               ))}
             </div>
             {wishlist.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "var(--silver)", fontFamily: "'Roboto', sans-serif", fontStyle: "italic", fontSize: 18 }}>Your wishlist is empty</div>}
+          </div>
+        )}
+
+        {tab === "notifications" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, margin: 0 }}>NOTIFICATIONS</h2>
+              <button 
+                className="btn-outline" 
+                onClick={() => {
+                  markAllNotificationsRead();
+                  showToast("All notifications marked as read.");
+                }}
+                style={{ padding: "8px 16px", fontSize: 10 }}
+              >
+                MARK ALL AS READ
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {notifications.map(n => (
+                <div key={n.id} style={{ background: "var(--graphite)", border: "1px solid " + (n.unread ? "var(--gold)" : "var(--smoke)"), padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
+                  <div style={{ fontSize: 20 }}>
+                    {n.category === "restock" ? "📦" : n.category === "price-drop" ? "🏷️" : "🐺"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                      <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ivory)", margin: "0 0 6px 0" }}>{n.title}</h4>
+                      <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ash)" }}>{n.time}</span>
+                    </div>
+                    <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", margin: 0, lineHeight: 1.5 }}>{n.message}</p>
+                  </div>
+                  {n.unread && (
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", alignSelf: "center" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab === "preferences" && (
+          <div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>FIT DNA PREFERENCES</h2>
+            <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, maxWidth: 600 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                {/* Fits */}
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>PREFERRED FIT STYLE</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {["Regular", "Oversized", "Ultra-Oversized"].map(f => {
+                      const isActive = userPreferences?.fits?.includes(f);
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => {
+                            const nextFits = isActive
+                              ? userPreferences.fits.filter(fit => fit !== f)
+                              : [...(userPreferences.fits || []), f];
+                            saveUserPreferences({ ...userPreferences, fits: nextFits });
+                          }}
+                          style={{
+                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
+                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
+                            color: isActive ? "var(--obsidian)" : "var(--silver)",
+                            padding: "10px 20px",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {f.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sizes */}
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>STREETWEAR SIZES</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {["XS", "S", "M", "L", "XL", "XXL"].map(s => {
+                      const isActive = userPreferences?.sizes?.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            const nextSizes = isActive
+                              ? userPreferences.sizes.filter(sz => sz !== s)
+                              : [...(userPreferences.sizes || []), s];
+                            saveUserPreferences({ ...userPreferences, sizes: nextSizes });
+                          }}
+                          style={{
+                            width: 48,
+                            height: 48,
+                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
+                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
+                            color: isActive ? "var(--obsidian)" : "var(--silver)",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>FAVORITE CATEGORIES</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {["tee", "cargo", "hoodie", "jacket"].map(c => {
+                      const isActive = userPreferences?.categories?.includes(c);
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            const nextCats = isActive
+                              ? userPreferences.categories.filter(cat => cat !== c)
+                              : [...(userPreferences.categories || []), c];
+                            saveUserPreferences({ ...userPreferences, categories: nextCats });
+                          }}
+                          style={{
+                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
+                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
+                            color: isActive ? "var(--obsidian)" : "var(--silver)",
+                            padding: "10px 20px",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {c.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -341,12 +508,12 @@ export function AccountPage() {
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       <div style={{ flex: 1, position: "relative" }}>
                         <input
-                          className="input-dark"
-                          type="email"
-                          value={isMobileEmail ? "No email linked" : settings.email}
-                          readOnly
-                          placeholder="EMAIL"
-                          style={{ width: "100%", opacity: 0.75, cursor: "not-allowed", border: isMobileEmail ? "1px dashed var(--gold)" : "1px solid var(--smoke)" }}
+                           className="input-dark"
+                           type="email"
+                           value={isMobileEmail ? "No email linked" : settings.email}
+                           readOnly
+                           placeholder="EMAIL"
+                           style={{ width: "100%", opacity: 0.75, cursor: "not-allowed", border: isMobileEmail ? "1px dashed var(--gold)" : "1px solid var(--smoke)" }}
                         />
                         {isMobileEmail && (
                           <span className="badge" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(201, 168, 76, 0.15)", color: "var(--gold)", border: "1px solid var(--gold)", fontSize: 8 }}>
@@ -504,26 +671,30 @@ export function AccountPage() {
               <div style={{ textAlign: "center", padding: "60px 24px", background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--silver)", marginBottom: 12 }}>AESTHETIC DNA UNDISCOVERED</div>
                 <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
-                  Take our 5-question interactive quiz to discover your Wolf Type (Builder, Alpha, Creator, or Shadow) and unlock tailored storefront panels, custom AI filters, and personalized recommendations.
+                  Take our 5-question interactive quiz to discover your Wolf Type (Midnight Minimalist, Silent Hunter, Creative Maverick, Alpha Wolf, or Urban Rebel) and unlock tailored storefront panels, custom AI filters, and personalized recommendations.
                 </p>
                 <button className="btn-gold" onClick={() => setPage("quiz")}>TAKE THE QUIZ</button>
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
-                {/* Profile Card */}
-                <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, display: "flex", flexDirection: "column", justifycontent: "space-between" }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>
                       ACTIVE PROFILE ARCHETYPE
                     </div>
                     <h3 className="gold-text" style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 3, margin: "0 0 16px 0", lineHeight: 1.1 }}>
-                      THE {user.personality_type.toUpperCase()} WOLF
+                      {user.personality_type.toUpperCase() === "BUILDER" ? "MIDNIGHT MINIMALIST" :
+                       user.personality_type.toUpperCase() === "ALPHA" ? "ALPHA WOLF" :
+                       user.personality_type.toUpperCase() === "SHADOW" ? "SILENT HUNTER" :
+                       user.personality_type.toUpperCase() === "CREATOR" ? "CREATIVE MAVERICK" :
+                       user.personality_type.toUpperCase() === "REBEL" ? "URBAN REBEL" : user.personality_type.toUpperCase()}
                     </h3>
                     <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", lineHeight: 1.6, marginBottom: 20 }}>
-                      {user.personality_type.toUpperCase() === "BUILDER" && "Focused. Disciplined. Always creating. You thrive on structure, design, and building the future. Your style is functional, technical, and precise."}
+                      {user.personality_type.toUpperCase() === "BUILDER" && "Focused on clean structures, sharp tailoring, and minimal noise. Your style is monochromatic and details-driven, focusing on weight and silhouette."}
                       {user.personality_type.toUpperCase() === "ALPHA" && "Ambitious. Powerful. Leading the pack. You represent power, persistence, and presence. Your style commands attention."}
-                      {user.personality_type.toUpperCase() === "SHADOW" && "Mysterious. Calculated. Quiet luxury. You operate in the background with silent strength. Your style is monochromatic and premium."}
-                      {user.personality_type.toUpperCase() === "CREATOR" && "Artistic. Experimental. Cultured. You are constantly redefining aesthetics. Your style is expressive, oversized, and boundary-pushing."}
+                      {user.personality_type.toUpperCase() === "SHADOW" && "Mysterious. Calculated. Pure luxury. You operate in the background with silent strength, raw material quality, drop shoulders, and clean draping."}
+                      {user.personality_type.toUpperCase() === "CREATOR" && "Artistic. Experimental. Boundary-pushing. You constantly redefine aesthetics, expressing yourself through illustrations, unique proportions, and techwear."}
+                      {user.personality_type.toUpperCase() === "REBEL" && "Raw. Disruptive. Unfiltered. You break the mold. You represent raw energy, utility styling, baggy cargo fits, and distressed fleece."}
                     </p>
                   </div>
                   
@@ -541,7 +712,6 @@ export function AccountPage() {
                   </div>
                 </div>
 
-                {/* Score Breakdown & Privacy */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   {styleProfile?.quiz_score && (
                     <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28 }}>
@@ -564,7 +734,6 @@ export function AccountPage() {
                     </div>
                   )}
 
-                  {/* Privacy Options */}
                   <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 28 }}>
                     <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>
                       PERSONALIZATION & PRIVACY

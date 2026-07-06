@@ -1,6 +1,7 @@
 import * as profileService from "../services/profile.service.js";
 import { ApiError, jsonResponse } from "../utils/http.js";
 import { requireAuth } from "../middleware/auth.js";
+import * as authService from "../services/auth.service.js";
 
 export async function getProfile(query, event) {
   const user = requireAuth(event);
@@ -40,7 +41,16 @@ export async function verifyEmailOtp(body, event) {
   if (!otp) throw new ApiError(400, "OTP is required.");
 
   const result = await profileService.verifyEmailUpdateOtp({ userId: user.id, newEmail, otp });
-  return jsonResponse(200, result, {}, event);
+  const headers = {};
+  if (result.token) {
+    const csrfToken = authService.generateCsrfToken();
+    result.csrfToken = csrfToken;
+    headers["Set-Cookie"] = [
+      authService.getAuthCookieHeader(result.token),
+      authService.getCsrfCookieHeader(csrfToken)
+    ];
+  }
+  return jsonResponse(200, result, headers, event);
 }
 
 export async function getStyleProfile(query, event) {

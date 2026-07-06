@@ -5,18 +5,33 @@ import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
-import CinematicParallaxReveal from "../components/CinematicParallaxReveal";
+import Cinematic3DHero from "../components/Cinematic3DHero";
 import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
+import { useBreakpoint } from "../utils/breakpoints";
 
 export default function HomePage() {
-  const { products, openShop, user } = useContext(AppContext);
+  const { products, openShop, user, showToast } = useContext(AppContext);
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { isMobileOrTablet } = useBreakpoint();
 
   const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
   const guestProfile = guestProfileRaw ? JSON.parse(guestProfileRaw) : null;
   const activePersonality = user?.personality_type || guestProfile?.personalityType;
+
+  const lastViewedCategory = localStorage.getItem("vw_last_viewed_category") || "";
+
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
+  const [comingSoonNotifySuccess, setComingSoonNotifySuccess] = useState({});
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("vw_recently_viewed") || "[]");
+    if (stored.length > 0) {
+      const matched = products.filter(p => stored.includes(p.slug) || stored.includes(p.id));
+      setRecentlyViewedProducts(matched.slice(0, 4));
+    }
+  }, [products]);
 
   const getPersonalizedProducts = (type) => {
     if (!type) return [];
@@ -30,33 +45,125 @@ export default function HomePage() {
       targetCollections = ["silent-luxury"];
     } else if (pType === "CREATOR") {
       targetCollections = ["anime", "ai-tech"];
+    } else if (pType === "REBEL") {
+      targetCollections = ["savage-quotes", "anime"];
     }
     return products.filter(p => targetCollections.includes((p.collection || "").toLowerCase())).slice(0, 4);
   };
   const personalizedProducts = getPersonalizedProducts(activePersonality);
-  const [heroIndex, setHeroIndex] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
   const [newsletterError, setNewsletterError] = useState("");
 
-  const heroSlides = [
-    { headline: "WEAR THE", accent: "SILENCE", sub: "Silent Luxury Collection - AW 2026", collection: "silent-luxury" },
-    { headline: "BEAST", accent: "MODE ON", sub: "Grind. Hustle. Dominate.", collection: "beast-mode" },
-    { headline: "FOUNDER'S", accent: "MINDSET", sub: "Built for builders. Worn by wolves.", collection: "founder" },
-  ];
+  const continueShoppingProducts = lastViewedCategory
+    ? products.filter(p => p.category === lastViewedCategory).slice(0, 4)
+    : [];
 
-  useEffect(() => {
-    const t = setInterval(() => setHeroIndex(i => (i + 1) % heroSlides.length), 5000);
-    return () => clearInterval(t);
-  }, [heroSlides.length]);
+  const newDrops = products.filter(p => p.tag === "NEW" || p.is_new).length > 0
+    ? products.filter(p => p.tag === "NEW" || p.is_new).slice(0, 4)
+    : products.slice(-4);
 
-  const slide = heroSlides[heroIndex];
+  const renderProductShelf = (items) => {
+    if (isMobileOrTablet) {
+      return (
+        <div 
+          style={{
+            display: "flex",
+            gap: 16,
+            overflowX: "auto",
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+            padding: "8px 4px 20px",
+            margin: "0 -20px",
+            paddingLeft: 20,
+            paddingRight: 20,
+            scrollbarWidth: "none"
+          }}
+          className="vw-mobile-swipe-shelf"
+        >
+          {items.map(p => (
+            <div key={p.id} style={{ flex: "0 0 240px", scrollSnapAlign: "start" }}>
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+        {items.map(p => <ProductCard key={p.id} product={p} />)}
+      </div>
+    );
+  };
+
   const featured = products.slice(0, 7);
 
-  // Grouped products
-  const newArrivals = products.filter(p => p.tag === "NEW" || p.is_new_arrival).slice(0, 4);
-  const bestSellers = products.filter(p => p.tag === "BESTSELLER" || p.tag === "MOST LOVED" || p.is_best_seller).slice(0, 4);
-  const hotDeals = products.filter(p => (p.originalPrice && p.originalPrice > p.price) || p.tag === "HOT" || p.tag === "LIMITED").slice(0, 4);
+  // Grouped products for Dynamic Sections
+  const trendingToday = products
+    .filter(p => p.tag === "BESTSELLER" || p.tag === "TRENDING" || p.is_best_seller || p.rating >= 4.8)
+    .slice(0, 4);
+
+  const aiPicks = personalizedProducts.length > 0 
+    ? personalizedProducts 
+    : products.filter(p => p.tag === "MOST LOVED" || p.collection === "silent-luxury").slice(0, 4);
+
+  const similarToStyle = activePersonality
+    ? products.filter(p => {
+        const isTee = p.category === "tshirt" || p.name.toLowerCase().includes("tee") || p.name.toLowerCase().includes("tshirt");
+        if (!isTee) return false;
+
+        const pType = activePersonality.toUpperCase();
+        if (pType === "BUILDER") return ["ai-tech", "founder", "silent-luxury"].includes(p.collection);
+        if (pType === "ALPHA") return ["beast-mode", "savage-quotes"].includes(p.collection);
+        if (pType === "SHADOW") return ["silent-luxury"].includes(p.collection);
+        if (pType === "CREATOR") return ["anime", "ai-tech"].includes(p.collection);
+        return false;
+      }).slice(0, 4)
+    : [];
+
+  const teesList = products.filter(p => p.category === "tshirt" || p.name.toLowerCase().includes("tee") || p.name.toLowerCase().includes("tshirt"));
+  const cargoList = products.filter(p => p.category === "cargo" || p.name.toLowerCase().includes("cargo") || p.name.toLowerCase().includes("pant"));
+  const capList = products.filter(p => p.category === "cap" || p.name.toLowerCase().includes("cap") || p.name.toLowerCase().includes("hat"));
+  
+  const completeTheLook = [];
+  if (teesList.length > 0) completeTheLook.push(teesList[0]);
+  if (cargoList.length > 0) completeTheLook.push(cargoList[0]);
+  if (capList.length > 0) completeTheLook.push(capList[0]);
+  if (teesList.length > 1) completeTheLook.push(teesList[1]);
+
+  const limitedDrops = products
+    .filter(p => p.tag === "LIMITED" || p.tag === "HOT" || p.isLimited || (p.stock && p.stock <= 20))
+    .slice(0, 4);
+
+  const comingSoonItems = [
+    {
+      id: "cs-1",
+      name: "Cyberpunk Tech Hoodie",
+      collection: "anime",
+      price: 2499,
+      description: "Dropping soon. 420 GSM Ultra-heavy cotton fleece, neon decals, cybernetic style.",
+      releaseDate: "OCT 12",
+      image: "/mockup_silent.png"
+    },
+    {
+      id: "cs-2",
+      name: "Tactical Alpha Utility Cargo",
+      collection: "beast-mode",
+      price: 2999,
+      description: "Dropping soon. High-grade tactical canvas, utility snap pockets, relaxed taper fit.",
+      releaseDate: "OCT 28",
+      image: "/mockup_beast.png"
+    }
+  ];
+
+  const handleComingSoonNotify = (itemId, email) => {
+    if (!email || !email.includes("@")) {
+      showToast("Please enter a valid email.", "error");
+      return;
+    }
+    setComingSoonNotifySuccess(prev => ({ ...prev, [itemId]: true }));
+    showToast("You've subscribed for early launch notification! ✦");
+  };
 
   const reviews = [
     { name: "Aarav S.", rating: 5, comment: "The weight of the 220 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
@@ -93,63 +200,164 @@ export default function HomePage() {
   return (
     <div style={{ background: "var(--obsidian)", color: "var(--ivory)", overflowX: "hidden" }}>
       
-      {/* CINEMATIC HERO */}
-      <section style={{ minHeight: "90vh", position: "relative", display: "flex", alignItems: "center", overflow: "hidden", paddingTop: "100px", paddingBottom: "80px" }}>
-        
-        {/* Background video loop with fallback image */}
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.18, zIndex: 0 }}
-        >
-          <source src="https://assets.mixkit.co/videos/preview/mixkit-streetwear-fashion-models-walking-42171-large.mp4" type="video/mp4" />
-        </video>
+      {/* CINEMATIC 3D HERO SHOWCASE */}
+      <Cinematic3DHero />
 
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(9,9,9,0.7) 0%, rgba(9,9,9,0.95) 100%)", zIndex: 0 }} />
-        
-        {/* Geometric accents */}
-        <div style={{ position: "absolute", top: "25%", right: "5%", width: 400, height: 400, border: "1px solid rgba(201,168,76,0.08)", transform: "rotate(45deg)", animation: "float 6s ease-in-out infinite", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: "25%", left: "5%", width: 200, height: 200, border: "1px solid rgba(201,168,76,0.1)", transform: "rotate(15deg)", animation: "float 4s ease-in-out infinite reverse", pointerEvents: "none" }} />
-
-        <div className="nav-pad" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", zIndex: 1, width: "100%", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "40px" }}>
-          <div key={heroIndex} style={{ animation: "fadeUp 0.8s ease", flex: "1 1 500px", zIndex: 2 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: 6, color: "var(--gold)", marginBottom: 24 }}>{"\u2726 NEW COLLECTION 2026 \u2726"}</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(56px, 9vw, 110px)", lineHeight: 0.9, letterSpacing: -2, marginBottom: 8 }}>
-              <span style={{ color: "var(--ivory)", display: "block" }}>{slide.headline}</span>
-              <span className="gold-text" style={{ display: "block" }}>{slide.accent}</span>
-            </h1>
-            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 20, color: "var(--silver)", fontStyle: "italic", marginTop: 24, marginBottom: 40 }}>{slide.sub}</p>
-            <div style={{ display: "flex", gap: 16 }}>
-              <button className="btn-gold" onClick={() => openShop(slide.collection)}>
-                {t("discoverNow")}
-              </button>
-              <button className="btn-outline" onClick={() => openShop()}>{t("shop")}</button>
+      {/* TRUST STRIP */}
+      <div style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+        <div style={{
+          maxWidth: 1400,
+          margin: "0 auto",
+          display: "grid",
+          gridTemplateColumns: isMobileOrTablet ? "1fr 1fr" : "repeat(4, 1fr)",
+          gap: isMobileOrTablet ? 24 : 0,
+          padding: isMobileOrTablet ? "28px 20px" : 0,
+        }}>
+          {[
+            { icon: "tshirt", title: "Premium Cotton", subtitle: "220 GSM Combed Cotton" },
+            { icon: "factory", title: "Made in India", subtitle: "Crafted in Tirupur" },
+            { icon: "truck", title: "Free Shipping", subtitle: "On orders above \u20b91999" },
+            { icon: "undo", title: "Easy Returns", subtitle: "10 Day Return Policy" },
+          ].map((item, i) => (
+            <div key={item.title} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: isMobileOrTablet ? 0 : "28px 32px",
+              borderRight: !isMobileOrTablet && i < 3 ? "1px solid var(--smoke)" : "none",
+            }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "rgba(201,168,76,0.1)",
+                border: "1px solid var(--smoke)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Icon name={item.icon} size={20} color="var(--gold)" />
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 1, color: "var(--ivory)", marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)" }}>{item.subtitle}</div>
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EDITORIAL BRAND PHILOSOPHY & STORYTELLING */}
+      <section style={{ padding: isMobileOrTablet ? "60px 20px" : "120px 40px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          {/* Section Header */}
+          <div style={{ textAlign: "center", marginBottom: isMobileOrTablet ? 40 : 72 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 5, color: "var(--gold)", marginBottom: 14 }}>THE ARCHITECTURE OF STREETWEAR</div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 32 : 52, letterSpacing: 3, margin: "0 0 16px 0", lineHeight: 1.1 }}>
+              IMPECCABLE DRAPE.<br />
+              ZERO LOUD BRANDING.
+            </h2>
+            <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "20px auto 0" }} />
           </div>
 
-          <div className="hero-mockup-col" style={{ flex: "1 1 400px", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2 }}>
-            <CinematicParallaxReveal activeIndex={heroIndex} />
-          </div>
+          {/* Three Storytelling Pillars */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr 1fr", gap: isMobileOrTablet ? 24 : 32 }}>
+            {/* Pillar 1: The Craftsmanship */}
+            <div style={{
+              background: "var(--graphite)",
+              border: "1px solid var(--smoke)",
+              padding: isMobileOrTablet ? 30 : 44,
+              position: "relative",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              transition: "border-color 0.35s ease"
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>01 — THE CRAFTSMANSHIP</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
+                  ENGINEERED<br />
+                  <span style={{ color: "var(--gold)" }}>IN SILENCE.</span>
+                </h3>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.8, margin: 0 }}>
+                  We reject flashiness. VelvetWolf is rooted in the philosophy of quiet luxury. We believe premium streetwear should be defined by the weight of the fabric, the precision of the stitching, and the drape of the silhouette — not by loud logos.
+                </p>
+              </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, borderTop: "1px solid var(--smoke)", paddingTop: 16, marginTop: 28 }}>
+                220 GSM · COMBED COTTON · REACTIVE DYE
+              </div>
+            </div>
 
-          {/* Hero slide indicators */}
-          <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
-            {heroSlides.map((_, i) => (
-              <div key={i} onClick={() => setHeroIndex(i)} style={{ width: i === heroIndex ? 32 : 8, height: 2, background: i === heroIndex ? "var(--gold)" : "var(--smoke)", cursor: "pointer", transition: "all 0.4s ease" }} />
-            ))}
+            {/* Pillar 2: The Tirupur Weave */}
+            <div style={{
+              background: "var(--graphite)",
+              border: "1px solid var(--smoke)",
+              padding: isMobileOrTablet ? 30 : 44,
+              position: "relative",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              transition: "border-color 0.35s ease"
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>02 — THE TIRUPUR WEAVE</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
+                  MADE IN<br />
+                  <span style={{ color: "var(--gold)" }}>TIRUPUR, INDIA.</span>
+                </h3>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.8, margin: 0 }}>
+                  Every garment is sourced, spun, dyed, and tailored under strict quality checks in Tirupur, India — the knitting capital of the world. We work directly with master craftspeople to ensure no detail is overlooked.
+                </p>
+              </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, borderTop: "1px solid var(--smoke)", paddingTop: 16, marginTop: 28 }}>
+                HAND-FINISHED · QUALITY CHECKED · DIRECT SOURCED
+              </div>
+            </div>
+
+            {/* Pillar 3: The Fit Blueprint */}
+            <div style={{
+              background: "var(--graphite)",
+              border: "1px solid var(--smoke)",
+              padding: isMobileOrTablet ? 30 : 44,
+              position: "relative",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              transition: "border-color 0.35s ease"
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+            >
+              <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>03 — THE FIT BLUEPRINT</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
+                  DROPPED SHOULDER<br />
+                  <span style={{ color: "var(--gold)" }}>OVERSIZED.</span>
+                </h3>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", lineHeight: 1.8, margin: 0 }}>
+                  Our custom dropped-shoulder oversized silhouette maintains its structural integrity wear after wear, wash after wash. Engineered with a posture-conscious cut that flatters without clinging.
+                </p>
+              </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, borderTop: "1px solid var(--smoke)", paddingTop: 16, marginTop: 28 }}>
+                DROPPED SHOULDER · BOXY CUT · ANTI-CLING FIT
+              </div>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* MARQUEE */}
-      <div style={{ background: "var(--gold)", padding: "12px 0", overflow: "hidden" }}>
-        <div className="marquee-container">
-          <div className="marquee-inner" style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 4, color: "var(--obsidian)" }}>
-            {Array(3).fill("\u2726  VELVET WOLF   \u2726   LUXURY STREETWEAR   \u2726   PREMIUM 220 GSM COTTON   \u2726   MADE IN INDIA   \u2726   FREE SHIPPING ABOVE \u20b91999   \u2726   30 DAY EASY RETURNS ").join("")}
-          </div>
-        </div>
-      </div>
 
       {/* FEATURED COLLECTIONS */}
       <section style={{ padding: "80px 40px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
@@ -202,141 +410,237 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PERSONALIZED COLLECTION SHELF (IF PERSONALITY SET) */}
-      {activePersonality && personalizedProducts.length > 0 && (
-        <section style={{ 
-          padding: "80px 40px", 
-          background: "linear-gradient(180deg, var(--onyx), var(--obsidian))",
-          borderTop: "1px solid var(--smoke)",
-          borderBottom: "1px solid var(--smoke)"
-        }}>
-          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44, flexWrap: "wrap", gap: 16 }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>
-                  TAILORED FOR YOU: THE {activePersonality.toUpperCase()} WOLF 🐺
+      {/* Dynamic Products Display Layout */}
+      {(() => {
+        const sectionMap = {
+          personalized: activePersonality && personalizedProducts.length > 0 && (
+            <section key="personalized" style={{ padding: "60px 20px", background: "linear-gradient(180deg, var(--onyx), var(--obsidian))", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>
+                      TAILORED FOR YOU: THE {activePersonality.toUpperCase()} 🐺
+                    </div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>
+                      RECOMMENDED FOR YOU
+                    </h2>
+                  </div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <button className="btn-ghost" onClick={() => navigate("/quiz")} style={{ fontSize: 10, letterSpacing: 2 }}>RETAKE QUIZ</button>
+                  </div>
                 </div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 44, letterSpacing: 2 }}>
-                  RECOMMENDED FOR YOUR STYLE DNA
-                </h2>
+                {renderProductShelf(personalizedProducts)}
               </div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button className="btn-ghost" onClick={() => navigate("/quiz")} style={{ fontSize: 11, letterSpacing: 2 }}>
-                  RETAKE QUIZ
-                </button>
-                <button className="btn-outline" onClick={() => navigate(user ? "/account" : "/quiz")} style={{ fontSize: 11, letterSpacing: 2 }}>
-                  MY PROFILE
-                </button>
+            </section>
+          ),
+          continueShopping: continueShoppingProducts.length > 0 && (
+            <section key="continue" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>BACK TO YOUR INTERESTS</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>CONTINUE SHOPPING</h2>
+                  </div>
+                </div>
+                {renderProductShelf(continueShoppingProducts)}
               </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {personalizedProducts.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
-          </div>
-        </section>
-      )}
+            </section>
+          ),
+          trending: trendingToday.length > 0 && (
+            <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>REAL-TIME PACK HEAT</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>TRENDING NOW</h2>
+                  </div>
+                  <button className="btn-outline" onClick={() => openShop()} style={{ fontSize: 10, padding: "8px 16px" }}>DISCOVER ALL</button>
+                </div>
+                {renderProductShelf(trendingToday)}
+              </div>
+            </section>
+          ),
+          aiPicks: aiPicks.length > 0 && (
+            <section key="aipicks" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>✦ AI GENERATED LOOKS</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>RECOMMENDED FOR YOU</h2>
+                  </div>
+                </div>
+                {renderProductShelf(aiPicks)}
+              </div>
+            </section>
+          ),
+          recentlyViewed: recentlyViewedProducts.length > 0 && (
+            <section key="recently" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>CONTINUE BROWSING</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>RECENTLY VIEWED</h2>
+                  </div>
+                </div>
+                {renderProductShelf(recentlyViewedProducts)}
+              </div>
+            </section>
+          ),
+          similarToInterests: similarToStyle.length > 0 && (
+            <section key="similar" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>STYLE DNA MATCH</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>SIMILAR TO YOUR INTERESTS</h2>
+                  </div>
+                </div>
+                {renderProductShelf(similarToStyle)}
+              </div>
+            </section>
+          ),
+          newDrops: newDrops.length > 0 && (
+            <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+              <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>JUST RELEASED</div>
+                    <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>NEW DROPS</h2>
+                  </div>
+                  <button className="btn-outline" onClick={() => openShop()} style={{ fontSize: 10, padding: "8px 16px" }}>SHOP ALL</button>
+                </div>
+                {renderProductShelf(newDrops)}
+              </div>
+            </section>
+          )
+        };
 
-      {/* DISCOVER YOUR WOLF TYPE CTA BANNER (IF NO PERSONALITY SET) */}
-      {!activePersonality && (
-        <section style={{ 
-          padding: "100px 40px", 
-          background: "linear-gradient(135deg, var(--onyx), var(--obsidian))", 
-          borderTop: "1px solid var(--smoke)",
-          borderBottom: "1px solid var(--smoke)",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <div style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 6, color: "var(--gold)", marginBottom: 16 }}>STYLE ANALYSIS</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2, marginBottom: 20 }}>FIND YOUR AESTHETIC DNA</h2>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--ash)", lineHeight: 1.6, marginBottom: 36, maxWidth: 600, margin: "0 auto 36px" }}>
-              Uncover your true style archetype. Take our short personality test to personalize your store experience with collections and search recommendations boosted for your Wolf Type.
-            </p>
-            <button className="btn-gold" onClick={() => navigate("/quiz")} style={{ padding: "16px 36px", letterSpacing: 2 }}>
-              DISCOVER YOUR WOLF TYPE
-            </button>
-          </div>
-        </section>
-      )}
-      {/* MOSAIC CAROUSEL */}
-      <MosaicCarousel
-        onCategoryClick={(cat) => {
-          const CATEGORY_TO_COLLECTION_MAP = {
-            fitness: "beast-mode",
-            music: "anime",
-            food: "savage-quotes",
-            travel: "ai-tech",
-            photography: "silent-luxury",
-          };
-          const collectionId = CATEGORY_TO_COLLECTION_MAP[cat.id] || cat.id;
-          openShop(collectionId);
-        }}
-      />
+        let sectionOrder = [];
+        if (activePersonality) {
+          sectionOrder = ["personalized", "continueShopping", "recentlyViewed", "similarToInterests", "trending", "newDrops"];
+        } else {
+          sectionOrder = ["continueShopping", "trending", "recentlyViewed", "aiPicks", "newDrops"];
+        }
 
-      {/* NEW ARRIVALS */}
-      {newArrivals.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
+        return sectionOrder.map(key => sectionMap[key]);
+      })()}
+
+      {/* 6. LIMITED DROPS */}
+      {limitedDrops.length > 0 && (
+        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FRESH FROM THE PACK</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>NEW ARRIVALS</h2>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SCARCE EDITIONS · HEAVYWEIGHTS</div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
               </div>
-              <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {newArrivals.map(p => <ProductCard key={p.id} product={p} />)}
+              {limitedDrops.map(p => {
+                const pct = Math.max(10, Math.min(90, (p.stock || 12) * 2.2));
+                return (
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column" }}>
+                    <ProductCard product={p} />
+                    <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--gold)", marginBottom: 6 }}>
+                        <span>STOCK STATUS</span>
+                        <span>{p.stock || 12} PCS LEFT</span>
+                      </div>
+                      <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.06)" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #c0392b, var(--gold))" }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
       )}
 
-      {/* BEST SELLERS */}
-      {bestSellers.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--obsidian)" }}>
-          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>POPULAR CHOICES</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>BEST SELLERS</h2>
-              </div>
-              <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {bestSellers.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+      {/* 7. COMING SOON */}
+      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 54 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FUTURE DROPS</div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>COMING SOON</h2>
           </div>
-        </section>
-      )}
-
-      {/* HOT DEALS */}
-      {hotDeals.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
-          <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>LIMITED QUANTITIES</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>HOT DEALS & DEALS</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 32 }}>
+            {comingSoonItems.map(item => (
+              <div 
+                key={item.id} 
+                style={{ 
+                  background: "var(--onyx)", 
+                  border: "1px solid var(--smoke)", 
+                  padding: 32, 
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16
+                }}
+              >
+                <div style={{ position: "absolute", top: 20, right: 20, background: "var(--gold)", color: "var(--obsidian)", fontFamily: "var(--font-mono)", fontSize: 10, padding: "2px 8px", letterSpacing: 1 }}>
+                  LAUNCHING {item.releaseDate}
+                </div>
+                <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                  <div style={{ 
+                    width: 100, 
+                    height: 100, 
+                    background: "rgba(255,255,255,0.02)", 
+                    border: "1px dashed var(--smoke)", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    position: "relative"
+                  }}>
+                    <Icon name="lock" size={24} color="var(--gold)" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, margin: "0 0 4px 0" }}>{item.name}</h3>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)" }}>EST. PRICE: ₹{item.price}</div>
+                  </div>
+                </div>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--silver)", lineHeight: 1.6, margin: 0 }}>
+                  {item.description}
+                </p>
+                {comingSoonNotifySuccess[item.id] ? (
+                  <div style={{ color: "var(--gold)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+                    ✓ Subscribed for early drops access.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                    <input 
+                      type="email" 
+                      placeholder="ENTER EMAIL"
+                      id={`email-${item.id}`}
+                      style={{ 
+                        flex: 1, 
+                        background: "#0a0a0a", 
+                        border: "1px solid var(--smoke)", 
+                        color: "var(--ivory)", 
+                        padding: "8px 12px", 
+                        fontFamily: "var(--font-mono)", 
+                        fontSize: 11,
+                        outline: "none"
+                      }}
+                    />
+                    <button 
+                      className="btn-gold" 
+                      style={{ padding: "8px 16px", fontSize: 10 }}
+                      onClick={() => {
+                        const emailInput = document.getElementById(`email-${item.id}`);
+                        handleComingSoonNotify(item.id, emailInput?.value);
+                      }}
+                    >
+                      NOTIFY ME
+                    </button>
+                  </div>
+                )}
               </div>
-              <button className="btn-outline" onClick={() => openShop()}>{t("discoverNow")} <Icon name="arrowRight" size={12} /></button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-              {hotDeals.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            ))}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* CUSTOMER REVIEWS */}
       <section style={{ padding: "100px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
@@ -369,8 +673,11 @@ export default function HomePage() {
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>STYLE BOOK</div>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
-            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>Tag us <span style={{ color: "var(--gold)" }}>@velvetwolf.in</span> on Instagram to get featured.</p>
+            <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>
+              Tag us <a href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: "bold" }}>@velvetwolf.in</a> on Instagram to get featured.
+            </p>
           </div>
+          {/* Instagram Post Grid Hidden as requested
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
             {instagramPosts.map((post, idx) => (
               <div 
@@ -414,6 +721,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          */}
         </div>
       </section>
 
