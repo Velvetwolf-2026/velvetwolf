@@ -13,13 +13,13 @@ const iconMapping = {
   minus: { name: "minus", style: "ios" },
   trash: { name: "trash", style: "ios" },
   star: { name: "star", style: "ios-filled" },
-  arrowRight: { name: "arrow-right", style: "ios" },
+  arrowRight: { name: "forward", style: "ios" },
   eye: { name: "visible", style: "ios" },
   package: { name: "box", style: "ios" },
   chart: { name: "bar-chart", style: "ios" },
-  users: { name: "group", style: "ios" },
+  users: { name: "conference-call", style: "ios" },
   settings: { name: "settings", style: "ios" },
-  logout: { name: "logout-round", style: "ios" },
+  logout: { name: "exit", style: "ios" },
   check: { name: "checkmark", style: "ios" },
   upload: { name: "upload", style: "ios" },
   filter: { name: "filter", style: "ios" },
@@ -31,6 +31,10 @@ const iconMapping = {
   chevronUp: { name: "chevron-up", style: "ios" },
   lock: { name: "lock", style: "ios" },
   shop: { name: "shop", style: "ios" },
+  tshirt: { name: "t-shirt", style: "ios" },
+  factory: { name: "factory", style: "ios" },
+  truck: { name: "truck", style: "ios" },
+  undo: { name: "undo", style: "ios" },
 };
 
 function resolveColorHex(color) {

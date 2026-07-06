@@ -203,12 +203,48 @@ export default function HomePage() {
       {/* CINEMATIC 3D HERO SHOWCASE */}
       <Cinematic3DHero />
 
-      {/* MARQUEE */}
-      <div style={{ background: "var(--gold)", padding: "12px 0", overflow: "hidden" }}>
-        <div className="marquee-container">
-          <div className="marquee-inner" style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 4, color: "var(--obsidian)" }}>
-            {Array(3).fill("\u2726  VELVET WOLF   \u2726   LUXURY STREETWEAR   \u2726   PREMIUM 220 GSM COTTON   \u2726   MADE IN INDIA   \u2726   FREE SHIPPING ABOVE \u20b91999   \u2726   30 DAY EASY RETURNS ").join("")}
-          </div>
+      {/* TRUST STRIP */}
+      <div style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+        <div style={{
+          maxWidth: 1400,
+          margin: "0 auto",
+          display: "grid",
+          gridTemplateColumns: isMobileOrTablet ? "1fr 1fr" : "repeat(4, 1fr)",
+          gap: isMobileOrTablet ? 24 : 0,
+          padding: isMobileOrTablet ? "28px 20px" : 0,
+        }}>
+          {[
+            { icon: "tshirt", title: "Premium Cotton", subtitle: "220 GSM Combed Cotton" },
+            { icon: "factory", title: "Made in India", subtitle: "Crafted in Tirupur" },
+            { icon: "truck", title: "Free Shipping", subtitle: "On orders above \u20b91999" },
+            { icon: "undo", title: "Easy Returns", subtitle: "10 Day Return Policy" },
+          ].map((item, i) => (
+            <div key={item.title} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: isMobileOrTablet ? 0 : "28px 32px",
+              borderRight: !isMobileOrTablet && i < 3 ? "1px solid var(--smoke)" : "none",
+            }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "rgba(201,168,76,0.1)",
+                border: "1px solid var(--smoke)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Icon name={item.icon} size={20} color="var(--gold)" />
+              </div>
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: 1, color: "var(--ivory)", marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)" }}>{item.subtitle}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

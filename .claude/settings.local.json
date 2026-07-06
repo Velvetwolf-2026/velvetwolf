@@ -19,7 +19,9 @@
       "Skill(artifact-design:*)",
       "Bash(npx eslint *)",
       "Bash(ls -la .env*)",
-      "Bash(find . -maxdepth 2 -iname \".env*\" -not -path \"*/node_modules/*\")"
+      "Bash(find . -maxdepth 2 -iname \".env*\" -not -path \"*/node_modules/*\")",
+      "Skill(run)",
+      "Skill(run:*)"
     ]
   }
 }

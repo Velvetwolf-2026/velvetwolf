@@ -7,6 +7,8 @@ import { getCollectionById } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
 import { useBreakpoint } from "../utils/breakpoints";
 import ProductCard from "../components/ProductCard";
+import { getSupabaseLogoUrl } from "../utils/supabase";
+
 
 const COLOR_MAP = {
   "Black": "#0a0a0a",
@@ -643,23 +645,29 @@ export default function ProductDetailPage() {
             {/* Payment Method Trust Badges */}
             <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "flex-start", padding: "14px 20px", border: "1px dashed var(--smoke)", marginBottom: 20, flexWrap: "wrap" }}>
               <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 1, marginRight: 6 }}>SECURE PROTOCOLS:</span>
-              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
-                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
-                <path d="M11.2 6.5l-1.3 4.8h-.1L8.2 6.5H6l2.4 6.7h1.9l3.1-6.7H11.2zM16.5 6.5l-1.1 4.5-.4-1.9-.3-1.6c-.1-.7-.6-1-1.2-1H12v.4c.5.1.9.3 1.2.6l1.2 4.1h2l2.6-6.7h-2.5zM22.5 7.6c-.3-.3-.8-.5-1.4-.5-1.2 0-2 .6-2 1.3 0 .7.8.9 1.3 1.1.4.1.8.3.8.5 0 .2-.4.4-.9.4-.6 0-1-.2-1.3-.4l-.2-.1-.2 1.1c.3.1.9.2 1.5.2 1.3 0 2.2-.6 2.2-1.4 0-.7-.8-1-1.4-1.1-.4-.1-.8-.3-.8-.5 0-.2.4-.4.8-.4.5 0 .9.1 1.2.3l.2.1.2-1.1zM26.2 6.5h-1.6c-.4 0-.7.2-.8.5l-2.4 6.2h2l.4-1h2.2l.2 1h1.8l-1.8-6.7zm-2 4l.8-2 .4 2h-1.2z" fill="var(--ivory)" />
-              </svg>
-              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
-                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
-                <circle cx="13.5" cy="10" r="5" fill="var(--ivory)" fillOpacity="0.4" />
-                <circle cx="18.5" cy="10" r="5" fill="var(--ivory)" fillOpacity="0.8" />
-              </svg>
-              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
-                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
-                <path d="M7 6.5h2.5c1.2 0 2 .7 2 1.6v.1c0 1-1 1.6-2 1.6H8.5v4h-1.5V6.5zm2.5 2.2c.4 0 .6-.2.6-.5V8c0-.3-.2-.5-.6-.5H8.5V8.7h1zM11.5 10l2 3.8H12L10.2 10h1.3zM15 6.5h1.5l.8 2.5.8-2.5H19.5l-2.2 6.7h-1.2L15 6.5z" fill="var(--ivory)" />
-              </svg>
-              <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
-                <rect width="32" height="20" rx="2" fill="var(--smoke)" />
-                <path d="M7 6.5h1.2v4.8c0 .8.5 1.3 1.3 1.3s1.3-.5 1.3-1.3V6.5h1.2v4.8c0 1.5-1 2.5-2.5 2.5s-2.5-1-2.5-2.5V6.5zM14.5 6.5h1.8c1 0 1.7.6 1.7 1.4v.1c0 .8-.7 1.4-1.7 1.4h-.6v4.4h-1.2V6.5zm1.8 1.9c.3 0 .5-.2.5-.5v-.1c0-.3-.2-.5-.5-.5h-.6v1.1h.6zM20.5 6.5h1.2v7.3h-1.2V6.5z" fill="var(--ivory)" />
-              </svg>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 28, flexWrap: "wrap", marginTop: 8 }}>
+                {/* Visa */}
+                <img src={getSupabaseLogoUrl("/visa.png")} alt="Visa" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+
+                {/* Mastercard */}
+                <div style={{
+                  width: 50,
+                  height: 30,
+                  borderRadius: 3,
+                  background: "#f5f5f7", // mild white
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 3,
+                  boxSizing: "border-box",
+                  border: "1px solid rgba(0,0,0,0.05)"
+                }}>
+                  <img src={getSupabaseLogoUrl("/mastercard.webp")} alt="Mastercard" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                </div>
+
+                {/* RuPay */}
+                <img src={getSupabaseLogoUrl("/rupay.png")} alt="RuPay" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+              </div>
             </div>
 
             {/* Delivery Estimate */}
@@ -711,9 +719,9 @@ export default function ProductDetailPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyItems: "center", gap: 12, marginBottom: 16 }}>
                   {/* Item 1 */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <img 
-                      src={activeImage} 
-                      alt={product.name} 
+                    <img
+                      src={activeImage}
+                      alt={product.name}
                       style={{ width: 44, height: 44, objectFit: "cover", border: "1px solid var(--smoke)" }}
                     />
                     <div>
@@ -728,9 +736,9 @@ export default function ProductDetailPage() {
 
                   {/* Item 2 */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <img 
-                      src={related[0].image || (related[0].gallery?.[0] || activeImage)} 
-                      alt={related[0].name} 
+                    <img
+                      src={related[0].image || (related[0].gallery?.[0] || activeImage)}
+                      alt={related[0].name}
                       style={{ width: 44, height: 44, objectFit: "cover", border: "1px solid var(--smoke)" }}
                     />
                     <div>
@@ -755,7 +763,7 @@ export default function ProductDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="btn-gold"
                     style={{ padding: "10px 16px", fontSize: 9, letterSpacing: 1 }}
                     onClick={async () => {
@@ -806,8 +814,8 @@ export default function ProductDetailPage() {
 
               {activeTab === "badges" && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 11, fontFamily: "var(--font-mono)" }}>
-                  <div>🛡️ SECURE GATEWAY (Cards, UPI)</div>
-                  <div>🇮🇳 100% Tirupur Made Cotton</div>
+                  <div>🛡️ SECURE GATEWAY Cards and UPI</div>
+                  <div>100% Tirupur Made Cotton</div>
                   <div>⚡ Express courier tracking</div>
                   <div>🔄 30 Day Easy Returns policy</div>
                 </div>
@@ -1141,8 +1149,8 @@ export default function ProductDetailPage() {
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, color: "var(--gold)" }}>
                 SPECS COMPARISON
               </h3>
-              <button 
-                onClick={() => setCompareOpen(false)} 
+              <button
+                onClick={() => setCompareOpen(false)}
                 style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer" }}
               >
                 <Icon name="x" size={20} />
@@ -1199,8 +1207,8 @@ export default function ProductDetailPage() {
                   <td style={{ padding: "10px 0" }}></td>
                   {[product, ...related.slice(0, 2)].map((item, idx) => (
                     <td key={idx} style={{ padding: "10px 4px", textAlign: "center" }}>
-                      <button 
-                        className="btn-gold" 
+                      <button
+                        className="btn-gold"
                         style={{ padding: "6px 8px", fontSize: 9, width: "100%" }}
                         onClick={() => {
                           addToCart(item, "M", "#0a0a0a", 1);
@@ -1263,10 +1271,10 @@ export default function ProductDetailPage() {
           boxSizing: "border-box"
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: "60%" }}>
-            <img 
-              src={activeImage} 
-              alt={product.name} 
-              style={{ width: 40, height: 40, objectFit: "cover", background: "var(--onyx)", border: "1px solid var(--smoke)" }} 
+            <img
+              src={activeImage}
+              alt={product.name}
+              style={{ width: 40, height: 40, objectFit: "cover", background: "var(--onyx)", border: "1px solid var(--smoke)" }}
             />
             <div style={{ overflow: "hidden" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ivory)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
@@ -1277,8 +1285,8 @@ export default function ProductDetailPage() {
               </div>
             </div>
           </div>
-          <button 
-            className="btn-gold" 
+          <button
+            className="btn-gold"
             style={{ padding: "10px 18px", fontSize: 10, letterSpacing: 1, minWidth: 100 }}
             onClick={() => {
               addToCart(product, size, color, qty);
