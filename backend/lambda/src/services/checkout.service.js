@@ -129,10 +129,10 @@ async function confirmOrder(orderId) {
     return;
   }
 
-  // 2. Fetch order items
+  // 2. Fetch order items with product details for confirmation email
   const { data: items, error: itemsError } = await supabaseAdmin
     .from("order_items")
-    .select("*")
+    .select("*, products(image, images)")
     .eq("order_id", orderId);
 
   if (itemsError || !items) {

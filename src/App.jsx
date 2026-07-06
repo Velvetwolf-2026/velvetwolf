@@ -108,6 +108,74 @@ export default function VelvetWolf() {
   const [wishlist, setWishlist] = useState([]);
   const [user, setUser] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Phase 2: PWA, Preferences & Notification Center states
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem("vw_notifications");
+    return saved ? JSON.parse(saved) : [
+      { id: "notif-1", title: "EXCLUSIVE RESTOCK", message: "Silent Luxury Tees in all sizes are back in stock.", category: "restock", time: "2 hours ago", unread: true },
+      { id: "notif-2", title: "PRICE DROP ALERT", message: "Mind Palace Tee is now at ₹1,999 (was ₹2,499).", category: "price-drop", time: "1 day ago", unread: false },
+      { id: "notif-3", title: "NEW DROP ACCESS", message: "AI Tech wear drops are now live for Wolf Pack members.", category: "new-drop", time: "2 days ago", unread: false }
+    ];
+  });
+
+  const [userPreferences, setUserPreferences] = useState(() => {
+    const saved = localStorage.getItem("vw_user_preferences");
+    return saved ? JSON.parse(saved) : {
+      sizes: [],
+      fits: [],
+      colors: [],
+      categories: []
+    };
+  });
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
+
+  const triggerPwaInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setDeferredPrompt(null);
+    }
+  };
+
+  const addNotification = (title, message, category) => {
+    const newNotif = {
+      id: `notif-${Date.now()}`,
+      title,
+      message,
+      category,
+      time: "Just now",
+      unread: true
+    };
+    setNotifications(prev => {
+      const next = [newNotif, ...prev];
+      localStorage.setItem("vw_notifications", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => {
+      const next = prev.map(n => ({ ...n, unread: false }));
+      localStorage.setItem("vw_notifications", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const saveUserPreferences = (prefs) => {
+    setUserPreferences(prefs);
+    localStorage.setItem("vw_user_preferences", JSON.stringify(prefs));
+  };
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [authModal, setAuthModal] = useState(null);
@@ -362,6 +430,9 @@ export default function VelvetWolf() {
     activeCollection, setActiveCollection, searchQuery, setSearchQuery,
     orders, customers, cartTotal, cartCount,
     addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast, openShop, clearCart,
+    deferredPrompt, triggerPwaInstall,
+    notifications, addNotification, markAllNotificationsRead,
+    userPreferences, saveUserPreferences
   };
 
   // Scroll to top on navigation

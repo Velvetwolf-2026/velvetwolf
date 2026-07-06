@@ -244,7 +244,7 @@ export default function CheckoutPage() {
               alignItems: "center",
               gap: 6
             }}>
-              <img src="/express.png" alt="Express" style={{ width: 34, height: 34, objectFit: "contain" }} />
+              <img src={getSupabaseLogoUrl("/express.png")} alt="Express" style={{ width: 34, height: 34, objectFit: "contain" }} />
               EXPRESS CHECKOUT
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
@@ -265,7 +265,7 @@ export default function CheckoutPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
                 onMouseLeave={e => e.currentTarget.style.opacity = 1}
               >
-                <img src="/bhimupi.png" alt="BHIM UPI" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
+                <img src={getSupabaseLogoUrl("/bhimupi.png")} alt="BHIM UPI" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
               </button>
 
               {/* Google Pay */}
@@ -285,7 +285,7 @@ export default function CheckoutPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
                 onMouseLeave={e => e.currentTarget.style.opacity = 1}
               >
-                <img src="/gpay.png" alt="Google Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
+                <img src={getSupabaseLogoUrl("/gpay.png")} alt="Google Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
               </button>
 
               {/* Apple Pay */}
@@ -305,7 +305,7 @@ export default function CheckoutPage() {
                 onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
                 onMouseLeave={e => e.currentTarget.style.opacity = 1}
               >
-                <img src="/applepay.png" alt="Apple Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
+                <img src={getSupabaseLogoUrl("/applepay.png")} alt="Apple Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
               </button>
             </div>
           </div>
@@ -486,7 +486,7 @@ export default function CheckoutPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img src="/whatsapp.gif" alt="WhatsApp" style={{ width: 22, height: 22, objectFit: "contain" }} />
+                <img src={getSupabaseLogoUrl("/whatsapp.gif")} alt="WhatsApp" style={{ width: 22, height: 22, objectFit: "contain" }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 0.5, color: "var(--silver)" }}>
                   GET ORDER UPDATES ON WHATSAPP
                 </span>

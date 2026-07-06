@@ -30,6 +30,7 @@ const iconMapping = {
   chevronDown: { name: "chevron-down", style: "ios" },
   chevronUp: { name: "chevron-up", style: "ios" },
   lock: { name: "lock", style: "ios" },
+  shop: { name: "shop", style: "ios" },
 };
 
 function resolveColorHex(color) {

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from "react";
 import * as THREE from "three";
 import { AppContext } from "../pages/AppContext";
 import { useLanguage } from "../pages/LanguageContext";
+import { useBreakpoint } from "../utils/breakpoints";
 
 function processTshirtImage(img) {
   const canvas = document.createElement("canvas");
@@ -110,6 +111,7 @@ function processTshirtImage(img) {
 export default function Cinematic3DHero() {
   const { openShop } = useContext(AppContext);
   const { t } = useLanguage();
+  const { isMobileOrTablet } = useBreakpoint();
 
   const containerRef = useRef(null);
   const canvas3dRef = useRef(null);
@@ -638,11 +640,25 @@ export default function Cinematic3DHero() {
           right: "10%",
           width: "600px",
           height: "600px",
-          background: "radial-gradient(circle, rgba(201, 162, 77, 0.05) 0%, rgba(0,0,0,0) 70%)",
+          background: "radial-gradient(circle, rgba(201, 162, 77, 0.06) 0%, rgba(0,0,0,0) 70%)",
           pointerEvents: "none",
           zIndex: 1
         }}
       />
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-5%",
+          left: "5%",
+          width: "400px",
+          height: "400px",
+          background: "radial-gradient(circle, rgba(201, 162, 77, 0.04) 0%, rgba(0,0,0,0) 75%)",
+          pointerEvents: "none",
+          zIndex: 1
+        }}
+      />
+      {/* Desktop Grid Lines Background */}
+      {!isMobileOrTablet && <div className="vw-hero-grid-bg" />}
       <div
         style={{
           position: "absolute",
@@ -660,24 +676,24 @@ export default function Cinematic3DHero() {
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          padding: "100px 40px 60px 40px",
+          padding: isMobileOrTablet ? "100px 20px 60px" : "120px 40px 70px 40px",
           width: "100%",
           zIndex: 2,
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: "40px"
+          gap: isMobileOrTablet ? "40px" : "24px"
         }}
       >
         {/* LEFT COLUMN: HERO CONTENT */}
-        <div style={{ flex: "1 1 500px", zIndex: 3 }}>
+        <div style={{ flex: isMobileOrTablet ? "1 1 500px" : "1 1 440px", zIndex: 3 }}>
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              letterSpacing: 8,
+              fontSize: 12,
+              letterSpacing: 10,
               color: "#C9A24D",
-              marginBottom: 16,
+              marginBottom: 20,
               textTransform: "uppercase"
             }}
           >
@@ -687,10 +703,10 @@ export default function Cinematic3DHero() {
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(48px, 6vw, 90px)",
+              fontSize: isMobileOrTablet ? "clamp(40px, 8vw, 64px)" : "clamp(56px, 5.5vw, 96px)",
               lineHeight: 1.0,
-              letterSpacing: -1,
-              marginBottom: 24,
+              letterSpacing: isMobileOrTablet ? -1 : 2,
+              marginBottom: 28,
               textTransform: "uppercase"
             }}
           >
@@ -781,8 +797,8 @@ export default function Cinematic3DHero() {
         <div
           ref={containerRef}
           style={{
-            flex: "1 1 500px",
-            height: "600px",
+            flex: isMobileOrTablet ? "1 1 500px" : "1 1 540px",
+            height: isMobileOrTablet ? "500px" : "640px",
             position: "relative",
             display: "flex",
             justifyContent: "center",
@@ -875,6 +891,42 @@ export default function Cinematic3DHero() {
           </div>
         </div>
       </div>
+      {/* Scroll indicator (Desktop only) */}
+      {!isMobileOrTablet && (
+        <div style={{
+          position: "absolute",
+          bottom: 34,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+          opacity: 0.6,
+          zIndex: 10
+        }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 3, color: "var(--silver)" }}>SCROLL TO DISCOVER</span>
+          <div style={{
+            width: 22,
+            height: 36,
+            border: "1.5px solid rgba(201,168,76,0.3)",
+            borderRadius: 11,
+            position: "relative"
+          }}>
+            <div style={{
+              width: 2,
+              height: 8,
+              background: "var(--gold)",
+              position: "absolute",
+              top: 7,
+              left: "50%",
+              transform: "translateX(-50%)",
+              borderRadius: 1,
+              animation: "vw-scroll-down 2s infinite"
+            }} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

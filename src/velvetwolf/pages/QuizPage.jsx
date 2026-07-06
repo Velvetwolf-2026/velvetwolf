@@ -8,104 +8,116 @@ const QUESTIONS = [
     id: 1,
     question: "What drives you?",
     options: [
-      { text: "Building", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0 } },
-      { text: "Creating", weights: { builder: 1, creator: 3, alpha: 0, shadow: 0 } },
-      { text: "Winning", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1 } },
-      { text: "Exploring", weights: { builder: 1, creator: 2, alpha: 1, shadow: 0 } },
-      { text: "Escaping", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3 } }
+      { text: "Building", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0, rebel: 0 } },
+      { text: "Creating", weights: { builder: 1, creator: 3, alpha: 0, shadow: 0, rebel: 1 } },
+      { text: "Winning", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1, rebel: 0 } },
+      { text: "Exploring", weights: { builder: 1, creator: 2, alpha: 1, shadow: 0, rebel: 1 } },
+      { text: "Escaping", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3, rebel: 0 } },
+      { text: "Disrupting", weights: { builder: 0, creator: 0, alpha: 1, shadow: 0, rebel: 3 } }
     ]
   },
   {
     id: 2,
     question: "Your weekend looks like?",
     options: [
-      { text: "Coding a side project", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0 } },
-      { text: "Watching anime", weights: { builder: 0, creator: 3, alpha: 0, shadow: 1 } },
-      { text: "Gym session", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1 } },
-      { text: "Road trip", weights: { builder: 1, creator: 2, alpha: 1, shadow: 0 } },
-      { text: "Gaming marathon", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3 } }
+      { text: "Coding a side project", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0, rebel: 0 } },
+      { text: "Watching anime", weights: { builder: 0, creator: 3, alpha: 0, shadow: 1, rebel: 1 } },
+      { text: "Gym session", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1, rebel: 0 } },
+      { text: "Road trip", weights: { builder: 1, creator: 2, alpha: 1, shadow: 0, rebel: 1 } },
+      { text: "Gaming marathon", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3, rebel: 0 } },
+      { text: "Street graffiti / Urbex", weights: { builder: 0, creator: 1, alpha: 0, shadow: 0, rebel: 3 } }
     ]
   },
   {
     id: 3,
     question: "Choose your aesthetic",
     options: [
-      { text: "Minimal", weights: { builder: 1, creator: 0, alpha: 0, shadow: 3 } },
-      { text: "Techwear", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0 } },
-      { text: "Streetwear", weights: { builder: 0, creator: 2, alpha: 2, shadow: 0 } },
-      { text: "Anime", weights: { builder: 0, creator: 3, alpha: 0, shadow: 0 } },
-      { text: "Luxury", weights: { builder: 2, creator: 0, alpha: 1, shadow: 2 } }
+      { text: "Minimal", weights: { builder: 1, creator: 0, alpha: 0, shadow: 3, rebel: 0 } },
+      { text: "Techwear", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0, rebel: 1 } },
+      { text: "Streetwear", weights: { builder: 0, creator: 2, alpha: 2, shadow: 0, rebel: 2 } },
+      { text: "Anime", weights: { builder: 0, creator: 3, alpha: 0, shadow: 0, rebel: 1 } },
+      { text: "Luxury", weights: { builder: 2, creator: 0, alpha: 1, shadow: 2, rebel: 0 } }
     ]
   },
   {
     id: 4,
     question: "Pick a color",
     options: [
-      { text: "Black", weights: { builder: 0, creator: 0, alpha: 1, shadow: 3 } },
-      { text: "Forest Green", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0 } },
-      { text: "Beige", weights: { builder: 1, creator: 0, alpha: 0, shadow: 3 } },
-      { text: "White", weights: { builder: 0, creator: 3, alpha: 0, shadow: 0 } },
-      { text: "Charcoal", weights: { builder: 2, creator: 0, alpha: 2, shadow: 1 } }
+      { text: "Black", weights: { builder: 0, creator: 0, alpha: 1, shadow: 3, rebel: 1 } },
+      { text: "Forest Green", weights: { builder: 3, creator: 1, alpha: 0, shadow: 0, rebel: 0 } },
+      { text: "Beige", weights: { builder: 1, creator: 0, alpha: 0, shadow: 3, rebel: 0 } },
+      { text: "White", weights: { builder: 0, creator: 3, alpha: 0, shadow: 0, rebel: 0 } },
+      { text: "Charcoal", weights: { builder: 2, creator: 0, alpha: 2, shadow: 1, rebel: 2 } }
     ]
   },
   {
     id: 5,
     question: "How do you want people to see you?",
     options: [
-      { text: "Intelligent", weights: { builder: 3, creator: 1, alpha: 0, shadow: 1 } },
-      { text: "Creative", weights: { builder: 1, creator: 3, alpha: 0, shadow: 0 } },
-      { text: "Powerful", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1 } },
-      { text: "Mysterious", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3 } },
-      { text: "Ambitious", weights: { builder: 2, creator: 0, alpha: 2, shadow: 0 } }
+      { text: "Intelligent", weights: { builder: 3, creator: 1, alpha: 0, shadow: 1, rebel: 0 } },
+      { text: "Creative", weights: { builder: 1, creator: 3, alpha: 0, shadow: 0, rebel: 1 } },
+      { text: "Powerful", weights: { builder: 0, creator: 0, alpha: 3, shadow: 1, rebel: 0 } },
+      { text: "Mysterious", weights: { builder: 0, creator: 1, alpha: 0, shadow: 3, rebel: 0 } },
+      { text: "Ambitious", weights: { builder: 2, creator: 0, alpha: 2, shadow: 0, rebel: 0 } },
+      { text: "Disturbing", weights: { builder: 0, creator: 0, alpha: 0, shadow: 0, rebel: 3 } }
     ]
   }
 ];
 
 const WOLF_DETAILS = {
   BUILDER: {
-    title: "THE BUILDER WOLF",
-    description: "Focused. Disciplined. Always creating.",
-    story: "You thrive on structure, design, and building the future. Your style is functional, technical, and precise. You appreciate products that blend technology with raw industrial strength.",
-    aesthetic: "Techwear, clean lines, and dark minimal colors.",
+    title: "MIDNIGHT MINIMALIST",
+    description: "Monochromatic. Clean. Made in silence.",
+    story: "You thrive on clean structures, sharp tailoring, and minimal noise. Your style is monochromatic and details-driven, focusing on weight and silhouette.",
+    aesthetic: "Absolute minimalism, premium heavyweight textures, all-black and sand color palettes.",
     collections: [
-      { name: "AI Tech", slug: "ai-tech" },
-      { name: "Founder", slug: "founder" },
-      { name: "Silent Luxury", slug: "silent-luxury" }
+      { name: "Silent Luxury", slug: "silent-luxury" },
+      { name: "Founder", slug: "founder" }
     ]
   },
   ALPHA: {
-    title: "THE ALPHA WOLF",
+    title: "ALPHA WOLF",
     description: "Ambitious. Powerful. Leading the pack.",
-    story: "You represent power, persistence, and presence. You make no excuses and demand excellence. Your style is bold, high-contrast, and commands attention in any room.",
-    aesthetic: "Heavy-weight graphics, bold quotes, and high-impact streetwear.",
+    story: "You represent power, persistence, and presence. You make no excuses and demand excellence. Your style is bold, high-contrast, and commands attention.",
+    aesthetic: "Heavyweight graphics, bold quotes, and high-impact streetwear fits.",
     collections: [
       { name: "Beast Mode", slug: "beast-mode" },
       { name: "Savage Quotes", slug: "savage-quotes" }
     ]
   },
   SHADOW: {
-    title: "THE SHADOW WOLF",
-    description: "Mysterious. Calculated. Quiet luxury.",
-    story: "You operate in the background with absolute focus and minimal noise. You represent silent strength. Your style is monochromatic, clean, and made of premium materials with zero loud branding.",
-    aesthetic: "Absolute minimalism, premium textures, all-black and earthy tones.",
+    title: "SILENT HUNTER",
+    description: "Mysterious. Calculated. Pure luxury.",
+    story: "You operate in the background with absolute focus. You appreciate raw material quality, drop shoulders, and clean draping with zero branding.",
+    aesthetic: "Stealth streetwear, high-grade tactical cotton, and dark forest tones.",
     collections: [
       { name: "Silent Luxury", slug: "silent-luxury" }
     ]
   },
   CREATOR: {
-    title: "THE CREATOR WOLF",
-    description: "Artistic. Experimental. Cultured.",
-    story: "You are constantly redefining aesthetics. You express yourself through vibrant cultural art, illustrations, and unique proportions. Your style is expressive, oversized, and boundary-pushing.",
-    aesthetic: "Vibrant graphics, anime-inspired drops, and oversized tech statements.",
+    title: "CREATIVE MAVERICK",
+    description: "Artistic. Experimental. Boundary-pushing.",
+    story: "You constantly redefine aesthetics. You express yourself through illustrations, unique proportions, and vibrant visual art.",
+    aesthetic: "Vibrant illustrations, oversized anime graphics, and techwear capsules.",
     collections: [
       { name: "Anime", slug: "anime" },
       { name: "AI Tech", slug: "ai-tech" }
+    ]
+  },
+  REBEL: {
+    title: "URBAN REBEL",
+    description: "Raw. Disruptive. Unfiltered.",
+    story: "You break the mold. You represent raw energy, street graffiti, and utility styling. Your fits are baggy, distressed, and completely unfiltered.",
+    aesthetic: "Distressed heavy fleece, baggy cargo trousers, and tactical accessories.",
+    collections: [
+      { name: "Savage Quotes", slug: "savage-quotes" },
+      { name: "Anime", slug: "anime" }
     ]
   }
 };
 
 export default function QuizPage() {
-  const { user, setUser, showToast } = useContext(AppContext);
+  const { user, setUser, showToast, userPreferences, saveUserPreferences } = useContext(AppContext);
   const navigate = useNavigate();
 
   const [quizState, setQuizState] = useState("welcome"); // welcome, questions, scoring, results
@@ -117,14 +129,12 @@ export default function QuizPage() {
   // If user already has a style profile, we can load it or give option to retake
   useEffect(() => {
     if (user?.personality_type) {
-      // Allow them to see their type immediately, or retake
       setQuizResults({
         personalityType: user.personality_type.toUpperCase(),
-        quizScore: null // Backend might not send detailed breakdown directly, or we fetch
+        quizScore: null
       });
       setQuizState("results");
     } else {
-      // Reset state if user is logged out and there is no cached guest profile
       const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
       if (guestProfileRaw) {
         try {
@@ -164,21 +174,23 @@ export default function QuizPage() {
     setLoading(true);
 
     // Sum up the weights
-    const scores = { builder: 0, alpha: 0, shadow: 0, creator: 0 };
+    const scores = { builder: 0, alpha: 0, shadow: 0, creator: 0, rebel: 0 };
     finalAnswers.forEach((answer) => {
       const w = answer.weights;
       scores.builder += w.builder || 0;
       scores.alpha += w.alpha || 0;
       scores.shadow += w.shadow || 0;
       scores.creator += w.creator || 0;
+      scores.rebel += w.rebel || 0;
     });
 
-    const total = scores.builder + scores.alpha + scores.shadow + scores.creator;
+    const total = scores.builder + scores.alpha + scores.shadow + scores.creator + scores.rebel || 1;
     const quizScore = {
       builder: Math.round((scores.builder / total) * 100),
       alpha: Math.round((scores.alpha / total) * 100),
       shadow: Math.round((scores.shadow / total) * 100),
-      creator: Math.round((scores.creator / total) * 100)
+      creator: Math.round((scores.creator / total) * 100),
+      rebel: Math.round((scores.rebel / total) * 100)
     };
 
     // Find highest scoring type
@@ -210,7 +222,6 @@ export default function QuizPage() {
         if (res.ok) {
           await res.json();
           showToast(`Style profile saved successfully! Wolf Type: ${personalityType}`);
-          // Sync primary user personality type
           setUser((prev) => (prev ? { ...prev, personality_type: personalityType } : null));
         } else {
           showToast("Failed to save style profile to account, caching locally instead.", "info");
@@ -221,7 +232,6 @@ export default function QuizPage() {
         localStorage.setItem("vw_guest_style_profile", JSON.stringify(resultsPayload));
       }
     } else {
-      // Save locally for guest
       localStorage.setItem("vw_guest_style_profile", JSON.stringify(resultsPayload));
       showToast("Quiz completed! Style profile saved locally. Sign in to sync.");
     }
@@ -229,7 +239,7 @@ export default function QuizPage() {
     setTimeout(() => {
       setQuizState("results");
       setLoading(false);
-    }, 1500); // Cinematic pause
+    }, 1500);
   };
 
   const handleRetake = () => {
@@ -605,6 +615,86 @@ export default function QuizPage() {
                 </div>
               </div>
             )}
+
+            {/* Fit & Size Preferences Selection Card */}
+            <div style={{
+              background: "var(--onyx)",
+              border: "1px solid var(--smoke)",
+              padding: 24,
+              marginBottom: 32,
+              textAlign: "left"
+            }}>
+              <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", margin: "0 0 16px 0", textTransform: "uppercase" }}>
+                Customize Fit DNA
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ash)", marginBottom: 6 }}>PREFERRED FIT</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["Regular", "Oversized", "Ultra-Oversized"].map(f => {
+                      const isActive = userPreferences?.fits?.includes(f);
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => {
+                            const nextFits = isActive
+                              ? userPreferences.fits.filter(fit => fit !== f)
+                              : [...(userPreferences.fits || []), f];
+                            saveUserPreferences({ ...userPreferences, fits: nextFits });
+                          }}
+                          style={{
+                            flex: 1,
+                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
+                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
+                            color: isActive ? "var(--obsidian)" : "var(--ivory)",
+                            padding: "8px 0",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {f.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ash)", marginBottom: 6 }}>PREFERRED SIZE</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {["S", "M", "L", "XL", "XXL"].map(s => {
+                      const isActive = userPreferences?.sizes?.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            const nextSizes = isActive
+                              ? userPreferences.sizes.filter(sz => sz !== s)
+                              : [...(userPreferences.sizes || []), s];
+                            saveUserPreferences({ ...userPreferences, sizes: nextSizes });
+                          }}
+                          style={{
+                            width: 44,
+                            height: 44,
+                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
+                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
+                            color: isActive ? "var(--obsidian)" : "var(--ivory)",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10,
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Style and Recommended Collections */}
             <div style={{ marginBottom: 40 }}>

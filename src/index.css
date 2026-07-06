@@ -1,8 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&family=Manrope:wght@400;500;600&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap');
+/* ============================================================
+   VELVETWOLF — Typography system
+   Pairing: Unbounded (display) + Manrope (body/UI) + Space Mono (mono/meta)
+   Theme:   Dark luxury streetwear (#0a0a0a base)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&family=Manrope:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
+  /* Brand palette */
   --obsidian: #0a0a0a;
   --onyx: #111111;
   --graphite: #1a1a1a;
@@ -15,69 +27,295 @@
   --gold-light: #e8c97a;
   --crimson: #8b1a1a;
   --wolf-red: #c0392b;
-  
-  /* Fonts Pairing */
-  --font-display: 'Unbounded', system-ui, sans-serif;
-  --font-serif: 'Manrope', system-ui, sans-serif;
-  --font-body: 'Manrope', system-ui, sans-serif;
-  --font-mono: 'Space Mono', monospace;
 
-  /* Design Tokens */
-  --vw-black: #0a0a0a;        /* page background */
-  --vw-surface: #131313;      /* cards, product tiles */
-  --vw-border: #262626;       /* hairline borders */
-  --vw-ivory: #f5f2ec;        /* primary text, CTA background */
-  --vw-muted: #a8a49c;        /* secondary text */
-  --vw-faint: #6b6862;        /* captions, meta */
+  /* Fonts — 3-font system */
+  --font-display: 'Unbounded', system-ui, sans-serif;  /* hero / headings / product names */
+  --font-body:    'Manrope', system-ui, sans-serif;    /* body copy / UI / buttons */
+  --font-serif:   'Manrope', system-ui, sans-serif;    /* alias kept for JSX compatibility */
+  --font-mono:    'Space Mono', monospace;             /* prices / codes / metadata */
 
+  /* Design token aliases (for new utility classes) */
+  --vw-black:   #0a0a0a;   /* page background */
+  --vw-surface: #131313;   /* cards, product tiles */
+  --vw-border:  #262626;   /* hairline borders */
+  --vw-ivory:   #f5f2ec;   /* primary text, CTA background */
+  --vw-muted:   #a8a49c;   /* secondary text */
+  --vw-faint:   #6b6862;   /* captions, meta */
+
+  /* Tracking — wide caps is the luxury signal */
   --track-display: 0.04em;
-  --track-caps: 0.14em;
-  --track-body: 0;
+  --track-caps:    0.14em;
+  --track-body:    0;
 
-  --text-hero: clamp(2rem, 6vw, 3.75rem);      /* 32 → 60px */
-  --text-h1: clamp(1.625rem, 4.5vw, 2.5rem);   /* 26 → 40px */
-  --text-h2: clamp(1.25rem, 3vw, 1.75rem);     /* 20 → 28px */
-  --text-h3: clamp(1rem, 2vw, 1.125rem);       /* 16 → 18px */
-  --text-body: 1rem;                            /* 16px */
-  --text-small: 0.875rem;                       /* 14px */
-  --text-caption: 0.75rem;                      /* 12px */
+  /* Fluid type scale (mobile → desktop) */
+  --text-hero:    clamp(2rem, 6vw, 3.75rem);    /* 32 → 60px */
+  --text-h1:      clamp(1.625rem, 4.5vw, 2.5rem); /* 26 → 40px */
+  --text-h2:      clamp(1.25rem, 3vw, 1.75rem);  /* 20 → 28px */
+  --text-h3:      clamp(1rem, 2vw, 1.125rem);    /* 16 → 18px */
+  --text-body:    1rem;                           /* 16px */
+  --text-small:   0.875rem;                       /* 14px */
+  --text-caption: 0.75rem;                        /* 12px */
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
 
 body {
   background: var(--obsidian);
   color: var(--ivory);
-  font-family: var(--font-serif);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.65;
   overflow-x: hidden;
   cursor: crosshair;
 }
 
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-track { background: var(--obsidian); }
-::-webkit-scrollbar-thumb { background: var(--gold); }
+/* ------------------------------------------------------------
+   HEADINGS — Unbounded for display (h1/h2 only).
+   Rule: Unbounded above 20 px only — below that its wide
+   letterforms get cramped. h3/h4 use Manrope caps instead.
+------------------------------------------------------------ */
+h1, h2,
+.vw-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--track-display);
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--ivory);
+}
+
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); font-weight: 500; }
+
+/* h3/h4 — Manrope caps, not Unbounded (too wide at small sizes) */
+h3, h4 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-h3);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--ivory);
+}
+
+p { color: var(--ivory); }
+
+/* Hero headline — homepage / drop announcements */
+.vw-hero {
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+/* Eyebrow label above hero ("NEW DROP", "SS26") */
+.vw-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vw-muted);
+}
+
+/* Muted secondary text */
+.vw-text-muted {
+  color: var(--vw-muted);
+  font-size: var(--text-small);
+  line-height: 1.6;
+}
+
+/* Caption / meta labels */
+.vw-caption {
+  font-size: var(--text-caption);
+  letter-spacing: 0.06em;
+  color: var(--vw-faint);
+  text-transform: uppercase;
+}
+
+/* Product name on cards */
+.vw-product-name {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ivory);
+}
+
+/* Pricing */
+.vw-price {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--vw-muted);
+}
+.vw-price--sale   { color: var(--ivory); }
+.vw-price--strike { text-decoration: line-through; color: var(--vw-faint); }
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+}
 
 /* Animations */
-@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-@keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-@keyframes wolfHowl { 0% { transform: scaleX(1); } 50% { transform: scaleX(1.02); } 100% { transform: scaleX(1); } }
-@keyframes borderGlow { 0%, 100% { border-color: var(--gold); box-shadow: 0 0 10px rgba(201,168,76,0.3); } 50% { border-color: var(--gold-light); box-shadow: 0 0 20px rgba(201,168,76,0.6); } }
-@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes countUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
 
-.animate-fadeUp { animation: fadeUp 0.6s ease forwards; }
-.animate-float { animation: float 3s ease-in-out infinite; }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideRight {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes wolfHowl {
+  0% {
+    transform: scaleX(1);
+  }
+
+  50% {
+    transform: scaleX(1.02);
+  }
+
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes borderGlow {
+
+  0%,
+  100% {
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+  }
+
+  50% {
+    border-color: var(--gold-light);
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.6);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.6s ease forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
 
 /* Noise texture overlay */
 body::before {
   content: '';
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 9999;
@@ -90,7 +328,7 @@ body::before {
   color: var(--obsidian);
   border: none;
   padding: 14px 32px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -98,10 +336,11 @@ body::before {
   transition: all 0.3s ease;
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
 }
+
 .btn-gold:hover {
   background: linear-gradient(135deg, var(--gold-light), var(--gold));
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(201,168,76,0.4);
+  box-shadow: 0 8px 30px rgba(201, 168, 76, 0.4);
 }
 
 .btn-outline {
@@ -109,13 +348,14 @@ body::before {
   color: var(--gold);
   border: 1px solid var(--gold);
   padding: 12px 28px;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   letter-spacing: 3px;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
 }
+
 .btn-outline:hover {
   background: var(--gold);
   color: var(--obsidian);
@@ -126,14 +366,18 @@ body::before {
   color: var(--ash);
   border: 1px solid var(--smoke);
   padding: 10px 22px;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
 }
-.btn-ghost:hover { border-color: var(--silver); color: var(--ivory); }
+
+.btn-ghost:hover {
+  border-color: var(--silver);
+  color: var(--ivory);
+}
 
 /* Input styles */
 .input-dark {
@@ -141,14 +385,20 @@ body::before {
   border: 1px solid var(--smoke);
   color: var(--ivory);
   padding: 12px 16px;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   width: 100%;
   outline: none;
   transition: border-color 0.3s;
 }
-.input-dark:focus { border-color: var(--gold); }
-.input-dark::placeholder { color: var(--silver); }
+
+.input-dark:focus {
+  border-color: var(--gold);
+}
+
+.input-dark::placeholder {
+  color: var(--silver);
+}
 
 /* Card styles */
 .product-card {
@@ -158,30 +408,44 @@ body::before {
   position: relative;
   overflow: hidden;
 }
+
 .product-card::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
+  top: 0;
+  left: -100%;
   width: 100%;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
   transition: left 0.5s ease;
 }
-.product-card:hover::before { left: 100%; }
+
+.product-card:hover::before {
+  left: 100%;
+}
+
 .product-card:hover {
   border-color: var(--gold);
   transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(201,168,76,0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(201, 168, 76, 0.1);
 }
 
 /* Marquee */
-.marquee-container { overflow: hidden; white-space: nowrap; }
-.marquee-inner { display: inline-block; animation: marquee 20s linear infinite; }
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-inner {
+  display: inline-block;
+  animation: marquee 20s linear infinite;
+}
 
 /* Modal */
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
@@ -189,6 +453,7 @@ body::before {
   justify-content: center;
   animation: fadeIn 0.2s ease;
 }
+
 .modal-box {
   background: var(--onyx);
   border: 1px solid var(--smoke);
@@ -203,7 +468,8 @@ body::before {
 /* Sidebar */
 .sidebar {
   position: fixed;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   width: 420px;
   max-width: 95vw;
   height: 100vh;
@@ -268,8 +534,15 @@ body::before {
   gap: 10px;
 }
 
-select.input-dark { appearance: none; cursor: pointer; }
-textarea.input-dark { resize: vertical; min-height: 100px; }
+select.input-dark {
+  appearance: none;
+  cursor: pointer;
+}
+
+textarea.input-dark {
+  resize: vertical;
+  min-height: 100px;
+}
 
 /* Hide Firebase reCAPTCHA badge */
 .grecaptcha-badge {
@@ -280,87 +553,290 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
 
 /* Tablet: 640px – 1023px */
 @media (max-width: 1023px) {
-  .shop-sidebar { width: 100% !important; display: flex; flex-wrap: wrap; gap: 24px; }
-  .featured-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
-  .admin-sidebar { width: 200px; }
-  .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 40px !important; }
-  .footer-brand-col { grid-column: 1 / -1; }
-  .page-hero-title { font-size: clamp(48px, 8vw, 80px) !important; }
-  .page-hero-pad { padding: 64px 24px 48px !important; }
-  .page-content-pad { padding: 40px 24px !important; }
-  .collections-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important; justify-content: unset !important; }
-  .cart-layout { grid-template-columns: 1fr !important; }
-  .cart-summary { position: static !important; }
-  .nav-links { gap: 20px !important; }
-  .nav-links button { font-size: 15px !important; letter-spacing: 2px !important; }
-  .account-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; }
-  .promise-section { padding: 64px 24px !important; }
-  .promise-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
-  .promise-h2 { font-size: clamp(32px, 6vw, 56px) !important; }
+  .shop-sidebar {
+    width: 100% !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .featured-section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .admin-sidebar {
+    width: 200px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 40px !important;
+  }
+
+  .footer-brand-col {
+    grid-column: 1 / -1;
+  }
+
+  .page-hero-title {
+    font-size: clamp(48px, 8vw, 80px) !important;
+  }
+
+  .page-hero-pad {
+    padding: 64px 24px 48px !important;
+  }
+
+  .page-content-pad {
+    padding: 40px 24px !important;
+  }
+
+  .collections-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    justify-content: unset !important;
+  }
+
+  .cart-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cart-summary {
+    position: static !important;
+  }
+
+  .nav-links {
+    gap: 20px !important;
+  }
+
+  .nav-links button {
+    font-size: 15px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .account-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+
+  .promise-section {
+    padding: 64px 24px !important;
+  }
+
+  .promise-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  .promise-h2 {
+    font-size: clamp(32px, 6vw, 56px) !important;
+  }
 }
 
 /* Mobile: < 640px */
 @media (max-width: 639px) {
-  .shop-sidebar { width: 100% !important; display: flex; flex-wrap: wrap; gap: 16px; }
-  .sidebar { width: 100vw; }
-  .admin-sidebar { width: 160px; }
-  .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-  .footer-brand-col { grid-column: unset; }
-  .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
-  .footer-links { flex-wrap: wrap !important; gap: 12px !important; }
-  .footer-pad { padding: 48px 20px 32px !important; }
-  .page-hero-title { font-size: clamp(40px, 11vw, 64px) !important; }
-  .page-hero-pad { padding: 48px 20px 36px !important; }
-  .page-content-pad { padding: 28px 20px !important; }
-  .collections-grid { grid-template-columns: 1fr !important; }
-  .cart-layout { grid-template-columns: 1fr !important; }
-  .cart-summary { position: static !important; }
-  .cart-header { font-size: clamp(40px, 12vw, 72px) !important; }
-  .nav-pad { padding: 0 16px !important; }
-  .nav-height { height: 60px !important; }
-  .nav-logo-text { font-size: 18px !important; letter-spacing: 4px !important; }
-  .nav-logo-sub { display: none !important; }
-  .account-grid { grid-template-columns: 1fr !important; }
-  .wishlist-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
-  .auth-box { padding: 32px 20px !important; }
-  .contact-grid { grid-template-columns: 1fr !important; }
-  .modal-box { width: 95% !important; max-height: 95vh !important; }
-  .toast { bottom: 16px !important; right: 16px !important; left: 16px !important; font-size: 10px !important; }
-  .featured-section-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
-  .promise-section { padding: 48px 20px !important; }
-  .promise-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
-  .promise-h2 { font-size: clamp(28px, 9vw, 48px) !important; letter-spacing: 1px !important; }
+  .shop-sidebar {
+    width: 100% !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .sidebar {
+    width: 100vw;
+  }
+
+  .admin-sidebar {
+    width: 160px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+
+  .footer-brand-col {
+    grid-column: unset;
+  }
+
+  .footer-bottom {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .footer-links {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  .footer-pad {
+    padding: 48px 20px 32px !important;
+  }
+
+  .page-hero-title {
+    font-size: clamp(40px, 11vw, 64px) !important;
+  }
+
+  .page-hero-pad {
+    padding: 48px 20px 36px !important;
+  }
+
+  .page-content-pad {
+    padding: 28px 20px !important;
+  }
+
+  .collections-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cart-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cart-summary {
+    position: static !important;
+  }
+
+  .cart-header {
+    font-size: clamp(40px, 12vw, 72px) !important;
+  }
+
+  .nav-pad {
+    padding: 0 16px !important;
+  }
+
+  .nav-height {
+    height: 60px !important;
+  }
+
+  .nav-logo-text {
+    font-size: 18px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .nav-logo-sub {
+    display: none !important;
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  }
+
+  .auth-box {
+    padding: 32px 20px !important;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-box {
+    width: 95% !important;
+    max-height: 95vh !important;
+  }
+
+  .toast {
+    bottom: 16px !important;
+    right: 16px !important;
+    left: 16px !important;
+    font-size: 10px !important;
+  }
+
+  .featured-section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .promise-section {
+    padding: 48px 20px !important;
+  }
+
+  .promise-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .promise-h2 {
+    font-size: clamp(28px, 9vw, 48px) !important;
+    letter-spacing: 1px !important;
+  }
 }
 
 /* VelvetWolf Navbar Keyframes and Styles */
 @keyframes vw-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
+
 @keyframes vw-glow-pulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(201,168,76,0.35); }
-  50%       { box-shadow: 0 0 20px rgba(201,168,76,0.7), 0 0 40px rgba(201,168,76,0.3); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(201, 168, 76, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.7), 0 0 40px rgba(201, 168, 76, 0.3);
+  }
 }
+
 @keyframes vw-badge-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.65; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.65;
+  }
 }
+
 @keyframes vw-drawer-slide {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 @keyframes vw-gradient-shift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
+
 .vw-nav-link {
   position: relative;
   background: none;
   border: none;
   cursor: pointer;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   letter-spacing: 3px;
   font-weight: 500;
@@ -368,25 +844,42 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   color: var(--ash);
   transition: color 0.25s ease;
 }
+
 .vw-nav-link::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 50%;
-  width: 0; height: 1.5px;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 1.5px;
   background: var(--gold);
   transition: width 0.3s ease, left 0.3s ease;
 }
-.vw-nav-link:hover { color: var(--ivory); }
-.vw-nav-link:hover::after { width: 100%; left: 0; }
-.vw-nav-link.active { color: var(--gold); }
-.vw-nav-link.active::after { width: 100%; left: 0; }
+
+.vw-nav-link:hover {
+  color: var(--ivory);
+}
+
+.vw-nav-link:hover::after {
+  width: 100%;
+  left: 0;
+}
+
+.vw-nav-link.active {
+  color: var(--gold);
+}
+
+.vw-nav-link.active::after {
+  width: 100%;
+  left: 0;
+}
 
 .vw-bulk-btn {
   position: relative;
   background: none;
   border: 1px solid var(--gold);
   cursor: pointer;
-  font-family: 'Roboto', sans-serif;
+  font-family: var(--font-body);
   font-size: 11px;
   letter-spacing: 3px;
   font-weight: 600;
@@ -395,11 +888,13 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   white-space: nowrap;
 }
+
 .vw-bulk-btn:hover {
   background: var(--gold);
   color: var(--obsidian);
-  box-shadow: 0 0 18px rgba(201,168,76,0.5);
+  box-shadow: 0 0 18px rgba(201, 168, 76, 0.5);
 }
+
 .vw-bulk-btn.active {
   background: var(--gold);
   color: var(--obsidian);
@@ -418,14 +913,19 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   transition: color 0.2s ease, background 0.2s ease;
   position: relative;
 }
-.vw-icon-btn:hover { color: var(--gold); background: rgba(201,168,76,0.08); }
+
+.vw-icon-btn:hover {
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.08);
+}
 
 .vw-lang-pill {
   display: flex;
-  border: 1px solid rgba(201,168,76,0.3);
+  border: 1px solid rgba(201, 168, 76, 0.3);
   border-radius: 2px;
   overflow: hidden;
 }
+
 .vw-lang-pill button {
   background: none;
   border: none;
@@ -437,18 +937,20 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   color: var(--ash);
   transition: background 0.2s ease, color 0.2s ease;
 }
+
 .vw-lang-pill button.active {
   background: var(--gold);
   color: var(--obsidian);
 }
+
 .vw-lang-pill button:not(.active):hover {
-  background: rgba(201,168,76,0.1);
+  background: rgba(201, 168, 76, 0.1);
   color: var(--gold);
 }
 
 .vw-user-pill {
   background: none;
-  border: 1px solid rgba(201,168,76,0.3);
+  border: 1px solid rgba(201, 168, 76, 0.3);
   color: var(--gold);
   cursor: pointer;
   font-family: var(--font-mono);
@@ -459,11 +961,15 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   transition: border-color 0.2s ease, background 0.2s ease;
   white-space: nowrap;
 }
-.vw-user-pill:hover { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+
+.vw-user-pill:hover {
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.08);
+}
 
 .vw-signout-btn {
   background: none;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--ash);
   cursor: pointer;
   font-family: var(--font-mono);
@@ -473,11 +979,15 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   border-radius: 2px;
   transition: border-color 0.2s, color 0.2s;
 }
-.vw-signout-btn:hover { border-color: rgba(255,80,80,0.4); color: #ff8080; }
+
+.vw-signout-btn:hover {
+  border-color: rgba(255, 80, 80, 0.4);
+  color: #ff8080;
+}
 
 .vw-mobile-link {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(201,168,76,0.18);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(201, 168, 76, 0.18);
   border-radius: 3px;
   cursor: pointer;
   font-family: var(--font-display);
@@ -492,42 +1002,52 @@ textarea.input-dark { resize: vertical; min-height: 100px; }
   width: 100%;
   transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
 }
+
 .vw-mobile-link:hover {
   border-color: var(--gold);
   color: var(--gold);
-  background: rgba(201,168,76,0.05);
+  background: rgba(201, 168, 76, 0.05);
 }
+
 .vw-mobile-link.active {
   border-color: var(--gold);
   color: var(--gold);
-  background: rgba(201,168,76,0.07);
+  background: rgba(201, 168, 76, 0.07);
 }
+
 .vw-mobile-link .vw-link-arrow {
   font-size: 18px;
   opacity: 0.5;
   transition: opacity 0.2s, transform 0.2s;
 }
+
 .vw-mobile-link:hover .vw-link-arrow,
 .vw-mobile-link.active .vw-link-arrow {
   opacity: 1;
   transform: translateX(4px);
 }
+
 .vw-mobile-bulk {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: var(--obsidian) !important;
   font-weight: 700;
   letter-spacing: 5px !important;
-  box-shadow: 0 4px 24px rgba(201,168,76,0.25);
+  box-shadow: 0 4px 24px rgba(201, 168, 76, 0.25);
   transition: box-shadow 0.25s ease, background 0.25s ease !important;
 }
+
 .vw-mobile-bulk:hover {
   background: var(--gold-light, #f0d080) !important;
-  box-shadow: 0 4px 32px rgba(201,168,76,0.5) !important;
+  box-shadow: 0 4px 32px rgba(201, 168, 76, 0.5) !important;
   border-color: var(--gold-light, #f0d080) !important;
   color: var(--obsidian) !important;
 }
-.vw-mobile-bulk .vw-link-arrow { opacity: 0.7 !important; color: var(--obsidian) !important; }
+
+.vw-mobile-bulk .vw-link-arrow {
+  opacity: 0.7 !important;
+  color: var(--obsidian) !important;
+}
 
 /* ============================================================
    VELVETWOLF — Typography helper styles
@@ -540,7 +1060,8 @@ body {
   line-height: 1.65;
 }
 
-h1, h2,
+h1,
+h2,
 .vw-display {
   font-family: var(--font-display);
   font-weight: 600;
@@ -550,10 +1071,17 @@ h1, h2,
   color: var(--vw-ivory);
 }
 
-h1 { font-size: var(--text-h1); }
-h2 { font-size: var(--text-h2); font-weight: 500; }
+h1 {
+  font-size: var(--text-h1);
+}
 
-h3, h4 {
+h2 {
+  font-size: var(--text-h2);
+  font-weight: 500;
+}
+
+h3,
+h4 {
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--text-h3);
@@ -584,7 +1112,9 @@ h3, h4 {
 }
 
 /* Body & Meta Text helpers */
-p { color: var(--vw-ivory); }
+p {
+  color: var(--vw-ivory);
+}
 
 .vw-text-muted {
   color: var(--vw-muted);
@@ -602,7 +1132,8 @@ p { color: var(--vw-ivory); }
 /* Navigation helpers */
 .vw-nav-link {
   font-family: var(--font-body);
-  font-size: 0.8125rem;              /* 13px */
+  font-size: 0.8125rem;
+  /* 13px */
   font-weight: 500;
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
@@ -610,12 +1141,16 @@ p { color: var(--vw-ivory); }
   text-decoration: none;
   transition: color 160ms ease;
 }
+
 .vw-nav-link:hover,
-.vw-nav-link[aria-current="page"] { color: var(--vw-ivory); }
+.vw-nav-link[aria-current="page"] {
+  color: var(--vw-ivory);
+}
 
 .vw-logo {
   font-family: var(--font-display);
-  font-size: 1.125rem;               /* 18px */
+  font-size: 1.125rem;
+  /* 18px */
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -631,10 +1166,11 @@ p { color: var(--vw-ivory); }
   letter-spacing: var(--track-caps);
   text-transform: uppercase;
   padding: 0.875rem 2rem;
-  border-radius: 2px;                /* sharp = expensive; avoid pill shapes */
+  border-radius: 2px;
+  /* sharp = expensive; avoid pill shapes */
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease,
-              border-color 160ms ease;
+    border-color 160ms ease;
 }
 
 .vw-btn--primary {
@@ -642,6 +1178,7 @@ p { color: var(--vw-ivory); }
   color: var(--vw-black);
   border: 1px solid var(--vw-ivory);
 }
+
 .vw-btn--primary:hover {
   background: transparent;
   color: var(--vw-ivory);
@@ -652,7 +1189,10 @@ p { color: var(--vw-ivory); }
   color: var(--vw-ivory);
   border: 1px solid var(--vw-border);
 }
-.vw-btn--ghost:hover { border-color: var(--vw-ivory); }
+
+.vw-btn--ghost:hover {
+  border-color: var(--vw-ivory);
+}
 
 /* Product Cards & Pricing */
 .vw-product-name {
@@ -667,18 +1207,23 @@ p { color: var(--vw-ivory); }
   font-family: var(--font-body);
   font-size: var(--text-small);
   font-weight: 400;
-  font-variant-numeric: tabular-nums;   /* prices align cleanly in grids */
+  font-variant-numeric: tabular-nums;
+  /* prices align cleanly in grids */
   color: var(--vw-muted);
 }
 
-.vw-price--sale { color: var(--vw-ivory); }
+.vw-price--sale {
+  color: var(--vw-ivory);
+}
+
 .vw-price--strike {
   text-decoration: line-through;
   color: var(--vw-faint);
 }
 
 .vw-badge {
-  font-size: 0.6875rem;                 /* 11px */
+  font-size: 0.6875rem;
+  /* 11px */
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -698,9 +1243,431 @@ p { color: var(--vw-ivory); }
   color: var(--vw-black);
 }
 
+/* Active state touch scale-down */
+.btn-gold:active, .btn-outline:active, .btn-ghost:active, .vw-mobile-bottom-nav-tab:active, .vw-icon-btn:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease;
+}
+
+/* Skeleton Loading Shimmer */
+.vw-skeleton-loader {
+  background: linear-gradient(90deg, #161616 25%, #222222 50%, #161616 75%);
+  background-size: 200% 100%;
+  animation: vw-shimmer-loading 1.5s infinite linear;
+}
+@keyframes vw-shimmer-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Mobile Bottom Navigation Styles */
+.vw-mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 899;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+}
+
+.vw-mobile-bottom-nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--silver);
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.2s ease, transform 0.1s ease;
+  position: relative;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.vw-mobile-bottom-nav-tab.active {
+  color: var(--gold);
+}
+
+.vw-mobile-bottom-nav-tab-badge {
+  position: absolute;
+  top: 4px;
+  right: 22%;
+  background: var(--gold);
+  color: var(--obsidian);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: bold;
+  border-radius: 50%;
+  min-width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vw-mobile-bottom-nav-tab-badge.wishlist-badge {
+  background: var(--wolf-red);
+  color: #fff;
+}
+
+/* Floating Filter Button */
+.vw-mobile-filter-floating-btn {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: var(--obsidian);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(201, 168, 76, 0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.vw-mobile-filter-floating-btn:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
+/* Slide-up filter drawer overlay */
+.vw-filter-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.vw-filter-drawer {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  background: var(--onyx);
+  border-top: 1px solid var(--smoke);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+  animation: vw-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes vw-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Scroll-docked layout helpers */
+.vw-scroll-locked {
+  overflow: hidden !important;
+}
+
+.vw-drawer-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Add custom scrollbar styling to drawer content */
+.vw-drawer-content-scroll::-webkit-scrollbar {
+  width: 2px;
+}
+
+/* Sticky CTA Slide-up animation */
+@keyframes vw-slide-up-cta {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Hide horizontal scrollbar for mobile shelves */
+.vw-mobile-swipe-shelf::-webkit-scrollbar {
+  display: none !important;
+}
+.vw-mobile-swipe-shelf {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Mobile swiper snap items */
+.vw-mobile-swipe-shelf > div {
+  scroll-snap-align: start !important;
+}
+
+/* Skeleton shimmering animation */
+.vw-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.03) 63%
+  );
+  background-size: 400% 100%;
+  animation: vw-shimmer-loading 1.4s ease infinite;
+}
+
+@keyframes vw-shimmer-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* ------------------------------------------------------------
+   ACCESSIBILITY & SELECTION POLISH
+------------------------------------------------------------ */
+:focus-visible {
+  outline: 2px solid var(--vw-ivory);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--vw-ivory);
+  color: var(--vw-black);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* Scroll indicator animation */
+@keyframes vw-scroll-down {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 14px);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   DESKTOP UX REDESIGN — Phase 1 Utility Rules
+   Scoped to @media (min-width: 1024px)
+   ============================================================ */
+
+/* Mega menu entrance animation */
+@keyframes vw-mega-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* Search panel slide-down */
+@keyframes vw-search-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    backdrop-filter: blur(32px);
+  }
+}
+
+/* Subtle grid-line background for hero */
+@keyframes vw-grid-pulse {
+  0%, 100% { opacity: 0.03; }
+  50% { opacity: 0.06; }
+}
+
+/* Desktop-only product card enhancements */
+@media (min-width: 1024px) {
+  /* Increase spacing for product grid cards */
+  .product-card {
+    margin-bottom: 8px;
+  }
+
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px rgba(201, 168, 76, 0.12);
+  }
+
+  /* Color variant pills on hover */
+  .vw-color-pills {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 10px;
+  }
+  .product-card:hover .vw-color-pills {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .vw-color-pill {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--smoke);
+    cursor: pointer;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .vw-color-pill:hover {
+    border-color: var(--gold);
+    transform: scale(1.2);
+  }
+
+  /* Mega menu desktop styling */
+  .vw-mega-menu {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 10, 0.98);
+    backdrop-filter: blur(32px) saturate(1.4);
+    border-bottom: 1px solid var(--smoke);
+    padding: 48px 40px 56px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 24px rgba(201, 168, 76, 0.06);
+    z-index: 998;
+    animation: vw-mega-reveal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top center;
+  }
+
+  /* Search panel desktop styling */
+  .vw-search-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 10, 0.98);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 4px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px rgba(201, 168, 76, 0.08);
+    z-index: 999;
+    animation: vw-search-reveal 0.25s ease;
+  }
+
+  /* Editorial storytelling cards */
+  .vw-story-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--smoke);
+    background: var(--onyx);
+    transition: border-color 0.4s ease, transform 0.4s ease;
+    cursor: pointer;
+  }
+  .vw-story-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-4px);
+  }
+  .vw-story-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.3) 50%, transparent 100%);
+    pointer-events: none;
+  }
+  .vw-story-card-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Hero background grid lines */
+  .vw-hero-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(201, 168, 76, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201, 168, 76, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: vw-grid-pulse 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Product detail page asymmetric grid */
+  .vw-pdp-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    gap: 60px;
+  }
+
+  /* Product detail sticky info panel */
+  .vw-pdp-sticky {
+    position: sticky;
+    top: 100px;
+    align-self: start;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .vw-pdp-sticky::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Product detail stacked image gallery */
+  .vw-pdp-image-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vw-pdp-image-stack img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .vw-pdp-image-stack .vw-pdp-image-wrap:hover img {
+    transform: scale(1.02);
+  }
+
+  /* Navbar smooth transparent-to-solid transition */
+  .vw-nav-scrolled {
+    background: rgba(8, 8, 8, 0.97) !important;
+    backdrop-filter: blur(28px) saturate(1.5) !important;
+  }
+  .vw-nav-transparent {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, transparent 100%) !important;
+    backdrop-filter: none !important;
   }
 }
