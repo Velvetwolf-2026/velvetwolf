@@ -101,17 +101,20 @@ export default function AdminInventory() {
   const getVariants = (product) => {
     const sizes = Array.isArray(product.sizes) && product.sizes.length > 0 ? product.sizes : [null];
     const colors = Array.isArray(product.colors) && product.colors.length > 0 ? product.colors : [null];
+    const realVariants = product.product_variants || [];
     
     const variants = [];
     for (const size of sizes) {
       for (const color of colors) {
+        const real = realVariants.find(v => {
+          const matchSize = v.size === size || (!v.size && !size);
+          const matchColor = v.color === color || v.color_hex === color || (!v.color && !color);
+          return matchSize && matchColor;
+        });
         variants.push({
           size,
           color,
-          // Since product-specific stocks of variants are normally saved, we approximate
-          // or read from variant metadata. For now, since we dynamically sum stock in the backend,
-          // we present equal shares of total stock as fallback, or show 0/editable values.
-          stock: Math.floor(Number(product.stock ?? 0) / (sizes.length * colors.length)) || 0
+          stock: real ? Number(real.stock_qty ?? 0) : 0
         });
       }
     }

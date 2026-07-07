@@ -8,11 +8,21 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function AdminSettings() {
   const { showToast } = useContext(AppContext);
-  const [settings, setSettings] = useState({
-    storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
-    freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
-    razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
-    orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem("vw_store_settings");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return {
+      storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
+      freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
+      razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
+      orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",
+    };
   });
   const [errors, setErrors] = useState({});
 
@@ -45,6 +55,7 @@ export default function AdminSettings() {
       showToast("Please fix the errors before saving.", "error");
       return;
     }
+    localStorage.setItem("vw_store_settings", JSON.stringify(settings));
     showToast("Settings saved successfully!");
   };
 

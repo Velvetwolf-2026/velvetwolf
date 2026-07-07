@@ -232,9 +232,7 @@ export default function AdminProducts() {
             <select className="input-dark" value={form.collection} onChange={(e) => setForm((f) => ({ ...f, collection: e.target.value }))}>
               {COLLECTIONS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <select className="input-dark" value={form.tag} onChange={(e) => setForm((f) => ({ ...f, tag: e.target.value }))}>
-              {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <input className="input-dark" placeholder="TAG (e.g. NEW, HOT)" value={form.tag} onChange={(e) => setForm((f) => ({ ...f, tag: e.target.value }))} />
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
@@ -351,10 +349,7 @@ export default function AdminProducts() {
                             <select className="input-dark" value={editProduct.collection} onChange={(e) => setEditProduct((ep) => ({ ...ep, collection: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
                               {COLLECTIONS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
-                            <select className="input-dark" value={editProduct.tag || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, tag: e.target.value || null }))} style={{ padding: "4px 8px", fontSize: 10 }}>
-                              <option value="">NO TAG</option>
-                              {TAG_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <input className="input-dark" placeholder="TAG" value={editProduct.tag || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, tag: e.target.value || null }))} style={{ padding: "4px 8px", fontSize: 10, width: 80 }} />
                             <select className="input-dark" value={editProduct.style || "Unisex"} onChange={(e) => setEditProduct((ep) => ({ ...ep, style: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
                               {["Unisex", "Men's Fit", "Women's Fit"].map((s) => <option key={s} value={s}>{s}</option>)}
                             </select>

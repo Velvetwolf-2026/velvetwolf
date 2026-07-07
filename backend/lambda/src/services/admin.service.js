@@ -119,7 +119,7 @@ export async function getAdminProducts({ collection, search, page = 1, limit = 1
   logInfo("Fetching admin products", adminLogContext({ collection, search, page, limit }));
   const offset = (page - 1) * limit;
 
-  let query = supabaseAdmin.from("products").select("*", { count: "exact" })
+  let query = supabaseAdmin.from("products").select("*, product_variants(*)", { count: "exact" })
     .order("created_at", { ascending: false }).range(offset, offset + limit - 1);
 
   if (collection) query = query.eq("collection", collection);
@@ -274,6 +274,12 @@ export async function deleteAdminProduct(productId, adminId) {
 
   logInfo("Deleting product", adminLogContext({ productId, adminId }));
 
+  // Set product_id to null in order_items first to avoid foreign key violation
+  await supabaseAdmin
+    .from("order_items")
+    .update({ product_id: null })
+    .eq("product_id", productId);
+
   const { error } = await supabaseAdmin.from("products").delete().eq("id", productId);
   if (error) { logError("Product delete failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, "Failed to delete product."); }
 
@@ -375,39 +381,62 @@ export async function getAdminAnalytics() {
 export async function getAdminCoupons() {
   const { data, error } = await supabaseAdmin.from("coupons").select("*").order("created_at", { ascending: false });
   if (error) throw new ApiError(500, `Failed to load coupons: ${error.message}`);
-  return data || [];
+  return (data || []).map(d => ({
+    id: d.code,
+    code: d.code,
+    discount_percent: d.discount_value,
+    active: d.is_active,
+    created_at: d.created_at
+  }));
 }
 
 export async function createAdminCoupon(couponData) {
   const { code, discount_percent, active } = couponData;
   const { data, error } = await supabaseAdmin
     .from("coupons")
-    .insert({ code: code.toUpperCase().trim(), discount_percent: Number(discount_percent), active: active !== false })
+    .insert({
+      code: code.toUpperCase().trim(),
+      discount_value: Number(discount_percent),
+      discount_type: 'percentage',
+      is_active: active !== false
+    })
     .select()
     .single();
   if (error) throw new ApiError(400, `Failed to create coupon: ${error.message}`);
-  return data;
+  return {
+    id: data.code,
+    code: data.code,
+    discount_percent: data.discount_value,
+    active: data.is_active,
+    created_at: data.created_at
+  };
 }
 
 export async function updateAdminCoupon(couponId, couponData) {
   const { code, discount_percent, active } = couponData;
   const updates = {};
   if (code !== undefined) updates.code = code.toUpperCase().trim();
-  if (discount_percent !== undefined) updates.discount_percent = Number(discount_percent);
-  if (active !== undefined) updates.active = active;
+  if (discount_percent !== undefined) updates.discount_value = Number(discount_percent);
+  if (active !== undefined) updates.is_active = active;
 
   const { data, error } = await supabaseAdmin
     .from("coupons")
     .update(updates)
-    .eq("id", couponId)
+    .eq("code", couponId)
     .select()
     .single();
   if (error) throw new ApiError(400, `Failed to update coupon: ${error.message}`);
-  return data;
+  return {
+    id: data.code,
+    code: data.code,
+    discount_percent: data.discount_value,
+    active: data.is_active,
+    created_at: data.created_at
+  };
 }
 
 export async function deleteAdminCoupon(couponId) {
-  const { error } = await supabaseAdmin.from("coupons").delete().eq("id", couponId);
+  const { error } = await supabaseAdmin.from("coupons").delete().eq("code", couponId);
   if (error) throw new ApiError(400, `Failed to delete coupon: ${error.message}`);
   return { success: true };
 }
@@ -470,10 +499,10 @@ export async function updateAdminOrderShiprocket(orderId, trackingData) {
 export async function updateAdminProductInventory(productId, inventoryData) {
   const { size, color, stock } = inventoryData;
   
-  // Update in product_variants table
+  // Update in product_variants table using correct DB column stock_qty
   const { error: varError } = await supabaseAdmin
     .from("product_variants")
-    .update({ stock: Number(stock) })
+    .update({ stock_qty: Number(stock) })
     .eq("product_id", productId)
     .eq("size", size)
     .eq("color", color)
@@ -486,19 +515,19 @@ export async function updateAdminProductInventory(productId, inventoryData) {
   // Recalculate total product stock
   const { data: allVariants } = await supabaseAdmin
     .from("product_variants")
-    .select("stock")
+    .select("stock_qty")
     .eq("product_id", productId);
 
   let totalStock = Number(stock);
   if (allVariants && allVariants.length > 0) {
-    totalStock = allVariants.reduce((sum, v) => sum + Number(v.stock || 0), 0);
+    totalStock = allVariants.reduce((sum, v) => sum + Number(v.stock_qty || 0), 0);
   }
 
   const { data: product, error: prodError } = await supabaseAdmin
     .from("products")
     .update({ stock: totalStock })
     .eq("id", productId)
-    .select()
+    .select("*, product_variants(*)")
     .single();
 
   if (prodError) throw new ApiError(400, `Failed to update product stock: ${prodError.message}`);
