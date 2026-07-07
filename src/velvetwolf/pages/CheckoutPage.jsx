@@ -79,6 +79,7 @@ export default function CheckoutPage() {
     try {
       const res = await fetch(apiUrl('/checkout/coupon/validate'), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: couponInput, subtotal: cartTotal })
       });
@@ -154,6 +155,7 @@ export default function CheckoutPage() {
     try {
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,

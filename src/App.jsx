@@ -406,7 +406,7 @@ export default function VelvetWolf() {
       localStorage.removeItem("token");
       localStorage.removeItem("vw_guest_style_profile");
       // Call backend logout endpoint to clear HttpOnly cookie
-      await fetch(apiUrl("/auth/logout"), { method: "POST" });
+      await fetch(apiUrl("/auth/logout"), { method: "POST", credentials: 'include' });
       setUser(null);
       setWishlist([]);
       setCart([]);
@@ -444,7 +444,7 @@ export default function VelvetWolf() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const res = await fetch(apiUrl("/auth/session"));
+        const res = await fetch(apiUrl("/auth/session"), { credentials: 'include' });
         const data = await res.json();
         if (data.authenticated && data.user) {
           const normalized = normalizeUserRoleState(data.user);
@@ -510,6 +510,7 @@ export default function VelvetWolf() {
           const { personalityType, quizScore } = JSON.parse(localProfile);
           fetch(apiUrl("/user/style-profile"), {
             method: "POST",
+            credentials: 'include',
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${localStorage.getItem("token")}`

@@ -42,6 +42,7 @@ export default function PaymentStatusPage() {
       try {
         const res = await fetch(apiUrl('/checkout/verify'), {
           method: "POST",
+          credentials: 'include',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId })
         });

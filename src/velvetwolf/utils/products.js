@@ -9,7 +9,7 @@ export async function loadProductsFromAPI({ collection, search } = {}) {
     ? `${apiUrl('/products')}?${params.toString()}`
     : apiUrl('/products');
 
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: 'include' });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {

@@ -89,6 +89,7 @@ export default function BulkOrderPage() {
     try {
       const res = await fetch(apiUrl("/bulk/send"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,

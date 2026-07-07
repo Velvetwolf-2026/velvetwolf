@@ -112,7 +112,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`${apiUrl("/products")}/${slug}`)
+    fetch(`${apiUrl("/products")}/${slug}`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) throw new Error("Product not found");
         return res.json();
@@ -135,13 +135,13 @@ export default function ProductDetailPage() {
         setRecentlyViewed(nextStored);
 
         // Fetch AI Smart Bundles
-        fetch(`${apiUrl("/ai/bundles")}?productId=${prod.id}`)
+        fetch(`${apiUrl("/ai/bundles")}?productId=${prod.id}`, { credentials: 'include' })
           .then(res => res.json())
           .then(bData => setBundles(bData.bundles || []))
           .catch(err => console.error("Bundles load failed", err));
 
         // Fetch dynamic reviews
-        fetch(`${apiUrl("/products")}/${prod.id}/reviews`)
+        fetch(`${apiUrl("/products")}/${prod.id}/reviews`, { credentials: 'include' })
           .then(res => res.json())
           .then(rData => setProductReviews(rData.reviews || []))
           .catch(() => {
@@ -182,6 +182,7 @@ export default function ProductDetailPage() {
     setAdvLoading(true);
     fetch(apiUrl("/ai/size-recommendation"), {
       method: "POST",
+      credentials: 'include',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ height: advHeight, weight: advWeight, age: advAge, preferredFit: advFit })
     })
@@ -209,6 +210,7 @@ export default function ProductDetailPage() {
     // Simulate/Post review locally to DB (we have a product reviews table)
     fetch(`${apiUrl("/products")}/${product.id}/reviews`, {
       method: "POST",
+      credentials: 'include',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: reviewName, rating: reviewRating, comment: reviewComment })
     })

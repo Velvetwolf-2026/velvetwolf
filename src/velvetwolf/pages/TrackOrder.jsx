@@ -64,7 +64,7 @@ export default function TrackOrder() {
     setTrackingData(null);
 
     try {
-      const res = await fetch(apiUrl(`/shipping/track/${encodeURIComponent(normalizedOrderId)}`));
+      const res = await fetch(apiUrl(`/shipping/track/${encodeURIComponent(normalizedOrderId)}`), { credentials: 'include' });
       const data = await res.json();
       
       if (!res.ok) {

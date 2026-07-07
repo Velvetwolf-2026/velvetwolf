@@ -14,6 +14,8 @@ Resources:
     Properties:
       CorsConfiguration:
         AllowOrigins:
+          - https://www.velvetwolf.in
+          - https://velvetwolf.in
           - https://develop.d2xmob7nneg6g3.amplifyapp.com
         AllowHeaders:
           - Content-Type
@@ -23,6 +25,9 @@ Resources:
           - POST
           - OPTIONS
           - PUT
+          - PATCH
+          - DELETE
+        AllowCredentials: true
         MaxAge: 600
 
   VelvetwolfBackendFunction:
@@ -31,93 +36,40 @@ Resources:
       CodeUri: .
       Handler: index.handler
       Events:
+        # Catch-all routes to forward all requests to the Lambda handler
+        CatchAllGet:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /{proxy+}
+            Method: GET
+        CatchAllPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /{proxy+}
+            Method: POST
+        CatchAllPut:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /{proxy+}
+            Method: PUT
+        CatchAllPatch:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /{proxy+}
+            Method: PATCH
+        CatchAllDelete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VelvetwolfHttpApi
+            Path: /{proxy+}
+            Method: DELETE
         Root:
           Type: HttpApi
           Properties:
             ApiId: !Ref VelvetwolfHttpApi
             Path: /
             Method: GET
-        GoogleAuth:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/google
-            Method: GET
-        GoogleCallback:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/google/callback
-            Method: GET
-        Profile:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /profile
-            Method: GET
-        Wishlist:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /wishlist
-            Method: GET
-        WishlistToggle:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /wishlist/toggle
-            Method: POST
-        Cart:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /cart
-            Method: GET
-        CartAdd:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /cart/add
-            Method: POST
-        CartUpdate:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /cart/update
-            Method: POST
-        CartRemove:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /cart/remove
-            Method: POST
-        Signup:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/signup
-            Method: POST
-        Login:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/login
-            Method: POST
-        ResendOtp:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/resend-otp
-            Method: POST
-        ForgotPassword:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/forgot-password
-            Method: POST
-        VerifyOtp:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref VelvetwolfHttpApi
-            Path: /auth/verify-otp
-            Method: POST

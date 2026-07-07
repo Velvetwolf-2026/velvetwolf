@@ -134,6 +134,7 @@ export function Login() {
       
       const res = await fetch(apiUrl("/auth/firebase-login"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: idToken, identifier: result.user.email })
       });
@@ -185,6 +186,7 @@ export function Login() {
   const resendEmailOtp = async () => {
     const res = await fetch(apiUrl("/auth/resend-otp"), {
       method: "POST",
+      credentials: 'include',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: resolvedEmail,
@@ -223,6 +225,7 @@ export function Login() {
       const emailQuery = isMobile ? `${input}@mobile.velvetwolf.in` : input;
       const res = await fetch(apiUrl("/auth/discover"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailQuery }),
       });
@@ -309,6 +312,7 @@ export function Login() {
       const token = await executeRecaptcha("login");
       const res = await fetch(apiUrl("/auth/login"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: resolvedEmail,
@@ -383,6 +387,7 @@ export function Login() {
       const token = await executeRecaptcha("signup");
       const res = await fetch(apiUrl("/auth/signup"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: fullName.trim(),
@@ -436,6 +441,7 @@ export function Login() {
         const mobileNumber = resolvedEmail.split("@")[0];
         const res = await fetch(apiUrl("/auth/firebase-login"), {
           method: "POST",
+          credentials: 'include',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             phone: `+91${mobileNumber}`,
@@ -451,6 +457,7 @@ export function Login() {
         // Standard Email Flow OR Mobile Fallback Flow (using standard backend verify-otp)
         const res = await fetch(apiUrl("/auth/verify-otp"), {
           method: "POST",
+          credentials: 'include',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: resolvedEmail,

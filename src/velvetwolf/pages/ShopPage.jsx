@@ -63,6 +63,7 @@ export default function ShopPage() {
     const delayDebounce = setTimeout(() => {
       fetch(apiUrl("/ai/search"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: searchQuery })
       })

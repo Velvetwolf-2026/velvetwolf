@@ -67,6 +67,7 @@ export default function AiFashionAssistant() {
     try {
       const res = await fetch(apiUrl("/ai/chat"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) })
       });

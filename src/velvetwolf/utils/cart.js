@@ -7,6 +7,7 @@ export async function loadCartFromDB(userId) {
     : `${apiUrl('/cart')}`;
   const response = await fetch(
     url, {
+      credentials: 'include',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       }
@@ -26,6 +27,7 @@ export async function addCartItemDB(userId, product, qty = 1, size = null, color
   const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/add'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -50,6 +52,7 @@ export async function updateCartQtyDB(cartItemId, qty) {
   const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/update'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -71,6 +74,7 @@ export async function removeCartItemDB(cartItemId) {
   const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/remove'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
