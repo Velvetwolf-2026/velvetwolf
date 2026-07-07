@@ -54,6 +54,7 @@ export function AccountPage() {
       setStyleProfileLoading(true);
       const token = localStorage.getItem("token");
       fetch(apiUrl("/user/style-profile"), {
+        credentials: 'include',
         headers: {
           "Authorization": token ? `Bearer ${token}` : ""
         }
@@ -76,6 +77,7 @@ export function AccountPage() {
       const token = localStorage.getItem("token");
       const res = await fetch(apiUrl("/user/style-profile"), {
         method: "DELETE",
+        credentials: 'include',
         headers: {
           "Authorization": token ? `Bearer ${token}` : ""
         }

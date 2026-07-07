@@ -13,6 +13,7 @@ function getAdminHeaders() {
 async function adminFetch(method, path, body) {
   const res = await fetch(apiUrl(path), {
     method,
+    credentials: 'include',
     headers: getAdminHeaders(),
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });

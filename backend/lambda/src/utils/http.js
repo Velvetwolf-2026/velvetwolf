@@ -77,7 +77,7 @@ export function jsonResponse(statusCode, payload, extraHeaders = {}, event) {
   };
 
   if (cookies.length > 0) {
-    response.cookies = cookies;
+    response.multiValueHeaders = { "Set-Cookie": cookies };
   }
 
   return response;
@@ -98,7 +98,7 @@ export function redirectResponse(location, statusCode = 302, extraHeaders = {}, 
   };
 
   if (cookies.length > 0) {
-    response.cookies = cookies;
+    response.multiValueHeaders = { "Set-Cookie": cookies };
   }
 
   return response;

@@ -9,6 +9,7 @@ export async function updateProfile(userId, updates) {
   const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/update'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -35,6 +36,7 @@ export async function sendEmailUpdateOtp(newEmail) {
   const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/email/send-otp'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -53,6 +55,7 @@ export async function verifyEmailUpdateOtp(newEmail, otp) {
   const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/email/verify-otp'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -100,6 +100,7 @@ export default function ContactPage() {
     try {
       const response = await fetch(apiUrl("/contact/send"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),

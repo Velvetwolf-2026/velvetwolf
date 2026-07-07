@@ -88,6 +88,7 @@ export function ForgetPassword() {
     try {
       const res = await fetch(apiUrl("/auth/forgot-password"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim() })
       });
@@ -121,6 +122,7 @@ export function ForgetPassword() {
     try {
       const res = await fetch(apiUrl("/auth/verify-otp"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.toLowerCase().trim(),
@@ -162,6 +164,7 @@ export function ForgetPassword() {
     try {
       const res = await fetch(apiUrl("/auth/reset-password"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resetToken, newPassword: passwords.new })
       });
@@ -198,6 +201,7 @@ export function ForgetPassword() {
     try {
       const res = await fetch(apiUrl("/auth/resend-otp"), {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase().trim(), kind: "forgot" })
       });
