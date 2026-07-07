@@ -1,7 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "./AppContext";
-import { useLanguage } from "./LanguageContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
@@ -13,7 +12,6 @@ import { useBreakpoint } from "../utils/breakpoints";
 export default function HomePage() {
   const { products, openShop, user, showToast } = useContext(AppContext);
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const { isMobileOrTablet } = useBreakpoint();
 
   const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
@@ -171,6 +169,7 @@ export default function HomePage() {
     { name: "Rohit D.", rating: 5, comment: "Mind Palace Tee looks absolutely beautiful in person. The graphic print is premium quality.", date: "01 June 2026" }
   ];
 
+  /*
   const instagramPosts = [
     { img: "/mockup_silent.png", tag: "@velvetwolf.in", hash: "#SilentLuxury" },
     { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#FounderEnergy" },
@@ -179,6 +178,7 @@ export default function HomePage() {
     { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#BuildInSilence" },
     { img: "/mockup_beast.png", tag: "@velvetwolf.in", hash: "#StreetCulture" }
   ];
+  */
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
