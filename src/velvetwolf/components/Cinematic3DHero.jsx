@@ -123,7 +123,7 @@ export default function Cinematic3DHero() {
     { name: "White", hex: "#FAF9F6", label: "Alabaster White" },
     { name: "Beige", hex: "#D9C5B2", label: "Desert Sand" },
     { name: "Forest Green", hex: "#1E352F", label: "Forest Canopy" },
-    { name: "Soft Red", hex: "#8B2635", label: "Crimson Ember" }
+    { name: "Crimson Ember", hex: "#8B2635", label: "Crimson Ember" }
   ];
 
   const [activeColor, setActiveColor] = useState(colorOptions[0]);

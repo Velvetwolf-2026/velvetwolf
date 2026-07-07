@@ -13,7 +13,8 @@ const AVAILABLE_COLORS = [
   { name: "Black", value: "#0a0a0a" },
   { name: "White", value: "#faf9f7" },
   { name: "Beige/Sand", value: "#d2b48c" },
-  { name: "Forest Green", value: "#1e4620" }
+  { name: "Forest Green", value: "#1e4620" },
+  { name: "Crimson Ember", value: "#8B2635" }
 ];
 
 const FABRIC_TYPES = ["Egyptian Cotton", "Supima Cotton", "French Terry", "Heavyweight Jersey"];

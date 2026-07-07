@@ -78,9 +78,9 @@ describe("QuizPage Scoring & Interaction Tests", () => {
       vi.advanceTimersByTime(1500);
     });
 
-    // Should display BUILDER wolf details
-    expect(screen.getByText("THE BUILDER WOLF")).toBeDefined();
-    expect(screen.getByText("YOU ARE: Focused. Disciplined. Always creating.")).toBeDefined();
+    // Should display BUILDER wolf details (MIDNIGHT MINIMALIST)
+    expect(screen.getByText("MIDNIGHT MINIMALIST")).toBeDefined();
+    expect(screen.getByText(/YOU ARE:\s*Monochromatic\.\s*Clean\.\s*Made\s*in\s*silence\./i)).toBeDefined();
   });
 
   it("should save style profile to local storage for guests", async () => {

@@ -22,6 +22,7 @@ const COLORS = [
   { hex: "#0a0a0a", name: "Obsidian Black" },
   { hex: "#faf9f7", name: "Ivory White" },
   { hex: "#1e3725", name: "Forest Green" },
+  { hex: "#8B2635", name: "Crimson Ember" },
   { hex: "#4a1515", name: "Crimson Red" },
   { hex: "#1c2e4a", name: "Navy Blue" },
   { hex: "#d5bda9", name: "Desert Sand" }

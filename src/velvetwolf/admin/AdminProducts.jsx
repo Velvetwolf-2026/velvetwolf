@@ -5,6 +5,29 @@ import { COLLECTIONS } from "../utils/collectionsData";
 import Icon from "../components/Icon";
 import { TAG_COLORS } from "../utils/constants";
 
+const getCleanImageUrl = (img) => {
+  if (!img) return "";
+  let url = img;
+  if (typeof url === "string") {
+    if (url.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(url);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          url = parsed[0];
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } else if (Array.isArray(url) && url.length > 0) {
+    url = url[0];
+  }
+  if (typeof url === "string" && url.includes("::")) {
+    url = url.split("::")[1];
+  }
+  return url;
+};
+
 const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", fit: "Oversized" };
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
@@ -13,10 +36,11 @@ const COLOR_MAP = {
   "Black": "#0a0a0a",
   "White": "#faf9f7",
   "Beige/Sand": "#d2b48c",
-  "Forest Green": "#1e4620"
+  "Forest Green": "#1e4620",
+  "Crimson Ember": "#8B2635"
 };
 
-const T_SHIRT_COLORS = ["Black", "White", "Beige/Sand", "Forest Green"];
+const T_SHIRT_COLORS = ["Black", "White", "Beige/Sand", "Forest Green", "Crimson Ember"];
 
 export default function AdminProducts() {
   const { setPage, showToast } = useContext(AppContext);
@@ -230,7 +254,7 @@ export default function AdminProducts() {
                     setIsTshirtForm(checked);
                     setForm(f => ({
                       ...f,
-                      colors: checked ? ["Black", "White", "Beige/Sand", "Forest Green"] : ["#0a0a0a"]
+                      colors: checked ? ["Black", "White", "Beige/Sand", "Forest Green", "Crimson Ember"] : ["#0a0a0a"]
                     }));
                   }} 
                 />
@@ -276,7 +300,7 @@ export default function AdminProducts() {
             ) : (
               <div style={{ display: "flex", gap: 8, gridColumn: "1/-1", alignItems: "center", flexWrap: "wrap" }}>
                 {form.image && (
-                  <img src={form.image} alt="Primary" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)", border: "1px solid var(--gold)" }} />
+                  <img src={getCleanImageUrl(form.image)} alt="Primary" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)", border: "1px solid var(--gold)" }} />
                 )}
                 {(form.newImages || []).map((img, i) => (
                   <div key={i} style={{ position: "relative" }}>
@@ -348,7 +372,7 @@ export default function AdminProducts() {
                                 setIsTshirtEdit(checked);
                                 setEditProduct(ep => ({
                                   ...ep,
-                                  colors: checked ? ["Black", "White", "Beige/Sand", "Forest Green"] : ["#0a0a0a"]
+                                  colors: checked ? ["Black", "White", "Beige/Sand", "Forest Green", "Crimson Ember"] : ["#0a0a0a"]
                                 }));
                               }} 
                             />
@@ -411,7 +435,7 @@ export default function AdminProducts() {
                           ) : (
                             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
                               {editProduct.image && (
-                                <img src={editProduct.image} alt="Primary" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
+                                <img src={getCleanImageUrl(editProduct.image)} alt="Primary" style={{ width: 30, height: 30, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />
                               )}
                               {(editProduct.images || []).map((url, i) => url !== editProduct.image && !url.includes("::") && (
                                 <div key={i} style={{ position: "relative" }}>
@@ -441,7 +465,7 @@ export default function AdminProducts() {
                           )}
                         </div>
                       : <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          {p.image && <img src={p.image.includes("::") ? p.image.split("::")[1] : p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />}
+                          {p.image && <img src={getCleanImageUrl(p.image)} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, background: "var(--smoke)" }} />}
                           <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{p.name}</div>
                         </div>}
                   </td>

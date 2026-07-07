@@ -98,7 +98,7 @@ export default function ProductCard({ product }) {
         {product.colors && product.colors.length > 0 && (
           <div className="vw-color-pills">
             {product.colors.map(c => {
-              const colorMap = { "Black": "#0a0a0a", "White": "#faf9f7", "Beige/Sand": "#d2b48c", "Forest Green": "#1e4620" };
+              const colorMap = { "Black": "#0a0a0a", "White": "#faf9f7", "Beige/Sand": "#d2b48c", "Forest Green": "#1e4620", "Crimson Ember": "#8B2635" };
               return (
                 <div
                   key={c}

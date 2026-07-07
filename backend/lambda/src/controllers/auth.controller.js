@@ -161,11 +161,23 @@ export async function logout(body, event) {
 export async function getSession(body, event) {
   try {
     const user = requireAuth(event);
+    const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
+    let token = "";
+    if (cookieHeader) {
+      const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="));
+      if (match) {
+        token = match.split("=")[1]?.trim();
+      }
+    }
+    if (!token) {
+      const authHeader = event.headers?.authorization || event.headers?.Authorization || "";
+      token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    }
     const csrfToken = authService.generateCsrfToken();
     const headers = {
       "Set-Cookie": authService.getCsrfCookieHeader(csrfToken)
     };
-    return jsonResponse(200, { authenticated: true, user, csrfToken }, headers, event);
+    return jsonResponse(200, { authenticated: true, user, token, csrfToken }, headers, event);
   } catch {
     return jsonResponse(200, { authenticated: false, user: null }, {}, event);
   }
