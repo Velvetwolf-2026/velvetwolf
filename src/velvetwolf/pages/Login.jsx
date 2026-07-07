@@ -142,7 +142,9 @@ export function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Google login failed.");
       
-      // Cookie is handled automatically, no localStorage token required
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
       const nextUser = {
         ...data.user,
         role: data.user?.role || "customer",
@@ -328,7 +330,7 @@ export function Login() {
 
       // Email password login returns JWT directly (No OTP)
       if (data.token) {
-        // Cookie is handled automatically, no localStorage token required
+        localStorage.setItem("token", data.token);
         const nextUser = {
           ...data.user,
           email: data.user.email || resolvedEmail,
@@ -480,7 +482,7 @@ export function Login() {
           setStep("mobile_name");
         } else {
           // Complete login
-          // Cookie is handled automatically, no localStorage token required
+          localStorage.setItem("token", data.token);
           const nextUser = {
             ...data.user,
             email: resolvedEmail,
@@ -558,8 +560,10 @@ export function Login() {
     setLoading(true);
     try {
       const mobileNumber = resolvedEmail.split("@")[0];
-      // Note: We bypass setting localStorage token here since it's HttpOnly. 
-      // During registration completion, the browser cookie was already set in verifyOtp/firebaseLogin step!
+      // Save token before calling updateProfile to ensure it uses the token header in dev
+      if (pendingToken) {
+        localStorage.setItem("token", pendingToken);
+      }
       const profile = await updateProfile(pendingUserObject.id, {
         fullName: fullName.trim(),
         phone: mobileNumber,

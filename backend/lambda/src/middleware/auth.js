@@ -20,6 +20,13 @@ export function requireAuth(event) {
     }
   }
 
+  if (!token && event.cookies && Array.isArray(event.cookies)) {
+    const match = event.cookies.find((c) => c.trim().startsWith("token="));
+    if (match) {
+      token = match.split("=")[1]?.trim();
+    }
+  }
+
   if (!token) {
     const authHeader =
       event.headers?.authorization ||
@@ -38,7 +45,8 @@ export function requireAuth(event) {
   }
 
   // Determine if authentication was performed via HttpOnly cookie
-  const usedCookie = !!cookieHeader && cookieHeader.split(";").some((c) => c.trim().startsWith("token="));
+  const usedCookie = (!!cookieHeader && cookieHeader.split(";").some((c) => c.trim().startsWith("token="))) ||
+                     (!!event.cookies && Array.isArray(event.cookies) && event.cookies.some((c) => c.trim().startsWith("token=")));
 
   const method = event.requestContext?.http?.method || event.httpMethod || "GET";
   if (usedCookie && ["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
@@ -46,6 +54,12 @@ export function requireAuth(event) {
     let csrfCookieToken = "";
     if (cookieHeader) {
       const match = cookieHeader.split(";").find((c) => c.trim().startsWith("csrf_token="));
+      if (match) {
+        csrfCookieToken = match.split("=")[1]?.trim();
+      }
+    }
+    if (!csrfCookieToken && event.cookies && Array.isArray(event.cookies)) {
+      const match = event.cookies.find((c) => c.trim().startsWith("csrf_token="));
       if (match) {
         csrfCookieToken = match.split("=")[1]?.trim();
       }

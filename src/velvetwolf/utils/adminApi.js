@@ -26,6 +26,9 @@ async function adminFetch(method, path, body) {
   }
 
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      window.dispatchEvent(new CustomEvent("vw-unauthorized"));
+    }
     const err = new Error(data?.error || `Request failed (${res.status})`);
     err.status = res.status;
     throw err;

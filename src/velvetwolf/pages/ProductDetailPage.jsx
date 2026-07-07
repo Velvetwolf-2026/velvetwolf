@@ -10,11 +10,39 @@ import ProductCard from "../components/ProductCard";
 import { getSupabaseLogoUrl } from "../utils/supabase";
 
 
+const getProductImage = (p) => {
+  if (!p) return null;
+  let img = p.image;
+  if (typeof img === "string") {
+    if (img.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(img);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          img = parsed[0];
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } else if (Array.isArray(img) && img.length > 0) {
+    img = img[0];
+  }
+  if (!img && Array.isArray(p.images) && p.images.length > 0) {
+    const firstNonPrefixed = p.images.find(i => typeof i === "string" && !i.includes("::"));
+    img = firstNonPrefixed || p.images[0];
+  }
+  if (typeof img === "string" && img.includes("::")) {
+    img = img.split("::")[1];
+  }
+  return img || null;
+};
+
 const COLOR_MAP = {
   "Black": "#0a0a0a",
   "White": "#faf9f7",
   "Beige/Sand": "#d2b48c",
-  "Forest Green": "#1e4620"
+  "Forest Green": "#1e4620",
+  "Crimson Ember": "#8B2635"
 };
 
 export default function ProductDetailPage() {
@@ -328,10 +356,31 @@ export default function ProductDetailPage() {
 
   const sizes = Array.isArray(product.sizes) ? product.sizes : [];
   const colors = Array.isArray(product.colors) ? product.colors : [];
+  const primaryImage = getProductImage(product);
   const rawGallery = Array.isArray(product.images) ? product.images : [];
-  const gallery = product.image && !rawGallery.includes(product.image)
-    ? [product.image, ...rawGallery]
-    : (rawGallery.length > 0 ? rawGallery : (product.image ? [product.image] : []));
+  
+  // Parse any stringified arrays inside rawGallery
+  const parsedRawGallery = [];
+  rawGallery.forEach(img => {
+    if (typeof img === "string" && img.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(img);
+        if (Array.isArray(parsed)) {
+          parsedRawGallery.push(...parsed);
+        } else {
+          parsedRawGallery.push(img);
+        }
+      } catch {
+        parsedRawGallery.push(img);
+      }
+    } else {
+      parsedRawGallery.push(img);
+    }
+  });
+
+  const gallery = primaryImage && !parsedRawGallery.includes(primaryImage)
+    ? [primaryImage, ...parsedRawGallery]
+    : (parsedRawGallery.length > 0 ? parsedRawGallery : (primaryImage ? [primaryImage] : []));
 
   let filteredGallery = gallery.map(img => (typeof img === "string" && img.includes("::") ? img.split("::")[1] : img));
   const activeImage = selectedImage || (filteredGallery[0] || null);
@@ -455,6 +504,82 @@ export default function ProductDetailPage() {
                 )}
               </div>
             )}
+            {/* Delivery Estimate & Accordion details in the Left column */}
+            <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 32 }}>
+              {/* Delivery Estimate */}
+              <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "20px 24px" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>ESTIMATE DELIVERY DATE</div>
+                <div style={{ display: "flex", gap: 10, position: "relative" }}>
+                  <input
+                    className="input-dark"
+                    type="text"
+                    placeholder="Enter 6-digit Pincode"
+                    value={pincode}
+                    onChange={handlePincodeChange}
+                    maxLength={6}
+                    style={{ flex: 1, padding: "10px 14px", fontSize: 13 }}
+                  />
+                  {loadingPincode && (
+                    <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>
+                      ...
+                    </span>
+                  )}
+                </div>
+
+                {deliveryInfo && (
+                  <div style={{ marginTop: 12, fontFamily: "var(--font-mono)", fontSize: 11, color: deliveryInfo.available ? "#81c784" : "#e07070" }}>
+                    {deliveryInfo.available ? (
+                      <div>
+                        <div>✓ Deliverable to <span style={{ color: "var(--ivory)", fontWeight: 600 }}>{deliveryInfo.city}, {deliveryInfo.state}</span></div>
+                        <div style={{ marginTop: 6, color: "var(--silver)" }}>Estimated Delivery: <span style={{ color: "var(--gold)", fontWeight: 600 }}>{deliveryInfo.date}</span></div>
+                      </div>
+                    ) : (
+                      <div>✕ {deliveryInfo.message}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Collapsible Accordion details */}
+              <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "24px" }}>
+                <div style={{ display: "flex", gap: 20, borderBottom: "1px solid var(--smoke)", paddingBottom: 10, marginBottom: 16 }}>
+                  {["details", "shipping", "badges"].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      style={{ background: "none", border: "none", color: activeTab === tab ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, cursor: "pointer", paddingBottom: 6, borderBottom: `2px solid ${activeTab === tab ? "var(--gold)" : "transparent"}` }}
+                    >
+                      {tab.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+
+                {activeTab === "details" && (
+                  <div style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.8, fontFamily: "var(--font-serif)" }}>
+                    <p style={{ margin: 0 }}>• Premium 220 GSM Egyptian long-staple cotton canvas.</p>
+                    <p style={{ margin: "6px 0 0" }}>• Custom fit: structured shoulders, relaxed body chest drape.</p>
+                    <p style={{ margin: "6px 0 0" }}>• Clean finish: invisible stitching at neck rib and bottom fold.</p>
+                  </div>
+                )}
+
+                {activeTab === "shipping" && (
+                  <div style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.8, fontFamily: "var(--font-serif)" }}>
+                    <p style={{ margin: 0 }}>• Fast Express Delivery: orders dispatched within 24-48 hours.</p>
+                    <p style={{ margin: "6px 0 0" }}>• Shipping timeframe: 3-5 business days across India.</p>
+                    <p style={{ margin: "6px 0 0" }}>• Live updates: Real-time SMS and AWB courier link tracking.</p>
+                  </div>
+                )}
+
+                {activeTab === "badges" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
+                    <div>🛡️ SECURE GATEWAY Cards and UPI</div>
+                    <div>100% Tirupur Made Cotton</div>
+                    <div>⚡ Express courier tracking</div>
+                    <div>🔄 30 Day Easy Returns policy</div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Right - Product Details (Sticky Panel on Desktop) */}
@@ -645,7 +770,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Payment Method Trust Badges */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "flex-start", padding: "14px 20px", border: "1px dashed var(--smoke)", marginBottom: 20, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "flex-start", padding: "14px 0", marginBottom: 20, flexWrap: "wrap" }}>
               <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 1, marginRight: 6 }}>SECURE PROTOCOLS:</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 28, flexWrap: "wrap", marginTop: 8 }}>
                 {/* Visa */}
@@ -672,39 +797,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Delivery Estimate */}
-            <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "18px 20px", marginBottom: 36 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ash)", marginBottom: 12 }}>ESTIMATE DELIVERY DATE</div>
-              <div style={{ display: "flex", gap: 10, position: "relative" }}>
-                <input
-                  className="input-dark"
-                  type="text"
-                  placeholder="Enter 6-digit Pincode"
-                  value={pincode}
-                  onChange={handlePincodeChange}
-                  maxLength={6}
-                  style={{ flex: 1, padding: "10px 14px", fontSize: 13 }}
-                />
-                {loadingPincode && (
-                  <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>
-                    ...
-                  </span>
-                )}
-              </div>
-
-              {deliveryInfo && (
-                <div style={{ marginTop: 12, fontFamily: "var(--font-mono)", fontSize: 11, color: deliveryInfo.available ? "#81c784" : "#e07070" }}>
-                  {deliveryInfo.available ? (
-                    <div>
-                      <div>✓ Deliverable to <span style={{ color: "var(--ivory)", fontWeight: 600 }}>{deliveryInfo.city}, {deliveryInfo.state}</span></div>
-                      <div style={{ marginTop: 6, color: "var(--silver)" }}>Estimated Delivery: <span style={{ color: "var(--gold)", fontWeight: 600 }}>{deliveryInfo.date}</span></div>
-                    </div>
-                  ) : (
-                    <div>✕ {deliveryInfo.message}</div>
-                  )}
-                </div>
-              )}
-            </div>
 
             {/* Frequently Bought Together Bundle */}
             {related.length > 0 && (
@@ -739,7 +831,7 @@ export default function ProductDetailPage() {
                   {/* Item 2 */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <img
-                      src={related[0].image || (related[0].gallery?.[0] || activeImage)}
+                      src={getProductImage(related[0]) || activeImage}
                       alt={related[0].name}
                       style={{ width: 44, height: 44, objectFit: "cover", border: "1px solid var(--smoke)" }}
                     />
@@ -784,45 +876,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Collapsible Accordion details */}
-            <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 20 }}>
-              <div style={{ display: "flex", gap: 20, borderBottom: "1px solid var(--smoke)", paddingBottom: 10, marginBottom: 16 }}>
-                {["details", "shipping", "badges"].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{ background: "none", border: "none", color: activeTab === tab ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, cursor: "pointer", paddingBottom: 6, borderBottom: `2px solid ${activeTab === tab ? "var(--gold)" : "transparent"}` }}
-                  >
-                    {tab.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              {activeTab === "details" && (
-                <div style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.6, fontFamily: "var(--font-serif)" }}>
-                  <p>• Premium 220 GSM Egyptian long-staple cotton canvas.</p>
-                  <p style={{ marginTop: 6 }}>• Custom fit: structured shoulders, relaxed body chest drape.</p>
-                  <p style={{ marginTop: 6 }}>• Clean finish: invisible stitching at neck rib and bottom fold.</p>
-                </div>
-              )}
-
-              {activeTab === "shipping" && (
-                <div style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.6, fontFamily: "var(--font-serif)" }}>
-                  <p>• Fast Express Delivery: orders dispatched within 24-48 hours.</p>
-                  <p style={{ marginTop: 6 }}>• Shipping timeframe: 3-5 business days across India.</p>
-                  <p style={{ marginTop: 6 }}>• Live updates: Real-time SMS and AWB courier link tracking.</p>
-                </div>
-              )}
-
-              {activeTab === "badges" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 11, fontFamily: "var(--font-mono)" }}>
-                  <div>🛡️ SECURE GATEWAY Cards and UPI</div>
-                  <div>100% Tirupur Made Cotton</div>
-                  <div>⚡ Express courier tracking</div>
-                  <div>🔄 30 Day Easy Returns policy</div>
-                </div>
-              )}
-            </div>
 
           </div>
         </div>
@@ -1165,7 +1218,7 @@ export default function ProductDetailPage() {
                   <th style={{ padding: "8px 0" }}>SPEC</th>
                   {[product, ...related.slice(0, 2)].map((item, idx) => (
                     <th key={idx} style={{ padding: 8, textAlign: "center", maxWidth: 100 }}>
-                      <img src={item.image} alt={item.name} style={{ width: 44, height: 44, objectFit: "cover", marginBottom: 4 }} />
+                      <img src={getProductImage(item)} alt={item.name} style={{ width: 44, height: 44, objectFit: "cover", marginBottom: 4 }} />
                       <div style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", fontSize: 9 }}>{item.name}</div>
                     </th>
                   ))}

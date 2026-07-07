@@ -265,7 +265,12 @@ export default function VelvetWolf() {
       setCart(items);
       try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
-      console.error('[syncCartFromDB]', err.message);
+      if (err.message === "Authentication required." || err.message.includes("401") || err.message.includes("Unauthorized")) {
+        setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      }
+      console.warn('[syncCartFromDB]', err.message);
     }
   };
 
@@ -274,7 +279,12 @@ export default function VelvetWolf() {
       const items = await loadWishlistFromDB(userId);
       setWishlist(items);
     } catch (err) {
-      console.error('[syncWishlistFromDB]', err.message);
+      if (err.message === "Authentication required." || err.message.includes("401") || err.message.includes("Unauthorized")) {
+        setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      }
+      console.warn('[syncWishlistFromDB]', err.message);
     }
   };
 
@@ -440,6 +450,17 @@ export default function VelvetWolf() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
 
+  // Handle global unauthorized API calls
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    };
+    window.addEventListener("vw-unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("vw-unauthorized", handleUnauthorized);
+  }, []);
+
   // Session verification using secure httpOnly cookie on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -450,9 +471,13 @@ export default function VelvetWolf() {
           const normalized = normalizeUserRoleState(data.user);
           setUser(normalized);
           localStorage.setItem("user", JSON.stringify(normalized));
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+          }
         } else {
           setUser(null);
           localStorage.removeItem("user");
+          localStorage.removeItem("token");
         }
       } catch (err) {
         console.warn("[Background Session Check Failed]", err.message);

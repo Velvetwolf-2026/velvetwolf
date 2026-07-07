@@ -9,7 +9,8 @@
       "Bash(curl -s \"https://img.icons8.com/ios/24/ffffff/arrow-right.png\" --max-time 10 -A \"Mozilla/5.0\")",
       "Bash(curl -sI \"https://img.icons8.com/ios-filled/24/ffffff/star.png\" --max-time 10 -A \"Mozilla/5.0\")",
       "Bash(pkill -f \"vite\")",
-      "Bash(git -C v:/Coding/velvetwolf diff -- backend/lambda/src/utils/http.js backend/lambda/template.yaml)"
+      "Bash(git -C v:/Coding/velvetwolf diff -- backend/lambda/src/utils/http.js backend/lambda/template.yaml)",
+      "Bash(xargs grep -l \"wishlist\\\\|syncCartFromDB\\\\|syncWishlistFromDB\")"
     ]
   }
 }

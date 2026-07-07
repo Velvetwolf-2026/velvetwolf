@@ -2,6 +2,28 @@ import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
 import { fetchAdminProducts, updateProductInventory } from "../utils/adminApi";
 import Icon from "../components/Icon";
+const getCleanImageUrl = (img) => {
+  if (!img) return "";
+  let url = img;
+  if (typeof url === "string") {
+    if (url.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(url);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          url = parsed[0];
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } else if (Array.isArray(url) && url.length > 0) {
+    url = url[0];
+  }
+  if (typeof url === "string" && url.includes("::")) {
+    url = url.split("::")[1];
+  }
+  return url;
+};
 
 export default function AdminInventory() {
   const { setPage, showToast } = useContext(AppContext);
@@ -164,7 +186,7 @@ export default function AdminInventory() {
                           </td>
                           <td style={{ padding: "14px 16px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              {product.image && <img src={product.image.includes("::") ? product.image.split("::")[1] : product.image} alt={product.name} style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 2, background: "var(--smoke)" }} />}
+                              {product.image && <img src={getCleanImageUrl(product.image)} alt={product.name} style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 2, background: "var(--smoke)" }} />}
                               <div style={{ fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 1 }}>{product.name}</div>
                             </div>
                           </td>

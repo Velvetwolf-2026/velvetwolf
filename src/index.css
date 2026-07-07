@@ -32,7 +32,7 @@
   --font-display: 'Unbounded', system-ui, sans-serif;  /* hero / headings / product names */
   --font-body:    'Manrope', system-ui, sans-serif;    /* body copy / UI / buttons */
   --font-serif:   'Manrope', system-ui, sans-serif;    /* alias kept for JSX compatibility */
-  --font-mono:    'Space Mono', monospace;             /* prices / codes / metadata */
+  --font-mono:    Roboto, sans-serif;             /* prices / codes / metadata */
 
   /* Design token aliases (for new utility classes) */
   --vw-black:   #0a0a0a;   /* page background */
