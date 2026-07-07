@@ -117,7 +117,6 @@ function WishlistItemCard({ item, onAddToCart, onRemove, folders, currentFolder,
 
 export default function WishlistPage() {
   const { wishlist, user, setPage, toggleWishlist, addToCart, products, showToast } = useContext(AppContext);
-  const { isMobile } = useBreakpoint();
 
   // Read URL search params for shared wishlist
   const query = new URLSearchParams(window.location.search);

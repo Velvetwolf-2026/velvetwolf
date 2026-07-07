@@ -17,12 +17,11 @@ export default function Navbar({ activePage }) {
   const [accountHovered, setAccountHovered] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
-  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop, searchQuery, setSearchQuery, deferredPrompt, triggerPwaInstall, products } =
+  const { setPage, setCartOpen, setWishlistOpen, user, cartCount, wishlist, signOutUser, openShop, searchQuery, setSearchQuery, products } =
     useContext(AppContext);
   const { language, setLanguage, t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [hidePrompt, setHidePrompt] = useState(false);
   const { isMobileOrTablet, isMobile } = useBreakpoint();
 
   // Load recently viewed for visual search suggestions

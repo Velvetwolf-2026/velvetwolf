@@ -13,7 +13,7 @@ export default function AdminSettings() {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {
+      } catch {
         // fallback
       }
     }

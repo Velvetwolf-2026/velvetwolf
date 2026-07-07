@@ -64,7 +64,7 @@ export default function PaymentStatusPage() {
     };
 
     checkPayment();
-  }, []);
+  }, [clearCart, showToast]);
 
   return (
     <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>

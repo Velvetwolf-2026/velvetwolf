@@ -60,7 +60,9 @@ export function buildOrderEmail({ order, items, address }) {
         try {
           const parsed = JSON.parse(imgUrl);
           if (Array.isArray(parsed) && parsed.length > 0) imgUrl = parsed[0];
-        } catch (e) {}
+        } catch {
+          // ignore
+        }
       }
       if (imgUrl.includes("::")) {
         imgUrl = imgUrl.split("::")[1];

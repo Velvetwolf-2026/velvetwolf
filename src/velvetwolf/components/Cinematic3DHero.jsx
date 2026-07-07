@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import * as THREE from "three";
 import { AppContext } from "../pages/AppContext";
-import { useLanguage } from "../pages/LanguageContext";
 import { useBreakpoint } from "../utils/breakpoints";
 
 function processTshirtImage(img) {
@@ -108,9 +107,52 @@ function processTshirtImage(img) {
   return croppedCanvas;
 }
 
+// Particle class for Gold Dust Particles
+class Particle {
+  constructor(width, height) {
+    this.reset(width, height);
+    this.y = Math.random() * height; // Start at random height initially
+  }
+
+  reset(width, height) {
+    this.x = Math.random() * width;
+    this.y = height + 10;
+    this.size = Math.random() * 1.8 + 0.4;
+    this.speedY = Math.random() * 0.4 + 0.15;
+    this.speedX = Math.random() * 0.2 - 0.1;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.oscSpeed = Math.random() * 0.02 + 0.005;
+    this.oscAngle = Math.random() * Math.PI;
+  }
+
+  update(width, height) {
+    this.y -= this.speedY;
+    this.oscAngle += this.oscSpeed;
+    this.x += Math.sin(this.oscAngle) * 0.25 + this.speedX;
+
+    // Fade out near the top
+    if (this.y < 80) {
+      this.opacity -= 0.01;
+    }
+
+    if (this.y < 0 || this.opacity <= 0) {
+      this.reset(width, height);
+    }
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = `rgba(201, 162, 77, ${this.opacity})`;
+    ctx.shadowColor = "#c9a24d";
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0; // reset
+  }
+}
+
 export default function Cinematic3DHero() {
   const { openShop } = useContext(AppContext);
-  const { t } = useLanguage();
   const { isMobileOrTablet } = useBreakpoint();
 
   const containerRef = useRef(null);
@@ -463,7 +505,7 @@ export default function Cinematic3DHero() {
     let animationFrameId;
     const startTime = performance.now() * 0.001;
 
-    const targetColor = new THREE.Color(activeColor.hex);
+    const targetColor = new THREE.Color(activeColorRef.current.hex);
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -472,7 +514,7 @@ export default function Cinematic3DHero() {
 
       // Smooth color transitions (lerping)
       if (shirtMaterial) {
-        targetColor.set(activeColor.hex);
+        targetColor.set(activeColorRef.current.hex);
         shirtMaterial.color.lerp(targetColor, 0.06);
       }
 
@@ -545,60 +587,16 @@ export default function Cinematic3DHero() {
     let width = (canvas.width = canvas.parentElement.clientWidth);
     let height = (canvas.height = canvas.parentElement.clientHeight);
 
-    // Particle class
-    class Particle {
-      constructor() {
-        this.reset();
-        this.y = Math.random() * height; // Start at random height initially
-      }
-
-      reset() {
-        this.x = Math.random() * width;
-        this.y = height + 10;
-        this.size = Math.random() * 1.8 + 0.4;
-        this.speedY = Math.random() * 0.4 + 0.15;
-        this.speedX = Math.random() * 0.2 - 0.1;
-        this.opacity = Math.random() * 0.5 + 0.1;
-        this.oscSpeed = Math.random() * 0.02 + 0.005;
-        this.oscAngle = Math.random() * Math.PI;
-      }
-
-      update() {
-        this.y -= this.speedY;
-        this.oscAngle += this.oscSpeed;
-        this.x += Math.sin(this.oscAngle) * 0.25 + this.speedX;
-
-        // Fade out near the top
-        if (this.y < 80) {
-          this.opacity -= 0.01;
-        }
-
-        if (this.y < 0 || this.opacity <= 0) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        ctx.fillStyle = `rgba(201, 162, 77, ${this.opacity})`;
-        ctx.shadowColor = "#c9a24d";
-        ctx.shadowBlur = 4;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0; // reset
-      }
-    }
-
     // Initialize particles
     const particleCount = 75;
-    const particles = Array.from({ length: particleCount }, () => new Particle());
+    const particles = Array.from({ length: particleCount }, () => new Particle(width, height));
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
-        p.update();
-        p.draw();
+        p.update(width, height);
+        p.draw(ctx);
       });
 
       animationId = requestAnimationFrame(render);
