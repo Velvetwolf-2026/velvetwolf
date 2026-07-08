@@ -8,21 +8,24 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function AdminSettings() {
   const { showToast } = useContext(AppContext);
+  const DEFAULT_SETTINGS = {
+    storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
+    freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
+    razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
+    orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",
+    heroColor: "#0D0D0D", heroFrontDesign: "", heroBackDesign: "/tee_back_print.jpg"
+  };
+
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem("vw_store_settings");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
       } catch {
         // fallback
       }
     }
-    return {
-      storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
-      freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
-      razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
-      orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",
-    };
+    return DEFAULT_SETTINGS;
   });
   const [errors, setErrors] = useState({});
 
@@ -83,6 +86,11 @@ export default function AdminSettings() {
       { label: "Alert Email",  key: "alertEmail" },
       { label: "SMS Provider", key: "smsProvider" },
       { label: "WhatsApp",     key: "whatsapp" },
+    ]},
+    { title: "HERO 3D SETTINGS", fields: [
+      { label: "Default T-Shirt Color (Hex)", key: "heroColor" },
+      { label: "Front Design Image URL",       key: "heroFrontDesign" },
+      { label: "Back Design Image URL",        key: "heroBackDesign" },
     ]},
   ];
 
