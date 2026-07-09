@@ -63,8 +63,8 @@ const compressImage = (file) => {
     img.onload = () => {
       URL.revokeObjectURL(img.src);
       
-      const MAX_WIDTH = 1200;
-      const MAX_HEIGHT = 1200;
+      const MAX_WIDTH = 1000;
+      const MAX_HEIGHT = 1000;
       let width = img.width;
       let height = img.height;
 
@@ -116,7 +116,7 @@ const compressImage = (file) => {
           });
         };
         reader.readAsDataURL(blob);
-      }, "image/jpeg", 0.8);
+      }, "image/jpeg", 0.7);
     };
     img.onerror = () => {
       const reader = new FileReader();
@@ -182,8 +182,15 @@ export default function AdminProducts() {
 
     setSaving(true);
     try {
+      const cleanedNewImages = (form.newImages || []).map(({ base64, fileName, contentType, color }) => ({
+        base64,
+        fileName,
+        contentType,
+        color
+      }));
       const payload = { 
         ...form, 
+        newImages: cleanedNewImages,
         price: Number(form.price), 
         original_price: form.original_price ? Number(form.original_price) : Number(form.price), 
         stock: Number(form.stock || 0) 
@@ -206,6 +213,12 @@ export default function AdminProducts() {
     if (!editProduct) return;
     setSaving(true);
     try {
+      const cleanedNewImages = (editProduct.newImages || []).map(({ base64, fileName, contentType, color }) => ({
+        base64,
+        fileName,
+        contentType,
+        color
+      }));
       const res = await updateProduct(editProduct.id, {
         name: editProduct.name,
         collection: editProduct.collection,
@@ -220,7 +233,7 @@ export default function AdminProducts() {
         colors: editProduct.colors,
         image: editProduct.image,
         images: editProduct.images,
-        newImages: editProduct.newImages,
+        newImages: cleanedNewImages,
       });
       setProducts((prev) => prev.map((p) => p.id === editProduct.id ? res.product : p));
       setEditProduct(null);
