@@ -249,12 +249,12 @@ export default function Cinematic3DHero() {
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.9).texture;
 
-    // Lights - Minimal ambient for high-contrast editorial mood
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.08);
+    // Lights - Ambient for base color definition
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
     scene.add(ambientLight);
 
-    // 1. Soft Gold Key Spotlight from Front Right (highlights texture and volume)
-    const goldSpot = new THREE.SpotLight(0xc9a24d, 12, 30, Math.PI / 4, 0.5, 1);
+    // 1. Soft Key Spotlight from Front Right (highlights texture and volume)
+    const goldSpot = new THREE.SpotLight(0xffffff, 2.5, 30, Math.PI / 4, 0.5, 1);
     goldSpot.position.set(4, 6, 4);
     goldSpot.castShadow = true;
     goldSpot.shadow.mapSize.width = 2048;
@@ -263,21 +263,21 @@ export default function Cinematic3DHero() {
     scene.add(goldSpot);
 
     // 2. Cinematic Rim Lights (Creates beautiful glowing highlights along the fabric contours)
-    const goldRimLeft = new THREE.DirectionalLight(0xc9a24d, 2.5);
+    const goldRimLeft = new THREE.DirectionalLight(0xffffff, 1.0);
     goldRimLeft.position.set(-3, 2, -4);
     scene.add(goldRimLeft);
 
-    const silverRimRight = new THREE.DirectionalLight(0xffffff, 1.8);
+    const silverRimRight = new THREE.DirectionalLight(0xffffff, 1.0);
     silverRimRight.position.set(3, 2, -4);
     scene.add(silverRimRight);
 
     // 4. Soft Front Fill Light (Fills in deep shadows for high-quality product photography feel)
-    const frontFill = new THREE.DirectionalLight(0xffffff, 0.8);
+    const frontFill = new THREE.DirectionalLight(0xffffff, 0.5);
     frontFill.position.set(-2, 1, 4);
     scene.add(frontFill);
 
     // 5. Crisp White Top Key Light (Highlights shoulders, neck collar, and dynamic creases)
-    const whiteKey = new THREE.SpotLight(0xffffff, 6, 20, Math.PI / 6, 0.5, 1);
+    const whiteKey = new THREE.SpotLight(0xffffff, 1.5, 20, Math.PI / 6, 0.5, 1);
     whiteKey.position.set(0, 8, 2);
     scene.add(whiteKey);
 
@@ -387,7 +387,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
     shirtGroup.position.set(0, 0.4, 0);
     sceneGroup.add(shirtGroup);
 
-    let shirtMaterial = null;
+    const shirtMaterials = [];
 
     const loader = new GLTFLoader();
     MeshoptDecoder.ready.then(() => {
@@ -399,42 +399,48 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         const c = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         
-        // Scale (increased by 40%) and center the model
-        const k = (2.0 * 1.4) / size.y;
+        // Scale (increased by 70% from baseline) and center the model
+        const k = (2.0 * 1.7) / size.y;
         model.scale.multiplyScalar(k);
         model.position.copy(c).multiplyScalar(-k);
         model.updateMatrixWorld(true);
 
         model.traverse((o) => {
-          if (o.isMesh && o.geometry && !shirtMaterial) {
-            shirtMaterial = o.material;
+          if (o.isMesh && o.geometry) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach(mat => {
+              if (mat && !shirtMaterials.includes(mat)) {
+                shirtMaterials.push(mat);
+              }
+            });
           }
         });
 
-        if (shirtMaterial) {
-          shirtMaterial.metalness = 0.1;
-          shirtMaterial.color = new THREE.Color(activeColorRef.current.hex);
-          shirtMaterial.envMapIntensity = 0.6; // High env map reflection intensity
-          shirtMaterial.side = THREE.DoubleSide;
+        shirtMaterials.forEach((mat) => {
+          mat.map = null; // Remove pre-baked diffuse texture map so color matches selection exactly
+          mat.metalness = 0.0; // Matte fabric, non-metallic
+          mat.color = new THREE.Color(activeColorRef.current.hex).convertSRGBToLinear();
+          mat.envMapIntensity = 0.15; // Low env map reflection intensity to keep color deep and true
+          mat.side = THREE.DoubleSide;
           const aniso = renderer.capabilities.getMaxAnisotropy();
-          ['map', 'normalMap', 'roughnessMap'].forEach((kk) => {
-            if (shirtMaterial[kk]) {
-              shirtMaterial[kk].anisotropy = aniso;
-              shirtMaterial[kk].needsUpdate = true;
+          ['normalMap', 'roughnessMap'].forEach((kk) => {
+            if (mat[kk]) {
+              mat[kk].anisotropy = aniso;
+              mat[kk].needsUpdate = true;
             }
           });
-          if (shirtMaterial.normalMap) {
-            shirtMaterial.normalScale.set(1.5, 1.5); // Make weave and stitches highly realistic and visible
+          if (mat.normalMap) {
+            mat.normalScale.set(1.5, 1.5); // Make weave and stitches highly realistic and visible
           }
-          shirtMaterial.aoMap = null;
-          if (shirtMaterial.sheen !== undefined) {
-            shirtMaterial.sheen = 0.8; // Soft luxury cotton fiber sheen
-            if (shirtMaterial.sheenRoughness !== undefined) shirtMaterial.sheenRoughness = 0.5;
-            if (shirtMaterial.sheenColor) shirtMaterial.sheenColor.setRGB(1, 0.95, 0.9);
+          mat.aoMap = null;
+          if (mat.sheen !== undefined) {
+            mat.sheen = 0.8; // Soft luxury cotton fiber sheen
+            if (mat.sheenRoughness !== undefined) mat.sheenRoughness = 0.5;
+            if (mat.sheenColor) mat.sheenColor.setRGB(1, 0.95, 0.9);
           }
-          if ('roughness' in shirtMaterial) shirtMaterial.roughness = 0.7; // Premium heavy cotton look
+          if ('roughness' in mat) mat.roughness = 0.8; // Premium heavy cotton look
 
-          shirtMaterial.onBeforeCompile = (shader) => {
+          mat.onBeforeCompile = (shader) => {
             Object.assign(shader.uniforms, printUniforms);
             shader.vertexShader = shader.vertexShader
               .replace('#include <common>', '#include <common>\nvarying vec3 vPrintWPos;\nvarying vec3 vPrintWNrm;')
@@ -443,8 +449,8 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
               .replace('#include <common>', decl)
               .replace('#include <map_fragment>', applyPrint);
           };
-          shirtMaterial.needsUpdate = true;
-        }
+          mat.needsUpdate = true;
+        });
 
         shirtGroup.add(model);
         model.updateMatrixWorld(true);
@@ -484,57 +490,23 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       });
     });
 
-    // 4. Black Glass Reflector Pedestal Platform (Beneath)
-    const pedestalGroup = new THREE.Group();
-    pedestalGroup.position.set(0, -1.4, 0);
-    sceneGroup.add(pedestalGroup);
 
-    // Flat Circle geometry for black glass reflector top
-    const reflectorGeo = new THREE.CircleGeometry(2.0, 64);
-    const reflector = new Reflector(reflectorGeo, {
-      clipBias: 0.003,
-      textureWidth: window.innerWidth * window.devicePixelRatio,
-      textureHeight: window.innerHeight * window.devicePixelRatio,
-      color: 0x151515, // deep premium black glass
-    });
-    reflector.rotation.x = -Math.PI / 2;
-    reflector.position.y = 0.0;
-    reflector.receiveShadow = true;
-    pedestalGroup.add(reflector);
-
-    // Platform Rim Gold Accent ring around the black glass disc
-    const rimGeo = new THREE.TorusGeometry(2.01, 0.03, 8, 64);
-    const rimMaterial = new THREE.MeshStandardMaterial({
-      color: 0xc9a24d,
-      roughness: 0.1,
-      metalness: 0.95
-    });
-    const rim = new THREE.Mesh(rimGeo, rimMaterial);
-    rim.rotation.x = Math.PI / 2;
-    rim.position.y = 0.0;
-    pedestalGroup.add(rim);
-
-    // Floor Shadow plane just below the black glass disc
-    const shadowPlaneGeo = new THREE.PlaneGeometry(10, 10);
-    const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.45 });
-    const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
-    shadowPlane.rotation.x = -Math.PI / 2;
-    shadowPlane.position.y = -0.01;
-    shadowPlane.receiveShadow = true;
     let animationFrameId;
     const startTime = performance.now() * 0.001;
 
-    const targetColor = new THREE.Color(activeColorRef.current.hex);
+    const targetColor = new THREE.Color(activeColorRef.current.hex).convertSRGBToLinear();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
       const elapsedTime = (performance.now() * 0.001) - startTime;
 
-      // Smooth color transitions (lerping)
-      if (shirtMaterial) {
-        targetColor.set(activeColorRef.current.hex);
-        shirtMaterial.color.lerp(targetColor, 0.06);
+      // Smooth color transitions (lerping) in Linear color space
+      if (shirtMaterials.length > 0) {
+        targetColor.set(activeColorRef.current.hex).convertSRGBToLinear();
+        shirtMaterials.forEach((mat) => {
+          mat.color.lerp(targetColor, 0.06);
+        });
       }
 
       // Update inverse group matrix uniform for print shader projection
@@ -544,8 +516,9 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       // 1. Slow Y floating motion: 6s duration cycle, 12px height variance (0.06 amplitude)
       shirtGroup.position.y = 0.4 + Math.sin(elapsedTime * (2.0 * Math.PI / 6.0)) * 0.06;
       
-      // 2. Slow turntable rotation: 0.2 degrees per second, starting at 20 degrees (0.35 rad) slant to the right
-      shirtGroup.rotation.y = 0.35 + elapsedTime * (0.2 * Math.PI / 180.0);
+      // 2. Slow breathing rotation oscillating between 15° and 25° (flipped 180° to show front) over a 25-second cycle
+      const rotationCycle = (2.0 * Math.PI) / 25.0;
+      shirtGroup.rotation.y = (200.0 * Math.PI / 180.0) - Math.cos(elapsedTime * rotationCycle) * (5.0 * Math.PI / 180.0);
 
       // 3. Mouse Parallax interpolation
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
@@ -581,13 +554,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
-      reflectorGeo.dispose();
-      reflector.dispose();
-      rimGeo.dispose();
-      shadowPlaneGeo.dispose();
       if (shirtMaterial) shirtMaterial.dispose();
-      rimMaterial.dispose();
-      shadowPlaneMat.dispose();
       blankTex.dispose();
     };
   }, []);
