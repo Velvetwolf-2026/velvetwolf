@@ -42,6 +42,97 @@ const COLOR_MAP = {
 
 const T_SHIRT_COLORS = ["Black", "White", "Beige/Sand", "Forest Green", "Crimson Ember"];
 
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve({
+          base64,
+          fileName: `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`,
+          contentType: file.type
+        });
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      
+      const MAX_WIDTH = 1200;
+      const MAX_HEIGHT = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        if (width > height) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        } else {
+          width = Math.round((width * MAX_HEIGHT) / height);
+          height = MAX_HEIGHT;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      
+      // Fill white background for JPEGs to prevent black background on transparent images
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve({
+              base64,
+              fileName: `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`,
+              contentType: file.type
+            });
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1];
+          const fileBaseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${fileBaseName}.jpg`;
+          resolve({
+            base64,
+            fileName,
+            contentType: "image/jpeg"
+          });
+        };
+        reader.readAsDataURL(blob);
+      }, "image/jpeg", 0.8);
+    };
+    img.onerror = () => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve({
+          base64,
+          fileName: `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`,
+          contentType: file.type
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+  });
+};
+
 export default function AdminProducts() {
   const { setPage, showToast } = useContext(AppContext);
   const [products, setProducts] = useState([]);
@@ -160,23 +251,15 @@ export default function AdminProducts() {
     if (!files.length) return;
     
     try {
-      const newUploads = await Promise.all(files.map(file => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result.split(',')[1];
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            resolve({ 
-              base64, 
-              fileName, 
-              contentType: file.type, 
-              previewUrl: URL.createObjectURL(file),
-              color: color || undefined
-            });
-          };
-          reader.readAsDataURL(file);
-        });
+      const newUploads = await Promise.all(files.map(async (file) => {
+        const { base64, fileName, contentType } = await compressImage(file);
+        return { 
+          base64, 
+          fileName, 
+          contentType, 
+          previewUrl: URL.createObjectURL(file),
+          color: color || undefined
+        };
       }));
 
       if (isEdit) {
@@ -190,8 +273,9 @@ export default function AdminProducts() {
           newImages: [...(f.newImages || []), ...newUploads]
         }));
       }
-      showToast(`${newUploads.length} image(s) ready for upload!`);
-    } catch {
+      showToast(`${newUploads.length} image(s) processed & ready!`);
+    } catch (err) {
+      console.error(err);
       showToast("Failed to process images.", "error");
     }
   };
