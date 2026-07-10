@@ -129,7 +129,7 @@ export const getCorsHeaders = (event) => {
   }
 
   const headers = {
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-CSRF-Token",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     Vary: "Origin",
   };

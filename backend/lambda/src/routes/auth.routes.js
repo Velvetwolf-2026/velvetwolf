@@ -25,13 +25,13 @@ export async function handleAuthRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/auth/reset-password")
     return authController.resetPassword(body, event);
 
-  if (method === "GET" && route.endsWith("/auth/google"))
+  if (method === "GET" && route === "/auth/google")
     return authController.googleRedirect(query, event);
 
-  if (method === "GET" && route.endsWith("/auth/google/callback"))
+  if (method === "GET" && route === "/auth/google/callback")
     return authController.googleCallback(query, event);
 
-  if (method === "GET" && route.endsWith("/auth/verify-otp-link"))
+  if (method === "GET" && route === "/auth/verify-otp-link")
     return authController.verifyOtpLink(query, event);
 
   if (method === "POST" && route === "/auth/logout")
