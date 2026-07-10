@@ -407,6 +407,9 @@ body::before {
   transition: all 0.4s ease;
   position: relative;
   overflow: hidden;
+  max-width: 360px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .product-card::before {
@@ -1670,4 +1673,15 @@ p {
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, transparent 100%) !important;
     backdrop-filter: none !important;
   }
+}
+
+/* coverflow card styling overrides to prevent double border clashing */
+.featured-coverflow-card .product-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.featured-coverflow-card .product-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
 }

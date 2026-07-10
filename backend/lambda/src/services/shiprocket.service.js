@@ -347,3 +347,71 @@ export async function getShipmentTracking(orderId) {
     return getMockTrackingSteps(order);
   }
 }
+
+export async function checkServiceability(deliveryPincode) {
+  logInfo("Checking pincode serviceability", { deliveryPincode });
+  
+  const token = await getShiprocketToken();
+  if (!token) {
+    return {
+      success: true,
+      pincode: deliveryPincode,
+      available: true,
+      etd: "3-5 Days",
+      courier: "Delhivery (Mock)",
+      cod_available: true
+    };
+  }
+
+  try {
+    const originPincode = process.env.SHIPROCKET_PICKUP_PINCODE || "400001";
+    const url = `https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_postcode=${originPincode}&delivery_postcode=${deliveryPincode}&weight=0.5&cod=1`;
+    
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.status || data.status !== 200) {
+      logError("Failed to check serviceability from Shiprocket", { error: data });
+      return {
+        success: false,
+        message: data.message || "Pincode not serviceable",
+        available: false
+      };
+    }
+
+    const serviceabilityData = data.data;
+    const availableCouriers = serviceabilityData.available_courier_companies || [];
+    if (availableCouriers.length === 0) {
+      return {
+        success: false,
+        message: "No couriers available for this location.",
+        available: false
+      };
+    }
+
+    const courier = availableCouriers[0];
+    return {
+      success: true,
+      pincode: deliveryPincode,
+      available: true,
+      etd: courier.etd || "3-5 Days",
+      courier: courier.courier_name || "Delhivery",
+      cod_available: courier.cod === 1
+    };
+  } catch (err) {
+    logError("Shiprocket serviceability exception", { errorMessage: err.message });
+    return {
+      success: true,
+      pincode: deliveryPincode,
+      available: true,
+      etd: "3-5 Days",
+      courier: "Delhivery (Mock)",
+      cod_available: true
+    };
+  }
+}

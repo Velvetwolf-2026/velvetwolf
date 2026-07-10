@@ -14,3 +14,23 @@ export async function getProductBySlug(slug, event) {
   return jsonResponse(200, { product }, {}, event);
 }
 
+export async function getProductReviews(productId, event) {
+  if (!productId) {
+    return jsonResponse(400, { error: "Product ID is required." }, {}, event);
+  }
+  const reviews = await productService.getProductReviews(productId);
+  return jsonResponse(200, { reviews }, {}, event);
+}
+
+export async function createProductReview(productId, body, event) {
+  if (!productId) {
+    return jsonResponse(400, { error: "Product ID is required." }, {}, event);
+  }
+  const { name, rating, comment, images } = body || {};
+  if (!name) {
+    return jsonResponse(400, { error: "Name is required." }, {}, event);
+  }
+  const review = await productService.createProductReview(productId, { name, rating: Number(rating), comment, images });
+  return jsonResponse(201, { review }, {}, event);
+}
+

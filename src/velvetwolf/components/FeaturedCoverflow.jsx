@@ -10,6 +10,33 @@ export default function FeaturedCoverflow({ products }) {
   const [transitioning, setTransitioning] = useState(false);
   const { isMobile, isTablet } = useBreakpoint();
 
+  const [startX, setStartX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragStart = (e) => {
+    setStartX(e.pageX || e.touches?.[0]?.clientX || 0);
+    setIsDragging(true);
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    const currentX = e.pageX || e.touches?.[0]?.clientX || 0;
+    const diff = currentX - startX;
+
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) {
+        setActiveIndex((current) => (current - 1 + products.length) % products.length);
+      } else {
+        setActiveIndex((current) => (current + 1) % products.length);
+      }
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   useEffect(() => {
     if (!products.length) return;
     setActiveIndex((current) => Math.min(current, products.length - 1));
@@ -40,7 +67,7 @@ export default function FeaturedCoverflow({ products }) {
   };
 
   const cardWidth = isMobile ? 270 : (isTablet ? 310 : 340);
-  const containerHeight = isMobile ? 480 : (isTablet ? 520 : 560);
+  const containerHeight = isMobile ? 540 : (isTablet ? 590 : 640);
   const offsetStep = isMobile ? 180 : (isTablet ? 220 : 250);
 
   return (
@@ -53,12 +80,20 @@ export default function FeaturedCoverflow({ products }) {
       `}</style>
       <div
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseLeave={() => { setIsHovered(false); handleDragEnd(); }}
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
         style={{
           position: "relative",
           height: containerHeight,
           overflow: "hidden",
           animation: "subtleFloatCarousel 7s ease-in-out infinite",
+          cursor: isDragging ? "grabbing" : "grab",
+          userSelect: "none"
         }}
       >
         {products.map((product, index) => {
@@ -86,6 +121,7 @@ export default function FeaturedCoverflow({ products }) {
           return (
             <div
               key={product.id}
+              className="featured-coverflow-card"
               onClick={() => setActiveIndex(index)}
               onMouseEnter={() => { if (isActive) setIsActiveHovered(true); }}
               onMouseLeave={() => { if (isActive) setIsActiveHovered(false); }}
@@ -102,8 +138,12 @@ export default function FeaturedCoverflow({ products }) {
                 transition: "transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.55s ease, filter 0.55s ease, border-color 0.4s ease, box-shadow 0.4s ease",
                 filter: filterValue,
                 pointerEvents: distance > 2 ? "none" : "auto",
-                border: isActive ? (isActiveHovered ? "1.5px solid var(--gold)" : "1px solid rgba(201,168,76,0.25)") : "1px solid rgba(255,255,255,0.05)",
-                borderRadius: "16px",
+                background: "var(--onyx)",
+                border: isActive 
+                  ? (isActiveHovered ? "1.5px solid var(--gold)" : "1.5px solid rgba(201,168,76,0.35)") 
+                  : "1px solid var(--smoke)",
+                borderRadius: "12px",
+                overflow: "hidden",
                 boxShadow: isActive && isActiveHovered
                   ? "0 30px 70px rgba(0,0,0,0.6), 0 0 30px rgba(201,168,76,0.2)"
                   : "none",

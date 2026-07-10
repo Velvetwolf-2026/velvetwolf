@@ -14,7 +14,7 @@ export default function ProductCard({ product }) {
   const tagStyle = TAG_COLORS[product.tag] || { bg: "var(--smoke)", color: "var(--ash)" };
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
   const defaultSize = product.sizes?.[0] || "M";
-  const defaultColor = product.colors?.[0] || "#0a0a0a";
+  const defaultColor = product.colors?.[0] || "Black";
   const { isMobile } = useBreakpoint();
 
   const productUrl = `/product/${product.slug || product.id}`;
@@ -116,9 +116,8 @@ export default function ProductCard({ product }) {
             gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
             gap: 10, 
             marginTop: 18,
-            opacity: isMobile ? 1 : (isHovered ? 1 : 0.05),
-            transform: isMobile ? "none" : (isHovered ? "translateY(0)" : "translateY(5px)"),
-            transition: "opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+            opacity: 1,
+            transform: "none"
           }}
         >
           <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>

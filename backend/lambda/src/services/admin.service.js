@@ -139,10 +139,10 @@ export async function createAdminProduct(productData, adminId) {
   let finalImageUrl = image?.trim() || null;
   const finalImagesArray = [...images];
 
-  // Upload all new images
+  // Upload all new images in parallel
   if (Array.isArray(newImages) && newImages.length > 0) {
-    for (const file of newImages) {
-      if (!file.base64 || !file.fileName) continue;
+    const uploadPromises = newImages.map(async (file) => {
+      if (!file.base64 || !file.fileName) return null;
       const buffer = Buffer.from(file.base64, "base64");
       const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(file.fileName, buffer, {
         contentType: file.contentType || "image/jpeg",
@@ -153,8 +153,12 @@ export async function createAdminProduct(productData, adminId) {
         throw new ApiError(500, "Failed to upload product image.");
       }
       const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(file.fileName);
-      const imageUrl = file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
-      finalImagesArray.push(imageUrl);
+      return file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
+    });
+
+    const uploadedUrls = await Promise.all(uploadPromises);
+    for (const url of uploadedUrls) {
+      if (url) finalImagesArray.push(url);
     }
   }
 
@@ -238,8 +242,8 @@ export async function updateAdminProduct(productId, productData, adminId) {
   if (Array.isArray(newImages) && newImages.length > 0) {
     if (!updates.images) updates.images = [];
     
-    for (const file of newImages) {
-      if (!file.base64 || !file.fileName) continue;
+    const uploadPromises = newImages.map(async (file) => {
+      if (!file.base64 || !file.fileName) return null;
       const buffer = Buffer.from(file.base64, "base64");
       const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(file.fileName, buffer, {
         contentType: file.contentType || "image/jpeg",
@@ -250,8 +254,12 @@ export async function updateAdminProduct(productId, productData, adminId) {
         throw new ApiError(500, "Failed to upload product image.");
       }
       const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(file.fileName);
-      const imageUrl = file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
-      updates.images.push(imageUrl);
+      return file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
+    });
+
+    const uploadedUrls = await Promise.all(uploadPromises);
+    for (const url of uploadedUrls) {
+      if (url) updates.images.push(url);
     }
   }
 

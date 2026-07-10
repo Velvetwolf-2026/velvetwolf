@@ -43,8 +43,8 @@ class Particle {
   }
 
   draw(ctx) {
-    ctx.fillStyle = `rgba(201, 162, 77, ${this.opacity})`;
-    ctx.shadowColor = "#c9a24d";
+    ctx.fillStyle = `rgba(201, 168, 76, ${this.opacity})`;
+    ctx.shadowColor = "#c9a84c";
     ctx.shadowBlur = 4;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -124,6 +124,9 @@ export default function Cinematic3DHero() {
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0d0d0d, 0.08);
 
+    const sceneGroup = new THREE.Group();
+    scene.add(sceneGroup);
+
     // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0.5, 7.5);
@@ -145,14 +148,14 @@ export default function Cinematic3DHero() {
 
     // PMREM environment generator
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.9).texture;
+    scene.environment = pmrem.fromScene(new RoomEnvironment()).texture;
 
-    // Lights - Ambient for base color definition
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+    // Lights - Ambient for soft, uniform shadow fill (fashion photography base)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(ambientLight);
 
-    // 1. Soft Key Spotlight from Front Right (highlights texture and volume)
-    const goldSpot = new THREE.SpotLight(0xffffff, 2.5, 30, Math.PI / 4, 0.5, 1);
+    // 1. Soft Key Spotlight from Front Right
+    const goldSpot = new THREE.SpotLight(0xffffff, 1.2, 30, Math.PI / 4, 0.5, 1);
     goldSpot.position.set(4, 6, 4);
     goldSpot.castShadow = true;
     goldSpot.shadow.mapSize.width = 2048;
@@ -160,24 +163,70 @@ export default function Cinematic3DHero() {
     goldSpot.shadow.bias = -0.0005;
     scene.add(goldSpot);
 
-    // 2. Cinematic Rim Lights (Creates beautiful glowing highlights along the fabric contours)
-    const goldRimLeft = new THREE.DirectionalLight(0xffffff, 1.0);
+    // 2. Cinematic Rim Lights (Reduced by 80% to remove excessive gaming-style glow)
+    const goldRimLeft = new THREE.DirectionalLight(0xffffff, 0.2);
     goldRimLeft.position.set(-3, 2, -4);
     scene.add(goldRimLeft);
 
-    const silverRimRight = new THREE.DirectionalLight(0xffffff, 1.0);
+    const silverRimRight = new THREE.DirectionalLight(0xffffff, 0.2);
     silverRimRight.position.set(3, 2, -4);
     scene.add(silverRimRight);
 
-    // 4. Soft Front Fill Light (Fills in deep shadows for high-quality product photography feel)
-    const frontFill = new THREE.DirectionalLight(0xffffff, 0.5);
+    // 4. Soft Front Fill Light
+    const frontFill = new THREE.DirectionalLight(0xffffff, 0.4);
     frontFill.position.set(-2, 1, 4);
     scene.add(frontFill);
 
-    // 5. Crisp White Top Key Light (Highlights shoulders, neck collar, and dynamic creases)
-    const whiteKey = new THREE.SpotLight(0xffffff, 1.5, 20, Math.PI / 6, 0.5, 1);
+    // 5. Crisp White Top Key Light
+    const whiteKey = new THREE.SpotLight(0xffffff, 0.8, 20, Math.PI / 6, 0.5, 1);
     whiteKey.position.set(0, 8, 2);
     scene.add(whiteKey);
+
+    // Create the exact premium 3D podium from the image
+    const podiumGroup = new THREE.Group();
+    podiumGroup.position.set(0, -1.35, 0);
+
+    // Material for the top and bottom metallic segments
+    const metallicPodiumMat = new THREE.MeshStandardMaterial({
+      color: 0x121212,
+      roughness: 0.22,
+      metalness: 0.9,
+    });
+
+    // 1. Top metallic cylinder segment
+    const topGeo = new THREE.CylinderGeometry(1.7, 1.7, 0.14, 64);
+    const topSegment = new THREE.Mesh(topGeo, metallicPodiumMat);
+    topSegment.position.y = 0.11;
+    topSegment.castShadow = true;
+    topSegment.receiveShadow = true;
+    podiumGroup.add(topSegment);
+
+    // 2. Recessed glowing gold band segment
+    const glowGeo = new THREE.CylinderGeometry(1.62, 1.62, 0.08, 64);
+    const glowMat = new THREE.MeshStandardMaterial({
+      color: 0xc9a84c,
+      emissive: 0xc9a84c,
+      emissiveIntensity: 5.0,
+      roughness: 0.1,
+    });
+    const glowBand = new THREE.Mesh(glowGeo, glowMat);
+    glowBand.position.y = 0.0;
+    podiumGroup.add(glowBand);
+
+    // 3. Bottom metallic cylinder segment
+    const bottomGeo = new THREE.CylinderGeometry(1.7, 1.7, 0.14, 64);
+    const bottomSegment = new THREE.Mesh(bottomGeo, metallicPodiumMat);
+    bottomSegment.position.y = -0.11;
+    bottomSegment.castShadow = true;
+    bottomSegment.receiveShadow = true;
+    podiumGroup.add(bottomSegment);
+
+    // 4. PointLight inside the recessed band to cast gold light onto floor and T-shirt
+    const podiumLight = new THREE.PointLight(0xc9a84c, 3.5, 4.5);
+    podiumLight.position.set(0, 0, 0);
+    podiumGroup.add(podiumLight);
+    
+    sceneGroup.add(podiumGroup);
 
 
     // ----------------------------------------------------
@@ -277,8 +326,6 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       }
     }
 
-    const sceneGroup = new THREE.Group();
-    scene.add(sceneGroup);
 
     // Group for the 3D model (shirtGroup) so it can float and rotate
     const shirtGroup = new THREE.Group();
@@ -317,8 +364,12 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         shirtMaterials.forEach((mat) => {
           mat.map = null; // Remove pre-baked diffuse texture map so color matches selection exactly
           mat.metalness = 0.0; // Matte fabric, non-metallic
-          mat.color = new THREE.Color(activeColorRef.current.hex).convertSRGBToLinear();
-          mat.envMapIntensity = 0.15; // Low env map reflection intensity to keep color deep and true
+          mat.roughness = 1.0; // Complete matte finish
+          mat.envMapIntensity = 0.0; // Remove env reflection
+          mat.clearcoat = 0.0; // Disable clearcoat gloss
+          mat.specularIntensity = 0.0; // Disable specular reflections
+          if (mat.specularColor) mat.specularColor.setRGB(0, 0, 0);
+          mat.color = new THREE.Color(activeColorRef.current.hex);
           mat.side = THREE.DoubleSide;
           const aniso = renderer.capabilities.getMaxAnisotropy();
           ['normalMap', 'roughnessMap'].forEach((kk) => {
@@ -328,15 +379,11 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             }
           });
           if (mat.normalMap) {
-            mat.normalScale.set(1.5, 1.5); // Make weave and stitches highly realistic and visible
+            mat.normalScale.set(1.2, 1.2); // Clean, sharp, realistic cotton texture weave
           }
           mat.aoMap = null;
-          if (mat.sheen !== undefined) {
-            mat.sheen = 0.8; // Soft luxury cotton fiber sheen
-            if (mat.sheenRoughness !== undefined) mat.sheenRoughness = 0.5;
-            if (mat.sheenColor) mat.sheenColor.setRGB(1, 0.95, 0.9);
-          }
-          if ('roughness' in mat) mat.roughness = 0.8; // Premium heavy cotton look
+          mat.sheen = 0.0; // No shiny sheen
+          if ('roughness' in mat) mat.roughness = 1.0;
 
           mat.onBeforeCompile = (shader) => {
             Object.assign(shader.uniforms, printUniforms);
@@ -381,7 +428,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             src: backSrc,
             x: -0.01,
             y: -0.1,
-            scale: 2.31,
+            scale: 3.2,
             rot: 180
           });
         }
@@ -392,16 +439,16 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
     let animationFrameId;
     const startTime = performance.now() * 0.001;
 
-    const targetColor = new THREE.Color(activeColorRef.current.hex).convertSRGBToLinear();
+    const targetColor = new THREE.Color(activeColorRef.current.hex);
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
       const elapsedTime = (performance.now() * 0.001) - startTime;
 
-      // Smooth color transitions (lerping) in Linear color space
+      // Smooth color transitions (lerping)
       if (shirtMaterials.length > 0) {
-        targetColor.set(activeColorRef.current.hex).convertSRGBToLinear();
+        targetColor.set(activeColorRef.current.hex);
         shirtMaterials.forEach((mat) => {
           mat.color.lerp(targetColor, 0.06);
         });
