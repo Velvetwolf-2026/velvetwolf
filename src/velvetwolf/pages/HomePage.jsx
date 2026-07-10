@@ -539,9 +539,9 @@ export default function HomePage() {
               {limitedDrops.map(p => {
                 const pct = Math.max(10, Math.min(90, (p.stock || 12) * 2.2));
                 return (
-                  <div key={p.id} style={{ display: "flex", flexDirection: "column" }}>
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column", maxWidth: 360, width: "100%", margin: "0 auto" }}>
                     <ProductCard product={p} />
-                    <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+                    <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)", boxSizing: "border-box" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--gold)", marginBottom: 6 }}>
                         <span>STOCK STATUS</span>
                         <span>{p.stock || 12} PCS LEFT</span>
