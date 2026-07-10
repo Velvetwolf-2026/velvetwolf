@@ -60,9 +60,7 @@ export default function ProductDetailPage() {
   const [color, setColor] = useState("");
   const [qty, setQty] = useState(1);
 
-  // Zoom position
-  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
-  const [isZoomed, setIsZoomed] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Sticky bottom CTA states & ref
   const [showStickyBar, setShowStickyBar] = useState(false);
@@ -102,6 +100,7 @@ export default function ProductDetailPage() {
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   // Smart Bundles & Recently Viewed
@@ -113,28 +112,7 @@ export default function ProductDetailPage() {
   const [loadingPincode, setLoadingPincode] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState(null);
 
-  // Purchase activity simulated alerts
-  const [purchaseAlert, setPurchaseAlert] = useState(null);
-
-  useEffect(() => {
-    const locations = ["Delhi", "Mumbai", "Bangalore", "Chennai", "Hyderabad", "Pune", "Kolkata", "Ahmedabad", "Jaipur"];
-    const names = ["Aarav S.", "Meera K.", "Vikram R.", "Rohan D.", "Ananya M.", "Karan P.", "Neha G.", "Siddharth V."];
-
-    const triggerAlert = () => {
-      const randLoc = locations[Math.floor(Math.random() * locations.length)];
-      const randName = names[Math.floor(Math.random() * names.length)];
-      setPurchaseAlert({ name: randName, city: randLoc, time: "just now" });
-      setTimeout(() => setPurchaseAlert(null), 5000);
-    };
-
-    const tStart = setTimeout(triggerAlert, 4000);
-    const interval = setInterval(triggerAlert, 20000);
-
-    return () => {
-      clearTimeout(tStart);
-      clearInterval(interval);
-    };
-  }, []);
+  // Lightbox and SEO setup state
 
   // Fetch product and dependencies
   useEffect(() => {
@@ -151,7 +129,22 @@ export default function ProductDetailPage() {
         trackViewItem(prod);
 
         setSize(prod.sizes?.[0] || "M");
-        setColor(prod.colors?.[0] || "Black");
+        
+        const hasColorPrefixedImages = (prod.images || []).some(img => 
+          typeof img === "string" && img.includes("::")
+        );
+        let defaultColor = prod.colors?.[0] || "Black";
+        if (hasColorPrefixedImages && Array.isArray(prod.colors)) {
+          const firstAvailableColor = prod.colors.find(c => 
+            (prod.images || []).some(img => 
+              typeof img === "string" && img.toLowerCase().startsWith(c.toLowerCase() + "::")
+            )
+          );
+          if (firstAvailableColor) {
+            defaultColor = firstAvailableColor;
+          }
+        }
+        setColor(defaultColor);
         setSelectedImage(null);
         setLoading(false);
 
@@ -162,6 +155,40 @@ export default function ProductDetailPage() {
         localStorage.setItem("vw_last_viewed_category", prod.category || "");
         setRecentlyViewed(nextStored);
 
+        // Update Title & Meta details for SEO
+        document.title = `${prod.name} | VelvetWolf Luxury Streetwear`;
+        let metaDesc = document.querySelector('meta[name="description"]');
+        if (!metaDesc) {
+          metaDesc = document.createElement('meta');
+          metaDesc.name = 'description';
+          document.head.appendChild(metaDesc);
+        }
+        metaDesc.content = prod.description || `Explore ${prod.name} from VelvetWolf's luxury streetwear collections.`;
+
+        // Update JSON-LD
+        let jsonLdScript = document.getElementById("product-json-ld");
+        if (!jsonLdScript) {
+          jsonLdScript = document.createElement("script");
+          jsonLdScript.id = "product-json-ld";
+          jsonLdScript.type = "application/ld+json";
+          document.head.appendChild(jsonLdScript);
+        }
+        jsonLdScript.textContent = JSON.stringify({
+          "@context": "https://schema.org/",
+          "@type": "Product",
+          "name": prod.name,
+          "image": getProductImage(prod),
+          "description": prod.description,
+          "sku": prod.sku || `VW-${prod.id}`,
+          "offers": {
+            "@type": "Offer",
+            "url": window.location.href,
+            "priceCurrency": "INR",
+            "price": prod.price,
+            "availability": prod.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+          }
+        });
+
         // Fetch AI Smart Bundles
         fetch(`${apiUrl("/ai/bundles")}?productId=${prod.id}`, { credentials: 'include' })
           .then(res => res.json())
@@ -170,20 +197,14 @@ export default function ProductDetailPage() {
 
         // Fetch dynamic reviews
         fetch(`${apiUrl("/products")}/${prod.id}/reviews`, { credentials: 'include' })
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) throw new Error("Failed to load reviews");
+            return res.json();
+          })
           .then(rData => setProductReviews(rData.reviews || []))
-          .catch(() => {
-            // Setup default mock reviews based on reviews count
-            const mockList = [];
-            for (let i = 0; i < (prod.reviews || 3); i++) {
-              mockList.push({
-                user_name: i === 0 ? "Aarav S." : (i === 1 ? "Meera K." : "Vikram R."),
-                rating: 5,
-                comment: i === 0 ? "Outstanding weight and texture. High-end drop." : "Best oversized tee I have purchased this year.",
-                created_at: new Date(Date.now() - i * 3 * 24 * 60 * 60 * 1000).toISOString()
-              });
-            }
-            setProductReviews(mockList);
+          .catch(err => {
+            console.error("Reviews load failed", err);
+            setProductReviews([]);
           });
       })
       .catch((err) => {
@@ -192,12 +213,29 @@ export default function ProductDetailPage() {
       });
   }, [slug]);
 
-  // Handle main image zoom coordinate calculations
-  const handleMouseMove = (e) => {
+  // Desktop image zoom coordinate handlers
+  const handleDesktopMouseMove = (e) => {
+    const img = e.currentTarget.querySelector("img");
+    if (!img) return;
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.pageX - left - window.scrollX) / width) * 100;
     const y = ((e.pageY - top - window.scrollY) / height) * 100;
-    setZoomPos({ x, y });
+    img.style.transformOrigin = `${x}% ${y}%`;
+  };
+
+  const handleDesktopMouseEnter = (e) => {
+    const img = e.currentTarget.querySelector("img");
+    if (img) {
+      img.style.transform = "scale(1.8)";
+    }
+  };
+
+  const handleDesktopMouseLeave = (e) => {
+    const img = e.currentTarget.querySelector("img");
+    if (img) {
+      img.style.transform = "scale(1)";
+      img.style.transformOrigin = "center center";
+    }
   };
 
   // Run AI size advisor
@@ -226,6 +264,20 @@ export default function ProductDetailPage() {
       });
   };
 
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReviewImages(prev => [
+          ...prev,
+          { name: file.name, type: file.type, data: reader.result.split(",")[1] }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Submit product review
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -235,12 +287,17 @@ export default function ProductDetailPage() {
     }
     setSubmittingReview(true);
 
-    // Simulate/Post review locally to DB (we have a product reviews table)
+    // Post review to database
     fetch(`${apiUrl("/products")}/${product.id}/reviews`, {
       method: "POST",
       credentials: 'include',
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: reviewName, rating: reviewRating, comment: reviewComment })
+      body: JSON.stringify({
+        name: reviewName,
+        rating: reviewRating,
+        comment: reviewComment,
+        images: reviewImages
+      })
     })
       .then(res => {
         if (!res.ok) throw new Error("Could not submit");
@@ -251,20 +308,12 @@ export default function ProductDetailPage() {
         showToast("Thank you for your feedback!");
         setReviewName("");
         setReviewComment("");
+        setReviewImages([]);
         setSubmittingReview(false);
       })
-      .catch(() => {
-        // Offline fallback addition
-        const mockReview = {
-          user_name: reviewName.trim(),
-          rating: reviewRating,
-          comment: reviewComment.trim(),
-          created_at: new Date().toISOString()
-        };
-        setProductReviews(prev => [mockReview, ...prev]);
-        showToast("Review submitted successfully!");
-        setReviewName("");
-        setReviewComment("");
+      .catch(err => {
+        console.error("Review submission failed", err);
+        showToast("Failed to submit review. Please try again.", "error");
         setSubmittingReview(false);
       });
   };
@@ -287,39 +336,46 @@ export default function ProductDetailPage() {
     if (pin.length === 6) {
       setLoadingPincode(true);
       try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-        const data = await res.json();
-        if (data && data[0] && data[0].Status === "Success") {
-          const postOffices = data[0].PostOffice;
-          if (postOffices && postOffices.length > 0) {
-            const po = postOffices[0];
-            const getFormat = (d) => {
-              const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
-            };
-            const minDate = new Date();
-            minDate.setDate(minDate.getDate() + 3);
-            const maxDate = new Date();
-            maxDate.setDate(maxDate.getDate() + 5);
-            const deliveryWindow = `${getFormat(minDate)} - ${getFormat(maxDate)}`;
+        // 1. Fetch city/state details from postal pin code API
+        const postRes = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const postData = await postRes.json();
+        
+        let city = "";
+        let state = "";
+        let isPostSuccess = false;
 
-            setDeliveryInfo({
-              available: true,
-              city: po.District || po.Name,
-              state: po.State,
-              date: deliveryWindow
-            });
-          } else {
-            setDeliveryInfo({
-              available: false,
-              message: "Invalid Pincode"
-            });
+        if (postData && postData[0] && postData[0].Status === "Success") {
+          const po = postData[0].PostOffice?.[0];
+          if (po) {
+            city = po.District || po.Name;
+            state = po.State;
+            isPostSuccess = true;
           }
+        }
+
+        if (!isPostSuccess) {
+          setDeliveryInfo({ available: false, message: "Invalid Pincode" });
+          return;
+        }
+
+        // 2. Query our real Shiprocket Serviceability API on the backend
+        const servRes = await fetch(`${apiUrl("/shipping/serviceability")}?pincode=${pin}`, { credentials: "include" });
+        if (!servRes.ok) throw new Error("Serviceability check failed");
+        
+        const servData = await servRes.json();
+        
+        if (servData && servData.available) {
+          setDeliveryInfo({
+            available: true,
+            city,
+            state,
+            date: servData.etd || "3-5 Days",
+            codAvailable: servData.cod_available ?? true
+          });
         } else {
           setDeliveryInfo({
             available: false,
-            message: "Invalid Pincode"
+            message: servData.message || "Location not serviceable"
           });
         }
       } catch (err) {
@@ -355,7 +411,15 @@ export default function ProductDetailPage() {
   }
 
   const sizes = Array.isArray(product.sizes) ? product.sizes : [];
-  const colors = Array.isArray(product.colors) ? product.colors : [];
+  const colors = (Array.isArray(product.colors) ? product.colors : []).filter(c => {
+    const hasColorPrefixedImages = (product.images || []).some(img => 
+      typeof img === "string" && img.includes("::")
+    );
+    if (!hasColorPrefixedImages) return true;
+    return (product.images || []).some(img => 
+      typeof img === "string" && img.toLowerCase().startsWith(c.toLowerCase() + "::")
+    );
+  });
   const primaryImage = getProductImage(product);
   const rawGallery = Array.isArray(product.images) ? product.images : [];
   
@@ -378,11 +442,44 @@ export default function ProductDetailPage() {
     }
   });
 
-  const gallery = primaryImage && !parsedRawGallery.includes(primaryImage)
+  const isPrimaryInGallery = parsedRawGallery.some(img => 
+    img === primaryImage || 
+    (typeof img === "string" && img.includes("::") && img.split("::")[1] === primaryImage)
+  );
+
+  const gallery = primaryImage && !isPrimaryInGallery
     ? [primaryImage, ...parsedRawGallery]
     : (parsedRawGallery.length > 0 ? parsedRawGallery : (primaryImage ? [primaryImage] : []));
 
-  let filteredGallery = gallery.map(img => (typeof img === "string" && img.includes("::") ? img.split("::")[1] : img));
+  // Filter gallery based on the selected color
+  let filteredGallery = [];
+  const colorSpecificImages = [];
+  const generalImages = [];
+
+  gallery.forEach(img => {
+    if (typeof img === "string") {
+      if (img.includes("::")) {
+        const [imgColor, imgUrl] = img.split("::");
+        if (imgColor.trim().toLowerCase() === color.trim().toLowerCase()) {
+          colorSpecificImages.push(imgUrl);
+        }
+      } else {
+        generalImages.push(img);
+      }
+    } else {
+      generalImages.push(img);
+    }
+  });
+
+  if (colorSpecificImages.length > 0) {
+    filteredGallery = [...colorSpecificImages, ...generalImages];
+  } else {
+    // If no color-specific images exist for this color, show general images or fall back to all images without prefix
+    filteredGallery = generalImages.length > 0 
+      ? generalImages 
+      : gallery.map(img => (typeof img === "string" && img.includes("::") ? img.split("::")[1] : img));
+  }
+
   const activeImage = selectedImage || (filteredGallery[0] || null);
 
   const inWishlist = wishlist.some(i => i.id === product.id);
@@ -403,7 +500,7 @@ export default function ProductDetailPage() {
           {/* Left - Image Gallery */}
           <div>
             {!isMobileOrTablet ? (
-              /* Desktop: Clean vertical scrollable image stack */
+              /* Desktop: Clean vertical scrollable image stack with hover zoom */
               <div className="vw-pdp-image-stack">
                 {filteredGallery.map((img, i) => (
                   <div
@@ -414,10 +511,18 @@ export default function ProductDetailPage() {
                       border: "1px solid var(--smoke)",
                       overflow: "hidden",
                       position: "relative",
-                      transition: "border-color 0.3s ease"
+                      transition: "border-color 0.3s ease",
+                      cursor: "zoom-in"
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+                    onMouseMove={handleDesktopMouseMove}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)";
+                      handleDesktopMouseEnter(e);
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "var(--smoke)";
+                      handleDesktopMouseLeave(e);
+                    }}
                   >
                     <img
                       src={img}
@@ -427,7 +532,8 @@ export default function ProductDetailPage() {
                         height: "auto",
                         minHeight: 500,
                         objectFit: "cover",
-                        display: "block"
+                        display: "block",
+                        transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform-origin 0s"
                       }}
                       loading={i === 0 ? "eager" : "lazy"}
                     />
@@ -447,9 +553,7 @@ export default function ProductDetailPage() {
             ) : (
               <div>
                 <div
-                  onMouseMove={handleMouseMove}
-                  onMouseEnter={() => setIsZoomed(true)}
-                  onMouseLeave={() => setIsZoomed(false)}
+                  onClick={() => setLightboxOpen(true)}
                   style={{
                     background: "var(--onyx)",
                     border: "1px solid var(--smoke)",
@@ -459,7 +563,7 @@ export default function ProductDetailPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    cursor: "zoom-in"
+                    cursor: "pointer"
                   }}
                 >
                   {activeImage ? (
@@ -469,10 +573,7 @@ export default function ProductDetailPage() {
                       style={{
                         width: "100%",
                         height: "100%",
-                        objectFit: "cover",
-                        transform: isZoomed ? "scale(2.2)" : "scale(1)",
-                        transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                        transition: isZoomed ? "none" : "transform 0.4s ease"
+                        objectFit: "cover"
                       }}
                     />
                   ) : (
@@ -556,8 +657,8 @@ export default function ProductDetailPage() {
 
                 {activeTab === "details" && (
                   <div style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.8, fontFamily: "var(--font-serif)" }}>
-                    <p style={{ margin: 0 }}>• Premium 220 GSM Egyptian long-staple cotton canvas.</p>
-                    <p style={{ margin: "6px 0 0" }}>• Custom fit: structured shoulders, relaxed body chest drape.</p>
+                    <p style={{ margin: 0 }}>• Premium {product.gsm || "220"} GSM {product.fabric || "Egyptian long-staple cotton"}.</p>
+                    <p style={{ margin: "6px 0 0" }}>• Custom fit: structured shoulders, {product.fit || "Oversized"} body chest drape.</p>
                     <p style={{ margin: "6px 0 0" }}>• Clean finish: invisible stitching at neck rib and bottom fold.</p>
                   </div>
                 )}
@@ -573,7 +674,7 @@ export default function ProductDetailPage() {
                 {activeTab === "badges" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
                     <div>🛡️ SECURE GATEWAY Cards and UPI</div>
-                    <div>100% Tirupur Made Cotton</div>
+                    <div>100% Cotton Sourced Responsibly</div>
                     <div>⚡ Express courier tracking</div>
                     <div>🔄 30 Day Easy Returns policy</div>
                   </div>
@@ -672,7 +773,7 @@ export default function ProductDetailPage() {
                   {colors.map((c) => (
                     <button
                       key={c}
-                      onClick={() => setColor(c)}
+                      onClick={() => { setColor(c); setSelectedImage(null); }}
                       style={{
                         width: 30,
                         height: 30,
@@ -689,12 +790,14 @@ export default function ProductDetailPage() {
             )}
 
             {/* Live Stock Alert */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, padding: "10px 14px", background: "rgba(192, 57, 43, 0.08)", border: "1px solid rgba(192, 57, 43, 0.3)" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--wolf-red)", animation: "vw-badge-pulse 2s infinite" }} />
-              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>
-                ⚡ HURRY! ONLY <span style={{ color: "var(--gold)", fontWeight: "bold" }}>{product.stock && product.stock < 15 ? product.stock : 4} PIECES LEFT</span> IN SIZE {size || "M"}!
-              </span>
-            </div>
+            {product.stock > 0 && product.stock <= 10 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, padding: "10px 14px", background: "rgba(192, 57, 43, 0.08)", border: "1px solid rgba(192, 57, 43, 0.3)" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--wolf-red)", animation: "vw-badge-pulse 2s infinite" }} />
+                <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 0.5 }}>
+                  ⚡ ONLY <span style={{ color: "var(--gold)", fontWeight: "bold" }}>{product.stock} PIECES LEFT</span> IN STOCK!
+                </span>
+              </div>
+            )}
 
             {/* Size selector & Advisor links */}
             {sizes.length > 0 && (
@@ -862,8 +965,8 @@ export default function ProductDetailPage() {
                     style={{ padding: "10px 16px", fontSize: 9, letterSpacing: 1 }}
                     onClick={async () => {
                       try {
-                        await addToCart(product, size || "M", color || "#0a0a0a", 1);
-                        await addToCart(related[0], "M", "#0a0a0a", 1);
+                        await addToCart(product, size || "M", color || product.colors?.[0] || "Black", 1);
+                        await addToCart(related[0], "M", related[0].colors?.[0] || "Black", 1);
                         showToast("Bundle Added to Bag! 🛍️");
                       } catch (err) {
                         console.error('[Add Bundle Fail]', err.message);
@@ -893,7 +996,7 @@ export default function ProductDetailPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginTop: 24 }}>
               <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 16, display: "flex", gap: 12, alignItems: "center" }}>
-                <div style={{ width: 50, height: 50, background: "var(--smoke)" }} />
+                <img src={getProductImage(product)} alt={product.name} style={{ width: 50, height: 50, objectFit: "cover", border: "1px solid var(--smoke)" }} />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: "bold" }}>{product.name} (Base)</div>
                   <div style={{ fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>₹{product.price}</div>
@@ -902,7 +1005,7 @@ export default function ProductDetailPage() {
               {bundles.map(bItem => (
                 <Link key={bItem.id} to={`/product/${bItem.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 16, display: "flex", gap: 12, alignItems: "center", cursor: "pointer" }}>
-                    <div style={{ width: 50, height: 50, background: "var(--smoke)" }} />
+                    <img src={getProductImage(bItem)} alt={bItem.name} style={{ width: 50, height: 50, objectFit: "cover", border: "1px solid var(--smoke)" }} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: "bold" }}>{bItem.name}</div>
                       <div style={{ fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>₹{bItem.price}</div>
@@ -913,71 +1016,6 @@ export default function ProductDetailPage() {
             </div>
           </section>
         )}
-
-        {/* CUSTOMER LOOKBOOK & VIDEO REVIEWS */}
-        <section style={{ marginBottom: 60, borderTop: "1px solid var(--smoke)", paddingTop: 40 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 28 }}>STYLING VERDICTS</h2>
-
-          <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr", gap: 32, marginBottom: 40 }}>
-            {/* Customer Photos */}
-            <div>
-              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>CUSTOMER LOOKBOOK (FIT PICS)</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                {[
-                  "/mockup_silent.png",
-                  "/mockup_founder.png",
-                  "/mockup_beast.png"
-                ].map((img, idx) => (
-                  <div key={idx} style={{ aspectRatio: "0.8", background: "var(--onyx)", border: "1px solid var(--smoke)", overflow: "hidden", position: "relative" }}>
-                    <img src={img} alt={`Lookbook ${idx}`} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.8 }} />
-                    <span style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--gold)", background: "rgba(0,0,0,0.6)", padding: "2px 6px" }}>
-                      @user_{(idx + 1) * 23}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Video Reviews */}
-            <div>
-              <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>COMMUNITY REELS (VIDEO REVIEWS)</h3>
-              <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 10 }}>
-                {[
-                  { name: "Rohit D.", duration: "0:45", views: "14.2K", title: "Heavyweight 220 GSM Fit check" },
-                  { name: "Meera K.", duration: "1:12", views: "28.5K", title: "Silent Luxury style guide" }
-                ].map((vid, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => showToast(`Playing video review by ${vid.name}...`)}
-                    style={{
-                      flex: "0 0 160px",
-                      aspectRatio: "0.6",
-                      background: "linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(9,9,9,0.9) 100%)",
-                      border: "1px solid var(--smoke)",
-                      position: "relative",
-                      cursor: "pointer",
-                      padding: 16,
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "flex-end"
-                    }}
-                  >
-                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 44, height: 44, borderRadius: "50%", background: "rgba(201,168,76,0.9)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon name="arrowRight" size={16} color="var(--obsidian)" />
-                    </div>
-                    <div style={{ position: "absolute", top: 12, left: 12, fontSize: 8, fontFamily: "var(--font-mono)", color: "#faf9f7", background: "rgba(0,0,0,0.5)", padding: "2px 6px" }}>
-                      {vid.duration} · {vid.views} VIEWS
-                    </div>
-                    <div style={{ zIndex: 2 }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)" }}>{vid.name}</div>
-                      <div style={{ fontSize: 9, color: "var(--silver)", marginTop: 4, lineHeight: 1.2 }}>{vid.title}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* CUSTOMER REVIEWS AND RATINGS */}
         <section style={{ marginBottom: 60 }}>
@@ -999,6 +1037,31 @@ export default function ProductDetailPage() {
                         </div>
                       </div>
                       <p style={{ fontSize: 14, color: "var(--silver)", margin: 0, fontFamily: "var(--font-serif)", lineHeight: 1.6 }}>"{rev.comment}"</p>
+                      {rev.images && rev.images.length > 0 && (
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                          {rev.images.map((imgUrl, i) => (
+                            <img
+                              key={i}
+                              src={imgUrl && imgUrl.includes("/storage/v1/object/public/") ? imgUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") + "?width=150&quality=85" : imgUrl}
+                              alt="Review attachment"
+                              onClick={() => {
+                                setSelectedImage(imgUrl);
+                                setLightboxOpen(true);
+                              }}
+                              style={{
+                                width: 60,
+                                height: 60,
+                                objectFit: "cover",
+                                border: "1px solid var(--smoke)",
+                                cursor: "pointer",
+                                transition: "border-color 0.2s"
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1021,13 +1084,95 @@ export default function ProductDetailPage() {
                 </div>
                 <div>
                   <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", display: "block", marginBottom: 6 }}>RATING</label>
-                  <select
-                    value={reviewRating}
-                    onChange={e => setReviewRating(Number(e.target.value))}
-                    style={{ width: "100%", padding: 10, background: "#0a0a0a", border: "1px solid var(--smoke)", color: "var(--gold)", fontSize: 12, fontFamily: "var(--font-mono)" }}
-                  >
-                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 0" }}>
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setReviewRating(s)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center"
+                        }}
+                      >
+                        <Icon
+                          name="star"
+                          size={24}
+                          color={s <= reviewRating ? "#c9a84c" : "rgba(255, 255, 255, 0.1)"}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", display: "block", marginBottom: 6 }}>ATTACH PHOTOS (OPTIONAL)</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <label
+                      style={{
+                        border: "1px dashed var(--gold)",
+                        padding: "16px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        color: "var(--gold)",
+                        background: "rgba(201,168,76,0.02)",
+                        transition: "background 0.3s ease",
+                        display: "block"
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(201,168,76,0.06)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "rgba(201,168,76,0.02)"}
+                    >
+                      ✦ UPLOAD IMAGES
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                    {reviewImages.length > 0 && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                        {reviewImages.map((img, idx) => (
+                          <div key={idx} style={{ position: "relative", aspectRatio: "1", background: "var(--onyx)", border: "1px solid var(--smoke)" }}>
+                            <img
+                              src={`data:${img.type};base64,${img.data}`}
+                              alt={img.name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== idx))}
+                              style={{
+                                position: "absolute",
+                                top: 2,
+                                right: 2,
+                                background: "rgba(0,0,0,0.8)",
+                                border: "none",
+                                color: "var(--gold)",
+                                width: 16,
+                                height: 16,
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 9,
+                                cursor: "pointer",
+                                padding: 0
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", display: "block", marginBottom: 6 }}>VERDICT COMMENT</label>
@@ -1236,7 +1381,7 @@ export default function ProductDetailPage() {
                   {[product, ...related.slice(0, 2)].map((item, idx) => {
                     const isPremium = item.collection === "silent-luxury" || item.slug.includes("silent");
                     return (
-                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{isPremium ? "240 GSM Luxury" : "220 GSM Heavy"}</td>
+                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{item.gsm ? `${item.gsm} GSM` : (isPremium ? "240 GSM Luxury" : "220 GSM Heavy")}</td>
                     );
                   })}
                 </tr>
@@ -1245,7 +1390,7 @@ export default function ProductDetailPage() {
                   {[product, ...related.slice(0, 2)].map((item, idx) => {
                     const isUltra = item.collection === "beast-mode" || item.slug.includes("cargo");
                     return (
-                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{isUltra ? "Oversized Streetwear" : "Structured Drop Shoulder"}</td>
+                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{item.fit || (isUltra ? "Oversized Streetwear" : "Structured Drop Shoulder")}</td>
                     );
                   })}
                 </tr>
@@ -1254,7 +1399,7 @@ export default function ProductDetailPage() {
                   {[product, ...related.slice(0, 2)].map((item, idx) => {
                     const isPremium = item.collection === "silent-luxury" || item.slug.includes("silent");
                     return (
-                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{isPremium ? "100% Egyptian Cotton" : "100% Combed Cotton"}</td>
+                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{item.fabric || (isPremium ? "100% Egyptian Cotton" : "100% Combed Cotton")}</td>
                     );
                   })}
                 </tr>
@@ -1266,7 +1411,7 @@ export default function ProductDetailPage() {
                         className="btn-gold"
                         style={{ padding: "6px 8px", fontSize: 9, width: "100%" }}
                         onClick={() => {
-                          addToCart(item, "M", "#0a0a0a", 1);
+                          addToCart(item, "M", item.colors?.[0] || "Black", 1);
                           showToast("Added item to bag! 🛍️");
                         }}
                       >
@@ -1281,27 +1426,47 @@ export default function ProductDetailPage() {
         </div>
       )}
 
-      {/* purchaseAlert */}
-      {purchaseAlert && (
-        <div style={{
-          position: "fixed",
-          bottom: isMobileOrTablet ? 140 : 24,
-          left: 24,
-          background: "rgba(10,10,10,0.95)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid var(--gold)",
-          padding: "12px 20px",
-          zIndex: 999,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-          animation: "vw-drawer-slide 0.3s ease"
-        }}>
-          <div style={{ fontSize: 16 }}>🛍️</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
-            <div style={{ color: "var(--gold)", fontWeight: "bold" }}>RECENT PURCHASE</div>
-            <div style={{ color: "var(--ivory)", marginTop: 2 }}>{purchaseAlert.name} from {purchaseAlert.city} bought this item!</div>
+      {/* Lightbox Modal for mobile pinch/tap-to-zoom/fullscreen */}
+      {lightboxOpen && (
+        <div 
+          style={{ 
+            position: "fixed", 
+            inset: 0, 
+            background: "rgba(0,0,0,0.95)", 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            zIndex: 1000 
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button 
+            onClick={() => setLightboxOpen(false)} 
+            style={{ 
+              position: "absolute", 
+              top: 20, 
+              right: 20, 
+              background: "none", 
+              border: "none", 
+              color: "#fff", 
+              cursor: "pointer",
+              fontSize: 20
+            }}
+          >
+            ✕
+          </button>
+          <img 
+            src={activeImage && activeImage.includes("/storage/v1/object/public/") ? activeImage.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") + "?width=800&quality=90" : activeImage} 
+            alt={product.name} 
+            style={{ 
+              maxWidth: "90%", 
+              maxHeight: "85%", 
+              objectFit: "contain" 
+            }} 
+          />
+          <div style={{ color: "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 11, marginTop: 16 }}>
+            Tap anywhere to close
           </div>
         </div>
       )}

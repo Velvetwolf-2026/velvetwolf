@@ -14,7 +14,7 @@ export default function ProductCard({ product }) {
   const tagStyle = TAG_COLORS[product.tag] || { bg: "var(--smoke)", color: "var(--ash)" };
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
   const defaultSize = product.sizes?.[0] || "M";
-  const defaultColor = product.colors?.[0] || "#0a0a0a";
+  const defaultColor = product.colors?.[0] || "Black";
   const { isMobile } = useBreakpoint();
 
   const productUrl = `/product/${product.slug || product.id}`;

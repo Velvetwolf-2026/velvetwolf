@@ -40,7 +40,7 @@ export default function FeaturedCoverflow({ products }) {
   };
 
   const cardWidth = isMobile ? 270 : (isTablet ? 310 : 340);
-  const containerHeight = isMobile ? 480 : (isTablet ? 520 : 560);
+  const containerHeight = isMobile ? 540 : (isTablet ? 590 : 640);
   const offsetStep = isMobile ? 180 : (isTablet ? 220 : 250);
 
   return (
