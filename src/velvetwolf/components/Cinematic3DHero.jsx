@@ -7,109 +7,7 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 
-function processTshirtImage(img) {
-  const canvas = document.createElement("canvas");
-  const width = img.naturalWidth;
-  const height = img.naturalHeight;
-  canvas.width = width;
-  canvas.height = height;
 
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-
-  const imgData = ctx.getImageData(0, 0, width, height);
-  const data = imgData.data;
-
-  // DFS stack-based flood fill to clear background
-  const visited = new Uint8Array(width * height);
-  const stack = [];
-
-  // Add borders to seed
-  for (let x = 0; x < width; x++) {
-    stack.push(x, 0);
-    stack.push(x, height - 1);
-    visited[x] = 1;
-    visited[(height - 1) * width + x] = 1;
-  }
-  for (let y = 0; y < height; y++) {
-    stack.push(0, y);
-    stack.push(width - 1, y);
-    visited[y * width] = 1;
-    visited[y * width + (width - 1)] = 1;
-  }
-
-  while (stack.length > 0) {
-    const cy = stack.pop();
-    const cx = stack.pop();
-
-    const idx = (cy * width + cx) * 4;
-    const r = data[idx];
-    const g = data[idx + 1];
-    const b = data[idx + 2];
-
-    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-    // Dark grey background threshold in flatai_2.png (increased to 120 to fully remove shadows/bracelet leftovers)
-    if (lum < 120) {
-      data[idx + 3] = 0; // set transparent
-
-      // Neighbors
-      const neighbors = [
-        [cx + 1, cy],
-        [cx - 1, cy],
-        [cx, cy + 1],
-        [cx, cy - 1]
-      ];
-
-      for (let i = 0; i < 4; i++) {
-        const nx = neighbors[i][0];
-        const ny = neighbors[i][1];
-        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          const nidx = ny * width + nx;
-          if (!visited[nidx]) {
-            visited[nidx] = 1;
-            stack.push(nx, ny);
-          }
-        }
-      }
-    }
-  }
-
-  // Find bounding box of non-transparent pixels (the shirt)
-  let minX = width, maxX = 0, minY = height, maxY = 0;
-  let hasPixels = false;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      if (data[idx + 3] > 0) {
-        hasPixels = true;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-  }
-
-  if (!hasPixels) {
-    ctx.putImageData(imgData, 0, 0);
-    return canvas;
-  }
-
-  // Crop canvas to bounding box
-  const croppedWidth = (maxX - minX) + 1;
-  const croppedHeight = (maxY - minY) + 1;
-
-  const croppedCanvas = document.createElement("canvas");
-  croppedCanvas.width = croppedWidth;
-  croppedCanvas.height = croppedHeight;
-  const croppedCtx = croppedCanvas.getContext("2d");
-
-  ctx.putImageData(imgData, 0, 0);
-  croppedCtx.drawImage(canvas, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
-
-  return croppedCanvas;
-}
 
 // Particle class for Gold Dust Particles
 class Particle {
@@ -184,7 +82,7 @@ export default function Cinematic3DHero() {
             return { name: "Custom", hex: settings.heroColor, label: "Custom Admin Color" };
           }
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     }
@@ -464,7 +362,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             const settings = JSON.parse(saved);
             if (settings.heroFrontDesign) frontSrc = settings.heroFrontDesign;
             if (settings.heroBackDesign !== undefined) backSrc = settings.heroBackDesign;
-          } catch (err) {
+          } catch {
             // ignore
           }
         }
@@ -554,7 +452,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
-      if (shirtMaterial) shirtMaterial.dispose();
+      shirtMaterials.forEach(mat => mat.dispose());
       blankTex.dispose();
     };
   }, []);

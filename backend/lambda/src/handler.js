@@ -40,7 +40,12 @@ function parseBody(event) {
 }
 
 function normalizeRoute(pathname) {
-  return pathname.replace(/\/$/, "") || "/";
+  let p = pathname.replace(/\/$/, "") || "/";
+  const parts = p.split("/").filter(Boolean);
+  if (parts.length > 0 && ["dev", "prod", "staging", "v1", "v2"].includes(parts[0])) {
+    p = "/" + parts.slice(1).join("/");
+  }
+  return p.replace(/\/$/, "") || "/";
 }
 
 function getRequestId(event) {
