@@ -1674,3 +1674,14 @@ p {
     backdrop-filter: none !important;
   }
 }
+
+/* coverflow card styling overrides to prevent double border clashing */
+.featured-coverflow-card .product-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.featured-coverflow-card .product-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}

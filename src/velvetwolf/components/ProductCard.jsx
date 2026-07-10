@@ -116,9 +116,8 @@ export default function ProductCard({ product }) {
             gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
             gap: 10, 
             marginTop: 18,
-            opacity: isMobile ? 1 : (isHovered ? 1 : 0.05),
-            transform: isMobile ? "none" : (isHovered ? "translateY(0)" : "translateY(5px)"),
-            transition: "opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+            opacity: 1,
+            transform: "none"
           }}
         >
           <button className="btn-ghost" onClick={() => setSelectedProduct(product)} style={{ width: "100%", padding: "12px 16px" }}>
