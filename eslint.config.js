@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'build']),
   {
     files: ['src/**/*.{js,jsx}'],
     extends: [
@@ -25,6 +25,12 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react-hooks/set-state-in-effect': 'off',
+      // React Router framework-mode route modules conventionally export
+      // loader/meta alongside the default component — that's expected, not a
+      // fast-refresh hazard.
+      'react-refresh/only-export-components': ['warn', {
+        allowExportNames: ['loader', 'action', 'meta', 'links', 'headers', 'shouldRevalidate', 'handle', 'ErrorBoundary', 'HydrateFallback'],
+      }],
     },
   },
   {

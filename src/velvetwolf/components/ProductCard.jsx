@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";

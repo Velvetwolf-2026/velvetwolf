@@ -733,32 +733,56 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             alignItems: "center"
           }}
         >
-          {/* 3D WebGL Canvas */}
-          <canvas
-            ref={canvas3dRef}
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              top: 0,
-              left: 0,
-              zIndex: 2
-            }}
-          />
+          {/* On mobile/tablet, skip the WebGL scene entirely — no 2.7MB glb
+              fetch, no Three.js scene graph — and show a static product shot
+              instead. The canvas refs stay null, so the WebGL setup effects
+              below no-op via their existing `if (!ref.current) return` guards. */}
+          {isMobileOrTablet ? (
+            <img
+              src="/mockup_founder.webp"
+              alt="VelvetWolf tee"
+              loading="eager"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                zIndex: 2,
+                borderRadius: 12
+              }}
+            />
+          ) : (
+            <>
+              {/* 3D WebGL Canvas */}
+              <canvas
+                ref={canvas3dRef}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  zIndex: 2
+                }}
+              />
 
-          {/* Golden Floating Particles overlay */}
-          <canvas
-            ref={canvasParticlesRef}
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              top: 0,
-              left: 0,
-              zIndex: 3,
-              pointerEvents: "none"
-            }}
-          />
+              {/* Golden Floating Particles overlay */}
+              <canvas
+                ref={canvasParticlesRef}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  zIndex: 3,
+                  pointerEvents: "none"
+                }}
+              />
+            </>
+          )}
 
           {/* Dynamic Color Preview Panel (Hover overlay) */}
           <div

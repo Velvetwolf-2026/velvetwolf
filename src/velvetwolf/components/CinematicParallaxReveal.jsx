@@ -60,7 +60,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "silent",
       name: "Silent Luxury",
-      image: "/mockup_silent.png",
+      image: "/mockup_silent.webp",
       tag: "SILENT LUXURY",
       bgText: "SILENCE",
       color: "var(--pearl)",
@@ -69,7 +69,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "beast",
       name: "Beast Mode",
-      image: "/mockup_beast.png",
+      image: "/mockup_beast.webp",
       tag: "BEAST MODE ON",
       bgText: "BEAST",
       color: "var(--gold)",
@@ -78,7 +78,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "founder",
       name: "Founder's Mindset",
-      image: "/mockup_founder.png",
+      image: "/mockup_founder.webp",
       tag: "FOUNDER'S MINDSET",
       bgText: "FOUNDER",
       color: "var(--silver)",

@@ -15,7 +15,7 @@ const firebaseConfig = {
 let app = null;
 let authInstance = null;
 
-if (isFirebaseAvailable) {
+if (isFirebaseAvailable && typeof window !== "undefined") {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     authInstance = getAuth(app);

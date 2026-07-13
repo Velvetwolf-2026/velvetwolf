@@ -5,7 +5,7 @@ import {
   firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
-import { jsonResponse, redirectResponse, ApiError } from "../utils/http.js";
+import { jsonResponse, redirectResponse, ApiError, getClientIp } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { verifyRecaptcha } from "../services/recaptcha.service.js";
@@ -18,7 +18,7 @@ export async function signup(body, event) {
     throw new ApiError(400, "reCAPTCHA verification failed. Please try again.");
   }
 
-  const result = await authService.signup(data);
+  const result = await authService.signup(data, getClientIp(event));
   await auditLog({ action: "user.signup", resource: "users", meta: { email: data.email } });
   return jsonResponse(200, result, {}, event);
 }
@@ -31,7 +31,7 @@ export async function login(body, event) {
     throw new ApiError(400, "reCAPTCHA verification failed. Please try again.");
   }
 
-  const result = await authService.login(data);
+  const result = await authService.login(data, getClientIp(event));
   const headers = {};
   if (result.token) {
     const csrfToken = authService.generateCsrfToken();
@@ -62,13 +62,13 @@ export async function verifyOtp(body, event) {
 
 export async function resendOtp(body, event) {
   const data = validate(resendOtpSchema)(body);
-  const result = await authService.resendOtp(data);
+  const result = await authService.resendOtp(data, getClientIp(event));
   return jsonResponse(200, result, {}, event);
 }
 
 export async function forgotPassword(body, event) {
   const data = validate(forgotPasswordSchema)(body);
-  const result = await authService.forgotPassword(data);
+  const result = await authService.forgotPassword(data, getClientIp(event));
   return jsonResponse(200, result, {}, event);
 }
 
@@ -134,7 +134,7 @@ export async function discover(body, event) {
 
 export async function firebaseLogin(body, event) {
   const data = validate(firebaseLoginSchema)(body);
-  const result = await authService.firebaseLogin(data);
+  const result = await authService.firebaseLogin(data, getClientIp(event));
   const headers = {};
   if (result.token) {
     const csrfToken = authService.generateCsrfToken();

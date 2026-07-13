@@ -97,7 +97,7 @@ export default function CustomDesignPage() {
       collection: "custom",
       price: itemPrice,
       originalPrice: itemPrice + 500,
-      image: frontImage || logoFile || "/mockup_silent.png",
+      image: frontImage || logoFile || "/mockup_silent.webp",
       sizes: [size],
       colors: [baseColor],
       description: `Custom heavy garment with tailored specs. Fabric: ${fabric}, Color: ${baseColor}, Size: ${size}. Note: ${specialNote || "None"}`,

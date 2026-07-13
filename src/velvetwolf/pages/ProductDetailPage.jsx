@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
@@ -45,14 +45,50 @@ const COLOR_MAP = {
   "Crimson Ember": "#8B2635"
 };
 
+// Runs on the server for the initial request (and on the client for in-app
+// navigations) so product pages render with real content instead of an empty
+// shell — this is what makes them indexable and gives share links a real card.
+export async function loader({ params }) {
+  try {
+    const res = await fetch(`${apiUrl("/products")}/${params.slug}`);
+    if (!res.ok) return { product: null };
+    const data = await res.json();
+    return { product: data.product || null };
+  } catch {
+    return { product: null };
+  }
+}
+
+export function meta({ loaderData }) {
+  const product = loaderData?.product;
+  if (!product) {
+    return [{ title: "Product — VelvetWolf" }];
+  }
+  const image = getProductImage(product);
+  const title = `${product.name} — VelvetWolf`;
+  const description = product.description
+    ? String(product.description).slice(0, 160)
+    : "Luxury streetwear from VelvetWolf.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    ...(image ? [{ property: "og:image", content: image }] : []),
+    { property: "og:type", content: "product" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ];
+}
+
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { isMobile, isMobileOrTablet } = useBreakpoint();
   const { addToCart, toggleWishlist, wishlist, products, showToast } = useContext(AppContext);
+  const loaderData = useLoaderData();
 
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(loaderData?.product || null);
+  const [loading, setLoading] = useState(!loaderData?.product);
   const [error, setError] = useState(null);
 
   const [selectedImage, setSelectedImage] = useState(null);

@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
 import { useBreakpoint } from "../utils/breakpoints";

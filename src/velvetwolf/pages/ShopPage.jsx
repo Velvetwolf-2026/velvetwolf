@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
 import { useBreakpoint } from "../utils/breakpoints";
@@ -8,6 +8,29 @@ import Icon from "../components/Icon";
 import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { HeroHeader } from "../styles/shared";
 import { apiUrl } from "../utils/api";
+import { loadProductsFromAPI } from "../utils/products";
+
+export async function loader({ params }) {
+  try {
+    const products = await loadProductsFromAPI({ collection: params.collection });
+    return { products };
+  } catch {
+    return { products: [] };
+  }
+}
+
+export function meta({ params }) {
+  const collection = params.collection ? getCollectionById(params.collection) : null;
+  const title = collection ? `${collection.name} — VelvetWolf` : "Shop — VelvetWolf";
+  const description = collection?.description || "Shop the full VelvetWolf catalog of luxury streetwear.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+  ];
+}
 
 const AVAILABLE_COLORS = [
   { name: "Black", value: "#0a0a0a" },
@@ -23,7 +46,9 @@ const NECK_TYPES = ["Crew Neck", "Round Neck", "Hooded"];
 const CATEGORIES = ["tshirt", "cargo", "hoodie", "cap"];
 
 export default function ShopPage() {
-  const { products, searchQuery } = useContext(AppContext);
+  const { products: ctxProducts, searchQuery } = useContext(AppContext);
+  const loaderData = useLoaderData();
+  const products = ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []);
   const { collection: routeCollection } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();

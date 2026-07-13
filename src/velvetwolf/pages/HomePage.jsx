@@ -1,27 +1,58 @@
 import React, { useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
-import Cinematic3DHero from "../components/Cinematic3DHero";
+import Cinematic3DHero from "../components/ClientOnly3DHero";
 import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 import { useBreakpoint } from "../utils/breakpoints";
+import { loadProductsFromAPI } from "../utils/products";
+
+// Server-rendered on first load so the catalog is present in the HTML for
+// crawlers and link previews, not just after the client fetches it.
+export async function loader() {
+  try {
+    const products = await loadProductsFromAPI();
+    return { products };
+  } catch {
+    return { products: [] };
+  }
+}
+
+export function meta() {
+  const title = "VelvetWolf — Luxury Streetwear";
+  const description = "Premium luxury streetwear built for the modern generation. Shop VelvetWolf's collections of tees, hoodies, and drops.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ];
+}
 
 export default function HomePage() {
-  const { products, openShop, user, showToast } = useContext(AppContext);
+  const { products: ctxProducts, openShop, user, showToast } = useContext(AppContext);
+  const loaderData = useLoaderData();
+  const products = ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []);
   const navigate = useNavigate();
   const { isMobileOrTablet } = useBreakpoint();
 
-  const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
-  const guestProfile = guestProfileRaw ? JSON.parse(guestProfileRaw) : null;
+  const [guestProfile, setGuestProfile] = useState(null);
+  const [lastViewedCategory, setLastViewedCategory] = useState("");
   const activePersonality = user?.personality_type || guestProfile?.personalityType;
-
-  const lastViewedCategory = localStorage.getItem("vw_last_viewed_category") || "";
 
   const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
   const [comingSoonNotifySuccess, setComingSoonNotifySuccess] = useState({});
+
+  useEffect(() => {
+    const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
+    if (guestProfileRaw) setGuestProfile(JSON.parse(guestProfileRaw));
+    setLastViewedCategory(localStorage.getItem("vw_last_viewed_category") || "");
+  }, []);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("vw_recently_viewed") || "[]");
@@ -141,7 +172,7 @@ export default function HomePage() {
       price: 2499,
       description: "Dropping soon. 420 GSM Ultra-heavy cotton fleece, neon decals, cybernetic style.",
       releaseDate: "OCT 12",
-      image: "/mockup_silent.png"
+      image: "/mockup_silent.webp"
     },
     {
       id: "cs-2",
@@ -150,7 +181,7 @@ export default function HomePage() {
       price: 2999,
       description: "Dropping soon. High-grade tactical canvas, utility snap pockets, relaxed taper fit.",
       releaseDate: "OCT 28",
-      image: "/mockup_beast.png"
+      image: "/mockup_beast.webp"
     }
   ];
 
@@ -171,12 +202,12 @@ export default function HomePage() {
 
   /*
   const instagramPosts = [
-    { img: "/mockup_silent.png", tag: "@velvetwolf.in", hash: "#SilentLuxury" },
-    { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#FounderEnergy" },
-    { img: "/mockup_beast.png", tag: "@velvetwolf.in", hash: "#GrindMode" },
-    { img: "/mockup_silent.png", tag: "@velvetwolf.in", hash: "#OversizedCanvas" },
-    { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#BuildInSilence" },
-    { img: "/mockup_beast.png", tag: "@velvetwolf.in", hash: "#StreetCulture" }
+    { img: "/mockup_silent.webp", tag: "@velvetwolf.in", hash: "#SilentLuxury" },
+    { img: "/mockup_founder.webp", tag: "@velvetwolf.in", hash: "#FounderEnergy" },
+    { img: "/mockup_beast.webp", tag: "@velvetwolf.in", hash: "#GrindMode" },
+    { img: "/mockup_silent.webp", tag: "@velvetwolf.in", hash: "#OversizedCanvas" },
+    { img: "/mockup_founder.webp", tag: "@velvetwolf.in", hash: "#BuildInSilence" },
+    { img: "/mockup_beast.webp", tag: "@velvetwolf.in", hash: "#StreetCulture" }
   ];
   */
 
