@@ -79,43 +79,45 @@ export default function ProductCard({ product }) {
           <Icon name={inWishlist ? "heartFill" : "heart"} size={16} color={inWishlist ? "#c0392b" : "var(--ash)"} />
         </button>
       </div>
-      <div style={{ padding: "20px 20px 24px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "#c9c3c3", marginBottom: 6 }}>
-          {getCollectionById(product.collection)?.name?.toUpperCase() || product.collection?.toUpperCase()}
-        </div>
-        <Link to={productUrl} style={{ textDecoration: "none", color: "inherit" }}>
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
-        </Link>
-        <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-          {[1, 2, 3, 4, 5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews || 0})</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
-          {product.originalPrice && product.originalPrice > product.price && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
+      <div style={{ padding: "20px 20px 24px", display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "#c9c3c3", marginBottom: 6 }}>
+            {getCollectionById(product.collection)?.name?.toUpperCase() || product.collection?.toUpperCase()}
+          </div>
+          <Link to={productUrl} style={{ textDecoration: "none", color: "inherit" }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, marginBottom: 8 }}>{product.name}</h3>
+          </Link>
+          <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+            {[1, 2, 3, 4, 5].map(s => <Icon key={s} name="star" size={12} color={s <= Math.floor(product.rating || 5) ? "#c9a84c" : "#333"} />)}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#cac7c7", marginLeft: 4 }}>({product.reviews || 0})</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--gold)" }}>{"\u20b9"}{product.price.toLocaleString()}</span>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#cac7c7", textDecoration: "line-through" }}>{"\u20b9"}{product.originalPrice.toLocaleString()}</span>
+            )}
+          </div>
+          {/* Color Variant Pills (Desktop hover reveal) */}
+          {product.colors && product.colors.length > 0 && (
+            <div className="vw-color-pills">
+              {product.colors.map(c => {
+                const colorMap = { "Black": "#0a0a0a", "White": "#faf9f7", "Beige/Sand": "#d2b48c", "Forest Green": "#1e4620", "Crimson Ember": "#8B2635" };
+                return (
+                  <div
+                    key={c}
+                    className="vw-color-pill"
+                    style={{ background: colorMap[c] || c }}
+                    title={c}
+                  />
+                );
+              })}
+            </div>
           )}
         </div>
-        {/* Color Variant Pills (Desktop hover reveal) */}
-        {product.colors && product.colors.length > 0 && (
-          <div className="vw-color-pills">
-            {product.colors.map(c => {
-              const colorMap = { "Black": "#0a0a0a", "White": "#faf9f7", "Beige/Sand": "#d2b48c", "Forest Green": "#1e4620", "Crimson Ember": "#8B2635" };
-              return (
-                <div
-                  key={c}
-                  className="vw-color-pill"
-                  style={{ background: colorMap[c] || c }}
-                  title={c}
-                />
-              );
-            })}
-          </div>
-        )}
         <div 
           style={{ 
             display: "grid", 
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
+            gridTemplateColumns: "1fr 1fr", 
             gap: 10, 
             marginTop: 18,
             opacity: 1,

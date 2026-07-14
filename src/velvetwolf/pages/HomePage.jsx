@@ -111,7 +111,7 @@ export default function HomePage() {
           className="vw-mobile-swipe-shelf"
         >
           {items.map(p => (
-            <div key={p.id} style={{ flex: "0 0 240px", scrollSnapAlign: "start" }}>
+            <div key={p.id} style={{ flex: "0 0 360px", maxWidth: "100%", scrollSnapAlign: "start" }}>
               <ProductCard product={p} />
             </div>
           ))}
@@ -119,7 +119,7 @@ export default function HomePage() {
       );
     }
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 24 }}>
         {items.map(p => <ProductCard key={p.id} product={p} />)}
       </div>
     );
@@ -566,11 +566,11 @@ export default function HomePage() {
                 <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 28 : 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 24 }}>
               {limitedDrops.map(p => {
                 const pct = Math.max(10, Math.min(90, (p.stock || 12) * 2.2));
                 return (
-                  <div key={p.id} style={{ display: "flex", flexDirection: "column", maxWidth: 360, width: "100%", margin: "0 auto" }}>
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column", width: 360, maxWidth: "100%", margin: "0 auto" }}>
                     <ProductCard product={p} />
                     <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)", boxSizing: "border-box" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--gold)", marginBottom: 6 }}>

@@ -445,7 +445,7 @@ export default function ShopPage() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No pieces match your filters. Try clearing some selections.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(150px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))", gap: isMobile ? 12 : 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: isMobile ? 12 : 32 }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           )}

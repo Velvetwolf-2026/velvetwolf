@@ -1234,7 +1234,7 @@ export default function ProductDetailPage() {
         {related.length > 0 && (
           <section style={{ marginBottom: 60, borderTop: "1px solid var(--smoke)", paddingTop: 40 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>RELATED PIECES</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 20 }}>
               {related.map(p => (
                 <ProductCard key={p.id} product={p} />
               ))}
@@ -1246,7 +1246,7 @@ export default function ProductDetailPage() {
         {recentlyViewed.length > 1 && (
           <section style={{ borderTop: "1px solid var(--smoke)", paddingTop: 40 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 24 }}>RECENTLY VIEWED</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 20 }}>
               {products
                 .filter(p => recentlyViewed.includes(p.slug) && p.id !== product.id)
                 .slice(0, 4)
