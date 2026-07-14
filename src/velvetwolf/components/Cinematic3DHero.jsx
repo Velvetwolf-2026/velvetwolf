@@ -789,6 +789,8 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             style={{
               position: "absolute",
               bottom: 30,
+              left: "50%",
+              transform: "translateX(-50%)",
               zIndex: 4,
               background: "rgba(26, 26, 26, 0.75)",
               backdropFilter: "blur(12px)",
@@ -809,8 +811,8 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
                   onMouseEnter={() => setHoveredColor(opt.label)}
                   onMouseLeave={() => setHoveredColor(null)}
                   style={{
-                    width: 22,
-                    height: 22,
+                    width: 32,
+                    height: 32,
                     borderRadius: "50%",
                     background: opt.hex === "#FAF9F6" ? "#fff" : opt.hex,
                     border: isSelected ? "2px solid #C9A24D" : "1px solid rgba(255,255,255,0.2)",

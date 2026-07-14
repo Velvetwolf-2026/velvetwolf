@@ -78,13 +78,13 @@ export default function CategoryTile({ cat, w, h, logoSize = 52, onClick, active
       <div style={{
         position:"absolute",bottom:0,left:0,right:0,textAlign:"center",
         paddingBottom: logoSize > 56 ? 18 : 10,
-        opacity:hov?1:0, transform:hov?"translateY(0)":"translateY(6px)",
+        opacity:1, transform:"translateY(0)",
         transition:"all 0.28s ease",
       }}>
         <span style={{
           fontFamily:"'Bebas Neue',cursive",
           fontSize: logoSize > 56 ? 12 : logoSize > 40 ? 10 : 8,
-          letterSpacing:5, color:cat.accent, opacity:.9,
+          letterSpacing:5, color:cat.accent, opacity: hov ? 1 : .85,
         }}>
           {cat.name.toUpperCase()}
         </span>

@@ -32,7 +32,7 @@ export default function ReturnsPage() {
       <div style={S.wrap}>
         <PageHeader eyebrow="RETURNS" title="RETURNS & EXCHANGE" sub="Hassle-free returns within 7 days of delivery" />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 44 }}>
+        <div className="vw-policy-cards" style={{ marginBottom: 44 }}>
           {STAT_CARDS.map((c, i) => (
             <div key={i} style={{ background: surface, border: `1px solid ${border}`, padding: "20px", textAlign: "center", borderBottom: `2px solid ${gold}` }}>
               <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 30, color: gold, marginBottom: 4 }}>{c.icon}</div>

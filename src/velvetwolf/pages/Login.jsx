@@ -753,7 +753,7 @@ export function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
                       >
                         <EyeIcon visible={showPw} />
                       </button>
@@ -831,7 +831,7 @@ export function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
                       >
                         <EyeIcon visible={showPw} />
                       </button>

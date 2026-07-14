@@ -620,7 +620,7 @@ export default function ProductDetailPage() {
 
                 {/* Thumbnail grid */}
                 {filteredGallery.length > 1 && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(5, 1fr)", gap: 12, marginTop: 16 }}>
                     {filteredGallery.map((img, i) => (
                       <button
                         key={i}
@@ -629,7 +629,8 @@ export default function ProductDetailPage() {
                           padding: 0,
                           border: activeImage === img ? "2px solid var(--gold)" : "1px solid var(--smoke)",
                           background: "var(--onyx)",
-                          height: 80,
+                          height: isMobile ? undefined : 80,
+                          aspectRatio: isMobile ? "1" : undefined,
                           cursor: "pointer",
                           overflow: "hidden"
                         }}
@@ -811,8 +812,8 @@ export default function ProductDetailPage() {
                       key={c}
                       onClick={() => { setColor(c); setSelectedImage(null); }}
                       style={{
-                        width: 30,
-                        height: 30,
+                        width: 40,
+                        height: 40,
                         borderRadius: "50%",
                         background: COLOR_MAP[c] || c,
                         border: color === c ? "2px solid var(--gold)" : "2px solid transparent",
@@ -888,9 +889,9 @@ export default function ProductDetailPage() {
             {/* Qty and Actions */}
             <div ref={ctaRef} style={{ display: "flex", gap: 12, marginBottom: 36, flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)" }}>
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 12px" }}><Icon name="minus" size={12} /></button>
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", minWidth: 40, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="minus" size={12} /></button>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ivory)", padding: "0 12px" }}>{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", padding: "10px 12px" }}><Icon name="plus" size={12} /></button>
+                <button onClick={() => setQty(q => q + 1)} style={{ background: "none", border: "none", color: "var(--ash)", cursor: "pointer", minWidth: 40, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={12} /></button>
               </div>
               <button className="btn-outline" style={{ flex: 1, padding: "16px", minWidth: 120, fontSize: 11 }} onClick={() => { addToCart(product, size, color, qty); showToast("Added to Cart ✓"); }}>ADD TO CART</button>
               <button className="btn-gold" style={{ flex: 1, padding: "16px", minWidth: 120, fontSize: 11 }} onClick={() => { addToCart(product, size, color, qty); setTimeout(() => navigate("/checkout"), 100); }}>BUY NOW</button>
@@ -913,7 +914,7 @@ export default function ProductDetailPage() {
               <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 1, marginRight: 6 }}>SECURE PROTOCOLS:</span>
               <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 28, flexWrap: "wrap", marginTop: 8 }}>
                 {/* Visa */}
-                <img src={getSupabaseLogoUrl("/visa.png")} alt="Visa" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+                <img src={getSupabaseLogoUrl("/visa.png")} alt="Visa" style={{ height: 30, width: "auto", objectFit: "contain", borderRadius: 4 }} />
 
                 {/* Mastercard */}
                 <div style={{
@@ -932,7 +933,7 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* RuPay */}
-                <img src={getSupabaseLogoUrl("/rupay.png")} alt="RuPay" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
+                <img src={getSupabaseLogoUrl("/rupay.png")} alt="RuPay" style={{ height: 30, width: "auto", objectFit: "contain", borderRadius: 4 }} />
               </div>
             </div>
 
@@ -1511,7 +1512,7 @@ export default function ProductDetailPage() {
       {isMobileOrTablet && showStickyBar && (
         <div style={{
           position: "fixed",
-          bottom: 64, // sits right above our bottom navigation bar (64px)
+          bottom: "calc(64px + env(safe-area-inset-bottom, 0px))", // sits right above the bottom nav (64px + its safe-area inset)
           left: 0,
           right: 0,
           background: "rgba(16, 16, 16, 0.95)",

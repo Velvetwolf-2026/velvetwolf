@@ -386,7 +386,7 @@ body::before {
   color: var(--ivory);
   padding: 12px 16px;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 16px;
   width: 100%;
   outline: none;
   transition: border-color 0.3s;
@@ -736,6 +736,20 @@ textarea.input-dark {
     padding: 32px 20px !important;
   }
 
+  /* OTP row: share available width equally instead of a fixed 46px per box,
+     so 6 boxes always fit inside narrow phones instead of overflowing. */
+  .vw-otp-row {
+    gap: 6px !important;
+  }
+  .vw-otp-input {
+    width: auto !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 46px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+  }
+
   .contact-grid {
     grid-template-columns: 1fr !important;
   }
@@ -746,7 +760,7 @@ textarea.input-dark {
   }
 
   .toast {
-    bottom: 16px !important;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px) !important;
     right: 16px !important;
     left: 16px !important;
     font-size: 10px !important;
@@ -1519,6 +1533,22 @@ p {
   50% { opacity: 0.06; }
 }
 
+/* Color variant pills — always a row; desktop adds a hover reveal below */
+.vw-color-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.vw-color-pill {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--smoke);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
 /* Desktop-only product card enhancements */
 @media (min-width: 1024px) {
   /* Increase spacing for product grid cards */
@@ -1634,6 +1664,65 @@ p {
     grid-template-columns: 1.3fr 0.7fr;
     gap: 60px;
   }
+}
+
+/* Checkout two-column grid — real CSS breakpoint so mobile never renders
+   the desktop layout before JS hydration corrects useBreakpoint(). */
+.vw-checkout-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 380px;
+  gap: 48px;
+}
+@media (max-width: 640px) {
+  .vw-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Policy/returns page info-card grids — stay 2-up down to small phones,
+   then drop to 1 column so cards don't crowd into ~150px. */
+.vw-policy-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 420px) {
+  .vw-policy-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cart line-item layout — real CSS breakpoint, same hydration-safety reason
+   as .vw-checkout-grid above. */
+.vw-cart-item-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .vw-cart-item-grid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.vw-cart-item-price {
+  text-align: left;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+@media (min-width: 640px) {
+  .vw-cart-item-price {
+    text-align: right;
+    flex-direction: column;
+    gap: 0;
+    align-items: initial;
+  }
+}
+
+@media (min-width: 1024px) {
 
   /* Product detail sticky info panel */
   .vw-pdp-sticky {

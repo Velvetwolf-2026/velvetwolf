@@ -257,8 +257,8 @@ export default function ShopPage() {
                 key={color.name}
                 onClick={() => setSelectedColor(selectedColor === color.name ? null : color.name)}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   borderRadius: "50%",
                   background: color.value,
                   border: selectedColor === color.name ? "2px solid var(--gold)" : "1px solid var(--smoke)",
@@ -445,7 +445,7 @@ export default function ShopPage() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No pieces match your filters. Try clearing some selections.</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(280px, 1fr))", gap: isMobile ? 12 : 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(150px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))", gap: isMobile ? 12 : 32 }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           )}

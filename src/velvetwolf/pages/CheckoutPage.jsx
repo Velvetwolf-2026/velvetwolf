@@ -1,8 +1,7 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
-import { useBreakpoint } from "../utils/breakpoints";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 import { getSupabaseLogoUrl } from "../utils/supabase";
@@ -29,8 +28,9 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, cartTotal, user, showToast, clearCart } = useContext(AppContext);
   const { t } = useLanguage();
-  const { isMobile } = useBreakpoint();
   const [step] = useState(1);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const fieldRefs = useRef({});
   const [showExpressModal, setShowExpressModal] = useState(null); // 'upi', 'gpay', 'applepay'
   const [expressUpiId, setExpressUpiId] = useState("");
   const [expressProcessing, setExpressProcessing] = useState(false);
@@ -228,7 +228,7 @@ export default function CheckoutPage() {
     <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--obsidian)", color: "var(--ivory)" }}>
 
       {/* ONE-PAGE CHECKOUT GRID */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 40px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 380px", gap: 48 }}>
+      <div className="vw-checkout-grid" style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 40px" }}>
 
         {/* LEFT COLUMN: Billing & Details */}
         <div>
@@ -324,25 +324,27 @@ export default function CheckoutPage() {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <input className="input-dark" placeholder={`${t("fullName")} *`} value={address.name} onChange={e => setAddress(a => ({ ...a, name: e.target.value }))} style={{ gridColumn: "1/-1" }} />
-              <input className="input-dark" placeholder={`${t("emailAddress")} *`} value={address.email} onChange={e => setAddress(a => ({ ...a, email: e.target.value }))} style={{ gridColumn: "1/-1" }} />
-              <input className="input-dark" placeholder={`${t("mobileNumber")} *`} value={address.phone} onChange={e => setAddress(a => ({ ...a, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} style={{ gridColumn: "1/-1" }} maxLength={10} />
-              <input className="input-dark" placeholder={`${t("addressLine1")} *`} value={address.address} onChange={e => setAddress(a => ({ ...a, address: e.target.value }))} style={{ gridColumn: "1/-1" }} />
+              <input ref={el => fieldRefs.current.name = el} className="input-dark" placeholder={`${t("fullName")} *`} value={address.name} onChange={e => { setAddress(a => ({ ...a, name: e.target.value })); setFieldErrors(f => ({ ...f, name: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.name ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.email = el} className="input-dark" placeholder={`${t("emailAddress")} *`} value={address.email} onChange={e => { setAddress(a => ({ ...a, email: e.target.value })); setFieldErrors(f => ({ ...f, email: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.email ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.phone = el} className="input-dark" placeholder={`${t("mobileNumber")} *`} value={address.phone} onChange={e => { setAddress(a => ({ ...a, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })); setFieldErrors(f => ({ ...f, phone: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.phone ? "var(--wolf-red)" : undefined }} maxLength={10} />
+              <input ref={el => fieldRefs.current.address = el} className="input-dark" placeholder={`${t("addressLine1")} *`} value={address.address} onChange={e => { setAddress(a => ({ ...a, address: e.target.value })); setFieldErrors(f => ({ ...f, address: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.address ? "var(--wolf-red)" : undefined }} />
 
               <div style={{ position: "relative" }}>
-                <input className="input-dark" placeholder={`${t("pincode")} *`} value={address.pincode} onChange={handlePincodeChange} maxLength={6} style={{ width: "100%" }} />
+                <input ref={el => fieldRefs.current.pincode = el} className="input-dark" placeholder={`${t("pincode")} *`} value={address.pincode} onChange={e => { handlePincodeChange(e); setFieldErrors(f => ({ ...f, pincode: false })); }} maxLength={6} style={{ width: "100%", borderColor: fieldErrors.pincode ? "var(--wolf-red)" : undefined }} />
                 {loadingPincode && <span style={{ position: "absolute", right: 10, top: 12, fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>...</span>}
               </div>
 
               {pincodeLocations.length >= 1 ? (
                 <select
+                  ref={el => fieldRefs.current.city = el}
                   className="input-dark"
                   value={address.city}
                   onChange={e => {
                     const loc = pincodeLocations.find(l => l.city === e.target.value);
                     if (loc) setAddress(a => ({ ...a, city: loc.city, district: loc.district, state: loc.state }));
+                    setFieldErrors(f => ({ ...f, city: false, district: false, state: false }));
                   }}
-                  style={{ appearance: "auto", WebkitAppearance: "auto", MozAppearance: "auto" }}
+                  style={{ appearance: "auto", WebkitAppearance: "auto", MozAppearance: "auto", borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }}
                 >
                   <option value="" disabled>SELECT CITY</option>
                   {pincodeLocations.map((loc, i) => (
@@ -350,11 +352,11 @@ export default function CheckoutPage() {
                   ))}
                 </select>
               ) : (
-                <input className="input-dark" placeholder={`${t("city")} *`} value={address.city} onChange={e => setAddress(a => ({ ...a, city: e.target.value }))} />
+                <input ref={el => fieldRefs.current.city = el} className="input-dark" placeholder={`${t("city")} *`} value={address.city} onChange={e => { setAddress(a => ({ ...a, city: e.target.value })); setFieldErrors(f => ({ ...f, city: false })); }} style={{ borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }} />
               )}
 
-              <input className="input-dark" placeholder={`${t("district")} *`} value={address.district} onChange={e => setAddress(a => ({ ...a, district: e.target.value }))} />
-              <input className="input-dark" placeholder={`${t("state")} *`} value={address.state} onChange={e => setAddress(a => ({ ...a, state: e.target.value }))} />
+              <input ref={el => fieldRefs.current.district = el} className="input-dark" placeholder={`${t("district")} *`} value={address.district} onChange={e => { setAddress(a => ({ ...a, district: e.target.value })); setFieldErrors(f => ({ ...f, district: false })); }} style={{ borderColor: fieldErrors.district ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.state = el} className="input-dark" placeholder={`${t("state")} *`} value={address.state} onChange={e => { setAddress(a => ({ ...a, state: e.target.value })); setFieldErrors(f => ({ ...f, state: false })); }} style={{ borderColor: fieldErrors.state ? "var(--wolf-red)" : undefined }} />
             </div>
           </div>
 
@@ -539,14 +541,26 @@ export default function CheckoutPage() {
                 }}
                 onClick={() => {
                   const { name, email, phone, address: addr, city, district, state, pincode } = address;
-                  if (!name.trim()) { showToast("Please enter your full name.", "error"); return; }
-                  if (!email.trim() || !email.includes("@")) { showToast("Please enter a valid email.", "error"); return; }
-                  if (!/^[6-9]\d{9}$/.test(phone)) { showToast("Enter a valid 10-digit mobile number.", "error"); return; }
-                  if (!addr.trim()) { showToast("Please enter your address.", "error"); return; }
-                  if (!/^\d{6}$/.test(pincode)) { showToast("Enter a valid 6-digit pincode.", "error"); return; }
-                  if (!city.trim()) { showToast("Please enter your city.", "error"); return; }
-                  if (!district.trim()) { showToast("Please enter your district.", "error"); return; }
-                  if (!state.trim()) { showToast("Please enter your state.", "error"); return; }
+                  const checks = [
+                    ["name", !name.trim(), "Please enter your full name."],
+                    ["email", !email.trim() || !email.includes("@"), "Please enter a valid email."],
+                    ["phone", !/^[6-9]\d{9}$/.test(phone), "Enter a valid 10-digit mobile number."],
+                    ["address", !addr.trim(), "Please enter your address."],
+                    ["pincode", !/^\d{6}$/.test(pincode), "Enter a valid 6-digit pincode."],
+                    ["city", !city.trim(), "Please enter your city."],
+                    ["district", !district.trim(), "Please enter your district."],
+                    ["state", !state.trim(), "Please enter your state."],
+                  ];
+                  const firstError = checks.find(([, invalid]) => invalid);
+                  if (firstError) {
+                    const [field, , message] = firstError;
+                    setFieldErrors(Object.fromEntries(checks.filter(([, invalid]) => invalid).map(([f]) => [f, true])));
+                    showToast(message, "error");
+                    fieldRefs.current[field]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    fieldRefs.current[field]?.focus();
+                    return;
+                  }
+                  setFieldErrors({});
                   handleOrder();
                 }}
                 disabled={processing || cart.length === 0}

@@ -60,7 +60,7 @@ export default function ContactPage() {
     color: text,
     padding: "12px 14px",
     fontFamily: "'Space Mono', monospace",
-    fontSize: 13,
+    fontSize: 16,
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color 0.2s",
@@ -153,6 +153,7 @@ export default function ContactPage() {
         />
 
         <div
+          className="contact-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1.6fr",
@@ -386,6 +387,7 @@ export default function ContactPage() {
                 </div>
 
                 <div
+                  className="contact-grid"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",

@@ -44,9 +44,9 @@ export default function ProductCard({ product }) {
           <ProductImage product={product} selectedColor={product.colors?.[0]} isParentHovered={isHovered} />
         </Link>
 
-        <div style={{ position: "absolute", top: 12, left: 12, display: "flex", flexDirection: "column", gap: 6, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: 12, left: 12, maxWidth: "68%", display: "flex", flexDirection: "column", gap: 6, zIndex: 10 }}>
           {product.tag && (
-            <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color }}>{product.tag}</span>
+            <span className="badge" style={{ background: tagStyle.bg, color: tagStyle.color, display: "block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", boxSizing: "border-box" }}>{product.tag}</span>
           )}
           {searchQuery && searchQuery.trim() && (
             <span className="badge" style={{
@@ -59,9 +59,11 @@ export default function ProductCard({ product }) {
               alignItems: "center",
               gap: 4,
               fontSize: 9,
-              letterSpacing: 1
+              letterSpacing: 1,
+              maxWidth: "100%",
+              boxSizing: "border-box"
             }}>
-              ✨ {getAiMatchScore(product.id)}% AI MATCH
+              ✨ <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{getAiMatchScore(product.id)}% AI MATCH</span>
             </span>
           )}
         </div>

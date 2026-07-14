@@ -111,6 +111,7 @@ export default function TrackOrder() {
           </div>
 
           <div
+            className="contact-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
@@ -319,6 +320,7 @@ export default function TrackOrder() {
             <hr style={S.rule} />
 
             <div
+              className="contact-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3,1fr)",

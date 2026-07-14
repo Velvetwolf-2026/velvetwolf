@@ -281,12 +281,14 @@ function MosaicPanel({ cats, onClick, metrics }) {
 /* ── Main export ── */
 export default function MosaicCarousel() {
   const { openShop, setSearchQuery } = useContext(AppContext);
+  const sectionRef = useRef(null);
   const trackRef = useRef(null);
   const [drag, setDrag]     = useState(false);
   const [sx, setSx]         = useState(0);
   const [sl, setSl]         = useState(0);
   const [showL, setShowL]   = useState(false);
   const [auto, setAuto]     = useState(true);
+  const [inView, setInView] = useState(true);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1280));
   const dist = useRef(0);
   const metrics = getMosaicMetrics(viewportWidth);
@@ -308,10 +310,20 @@ export default function MosaicCarousel() {
   }, []);
 
   useEffect(() => {
+    const el = sectionRef.current; if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const el = trackRef.current; if (!el) return;
     let raf;
     const tick = () => {
-      if (auto && !drag) {
+      if (auto && !drag && inView) {
         el.scrollLeft += 0.65;
         if (el.scrollLeft >= el.scrollWidth / 2) el.scrollLeft = 0;
         fade();
@@ -320,7 +332,7 @@ export default function MosaicCarousel() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [auto, drag, fade]);
+  }, [auto, drag, fade, inView]);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -359,14 +371,14 @@ export default function MosaicCarousel() {
         .vwmc-btn { all:unset; width:40px; height:40px; border:1px solid rgba(201,168,76,0.28); color:#c9a84c; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; transition:all 0.25s; background:rgba(9,9,9,0.92); backdrop-filter:blur(10px); }
         .vwmc-btn:hover { background:rgba(201,168,76,0.1); border-color:#c9a84c; transform:scale(1.1); }
         @media (max-width: 768px) {
-          .vwmc-btn { width:34px; height:34px; font-size:18px; }
+          .vwmc-btn { width:40px; height:40px; font-size:18px; }
         }
         @media (max-width: 480px) {
-          .vwmc-btn { width:30px; height:30px; font-size:16px; }
+          .vwmc-btn { width:40px; height:40px; font-size:16px; }
         }
       `}</style>
 
-      <section style={{ background:"#090909", paddingBottom: 8 }}>
+      <section ref={sectionRef} style={{ background:"#090909", paddingBottom: 8 }}>
 
         {/* Header row */}
         <div className="vw-mosaic-header" style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>

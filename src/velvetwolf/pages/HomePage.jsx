@@ -395,7 +395,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>THE DROP SELECTION</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>FEATURED COLLECTIONS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>FEATURED COLLECTIONS</h2>
             <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "16px auto 0" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
@@ -428,10 +428,10 @@ export default function HomePage() {
       {/* FEATURED PRODUCTS */}
       <section style={{ padding: "80px 40px", background: "var(--obsidian)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+          <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PRODUCTS</h2>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 56, letterSpacing: 3 }}>FEATURED PRODUCTS</h2>
             </div>
             <button className="btn-outline" onClick={() => openShop()} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               DISCOVER NOW <Icon name="arrowRight" size={12} />
@@ -480,7 +480,7 @@ export default function HomePage() {
           trending: trendingToday.length > 0 && (
             <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>REAL-TIME PACK HEAT</div>
                     <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>TRENDING NOW</h2>
@@ -533,7 +533,7 @@ export default function HomePage() {
           newDrops: newDrops.length > 0 && (
             <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>JUST RELEASED</div>
                     <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>NEW DROPS</h2>
@@ -563,7 +563,7 @@ export default function HomePage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SCARCE EDITIONS · HEAVYWEIGHTS</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 28 : 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
@@ -594,7 +594,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FUTURE DROPS</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>COMING SOON</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 28 : 48, letterSpacing: 2 }}>COMING SOON</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 32 }}>
             {comingSoonItems.map(item => (
@@ -678,7 +678,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>TESTIMONIALS</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>WOLF PACK VERDICTS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>WOLF PACK VERDICTS</h2>
             <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "16px auto 0" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
@@ -703,7 +703,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>STYLE BOOK</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>
               Tag us <a href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: "bold" }}>@velvetwolf.in</a> on Instagram to get featured.
             </p>
@@ -760,7 +760,7 @@ export default function HomePage() {
       <section style={{ background: "var(--graphite)", padding: "100px 40px", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 20 }}>JOIN THE PACK</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2, marginBottom: 16 }}>EXCLUSIVE DROPS</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2, marginBottom: 16 }}>EXCLUSIVE DROPS</h2>
           <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 15, color: "var(--silver)", lineHeight: 1.7, marginBottom: 36 }}>
             Subscribe to receive priority access to limited volume drops, restocks, and exclusive styling recommendations. No spam. Only noise-free utility.
           </p>
@@ -807,7 +807,7 @@ export default function HomePage() {
       <section className="promise-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
-          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
+          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider" />
         </div>
         <div className="promise-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 40 }}>

@@ -145,7 +145,8 @@ export default function Footer() {
                   fontSize: 15,
                   color: "var(--silver)",
                   cursor: "pointer",
-                  marginBottom: 12,
+                  padding: "8px 0",
+                  marginBottom: 2,
                   transition: "color 0.2s",
                 }}
                 onMouseEnter={(e) => (e.target.style.color = "var(--ivory)")}
@@ -186,7 +187,8 @@ export default function Footer() {
                   fontSize: 15,
                   color: "var(--silver)",
                   cursor: "pointer",
-                  marginBottom: 12,
+                  padding: "8px 0",
+                  marginBottom: 2,
                   transition: "color 0.2s",
                 }}
                 onMouseEnter={(e) => (e.target.style.color = "var(--ivory)")}
@@ -286,6 +288,8 @@ export default function Footer() {
                   color: "var(--silver)",
                   cursor: "pointer",
                   letterSpacing: 1,
+                  display: "inline-block",
+                  padding: "10px 0",
                 }}
               >
                 {l}

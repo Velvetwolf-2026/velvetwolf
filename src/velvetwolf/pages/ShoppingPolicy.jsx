@@ -20,7 +20,7 @@ export default function ShoppingPolicy() {
         <PageHeader eyebrow="POLICIES" title="SHOPPING POLICY" sub="Everything you need to know about shopping with VelvetWolf" />
 
         {/* Quick cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:48 }}>
+        <div className="vw-policy-cards" style={{ marginBottom:48 }}>
           {QUICK_CARDS.map((c, i) => (
             <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"20px 22px", borderLeft:`3px solid ${gold}` }}>
               <div style={{ fontSize:22, marginBottom:8 }}>{c.icon}</div>

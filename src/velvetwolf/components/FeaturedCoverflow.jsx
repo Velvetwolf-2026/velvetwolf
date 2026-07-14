@@ -181,16 +181,30 @@ export default function FeaturedCoverflow({ products }) {
             <button
               key={product.id}
               onClick={() => setActiveIndex(index)}
+              aria-label={`Go to slide ${index + 1}`}
               style={{
                 width: index === activeIndex ? 34 : 10,
-                height: 3,
+                height: 24,
                 border: "none",
-                background: index === activeIndex ? "var(--gold)" : "var(--smoke)",
+                background: "transparent",
                 cursor: "pointer",
-                transition: "all 0.3s ease",
                 padding: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
-            />
+            >
+              <span
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: 3,
+                  borderRadius: 2,
+                  background: index === activeIndex ? "var(--gold)" : "var(--smoke)",
+                  transition: "all 0.3s ease",
+                }}
+              />
+            </button>
           ))}
         </div>
         <button className="btn-ghost" onClick={() => setActiveIndex((current) => (current + 1) % products.length)} style={{ padding: "10px 16px" }}>
