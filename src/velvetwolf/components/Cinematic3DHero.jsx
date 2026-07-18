@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useEffect, useRef, useContext } from "react";
 import * as THREE from "three";
 import { AppContext } from "../pages/AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
@@ -61,40 +61,9 @@ export default function Cinematic3DHero() {
   const canvas3dRef = useRef(null);
   const canvasParticlesRef = useRef(null);
 
-  // Dynamic T-shirt colors
-  const colorOptions = [
-    { name: "Black", hex: "#0D0D0D", label: "Obsidian Black" },
-    { name: "White", hex: "#FAF9F6", label: "Alabaster White" },
-    { name: "Beige", hex: "#D9C5B2", label: "Desert Sand" },
-    { name: "Forest Green", hex: "#1E352F", label: "Forest Canopy" },
-    { name: "Crimson Ember", hex: "#8B2635", label: "Crimson Ember" }
-  ];
-
-  const [activeColor, setActiveColor] = useState(() => {
-    const saved = localStorage.getItem("vw_store_settings");
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        if (settings.heroColor) {
-          const match = colorOptions.find(o => o.hex.toLowerCase() === settings.heroColor.toLowerCase());
-          if (match) return match;
-          if (settings.heroColor.startsWith("#")) {
-            return { name: "Custom", hex: settings.heroColor, label: "Custom Admin Color" };
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return colorOptions[0];
-  });
-  const [hoveredColor, setHoveredColor] = useState(null);
-
-  // Sync active color to ref for realtime WebGL updates without rebuilding scene
+  // Static T-shirt color: Desert Sand
+  const activeColor = { name: "Beige", hex: "#D9C5B2", label: "Desert Sand" };
   const activeColorRef = useRef(activeColor);
-  useEffect(() => {
-    activeColorRef.current = activeColor;
-  }, [activeColor]);
 
   // Mouse tracking for parallax
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
@@ -337,7 +306,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
     const loader = new GLTFLoader();
     MeshoptDecoder.ready.then(() => {
       loader.setMeshoptDecoder(MeshoptDecoder);
-      loader.load('/tee_model.glb', (gltf) => {
+      loader.load('/oversized_tee_hero.glb', (gltf) => {
         const model = gltf.scene;
         model.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(model);
@@ -401,7 +370,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         model.updateMatrixWorld(true);
 
         // Read design configuration from localStorage store settings
-        let frontSrc = null;
+        let frontSrc = '/logo.png';
         let backSrc = '/tee_back_print.jpg';
         const saved = localStorage.getItem("vw_store_settings");
         if (saved) {
@@ -461,9 +430,9 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       // 1. Slow Y floating motion: 6s duration cycle, 12px height variance (0.06 amplitude)
       shirtGroup.position.y = 0.4 + Math.sin(elapsedTime * (2.0 * Math.PI / 6.0)) * 0.06;
       
-      // 2. Slow breathing rotation oscillating between 15° and 25° (flipped 180° to show front) over a 25-second cycle
+      // 2. Slow breathing rotation oscillating between 15° and 25° over a 25-second cycle
       const rotationCycle = (2.0 * Math.PI) / 25.0;
-      shirtGroup.rotation.y = (200.0 * Math.PI / 180.0) - Math.cos(elapsedTime * rotationCycle) * (5.0 * Math.PI / 180.0);
+      shirtGroup.rotation.y = (20.0 * Math.PI / 180.0) - Math.cos(elapsedTime * rotationCycle) * (5.0 * Math.PI / 180.0);
 
       // 3. Mouse Parallax interpolation
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
@@ -550,7 +519,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
   return (
     <section
       style={{
-        background: "#0D0D0D",
+        background: "rgba(13, 13, 13, 0.6)",
         color: "#FAF9F6",
         minHeight: "100vh",
         display: "flex",
@@ -784,65 +753,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             </>
           )}
 
-          {/* Dynamic Color Preview Panel (Hover overlay) */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: 30,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 4,
-              background: "rgba(26, 26, 26, 0.75)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid #2A2A2A",
-              borderRadius: "30px",
-              padding: "10px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12
-            }}
-          >
-            {colorOptions.map((opt) => {
-              const isSelected = activeColor.name === opt.name;
-              return (
-                <button
-                  key={opt.name}
-                  onClick={() => setActiveColor(opt)}
-                  onMouseEnter={() => setHoveredColor(opt.label)}
-                  onMouseLeave={() => setHoveredColor(null)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: opt.hex === "#FAF9F6" ? "#fff" : opt.hex,
-                    border: isSelected ? "2px solid #C9A24D" : "1px solid rgba(255,255,255,0.2)",
-                    padding: 0,
-                    cursor: "pointer",
-                    transform: isSelected ? "scale(1.2)" : "scale(1)",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    boxShadow: isSelected ? "0 0 10px rgba(201,162,77,0.5)" : "none"
-                  }}
-                  title={opt.label}
-                />
-              );
-            })}
-            
-            {/* Color labels */}
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: 1,
-                color: "#FAF9F6",
-                marginLeft: 4,
-                width: 110,
-                textAlign: "left",
-                opacity: 0.8
-              }}
-            >
-              {hoveredColor || activeColor.label}
-            </span>
-          </div>
+
         </div>
       </div>
       {/* Scroll indicator (Desktop only) */}

@@ -21,6 +21,8 @@ import WishlistSidebar from "./velvetwolf/components/WishlistSidebar";
 import Toast from "./velvetwolf/components/Toast";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
+import SilkBackground from "./velvetwolf/components/SilkBackground";
+import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 
 import "./index.css";
 
@@ -577,6 +579,10 @@ export default function VelvetWolfRoot() {
   return (
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
+        {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
+        <SilkBackground />
+        <SmoothScroll />
+
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
         <Outlet />

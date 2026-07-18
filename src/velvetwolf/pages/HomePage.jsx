@@ -229,13 +229,13 @@ export default function HomePage() {
   };
 
   return (
-    <div style={{ background: "var(--obsidian)", color: "var(--ivory)", overflowX: "hidden" }}>
+    <div style={{ background: "transparent", color: "var(--ivory)", overflowX: "hidden" }}>
       
       {/* CINEMATIC 3D HERO SHOWCASE */}
       <Cinematic3DHero />
 
       {/* TRUST STRIP */}
-      <div style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+      <div style={{ background: "var(--graphite-veil)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{
           maxWidth: 1400,
           margin: "0 auto",
@@ -280,7 +280,7 @@ export default function HomePage() {
       </div>
 
       {/* EDITORIAL BRAND PHILOSOPHY & STORYTELLING */}
-      <section style={{ padding: isMobileOrTablet ? "60px 20px" : "120px 40px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ padding: isMobileOrTablet ? "60px 20px" : "120px 40px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           {/* Section Header */}
           <div style={{ textAlign: "center", marginBottom: isMobileOrTablet ? 40 : 72 }}>
@@ -391,7 +391,7 @@ export default function HomePage() {
       </section>
 
       {/* FEATURED COLLECTIONS */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>THE DROP SELECTION</div>
@@ -400,7 +400,6 @@ export default function HomePage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
             {COLLECTIONS.slice(0, 4).map(col => {
-              const IconComponent = col.icon;
               return (
                 <div 
                   key={col.id} 
@@ -409,11 +408,11 @@ export default function HomePage() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.transform = "translateY(-4px)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.04, color: "var(--gold)", transform: "scale(5)" }}>
-                    {IconComponent && <IconComponent />}
+                  <div style={{ position: "absolute", right: -10, bottom: -10, opacity: 0.05, transform: "scale(4.5)", transformOrigin: "bottom right" }}>
+                    {col.icon && <Icon name={col.icon} size={40} color="var(--gold)" />}
                   </div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--gold)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                    {IconComponent && <span><IconComponent style={{ fontSize: 18 }} /></span>}
+                    {col.icon && <span><Icon name={col.icon} size={18} color="var(--gold)" /></span>}
                     DROP COLLECTION
                   </div>
                   <h3 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 1, marginBottom: 12 }}>{col.name.toUpperCase()}</h3>
@@ -426,7 +425,7 @@ export default function HomePage() {
       </section>
 
       {/* FEATURED PRODUCTS */}
-      <section style={{ padding: "80px 40px", background: "var(--obsidian)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--obsidian-veil)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
             <div>
@@ -445,7 +444,7 @@ export default function HomePage() {
       {(() => {
         const sectionMap = {
           personalized: activePersonality && personalizedProducts.length > 0 && (
-            <section key="personalized" style={{ padding: "60px 20px", background: "linear-gradient(180deg, var(--onyx), var(--obsidian))", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="personalized" style={{ padding: "60px 20px", background: "linear-gradient(180deg, rgba(17,17,17,0.62), rgba(10,10,10,0.66))", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
@@ -465,7 +464,7 @@ export default function HomePage() {
             </section>
           ),
           continueShopping: continueShoppingProducts.length > 0 && (
-            <section key="continue" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="continue" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -478,7 +477,7 @@ export default function HomePage() {
             </section>
           ),
           trending: trendingToday.length > 0 && (
-            <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
@@ -492,7 +491,7 @@ export default function HomePage() {
             </section>
           ),
           aiPicks: aiPicks.length > 0 && (
-            <section key="aipicks" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="aipicks" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -505,7 +504,7 @@ export default function HomePage() {
             </section>
           ),
           recentlyViewed: recentlyViewedProducts.length > 0 && (
-            <section key="recently" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="recently" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -518,7 +517,7 @@ export default function HomePage() {
             </section>
           ),
           similarToInterests: similarToStyle.length > 0 && (
-            <section key="similar" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="similar" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -531,7 +530,7 @@ export default function HomePage() {
             </section>
           ),
           newDrops: newDrops.length > 0 && (
-            <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
@@ -558,7 +557,7 @@ export default function HomePage() {
 
       {/* 6. LIMITED DROPS */}
       {limitedDrops.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+        <section style={{ padding: "80px 40px", background: "var(--obsidian-veil)", borderTop: "1px solid var(--smoke)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
@@ -590,7 +589,7 @@ export default function HomePage() {
       )}
 
       {/* 7. COMING SOON */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)", borderTop: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FUTURE DROPS</div>
@@ -674,7 +673,7 @@ export default function HomePage() {
       </section>
 
       {/* CUSTOMER REVIEWS */}
-      <section style={{ padding: "100px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "100px 40px", background: "var(--obsidian-veil)", borderTop: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>TESTIMONIALS</div>
@@ -699,7 +698,7 @@ export default function HomePage() {
       </section>
 
       {/* INSTAGRAM-STYLE GALLERY */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>STYLE BOOK</div>
@@ -757,7 +756,7 @@ export default function HomePage() {
       </section>
 
       {/* NEWSLETTER SIGNUP */}
-      <section style={{ background: "var(--graphite)", padding: "100px 40px", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ background: "var(--graphite-veil)", padding: "100px 40px", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 20 }}>JOIN THE PACK</div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2, marginBottom: 16 }}>EXCLUSIVE DROPS</h2>

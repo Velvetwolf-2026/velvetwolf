@@ -28,6 +28,11 @@
   --crimson: #8b1a1a;
   --wolf-red: #c0392b;
 
+  /* Translucent surface veils — sit over the ambient silk backdrop so the
+     cloth motion reads through full-bleed sections while text stays legible. */
+  --obsidian-veil: rgba(10, 10, 10, 0.66);
+  --graphite-veil: rgba(26, 26, 26, 0.62);
+
   /* Fonts — 3-font system */
   --font-display: 'Unbounded', system-ui, sans-serif;  /* hero / headings / product names */
   --font-body:    'Manrope', system-ui, sans-serif;    /* body copy / UI / buttons */
@@ -62,10 +67,15 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Base colour that shows before the silk canvas paints (and if WebGL
+     is unavailable) — keeps the old obsidian look with zero flash. */
+  background: var(--obsidian);
 }
 
 body {
-  background: var(--obsidian);
+  /* Transparent so the fixed silk backdrop (z-index:-1) shows through the
+     page's translucent section veils. */
+  background: transparent;
   color: var(--ivory);
   font-family: var(--font-body);
   font-size: var(--text-body);
@@ -73,6 +83,20 @@ body {
   line-height: 1.65;
   overflow-x: hidden;
   cursor: crosshair;
+}
+
+/* Ambient silk cloth — fixed decorative backdrop behind all content. */
+.vw-silk-host {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.vw-silk-bg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ------------------------------------------------------------

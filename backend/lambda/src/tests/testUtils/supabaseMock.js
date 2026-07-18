@@ -24,6 +24,10 @@ export function createSupabaseMock(responseQueues = {}, calls = []) {
         calls.push({ table, method: "insert", payload });
         return builder;
       }),
+      upsert: vi.fn((payload) => {
+        calls.push({ table, method: "upsert", payload });
+        return builder;
+      }),
       update: vi.fn((payload) => {
         calls.push({ table, method: "update", payload });
         return builder;
@@ -33,6 +37,7 @@ export function createSupabaseMock(responseQueues = {}, calls = []) {
         return builder;
       }),
       eq: vi.fn(() => builder),
+      like: vi.fn(() => builder),
       or: vi.fn(() => builder),
       gte: vi.fn(() => builder),
       order: vi.fn(() => builder),

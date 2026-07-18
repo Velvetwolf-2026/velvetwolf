@@ -60,7 +60,10 @@ export default function Navbar({ activePage }) {
   };
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
-  const greetingName = displayName ? displayName.split(" ")[0] : "";
+  let greetingName = displayName ? displayName.split(" ")[0] : "";
+  if (greetingName === "Mobile" && /^\d+$/.test(displayName.split(" ")[1] || "")) {
+    greetingName = displayName.split(" ")[1];
+  }
 
   // Non-bulk nav links
   const regularLinks = [

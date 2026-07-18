@@ -173,7 +173,10 @@ export function AccountPage() {
     await signOutUser();
   };
 
-  const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
+  let displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
+  if (displayName.startsWith("Mobile ") && /^\d+$/.test(displayName.split(" ")[1] || "")) {
+    displayName = displayName.split(" ")[1];
+  }
   const displayInitial = displayName[0].toUpperCase();
   const profileUserId = user?.id || null;
 
@@ -191,10 +194,21 @@ export function AccountPage() {
       return;
     }
 
+    const nameTrimmed = settings.fullName.trim();
+    if (!nameTrimmed) {
+      showToast("Full name cannot be empty.", "error");
+      return;
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(nameTrimmed)) {
+      showToast("Name must contain only alphabetic characters.", "error");
+      return;
+    }
+
     setSavingSettings(true);
     try {
       const profile = await updateProfile(profileUserId, {
-        fullName: settings.fullName.trim(),
+        fullName: nameTrimmed,
         phone: settings.phone.trim(),
         gender: user?.gender ?? null,
         dob: user?.date_of_birth ?? null,
@@ -203,8 +217,8 @@ export function AccountPage() {
       const nextUser = {
         ...user,
         ...profile,
-        full_name: profile?.full_name || settings.fullName.trim(),
-        name: profile?.full_name || settings.fullName.trim(),
+        full_name: profile?.full_name || nameTrimmed,
+        name: profile?.full_name || nameTrimmed,
         phone: profile?.phone || settings.phone.trim(),
       };
 
@@ -497,7 +511,7 @@ export function AccountPage() {
                 <input
                   className="input-dark"
                   value={settings.fullName}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value }))}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value.replace(/[^a-zA-Z\s]/g, "") }))}
                   placeholder="FULL NAME"
                 />
               </div>

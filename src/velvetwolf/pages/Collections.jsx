@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
 import { BROWSE_COLLECTIONS } from "../utils/collectionsData";
+import Icon from "../components/Icon";
 
 export function meta() {
   const title = "All Collections — VelvetWolf";
@@ -62,7 +63,9 @@ export default function CollectionsPage() {
               }}
             >
               <div className="col-bg" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 80% 50%, ${col.color}11, transparent 70%)`, opacity: 0, transition: "opacity 0.4s" }} />
-              <div style={{ fontSize: 48, marginBottom: 20, textAlign: "center" }}><col.icon fontSize="inherit" /></div>
+              <div style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
+                <Icon name={col.icon} size={48} color={col.color} />
+              </div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 12, textAlign: "center" }}>{col.name.toUpperCase()}</h2>
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, color: col.color, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2 }}>
                 EXPLORE <ArrowIcon size={12} color={col.color} />
