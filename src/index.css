@@ -1804,3 +1804,466 @@ p {
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* ============================================================
+   PREMIUM PDP LUXURY REDESIGN CUSTOM STYLES
+   ============================================================ */
+
+/* 1. Gallery swipe carousel & transitions */
+.vw-gallery-container {
+  position: relative;
+  width: 100%;
+}
+.vw-gallery-mobile-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border: 1px solid var(--smoke);
+  background: var(--onyx);
+  height: 520px;
+}
+.vw-gallery-mobile-carousel::-webkit-scrollbar {
+  display: none;
+}
+.vw-gallery-mobile-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  position: relative;
+}
+.vw-gallery-mobile-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Page Indicator Bullets */
+.vw-gallery-bullets {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.vw-gallery-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.vw-gallery-bullet-active {
+  width: 24px;
+  background: var(--gold);
+  border-radius: 3px;
+}
+
+/* Desktop gallery thumbnails */
+.vw-gallery-desktop-layout {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 16px;
+}
+.vw-gallery-thumbs-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 680px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.vw-gallery-thumbs-column::-webkit-scrollbar {
+  display: none;
+}
+.vw-gallery-thumb-btn {
+  width: 80px;
+  height: 106px;
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-gallery-thumb-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  transition: opacity 0.3s ease;
+}
+.vw-gallery-thumb-btn-active::after,
+.vw-gallery-thumb-btn:hover::after {
+  opacity: 0;
+}
+.vw-gallery-thumb-btn-active {
+  border-color: var(--gold);
+  transform: translateX(4px);
+}
+.vw-gallery-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 2. Color swatch selectors */
+.vw-swatch-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vw-swatch-btn-inner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+.vw-swatch-btn:hover {
+  transform: scale(1.1);
+}
+.vw-swatch-btn-active {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+.vw-swatch-btn-active .vw-swatch-btn-inner {
+  transform: scale(0.9);
+}
+
+/* 3. Size Cards */
+.vw-size-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 10px;
+}
+.vw-size-card {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  color: var(--silver);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 1px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  font-weight: 500;
+}
+.vw-size-card:hover:not(.vw-size-card-disabled) {
+  border-color: var(--gold);
+  color: var(--ivory);
+  background: rgba(255,255,255,0.02);
+}
+.vw-size-card-active {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--obsidian);
+  font-weight: 700;
+}
+.vw-size-card-disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.vw-size-card-disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top right, transparent calc(50% - 1px), var(--silver) 50%, transparent calc(50% + 1px));
+}
+.vw-size-badge-best {
+  position: absolute;
+  top: -8px;
+  right: -2px;
+  background: var(--gold);
+  color: var(--obsidian);
+  font-size: 7px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  padding: 1px 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 4. Trust Badges & Grid cards */
+.vw-trust-badge-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  border-top: 1px solid var(--smoke);
+  border-bottom: 1px solid var(--smoke);
+  padding: 20px 0;
+  margin: 32px 0;
+}
+.vw-trust-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.vw-trust-badge-icon {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--smoke);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+.vw-trust-badge:hover .vw-trust-badge-icon {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.05);
+  transform: translateY(-2px);
+}
+.vw-trust-badge-text {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--silver);
+  text-transform: uppercase;
+}
+
+/* 5. Specs Highlights Grid */
+.vw-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 28px 0;
+}
+.vw-highlight-card {
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  padding: 16px 12px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.vw-highlight-card:hover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.02);
+  transform: translateY(-2px);
+}
+.vw-highlight-title {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.vw-highlight-desc {
+  font-size: 9px;
+  font-family: var(--font-body);
+  color: var(--silver);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* 6. Story & Fabric sections */
+.vw-story-block {
+  margin-bottom: 64px;
+}
+.vw-story-inner {
+  border-left: 2px solid var(--gold);
+  padding-left: 24px;
+}
+.vw-story-quote {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+.vw-story-para {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--silver);
+}
+.vw-fabric-showcase {
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  padding: 40px;
+  margin-bottom: 64px;
+}
+.vw-fabric-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+.vw-fabric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  transition: all 0.3s ease;
+}
+.vw-fabric-card:hover {
+  border-color: rgba(201,168,76,0.3);
+  transform: translateY(-3px);
+}
+.vw-fabric-card-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.vw-fabric-card-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--silver);
+}
+
+/* 7. Accordion FAQs */
+.vw-faq-accordion {
+  border-top: 1px solid var(--smoke);
+  margin-bottom: 64px;
+}
+.vw-accordion-item {
+  border-bottom: 1px solid var(--smoke);
+}
+.vw-accordion-trigger {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+}
+.vw-accordion-trigger:hover {
+  color: var(--gold);
+}
+.vw-accordion-chevron {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.6;
+}
+.vw-accordion-trigger:hover .vw-accordion-chevron {
+  opacity: 1;
+}
+.vw-accordion-content {
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-accordion-body {
+  padding-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--silver);
+}
+
+/* 8. Verified verdicts rating summary breakdown */
+.vw-reviews-summary-card {
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: fit-content;
+}
+.vw-reviews-breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--silver);
+}
+.vw-reviews-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.vw-reviews-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--gold);
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+/* 9. Micro interactions & visual details */
+.vw-img-zoom-hover {
+  overflow: hidden;
+}
+.vw-img-zoom-hover img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-img-zoom-hover:hover img {
+  transform: scale(1.05);
+}
+
+/* Mobile Sticky Bottom CTA Redesign */
+@keyframes vw-slide-up-cta {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Responsive Overrides */
+@media (max-width: 1023px) {
+  .vw-fabric-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .vw-fabric-showcase {
+    padding: 24px;
+  }
+}
+@media (max-width: 639px) {
+  .vw-trust-badge-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 12px;
+  }
+  .vw-trust-badge-row > :nth-child(4),
+  .vw-trust-badge-row > :nth-child(5) {
+    grid-column: span 1.5;
+  }
+  .vw-highlights-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
