@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────
 // VelvetWolf — <MosaicCarousel />
 //
-// Horizontally scrolling carousel with uniform 3-row
-// square tile layout displaying brand logos with glassmorphism.
+// Dual-row marquee carousel with opposite direction
+// auto-scrolling brand logo tiles & glassmorphism.
 // ─────────────────────────────────────────────
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
@@ -58,9 +58,9 @@ const getMosaicMetrics = (viewportWidth) => {
   if (viewportWidth <= 480) {
     return {
       gap: 8,
-      tileSize: 104,
+      tileSize: 106,
       scrollAmount: 260,
-      trackPadding: "4px 12px 14px",
+      trackPadding: "2px 12px",
       edgeFadeWidth: 28,
       headerGap: 8,
     };
@@ -71,17 +71,17 @@ const getMosaicMetrics = (viewportWidth) => {
       gap: 10,
       tileSize: 128,
       scrollAmount: 360,
-      trackPadding: "4px 20px 14px",
+      trackPadding: "2px 20px",
       edgeFadeWidth: 46,
       headerGap: 10,
     };
   }
 
   return {
-    gap: 12,
+    gap: 14,
     tileSize: 154,
     scrollAmount: 500,
-    trackPadding: "4px 36px 16px",
+    trackPadding: "2px 36px",
     edgeFadeWidth: 90,
     headerGap: 12,
   };
@@ -123,10 +123,9 @@ function getTransparentImageSrc(imgSrc, callback) {
         const b = data[i + 2];
         const maxRgb = Math.max(r, g, b);
 
-        // Near black threshold (pure black to dark gray box)
         if (maxRgb < 45) {
           if (maxRgb < 24) {
-            data[i + 3] = 0; // Completely transparent
+            data[i + 3] = 0;
           } else {
             data[i + 3] = Math.round(((maxRgb - 24) / 21) * 255);
           }
@@ -138,7 +137,6 @@ function getTransparentImageSrc(imgSrc, callback) {
       processedImageCache.set(imgSrc, transparentDataUrl);
       callback(transparentDataUrl);
     } catch (e) {
-      // If CORS or canvas error occurs, fallback to original image src
       processedImageCache.set(imgSrc, imgSrc);
       callback(imgSrc);
     }
@@ -176,7 +174,6 @@ function LogoTile({ logo, tileSize, onClick }) {
         overflow: "hidden",
         borderRadius: 14,
         cursor: "pointer",
-        // Glassmorphism effect
         background: hov 
           ? "rgba(255, 255, 255, 0.08)" 
           : "rgba(255, 255, 255, 0.03)",
@@ -212,7 +209,7 @@ function LogoTile({ logo, tileSize, onClick }) {
         }}
       />
 
-      {/* Brand logo image or fallback badge */}
+      {/* Brand logo image */}
       <div 
         style={{
           width: "72%",
@@ -258,40 +255,37 @@ function LogoTile({ logo, tileSize, onClick }) {
   );
 }
 
-/* ── Main export: Uniform 3-Row Grid Wall ── */
+/* ── Main export: 2-Row Carousel Rotating in Opposite Directions ── */
 export default function MosaicCarousel() {
   const { openShop, setSearchQuery } = useContext(AppContext);
   const sectionRef = useRef(null);
-  const trackRef = useRef(null);
-  const [drag, setDrag]     = useState(false);
-  const [sx, setSx]         = useState(0);
-  const [sl, setSl]         = useState(0);
-  const [showL, setShowL]   = useState(false);
+  const track1Ref = useRef(null);
+  const track2Ref = useRef(null);
+  
   const [auto, setAuto]     = useState(true);
   const [inView, setInView] = useState(true);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1280));
+  
+  // Drag states for Row 1
+  const [drag1, setDrag1] = useState(false);
+  const [sx1, setSx1]     = useState(0);
+  const [sl1, setSl1]     = useState(0);
+
+  // Drag states for Row 2
+  const [drag2, setDrag2] = useState(false);
+  const [sx2, setSx2]     = useState(0);
+  const [sl2, setSl2]     = useState(0);
+
   const dist = useRef(0);
   const metrics = getMosaicMetrics(viewportWidth);
 
-  // Group LOGOS_LIST into 3 rows for uniform grid wall
-  // Doubling array for seamless infinite looping
-  const infiniteLogos = [...LOGOS_LIST, ...LOGOS_LIST];
-  const numColumns = Math.ceil(infiniteLogos.length / 3);
+  // Split logos into 2 subsets for Top and Bottom rows
+  const row1Base = LOGOS_LIST.filter((_, idx) => idx % 2 === 0);
+  const row2Base = LOGOS_LIST.filter((_, idx) => idx % 2 !== 0);
 
-  // Group logos column by column (3 rows per column)
-  const columns = Array.from({ length: numColumns }, (_, colIdx) => {
-    return [
-      infiniteLogos[colIdx * 3],
-      infiniteLogos[colIdx * 3 + 1],
-      infiniteLogos[colIdx * 3 + 2]
-    ].filter(Boolean);
-  });
-
-  const fade = useCallback(() => {
-    const el = trackRef.current; if (!el) return;
-    const nextShowL = el.scrollLeft > 20;
-    setShowL(prev => prev === nextShowL ? prev : nextShowL);
-  }, []);
+  // Quadruple arrays for seamless infinite looping
+  const row1Logos = [...row1Base, ...row1Base, ...row1Base, ...row1Base];
+  const row2Logos = [...row2Base, ...row2Base, ...row2Base, ...row2Base];
 
   useEffect(() => {
     const el = sectionRef.current; if (!el || typeof IntersectionObserver === "undefined") return;
@@ -303,20 +297,41 @@ export default function MosaicCarousel() {
     return () => observer.disconnect();
   }, []);
 
+  // Initial scroll position setup for Row 2 (starting in middle for reverse scroll)
   useEffect(() => {
-    const el = trackRef.current; if (!el) return;
+    if (track2Ref.current) {
+      track2Ref.current.scrollLeft = track2Ref.current.scrollWidth / 2;
+    }
+  }, []);
+
+  // Animation Loop: Row 1 scrolls Left, Row 2 scrolls Right (Opposite Directions)
+  useEffect(() => {
     let raf;
     const tick = () => {
-      if (auto && !drag && inView) {
-        el.scrollLeft += 0.65;
-        if (el.scrollLeft >= el.scrollWidth / 2) el.scrollLeft = 0;
-        fade();
+      if (auto && inView) {
+        // Row 1: Leftward scroll
+        const el1 = track1Ref.current;
+        if (el1 && !drag1) {
+          el1.scrollLeft += 0.75;
+          if (el1.scrollLeft >= el1.scrollWidth / 2) {
+            el1.scrollLeft = 0;
+          }
+        }
+
+        // Row 2: Rightward scroll (Opposite direction)
+        const el2 = track2Ref.current;
+        if (el2 && !drag2) {
+          el2.scrollLeft -= 0.75;
+          if (el2.scrollLeft <= 0) {
+            el2.scrollLeft = el2.scrollWidth / 2;
+          }
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [auto, drag, fade, inView]);
+  }, [auto, drag1, drag2, inView]);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -331,12 +346,19 @@ export default function MosaicCarousel() {
     window.__vwmc_pause = setTimeout(() => setAuto(true), ms);
   };
 
-  const onMD = e => { dist.current=0; setDrag(true); setAuto(false); setSx(e.pageX-trackRef.current.offsetLeft); setSl(trackRef.current.scrollLeft); };
-  const onMM = e => { if(!drag) return; e.preventDefault(); const w=(e.pageX-trackRef.current.offsetLeft-sx)*1.5; dist.current=Math.abs(w); trackRef.current.scrollLeft=sl-w; fade(); };
-  const onMU = () => { setDrag(false); setTimeout(()=>setAuto(true),3500); };
-  const onTS = e => { dist.current=0; setDrag(true); setAuto(false); setSx(e.touches[0].pageX-trackRef.current.offsetLeft); setSl(trackRef.current.scrollLeft); };
-  const onTM = e => { const w=(e.touches[0].pageX-trackRef.current.offsetLeft-sx)*1.5; dist.current=Math.abs(w); trackRef.current.scrollLeft=sl-w; };
-  const onTE = () => { setDrag(false); setTimeout(()=>setAuto(true),3500); };
+  // Drag handlers for Row 1
+  const onMD1 = e => { dist.current = 0; setDrag1(true); setAuto(false); setSx1(e.pageX - track1Ref.current.offsetLeft); setSl1(track1Ref.current.scrollLeft); };
+  const onMM1 = e => { if (!drag1) return; e.preventDefault(); const w = (e.pageX - track1Ref.current.offsetLeft - sx1) * 1.5; dist.current = Math.abs(w); track1Ref.current.scrollLeft = sl1 - w; };
+  const onMU1 = () => { setDrag1(false); setTimeout(() => setAuto(true), 3500); };
+  const onTS1 = e => { dist.current = 0; setDrag1(true); setAuto(false); setSx1(e.touches[0].pageX - track1Ref.current.offsetLeft); setSl1(track1Ref.current.scrollLeft); };
+  const onTM1 = e => { const w = (e.touches[0].pageX - track1Ref.current.offsetLeft - sx1) * 1.5; dist.current = Math.abs(w); track1Ref.current.scrollLeft = sl1 - w; };
+
+  // Drag handlers for Row 2
+  const onMD2 = e => { dist.current = 0; setDrag2(true); setAuto(false); setSx2(e.pageX - track2Ref.current.offsetLeft); setSl2(track2Ref.current.scrollLeft); };
+  const onMM2 = e => { if (!drag2) return; e.preventDefault(); const w = (e.pageX - track2Ref.current.offsetLeft - sx2) * 1.5; dist.current = Math.abs(w); track2Ref.current.scrollLeft = sl2 - w; };
+  const onMU2 = () => { setDrag2(false); setTimeout(() => setAuto(true), 3500); };
+  const onTS2 = e => { dist.current = 0; setDrag2(true); setAuto(false); setSx2(e.touches[0].pageX - track2Ref.current.offsetLeft); setSl2(track2Ref.current.scrollLeft); };
+  const onTM2 = e => { const w = (e.touches[0].pageX - track2Ref.current.offsetLeft - sx2) * 1.5; dist.current = Math.abs(w); track2Ref.current.scrollLeft = sl2 - w; };
 
   const handleClick = (logo) => {
     if (dist.current > 8) return;
@@ -344,7 +366,11 @@ export default function MosaicCarousel() {
     openShop();
   };
 
-  const scrollBy = dir => { pause(4000); trackRef.current.scrollBy({ left: dir * metrics.scrollAmount, behavior:"smooth" }); };
+  const scrollBy = dir => { 
+    pause(4000); 
+    if (track1Ref.current) track1Ref.current.scrollBy({ left: dir * metrics.scrollAmount, behavior: "smooth" });
+    if (track2Ref.current) track2Ref.current.scrollBy({ left: -dir * metrics.scrollAmount, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -361,60 +387,77 @@ export default function MosaicCarousel() {
         }
       `}</style>
 
-      <section ref={sectionRef} style={{ background:"#090909", paddingBottom: 8 }}>
+      <section ref={sectionRef} style={{ background: "#090909", paddingBottom: 8 }}>
 
         {/* Header row */}
-        <div className="vw-mosaic-header" style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"46px 36px 26px", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute",inset:0,background:"radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.04),transparent 60%)",pointerEvents:"none" }}/>
-          <div style={{ position:"relative" }}>
-            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:12, letterSpacing:5, color:"#c9a24d", marginBottom:10, display:"flex", alignItems:"center", gap:10 }}>
-              <div style={{ width:22, height:1, background:"#c9a24d" }}/>SHOP BY BRAND<div style={{ width:22, height:1, background:"#c9a24d" }}/>
+        <div className="vw-mosaic-header" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "46px 36px 26px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 15% 50%,rgba(201,168,76,0.04),transparent 60%)", pointerEvents: "none" }} />
+          <div style={{ position: "relative" }}>
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 5, color: "#c9a24d", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 22, height: 1, background: "#c9a24d" }} />SHOP BY BRAND<div style={{ width: 22, height: 1, background: "#c9a24d" }} />
             </div>
-            <h2 style={{ fontFamily:"'Bebas Neue',cursive", fontSize:"clamp(36px,5vw,62px)", letterSpacing:7, color:"#f5f0e8", lineHeight:1, margin:0 }}>
+            <h2 style={{ fontFamily: "'Bebas Neue',cursive", fontSize: "clamp(36px,5vw,62px)", letterSpacing: 7, color: "#f5f0e8", lineHeight: 1, margin: 0 }}>
               BRAND COLLABS
             </h2>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:metrics.headerGap, position:"relative" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:7, marginRight:6 }}>
-              <div style={{ width:5, height:5, borderRadius:"50%", background:"#c9a24d", animation:"vwmc-blink 2.2s infinite" }}/>
-              <span style={{ fontFamily: "'Roboto', sans-serif", fontSize:11, letterSpacing:3, color:"rgba(255, 255, 255, 0.63)" }}>{LOGOS_LIST.length} BRANDS</span>
+          <div style={{ display: "flex", alignItems: "center", gap: metrics.headerGap, position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginRight: 6 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#c9a24d", animation: "vwmc-blink 2.2s infinite" }} />
+              <span style={{ fontFamily: "'Roboto', sans-serif", fontSize: 11, letterSpacing: 3, color: "rgba(255, 255, 255, 0.63)" }}>{LOGOS_LIST.length} BRANDS</span>
             </div>
             <button className="vwmc-btn" onClick={() => scrollBy(-1)}>‹</button>
             <button className="vwmc-btn" onClick={() => scrollBy(1)}>›</button>
           </div>
         </div>
 
-        {/* Track with edge fades */}
-        <div style={{ position:"relative" }}>
-          <div style={{ position:"absolute",left:0,top:0,bottom:0,width:metrics.edgeFadeWidth,zIndex:10,background:"linear-gradient(to right,#090909 15%,transparent)",pointerEvents:"none",opacity:showL?1:0,transition:"opacity 0.3s" }}/>
-          <div style={{ position:"absolute",right:0,top:0,bottom:0,width:metrics.edgeFadeWidth,zIndex:10,background:"linear-gradient(to left,#090909 15%,transparent)",pointerEvents:"none" }}/>
+        {/* Dual Track Container with Edge Fades */}
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: metrics.gap }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: metrics.edgeFadeWidth, zIndex: 10, background: "linear-gradient(to right,#090909 15%,transparent)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: metrics.edgeFadeWidth, zIndex: 10, background: "linear-gradient(to left,#090909 15%,transparent)", pointerEvents: "none" }} />
 
+          {/* ROW 1: Top Row Auto-Scrolling Left ← */}
           <div
-            ref={trackRef}
+            ref={track1Ref}
             className="vwmc-track vw-mosaic-track"
-            onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
-            onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}
-            onScroll={fade}
+            onMouseDown={onMD1} onMouseMove={onMM1} onMouseUp={onMU1} onMouseLeave={onMU1}
+            onTouchStart={onTS1} onTouchMove={onTM1} onTouchEnd={onMU1}
             style={{ 
-              display:"flex", 
-              alignItems:"flex-start", 
-              gap:metrics.gap, 
-              overflowX:"scroll", 
-              padding:metrics.trackPadding, 
-              cursor:drag?"grabbing":"grab" 
+              display: "flex", 
+              alignItems: "center", 
+              gap: metrics.gap, 
+              overflowX: "scroll", 
+              padding: metrics.trackPadding, 
+              cursor: drag1 ? "grabbing" : "grab" 
             }}
           >
-            {columns.map((colLogos, colIdx) => (
-              <div key={colIdx} style={{ display:"flex", flexDirection:"column", gap:metrics.gap, flexShrink:0 }}>
-                {colLogos.map((logo, rowIdx) => (
-                  <LogoTile key={rowIdx + logo.id} logo={logo} tileSize={metrics.tileSize} onClick={handleClick} />
-                ))}
-              </div>
+            {row1Logos.map((logo, idx) => (
+              <LogoTile key={`r1-${idx}-${logo.id}`} logo={logo} tileSize={metrics.tileSize} onClick={handleClick} />
             ))}
           </div>
+
+          {/* ROW 2: Bottom Row Auto-Scrolling Right → (Opposite Direction) */}
+          <div
+            ref={track2Ref}
+            className="vwmc-track vw-mosaic-track"
+            onMouseDown={onMD2} onMouseMove={onMM2} onMouseUp={onMU2} onMouseLeave={onMU2}
+            onTouchStart={onTS2} onTouchMove={onTM2} onTouchEnd={onMU2}
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: metrics.gap, 
+              overflowX: "scroll", 
+              padding: metrics.trackPadding, 
+              cursor: drag2 ? "grabbing" : "grab" 
+            }}
+          >
+            {row2Logos.map((logo, idx) => (
+              <LogoTile key={`r2-${idx}-${logo.id}`} logo={logo} tileSize={metrics.tileSize} onClick={handleClick} />
+            ))}
+          </div>
+
         </div>
 
-        <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Roboto', sans-serif", fontSize:10, letterSpacing:4, color:"rgba(255, 255, 255, 0.47)", paddingBottom:32 }}>
+        <div style={{ textAlign: "center", marginTop: 16, fontFamily: "'Roboto', sans-serif", fontSize: 10, letterSpacing: 4, color: "rgba(255, 255, 255, 0.47)", paddingBottom: 32 }}>
           DRAG · CLICK · EXPLORE
         </div>
       </section>
