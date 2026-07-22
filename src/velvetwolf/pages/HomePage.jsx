@@ -233,7 +233,7 @@ export default function HomePage() {
   };
 
   const reviews = [
-    { name: "Aarav S.", rating: 5, comment: "The weight of the 220 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
+    { name: "Aarav S.", rating: 5, comment: "The weight of the 240 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
     { name: "Meera K.", rating: 5, comment: "I ordered the Silent Luxury Tee. The stitch detail is top notch, no logos, just pure comfort. Highly recommended.", date: "09 June 2026" },
     { name: "Rohit D.", rating: 5, comment: "Mind Palace Tee looks absolutely beautiful in person. The graphic print is premium quality.", date: "01 June 2026" }
   ];
@@ -283,7 +283,7 @@ export default function HomePage() {
           padding: isMobileOrTablet ? "28px 20px" : 0,
         }}>
           {[
-            { icon: "tshirt", title: "Premium Cotton", subtitle: "220 GSM Combed Cotton" },
+            { icon: "tshirt", title: "Premium Cotton", subtitle: "240 GSM Combed Cotton" },
             { icon: "factory", title: "Made in India", subtitle: "Crafted in Tirupur" },
             { icon: "truck", title: "Free Shipping", subtitle: "On orders above \u20b91999" },
             { icon: "undo", title: "Easy Returns", subtitle: "10 Day Return Policy" },
@@ -359,7 +359,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, borderTop: "1px solid var(--smoke)", paddingTop: 16, marginTop: 28 }}>
-                220 GSM · COMBED COTTON · REACTIVE DYE
+                240 GSM · COMBED COTTON · REACTIVE DYE
               </div>
             </div>
 
@@ -855,7 +855,7 @@ export default function HomePage() {
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
             ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],
-            ["\u2726", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
+            ["\u2726", "India's Finest", "240 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
           ].map(([icon, title, desc]) => (
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>

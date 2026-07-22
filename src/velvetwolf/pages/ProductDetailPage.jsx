@@ -1645,7 +1645,7 @@ export default function ProductDetailPage() {
                   {[product, ...related.slice(0, 2)].map((item, idx) => {
                     const isPremium = item.collection === "silent-luxury" || item.slug.includes("silent");
                     return (
-                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{item.gsm ? `${item.gsm} GSM` : (isPremium ? "240 GSM Luxury" : "220 GSM Heavy")}</td>
+                      <td key={idx} style={{ padding: 10, textAlign: "center" }}>{item.gsm ? `${item.gsm} GSM` : (isPremium ? "240 GSM Luxury" : "240 GSM Heavy")}</td>
                     );
                   })}
                 </tr>

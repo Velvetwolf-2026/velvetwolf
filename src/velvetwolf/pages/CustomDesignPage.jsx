@@ -13,8 +13,8 @@ const FONT_OPTIONS = [
 ];
 
 const FABRICS = [
-  { id: "220gsm", name: "220 GSM Egyptian Long-Staple Cotton", surcharge: 0 },
-  { id: "240gsm", name: "240 GSM Ultra Heavyweight Fleece", surcharge: 200 },
+  { id: "240gsm", name: "240 GSM Egyptian Long-Staple Cotton", surcharge: 0 },
+  { id: "240gsm-fleece", name: "240 GSM Ultra Heavyweight Fleece", surcharge: 200 },
   { id: "180gsm", name: "180 GSM Everyday Jersey Cotton", surcharge: 0 },
   { id: "bamboo", name: "Bamboo Organic Luxury Blend", surcharge: 400 }
 ];
@@ -39,7 +39,7 @@ export default function CustomDesignPage() {
 
   // Customization choices
   const [baseColor, setBaseColor] = useState("#0a0a0a");
-  const [fabric, setFabric] = useState("220gsm");
+  const [fabric, setFabric] = useState("240gsm");
   const [size, setSize] = useState("M");
   const [qty, setQty] = useState(1);
   const [specialNote, setSpecialNote] = useState("");

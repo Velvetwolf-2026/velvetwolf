@@ -413,7 +413,7 @@ export default function Navbar({ activePage }) {
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 3, marginBottom: 6 }}>THE TIRUPUR WEAVE</div>
                               <h4 style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", letterSpacing: 1, margin: "0 0 10px 0" }}>HEAVYWEIGHT LUXURY</h4>
                               <p style={{ fontFamily: "var(--font-serif)", fontSize: 12, color: "var(--silver)", lineHeight: 1.7, margin: 0, maxWidth: 340 }}>
-                                Every piece crafted from premium 220 GSM combed cotton. Cut, stitched, and hand-finished in Tirupur, India. The weight speaks for itself.
+                                Every piece crafted from premium 240 GSM combed cotton. Cut, stitched, and hand-finished in Tirupur, India. The weight speaks for itself.
                               </p>
                             </div>
                             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(10,10,10,0.96) 0%, rgba(10,10,10,0.4) 60%, rgba(10,10,10,0.2) 100%)", zIndex: 1 }} />
@@ -422,7 +422,7 @@ export default function Navbar({ activePage }) {
                           <div style={{ marginTop: 16, display: "flex", gap: 16 }}>
                             <div style={{ flex: 1, padding: "12px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--gold)", letterSpacing: 2, marginBottom: 2 }}>FABRIC</div>
-                              <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--ivory)" }}>220 GSM Cotton</div>
+                              <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--ivory)" }}>240 GSM Cotton</div>
                             </div>
                             <div style={{ flex: 1, padding: "12px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--gold)", letterSpacing: 2, marginBottom: 2 }}>ORIGIN</div>

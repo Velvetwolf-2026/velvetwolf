@@ -60,7 +60,7 @@ const getMosaicMetrics = (viewportWidth) => {
       gap: 8,
       tileSize: 106,
       scrollAmount: 260,
-      trackPadding: "2px 12px",
+      trackPadding: "12px 12px",
       edgeFadeWidth: 28,
       headerGap: 8,
     };
@@ -71,7 +71,7 @@ const getMosaicMetrics = (viewportWidth) => {
       gap: 10,
       tileSize: 128,
       scrollAmount: 360,
-      trackPadding: "2px 20px",
+      trackPadding: "14px 20px",
       edgeFadeWidth: 46,
       headerGap: 10,
     };
@@ -81,7 +81,7 @@ const getMosaicMetrics = (viewportWidth) => {
     gap: 14,
     tileSize: 154,
     scrollAmount: 500,
-    trackPadding: "2px 36px",
+    trackPadding: "16px 36px",
     edgeFadeWidth: 90,
     headerGap: 12,
   };

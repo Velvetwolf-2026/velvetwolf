@@ -127,7 +127,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
         border: "1px solid rgba(201, 168, 76, 0.1)",
         borderRadius: "24px",
         background: "radial-gradient(circle at center, #111111 0%, #060606 100%)",
-        cursor: "crosshair",
+        cursor: "grab",
         userSelect: "none",
         touchAction: "none",
       }}

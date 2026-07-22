@@ -63,7 +63,7 @@ export default function SizeGuide() {
           <DataTable
             headers={["Fabric", "GSM", "Feel", "Best For"]}
             rows={[
-              ["Premium Cotton", "220 GSM", "Soft, structured",    "Everyday wear, office looks"],
+              ["Premium Cotton", "240 GSM", "Soft, structured",    "Everyday wear, office looks"],
               ["Heavy Cotton",   "240 GSM", "Thick, premium",      "Oversized fits, premium drops"],
               ["Lightweight",    "180 GSM", "Airy, breathable",    "Summers, layering"],
               ["Bamboo Blend",   "200 GSM", "Ultra-soft, eco",     "Sensitive skin, sustainability"],

@@ -123,8 +123,54 @@ export default function Cinematic3DHero() {
     // 5. Crisp White Top Key Light
     const whiteKey = new THREE.SpotLight(0xffffff, 0.8, 20, Math.PI / 6, 0.5, 1);
     whiteKey.position.set(0, 8, 2);
-    scene.add(whiteKey);
+    // ----------------------------------------------------
+    // Floating Cinematic Ambient Particles System
+    // ----------------------------------------------------
+    const createParticleTexture = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext("2d");
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, "rgba(235, 210, 140, 1.0)");
+      gradient.addColorStop(0.3, "rgba(201, 168, 76, 0.6)");
+      gradient.addColorStop(0.7, "rgba(201, 168, 76, 0.15)");
+      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 64, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.needsUpdate = true;
+      return tex;
+    };
 
+    const particleCount = 140;
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleSpeeds = new Float32Array(particleCount);
+    const particleOffsets = new Float32Array(particleCount);
+
+    for (let i = 0; i < particleCount; i++) {
+      particlePositions[i * 3 + 0] = (Math.random() - 0.5) * 12; // x
+      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 8;  // y
+      particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 10; // z
+      particleSpeeds[i] = 0.003 + Math.random() * 0.006;
+      particleOffsets[i] = Math.random() * Math.PI * 2;
+    }
+
+    particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 0.18,
+      map: createParticleTexture(),
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true
+    });
+
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    sceneGroup.add(particles);
 
     // ----------------------------------------------------
     // Create Real-time 3D T-Shirt with projection shader
@@ -385,6 +431,19 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       // Y-axis mouse rotation blocked; X-axis rotation enabled
       sceneGroup.rotation.y = 0;
       sceneGroup.rotation.x = -mouseRef.current.y * 0.35;
+
+      // 4. Floating Ambient Particles Animation
+      const posAttr = particleGeometry.attributes.position;
+      const posArr = posAttr.array;
+      for (let i = 0; i < particleCount; i++) {
+        posArr[i * 3 + 1] += particleSpeeds[i];
+        posArr[i * 3 + 0] += Math.sin(elapsedTime * 0.6 + particleOffsets[i]) * 0.0015;
+        if (posArr[i * 3 + 1] > 4.5) {
+          posArr[i * 3 + 1] = -3.5;
+          posArr[i * 3 + 0] = (Math.random() - 0.5) * 12;
+        }
+      }
+      posAttr.needsUpdate = true;
 
       renderer.render(scene, camera);
     };
