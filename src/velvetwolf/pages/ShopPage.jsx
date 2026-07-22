@@ -441,8 +441,8 @@ export default function ShopPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "120px 0", color: "var(--silver)" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.2, marginBottom: 16 }}>EMPTY DROP</div>
-              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No pieces match your filters. Try clearing some selections.</p>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.2, marginBottom: 16 }}>ARRIVING SHORTLY</div>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>"New pieces are in production. Leave your email and you'll be first to know."</p>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: isMobile ? 12 : 32 }}>
@@ -470,14 +470,14 @@ export default function ShopPage() {
           <div className="vw-filter-drawer" onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid var(--smoke)" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", fontWeight: "bold", letterSpacing: 2 }}>FILTERS & SORT</span>
-              <button 
+              <button
                 onClick={() => setFilterDrawerOpen(false)}
                 style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11 }}
               >
                 CLOSE
               </button>
             </div>
-            
+
             <div className="vw-drawer-content-scroll">
               {/* Sort by selection inside drawer */}
               <div style={{ marginBottom: 24, borderBottom: "1px solid var(--smoke)", paddingBottom: 20 }}>

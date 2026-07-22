@@ -7,71 +7,45 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 
-
-
-// Particle class for Gold Dust Particles
-class Particle {
-  constructor(width, height) {
-    this.reset(width, height);
-    this.y = Math.random() * height; // Start at random height initially
-  }
-
-  reset(width, height) {
-    this.x = Math.random() * width;
-    this.y = height + 10;
-    this.size = Math.random() * 1.8 + 0.4;
-    this.speedY = Math.random() * 0.4 + 0.15;
-    this.speedX = Math.random() * 0.2 - 0.1;
-    this.opacity = Math.random() * 0.5 + 0.1;
-    this.oscSpeed = Math.random() * 0.02 + 0.005;
-    this.oscAngle = Math.random() * Math.PI;
-  }
-
-  update(width, height) {
-    this.y -= this.speedY;
-    this.oscAngle += this.oscSpeed;
-    this.x += Math.sin(this.oscAngle) * 0.25 + this.speedX;
-
-    // Fade out near the top
-    if (this.y < 80) {
-      this.opacity -= 0.01;
-    }
-
-    if (this.y < 0 || this.opacity <= 0) {
-      this.reset(width, height);
-    }
-  }
-
-  draw(ctx) {
-    ctx.fillStyle = `rgba(201, 168, 76, ${this.opacity})`;
-    ctx.shadowColor = "#c9a84c";
-    ctx.shadowBlur = 4;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0; // reset
-  }
-}
-
 export default function Cinematic3DHero() {
   const { openShop } = useContext(AppContext);
   const { isMobileOrTablet } = useBreakpoint();
 
   const containerRef = useRef(null);
   const canvas3dRef = useRef(null);
-  const canvasParticlesRef = useRef(null);
 
   // Static T-shirt color: Desert Sand
   const activeColor = { name: "Beige", hex: "#D9C5B2", label: "Desert Sand" };
   const activeColorRef = useRef(activeColor);
 
-  // Mouse tracking for parallax
+  // Mouse tracking for parallax and interactive drag rotation
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const userRotationRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
+
+  const handlePointerDown = (e) => {
+    isDraggingRef.current = true;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDraggingRef.current) return;
+    const deltaY = (e.clientY - dragStartRef.current.y) * 0.008;
+    userRotationRef.current.targetX += deltaY;
+    userRotationRef.current.targetX = Math.max(-0.6, Math.min(0.6, userRotationRef.current.targetX));
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleWheel = () => { };
 
   useEffect(() => {
     const handleMouseMove = (e) => {
       const { innerWidth, innerHeight } = window;
-      // Range: -1 to 1
       mouseRef.current.targetX = (e.clientX / innerWidth) * 2 - 1;
       mouseRef.current.targetY = -(e.clientY / innerHeight) * 2 + 1;
     };
@@ -151,65 +125,19 @@ export default function Cinematic3DHero() {
     whiteKey.position.set(0, 8, 2);
     scene.add(whiteKey);
 
-    // Create the exact premium 3D podium from the image
-    const podiumGroup = new THREE.Group();
-    podiumGroup.position.set(0, -1.35, 0);
-
-    // Material for the top and bottom metallic segments
-    const metallicPodiumMat = new THREE.MeshStandardMaterial({
-      color: 0x121212,
-      roughness: 0.22,
-      metalness: 0.9,
-    });
-
-    // 1. Top metallic cylinder segment
-    const topGeo = new THREE.CylinderGeometry(1.7, 1.7, 0.14, 64);
-    const topSegment = new THREE.Mesh(topGeo, metallicPodiumMat);
-    topSegment.position.y = 0.11;
-    topSegment.castShadow = true;
-    topSegment.receiveShadow = true;
-    podiumGroup.add(topSegment);
-
-    // 2. Recessed glowing gold band segment
-    const glowGeo = new THREE.CylinderGeometry(1.62, 1.62, 0.08, 64);
-    const glowMat = new THREE.MeshStandardMaterial({
-      color: 0xc9a84c,
-      emissive: 0xc9a84c,
-      emissiveIntensity: 5.0,
-      roughness: 0.1,
-    });
-    const glowBand = new THREE.Mesh(glowGeo, glowMat);
-    glowBand.position.y = 0.0;
-    podiumGroup.add(glowBand);
-
-    // 3. Bottom metallic cylinder segment
-    const bottomGeo = new THREE.CylinderGeometry(1.7, 1.7, 0.14, 64);
-    const bottomSegment = new THREE.Mesh(bottomGeo, metallicPodiumMat);
-    bottomSegment.position.y = -0.11;
-    bottomSegment.castShadow = true;
-    bottomSegment.receiveShadow = true;
-    podiumGroup.add(bottomSegment);
-
-    // 4. PointLight inside the recessed band to cast gold light onto floor and T-shirt
-    const podiumLight = new THREE.PointLight(0xc9a84c, 3.5, 4.5);
-    podiumLight.position.set(0, 0, 0);
-    podiumGroup.add(podiumLight);
-    
-    sceneGroup.add(podiumGroup);
-
 
     // ----------------------------------------------------
     // Create Real-time 3D T-Shirt with projection shader
     // ----------------------------------------------------
-    const blankTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat); 
+    const blankTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat);
     blankTex.needsUpdate = true;
-    
+
     const printUniforms = {
-      uInvGroup:     { value: new THREE.Matrix4() },
+      uInvGroup: { value: new THREE.Matrix4() },
       uFrontEnabled: { value: 0 }, uFrontTex: { value: blankTex },
-      uFrontCenter:  { value: new THREE.Vector2(0, 0.24) }, uFrontHalf: { value: new THREE.Vector2(0.36, 0.36) }, uFrontRot: { value: 0 },
-      uBackEnabled:  { value: 0 }, uBackTex: { value: blankTex },
-      uBackCenter:   { value: new THREE.Vector2(0, 0.3) }, uBackHalf: { value: new THREE.Vector2(0.36, 0.36) }, uBackRot: { value: 0 },
+      uFrontCenter: { value: new THREE.Vector2(0, 0.24) }, uFrontHalf: { value: new THREE.Vector2(0.36, 0.36) }, uFrontRot: { value: 0 },
+      uBackEnabled: { value: 0 }, uBackTex: { value: blankTex },
+      uBackCenter: { value: new THREE.Vector2(0, 0.3) }, uBackHalf: { value: new THREE.Vector2(0.36, 0.36) }, uBackRot: { value: 0 },
     };
 
     const decl = `#include <common>
@@ -262,7 +190,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
 
     function texFromURL(url) {
       return new Promise((res, rej) => {
-        const im = new Image(); 
+        const im = new Image();
         im.crossOrigin = 'anonymous';
         im.onload = () => {
           const t = new THREE.Texture(im);
@@ -312,9 +240,9 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         const box = new THREE.Box3().setFromObject(model);
         const c = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
-        
-        // Scale (increased by 70% from baseline) and center the model
-        const k = (2.0 * 1.7) / size.y;
+
+        // Scale (increased by 25% more) and center the model
+        const k = (2.0 * 2.44375) / size.y;
         model.scale.multiplyScalar(k);
         model.position.copy(c).multiplyScalar(-k);
         model.updateMatrixWorld(true);
@@ -370,8 +298,8 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         model.updateMatrixWorld(true);
 
         // Read design configuration from localStorage store settings
-        let frontSrc = '/logo.png';
-        let backSrc = '/tee_back_print.jpg';
+        let frontSrc = '/tee_back_print.jpg';
+        let backSrc = '';
         const saved = localStorage.getItem("vw_store_settings");
         if (saved) {
           try {
@@ -387,9 +315,9 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           applySlot('front', {
             src: frontSrc,
             x: 0.0,
-            y: 0.24,
-            scale: 1.0,
-            rot: 0
+            y: 0.0,
+            scale: 5,
+            rot: 180
           });
         }
         if (backSrc) {
@@ -427,20 +355,36 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
       shirtGroup.updateMatrixWorld(true);
       printUniforms.uInvGroup.value.copy(shirtGroup.matrixWorld).invert();
 
-      // 1. Slow Y floating motion: 6s duration cycle, 12px height variance (0.06 amplitude)
-      shirtGroup.position.y = 0.4 + Math.sin(elapsedTime * (2.0 * Math.PI / 6.0)) * 0.06;
-      
-      // 2. Slow breathing rotation oscillating between 15° and 25° over a 25-second cycle
-      const rotationCycle = (2.0 * Math.PI) / 25.0;
-      shirtGroup.rotation.y = (20.0 * Math.PI / 180.0) - Math.cos(elapsedTime * rotationCycle) * (5.0 * Math.PI / 180.0);
+      // Interpolate interactive drag/scroll rotation smoothly
+      userRotationRef.current.y += (userRotationRef.current.targetY - userRotationRef.current.y) * 0.08;
+      userRotationRef.current.x += (userRotationRef.current.targetX - userRotationRef.current.x) * 0.08;
+
+      // Ease-in progress (1.5s cubic ease-in entrance)
+      const progress = Math.min(1, elapsedTime / 1.5);
+      const easeInFactor = progress * progress * progress;
+
+      // Apply ease-in scale to shirtGroup
+      const scaleEase = 0.7 + 0.3 * easeInFactor;
+      shirtGroup.scale.set(scaleEase, scaleEase, scaleEase);
+
+      // 1. Weightless Space Floating Motion (3D Translation with ease-in)
+      shirtGroup.position.y = (0.35 + Math.sin(elapsedTime * 0.8) * 0.09) * (0.5 + 0.5 * easeInFactor);
+      shirtGroup.position.x = Math.sin(elapsedTime * 0.4) * 0.04;
+      shirtGroup.position.z = Math.cos(elapsedTime * 0.3) * 0.03;
+
+      // 2. Faster 3D Model Rotation with Ease-in Startup
+      const rotSpeed = 0.52 * (0.4 + 0.6 * easeInFactor);
+      shirtGroup.rotation.y = (elapsedTime * rotSpeed) + userRotationRef.current.y;
+      shirtGroup.rotation.x = (Math.sin(elapsedTime * 0.7) * 0.06) + userRotationRef.current.x;
+      shirtGroup.rotation.z = Math.cos(elapsedTime * 0.5) * 0.04;
 
       // 3. Mouse Parallax interpolation
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
       mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.05;
 
-      // Shift entire group based on mouse
-      sceneGroup.rotation.y = mouseRef.current.x * 0.35;
-      sceneGroup.rotation.x = -mouseRef.current.y * 0.25;
+      // Y-axis mouse rotation blocked; X-axis rotation enabled
+      sceneGroup.rotation.y = 0;
+      sceneGroup.rotation.x = -mouseRef.current.y * 0.35;
 
       renderer.render(scene, camera);
     };
@@ -473,48 +417,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
     };
   }, []);
 
-  // ----------------------------------------------------
-  // 2. GOLD DUST PARTICLES OVERLAY SETUP
-  // ----------------------------------------------------
-  useEffect(() => {
-    if (!canvasParticlesRef.current) return;
 
-    const canvas = canvasParticlesRef.current;
-    const ctx = canvas.getContext("2d");
-
-    let animationId;
-    let width = (canvas.width = canvas.parentElement.clientWidth);
-    let height = (canvas.height = canvas.parentElement.clientHeight);
-
-    // Initialize particles
-    const particleCount = 75;
-    const particles = Array.from({ length: particleCount }, () => new Particle(width, height));
-
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      particles.forEach((p) => {
-        p.update(width, height);
-        p.draw(ctx);
-      });
-
-      animationId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    const handleResize = () => {
-      width = canvas.width = canvas.parentElement.clientWidth;
-      height = canvas.height = canvas.parentElement.clientHeight;
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   return (
     <section
@@ -693,19 +596,22 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
         {/* RIGHT COLUMN: INTERACTIVE 3D MODEL SHOWCASE */}
         <div
           ref={containerRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onWheel={handleWheel}
           style={{
             flex: isMobileOrTablet ? "1 1 500px" : "1 1 540px",
             height: isMobileOrTablet ? "500px" : "640px",
             position: "relative",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center"
+            alignItems: "center",
+            cursor: "grab",
+            touchAction: "none"
           }}
         >
-          {/* On mobile/tablet, skip the WebGL scene entirely — no 2.7MB glb
-              fetch, no Three.js scene graph — and show a static product shot
-              instead. The canvas refs stay null, so the WebGL setup effects
-              below no-op via their existing `if (!ref.current) return` guards. */}
           {isMobileOrTablet ? (
             <img
               src="/mockup_founder.webp"
@@ -723,34 +629,17 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
               }}
             />
           ) : (
-            <>
-              {/* 3D WebGL Canvas */}
-              <canvas
-                ref={canvas3dRef}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  zIndex: 2
-                }}
-              />
-
-              {/* Golden Floating Particles overlay */}
-              <canvas
-                ref={canvasParticlesRef}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  zIndex: 3,
-                  pointerEvents: "none"
-                }}
-              />
-            </>
+            <canvas
+              ref={canvas3dRef}
+              style={{
+                width: "100%",
+                height: "100%",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                zIndex: 2
+              }}
+            />
           )}
 
 

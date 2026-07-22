@@ -92,7 +92,7 @@ export default function ProductModal() {
             </button>
           </div>
           <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
-            {["Secure Payment", "Free Ship \u20b91999+", "30-Day Returns"].map(t => (
+            {["Secure Payment", "Free Ship \u20b91999+", "10-Day Returns"].map(t => (
               <span key={t} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1 }}>{t}</span>
             ))}
           </div>

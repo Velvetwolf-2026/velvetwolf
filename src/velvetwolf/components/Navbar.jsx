@@ -495,7 +495,7 @@ export default function Navbar({ activePage }) {
                   width: 8, height: 8,
                   borderRadius: "50%",
                   background: "var(--gold)",
-                  animation: "vw-badge-pulse 2s ease-in-out infinite",
+                  //animation: "vw-badge-pulse 2s ease-in-out infinite",
                   border: "1px solid var(--obsidian)",
                 }} />
               </button>

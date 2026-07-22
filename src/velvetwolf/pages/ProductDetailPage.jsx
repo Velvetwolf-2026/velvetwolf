@@ -756,7 +756,7 @@ export default function ProductDetailPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>🛡️ <span>Secure Gateways</span></div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>🌿 <span>Responsibly Sourced</span></div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>⚡ <span>Express Dispatch</span></div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>🔄 <span>30 Day Easy Returns</span></div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>🔄 <span>10 Day Easy Returns</span></div>
                   </div>
                 )}
               </div>
@@ -991,7 +991,7 @@ export default function ProductDetailPage() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "var(--silver)" }}>
                 <Icon name="undo" size={14} color="var(--gold)" />
-                <span>30-Day Easy Returns</span>
+                <span>10-Day Easy Returns</span>
               </div>
             </div>
 
@@ -1427,7 +1427,7 @@ export default function ProductDetailPage() {
               },
               {
                 q: "Do you offer shipping and hassle-free returns?",
-                a: "We offer express shipping across India, with dispatch within 24-48 hours. Orders above ₹999 qualify for free shipping. We have a robust 30-day easy return and exchange policy for all unworn garments with tags attached."
+                a: "We offer express shipping across India, with dispatch within 24-48 hours. Orders above ₹999 qualify for free shipping. We have a robust 10-day easy return and exchange policy for all unworn garments with tags attached."
               }
             ].map((faq, idx) => {
               const isOpen = activeFAQIndex === idx;

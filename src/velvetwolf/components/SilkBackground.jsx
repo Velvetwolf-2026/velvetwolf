@@ -63,14 +63,19 @@ const FRAG = /* glsl */ `
     vec3 lightDir = normalize(vec3(-0.55, 0.85, 0.65));
     float diff = max(dot(n, lightDir), 0.0);
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(n, halfDir), 0.0), 90.0);
+    float spec = pow(max(dot(n, halfDir), 0.0), 80.0);
     float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
 
-    vec3 base = uColor * (0.34 + 0.5 * diff);
-    // Brand-gold sheen + rim so the highlights read warm, not neutral white.
-    vec3 sheen = vec3(0.79, 0.66, 0.30) * spec * 0.42;
-    vec3 rim = vec3(0.79, 0.66, 0.30) * fres * 0.14;
-    vec3 col = base + sheen + rim;
+    vec3 base = uColor * (0.32 + 0.68 * diff);
+    // Refined gold accent tint
+    vec3 gold = vec3(0.79, 0.66, 0.30);
+
+    // 10% reduced soft gold sheen, rim reflection, and ambient gold glow
+    vec3 sheen = gold * spec * 0.522;
+    vec3 rim = gold * fres * 0.27;
+    vec3 goldAmbient = gold * (diff * 0.158 + fres * 0.122);
+
+    vec3 col = base + sheen + rim + goldAmbient;
 
     // Feather the plane edges so it never shows a hard rectangle seam.
     float edge = smoothstep(0.0, 0.16, vUv.x) * smoothstep(1.0, 0.84, vUv.x)
@@ -131,7 +136,7 @@ export default function SilkBackground() {
         uTime: { value: 0 },
         uScroll: { value: 0 },
         uAmp: { value: 0.72 },
-        uColor: { value: new THREE.Color("#121216") },
+        uColor: { value: new THREE.Color("#100e09") },
       };
       const mat = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms });
       const silk = new THREE.Mesh(geo, mat);

@@ -1,12 +1,11 @@
 // ─────────────────────────────────────────────
 // VelvetWolf — <MosaicCarousel />
 //
-// Horizontally scrolling carousel with mosaic
-// tile layout displaying brand logos with glassmorphism.
+// Horizontally scrolling carousel with uniform 3-row
+// square tile layout displaying brand logos with glassmorphism.
 // ─────────────────────────────────────────────
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
-
 import { getSupabaseLogoUrl } from "../utils/supabase";
 
 // Complete brand logos list
@@ -58,78 +57,110 @@ const LOGOS_LIST = LOGOS_LIST_RAW.map(logo => ({
 const getMosaicMetrics = (viewportWidth) => {
   if (viewportWidth <= 480) {
     return {
-      gap: 5,
-      panelGap: 12,
-      rowHeight: 210,
-      smallWidth: 94,
-      tallWidth: 112,
-      wideWidth: 164,
-      rightColOne: 98,
-      rightColTwo: 98,
-      logoSmall: 20,
-      logoTall: 32,
-      logoWide: 40,
-      logoClusterTop: 22,
-      logoClusterBottom: 18,
-      trackPadding: "4px 12px 10px",
+      gap: 8,
+      tileSize: 104,
+      scrollAmount: 260,
+      trackPadding: "4px 12px 14px",
       edgeFadeWidth: 28,
-      scrollAmount: 220,
-      navButtonSize: 30,
-      navButtonFontSize: 16,
       headerGap: 8,
     };
   }
 
   if (viewportWidth <= 768) {
     return {
-      gap: 6,
-      panelGap: 16,
-      rowHeight: 270,
-      smallWidth: 122,
-      tallWidth: 142,
-      wideWidth: 224,
-      rightColOne: 128,
-      rightColTwo: 128,
-      logoSmall: 26,
-      logoTall: 40,
-      logoWide: 50,
-      logoClusterTop: 26,
-      logoClusterBottom: 22,
-      trackPadding: "4px 18px 12px",
+      gap: 10,
+      tileSize: 128,
+      scrollAmount: 360,
+      trackPadding: "4px 20px 14px",
       edgeFadeWidth: 46,
-      scrollAmount: 300,
-      navButtonSize: 34,
-      navButtonFontSize: 18,
-      headerGap: 9,
+      headerGap: 10,
     };
   }
 
   return {
-    gap: 8,
-    panelGap: 24,
-    rowHeight: 390,
-    smallWidth: 178,
-    tallWidth: 200,
-    wideWidth: 340,
-    rightColOne: 182,
-    rightColTwo: 182,
-    logoSmall: 36,
-    logoTall: 60,
-    logoWide: 80,
-    logoClusterTop: 38,
-    logoClusterBottom: 30,
+    gap: 12,
+    tileSize: 154,
+    scrollAmount: 500,
     trackPadding: "4px 36px 16px",
     edgeFadeWidth: 90,
-    scrollAmount: 500,
-    navButtonSize: 40,
-    navButtonFontSize: 20,
-    headerGap: 10,
+    headerGap: 12,
   };
 };
 
-/* ── Individual Glassmorphic Logo Card ── */
-function LogoTile({ logo, w, h, onClick }) {
+/* ── Canvas Utility: Process Image to Remove Solid Black/Dark Background ── */
+const processedImageCache = new Map();
+
+function getTransparentImageSrc(imgSrc, callback) {
+  if (!imgSrc) return;
+  if (processedImageCache.has(imgSrc)) {
+    callback(processedImageCache.get(imgSrc));
+    return;
+  }
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) {
+        callback(imgSrc);
+        return;
+      }
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+
+      // Scan all pixels and set dark/black background pixels to alpha = 0
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const maxRgb = Math.max(r, g, b);
+
+        // Near black threshold (pure black to dark gray box)
+        if (maxRgb < 45) {
+          if (maxRgb < 24) {
+            data[i + 3] = 0; // Completely transparent
+          } else {
+            data[i + 3] = Math.round(((maxRgb - 24) / 21) * 255);
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      const transparentDataUrl = canvas.toDataURL("image/png");
+      processedImageCache.set(imgSrc, transparentDataUrl);
+      callback(transparentDataUrl);
+    } catch (e) {
+      // If CORS or canvas error occurs, fallback to original image src
+      processedImageCache.set(imgSrc, imgSrc);
+      callback(imgSrc);
+    }
+  };
+
+  img.onerror = () => callback(imgSrc);
+  img.src = imgSrc;
+}
+
+/* ── Individual Glassmorphic Logo Card (Uniform Square) ── */
+function LogoTile({ logo, tileSize, onClick }) {
   const [hov, setHov] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [displaySrc, setDisplaySrc] = useState(logo.image);
+
+  useEffect(() => {
+    if (logo.image) {
+      getTransparentImageSrc(logo.image, (cleanUrl) => {
+        setDisplaySrc(cleanUrl);
+      });
+    }
+  }, [logo.image]);
 
   return (
     <div
@@ -137,9 +168,9 @@ function LogoTile({ logo, w, h, onClick }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        width: w,
-        minWidth: w,
-        height: h,
+        width: tileSize,
+        minWidth: tileSize,
+        height: tileSize,
         flexShrink: 0,
         position: "relative",
         overflow: "hidden",
@@ -154,15 +185,16 @@ function LogoTile({ logo, w, h, onClick }) {
         border: hov 
           ? "1px solid rgba(201, 162, 77, 0.5)" 
           : "1px solid rgba(255, 255, 255, 0.08)",
-        transform: hov ? "scale(1.03)" : "scale(1)",
-        transition: "all 0.4s cubic-bezier(0.25, 1, 0.2, 1)",
+        transform: hov ? "scale(1.04)" : "scale(1)",
+        transition: "all 0.35s cubic-bezier(0.25, 1, 0.2, 1)",
         boxShadow: hov
-          ? "0 20px 40px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(201, 162, 77, 0.15)"
+          ? "0 16px 36px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(201, 162, 77, 0.15)"
           : "0 4px 20px rgba(0, 0, 0, 0.4)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        padding: 12,
         userSelect: "none"
       }}
     >
@@ -173,112 +205,60 @@ function LogoTile({ logo, w, h, onClick }) {
           width: "120%",
           height: "120%",
           background: hov 
-            ? "radial-gradient(circle, rgba(201, 162, 77, 0.1) 0%, transparent 60%)" 
+            ? "radial-gradient(circle, rgba(201, 162, 77, 0.12) 0%, transparent 60%)" 
             : "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 60%)",
-          transition: "all 0.5s ease",
+          transition: "all 0.4s ease",
           pointerEvents: "none"
         }}
       />
 
-      {/* Brand logo image */}
+      {/* Brand logo image or fallback badge */}
       <div 
         style={{
-          width: "55%",
-          height: "55%",
+          width: "72%",
+          height: "72%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transform: hov ? "scale(1.1)" : "scale(1)",
-          transition: "transform 0.4s cubic-bezier(0.25, 1, 0.2, 1)",
+          transform: hov ? "scale(1.08)" : "scale(1)",
+          transition: "transform 0.35s cubic-bezier(0.25, 1, 0.2, 1)",
           filter: hov 
             ? "drop-shadow(0 0 15px rgba(201, 162, 77, 0.35)) brightness(1.1)" 
-            : "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) opacity(0.85)"
+            : "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) opacity(0.88)",
+          mixBlendMode: "screen"
         }}
       >
-        <img 
-          src={logo.image} 
-          alt={logo.name} 
-          style={{
-            maxWidth: "100%",
-            maxHeight: "100%",
-            objectFit: "contain"
-          }}
-        />
-      </div>
-
-      {/* Title overlay */}
-      <div 
-        style={{
-          position: "absolute",
-          bottom: 12,
-          fontFamily: "var(--font-mono)",
-          fontSize: 8,
-          letterSpacing: 2,
-          color: hov ? "#c9a24d" : "rgba(255, 255, 255, 0.5)",
-          opacity: hov ? 1 : 0.6,
-          transition: "all 0.3s ease",
-          textAlign: "center"
-        }}
-      >
-        {logo.name.toUpperCase()}
+        {!imgError ? (
+          <img 
+            src={displaySrc} 
+            alt={logo.name} 
+            crossOrigin="anonymous"
+            onError={() => setImgError(true)}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              objectFit: "contain",
+              mixBlendMode: "screen"
+            }}
+          />
+        ) : (
+          <div style={{
+            fontFamily: "var(--font-display)",
+            fontSize: Math.max(12, Math.min(18, tileSize / 7)),
+            letterSpacing: 2,
+            color: hov ? "var(--gold)" : "var(--ivory)",
+            textAlign: "center",
+            textShadow: hov ? "0 0 10px rgba(201, 162, 77, 0.5)" : "none"
+          }}>
+            {logo.name.toUpperCase()}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/* ── One repeating mosaic panel ── */
-function MosaicPanel({ cats, onClick, metrics }) {
-  // LEFT ZONE
-  const GAP = metrics.gap;
-  const ROW_H = metrics.rowHeight;
-  const smW   = metrics.smallWidth;
-  const smH   = (ROW_H - GAP * 2) / 3;
-  const tallW = metrics.tallWidth;
-
-  // RIGHT ZONE
-  const wideW   = metrics.wideWidth;
-  const rc1W    = metrics.rightColOne;
-  const rc2W    = metrics.rightColTwo;
-  const rcTopH  = ROW_H / 2 - GAP / 2;
-  const rcBotH  = (ROW_H - GAP * 3) / 3 * 1.35;
-
-  return (
-    <div style={{ display:"flex", gap:GAP, flexShrink:0, height:ROW_H, alignItems:"flex-start" }}>
-
-      {/* Col A — 3 stacked smalls */}
-      <div style={{ display:"flex", flexDirection:"column", gap:GAP, flexShrink:0 }}>
-        <LogoTile logo={cats[0]} w={smW} h={smH} onClick={onClick} />
-        <LogoTile logo={cats[1]} w={smW} h={smH} onClick={onClick} />
-        <LogoTile logo={cats[2]} w={smW} h={smH} onClick={onClick} />
-      </div>
-
-      {/* Col B — tall */}
-      <LogoTile logo={cats[3]} w={tallW} h={ROW_H} onClick={onClick} />
-
-      {/* Spacer */}
-      <div style={{ width: GAP * 2, flexShrink:0 }}/>
-
-      {/* Col C — dominant wide */}
-      <LogoTile logo={cats[4]} w={wideW} h={ROW_H} onClick={onClick} />
-
-      {/* Col D+E — 2×2 top / 3 bottom cluster */}
-      <div style={{ display:"flex", flexDirection:"column", gap:GAP, flexShrink:0 }}>
-        <div style={{ display:"flex", gap:GAP }}>
-          <LogoTile logo={cats[0]} w={rc1W} h={rcTopH} onClick={onClick} />
-          <LogoTile logo={cats[2]} w={rc2W} h={rcTopH} onClick={onClick} />
-        </div>
-        <div style={{ display:"flex", gap:GAP }}>
-          <LogoTile logo={cats[1]} w={rc1W - Math.max(14, GAP * 2)} h={rcBotH} onClick={onClick} />
-          <LogoTile logo={cats[3]} w={rc2W} h={rcBotH} onClick={onClick} />
-          <LogoTile logo={cats[4]} w={rc1W - Math.max(8, GAP)} h={rcBotH} onClick={onClick} />
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-/* ── Main export ── */
+/* ── Main export: Uniform 3-Row Grid Wall ── */
 export default function MosaicCarousel() {
   const { openShop, setSearchQuery } = useContext(AppContext);
   const sectionRef = useRef(null);
@@ -293,15 +273,19 @@ export default function MosaicCarousel() {
   const dist = useRef(0);
   const metrics = getMosaicMetrics(viewportWidth);
 
-  // Group LOGOS_LIST into repeating panels of 5 items
-  const numPanels = Math.ceil(LOGOS_LIST.length / 5);
-  const panels = Array.from({ length: numPanels }, (_, i) => {
-    return Array.from({ length: 5 }, (_, j) => {
-      const idx = (i * 5 + j) % LOGOS_LIST.length;
-      return LOGOS_LIST[idx];
-    });
+  // Group LOGOS_LIST into 3 rows for uniform grid wall
+  // Doubling array for seamless infinite looping
+  const infiniteLogos = [...LOGOS_LIST, ...LOGOS_LIST];
+  const numColumns = Math.ceil(infiniteLogos.length / 3);
+
+  // Group logos column by column (3 rows per column)
+  const columns = Array.from({ length: numColumns }, (_, colIdx) => {
+    return [
+      infiniteLogos[colIdx * 3],
+      infiniteLogos[colIdx * 3 + 1],
+      infiniteLogos[colIdx * 3 + 2]
+    ].filter(Boolean);
   });
-  const allPanels = [...panels, ...panels]; // doubled for infinite loops
 
   const fade = useCallback(() => {
     const el = trackRef.current; if (!el) return;
@@ -356,7 +340,6 @@ export default function MosaicCarousel() {
 
   const handleClick = (logo) => {
     if (dist.current > 8) return;
-    // Set query based on logo name and navigate to filtered shop page
     setSearchQuery(logo.name);
     openShop();
   };
@@ -412,10 +395,21 @@ export default function MosaicCarousel() {
             onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU}
             onTouchStart={onTS} onTouchMove={onTM} onTouchEnd={onTE}
             onScroll={fade}
-            style={{ display:"flex", alignItems:"flex-start", gap:metrics.panelGap, overflowX:"scroll", padding:metrics.trackPadding, cursor:drag?"grabbing":"grab" }}
+            style={{ 
+              display:"flex", 
+              alignItems:"flex-start", 
+              gap:metrics.gap, 
+              overflowX:"scroll", 
+              padding:metrics.trackPadding, 
+              cursor:drag?"grabbing":"grab" 
+            }}
           >
-            {allPanels.map((cats, i) => (
-              <MosaicPanel key={i} cats={cats} onClick={handleClick} metrics={metrics}/>
+            {columns.map((colLogos, colIdx) => (
+              <div key={colIdx} style={{ display:"flex", flexDirection:"column", gap:metrics.gap, flexShrink:0 }}>
+                {colLogos.map((logo, rowIdx) => (
+                  <LogoTile key={rowIdx + logo.id} logo={logo} tileSize={metrics.tileSize} onClick={handleClick} />
+                ))}
+              </div>
             ))}
           </div>
         </div>

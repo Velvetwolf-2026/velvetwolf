@@ -10,7 +10,7 @@ const QUICK_CARDS = [
   { icon: "📦", title: "FREE SHIPPING",  desc: "On all orders above ₹1,999 across India" },
   { icon: "⚡", title: "FAST DISPATCH",  desc: "Orders dispatched within 2–3 business days" },
   { icon: "🔒", title: "SECURE PAYMENT", desc: "256-bit SSL encryption via Razorpay" },
-  { icon: "↩", title: "EASY RETURNS",   desc: "7-day return window on eligible items" },
+  { icon: "↩", title: "EASY RETURNS",   desc: "10-day return window on eligible items" },
 ];
 
 export default function ShoppingPolicy() {

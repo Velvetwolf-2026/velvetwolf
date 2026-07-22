@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
@@ -9,6 +9,7 @@ import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 import { useBreakpoint } from "../utils/breakpoints";
 import { loadProductsFromAPI } from "../utils/products";
+import { animateCardsEntrance } from "../utils/galleryAnimation";
 
 // Server-rendered on first load so the catalog is present in the HTML for
 // crawlers and link previews, not just after the client fetches it.
@@ -92,7 +93,40 @@ export default function HomePage() {
     ? products.filter(p => p.tag === "NEW" || p.is_new).slice(0, 4)
     : products.slice(-4);
 
-  const renderProductShelf = (items) => {
+  const newDropsRef = useRef(null);
+
+  useEffect(() => {
+    if (!newDropsRef.current) return;
+    const el = newDropsRef.current;
+    let animated = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !animated) {
+            animated = true;
+            const cards = Array.from(el.querySelectorAll(".vw-new-drop-card"));
+            if (cards.length > 0) {
+              animateCardsEntrance(cards, {
+                duration: 1.2,
+                stagger: 0.15,
+                ease: "easeInOut",
+                initialScale: 1.15,
+                initialOffsetY: 40
+              });
+            }
+            observer.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [products]);
+
+  const renderProductShelf = (items, isNewDrops = false) => {
     if (isMobileOrTablet) {
       return (
         <div 
@@ -111,7 +145,7 @@ export default function HomePage() {
           className="vw-mobile-swipe-shelf"
         >
           {items.map(p => (
-            <div key={p.id} style={{ flex: "0 0 360px", maxWidth: "100%", scrollSnapAlign: "start" }}>
+            <div key={p.id} className={isNewDrops ? "vw-new-drop-card" : ""} style={{ flex: "0 0 360px", maxWidth: "100%", scrollSnapAlign: "start" }}>
               <ProductCard product={p} />
             </div>
           ))}
@@ -120,7 +154,11 @@ export default function HomePage() {
     }
     return (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 24 }}>
-        {items.map(p => <ProductCard key={p.id} product={p} />)}
+        {items.map(p => (
+          <div key={p.id} className={isNewDrops ? "vw-new-drop-card" : ""}>
+            <ProductCard product={p} />
+          </div>
+        ))}
       </div>
     );
   };
@@ -311,7 +349,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>01 — THE CRAFTSMANSHIP</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>01 — THE CRAFTSMANSHIP</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   ENGINEERED<br />
                   <span style={{ color: "var(--gold)" }}>IN SILENCE.</span>
@@ -342,7 +380,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>02 — THE TIRUPUR WEAVE</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>02 — THE TIRUPUR WEAVE</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   MADE IN<br />
                   <span style={{ color: "var(--gold)" }}>TIRUPUR, INDIA.</span>
@@ -373,7 +411,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>03 — THE FIT BLUEPRINT</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>03 — THE FIT BLUEPRINT</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   DROPPED SHOULDER<br />
                   <span style={{ color: "var(--gold)" }}>OVERSIZED.</span>
@@ -400,6 +438,7 @@ export default function HomePage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
             {COLLECTIONS.slice(0, 4).map(col => {
+              const IconComponent = col.icon;
               return (
                 <div 
                   key={col.id} 
@@ -408,11 +447,11 @@ export default function HomePage() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.transform = "translateY(-4px)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
-                  <div style={{ position: "absolute", right: -10, bottom: -10, opacity: 0.05, transform: "scale(4.5)", transformOrigin: "bottom right" }}>
-                    {col.icon && <Icon name={col.icon} size={40} color="var(--gold)" />}
+                  <div style={{ position: "absolute", right: -20, bottom: -20, opacity: 0.04, color: "var(--gold)", transform: "scale(5)" }}>
+                    {IconComponent && <IconComponent />}
                   </div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--gold)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                    {col.icon && <span><Icon name={col.icon} size={18} color="var(--gold)" /></span>}
+                    {IconComponent && <span><IconComponent style={{ fontSize: 18 }} /></span>}
                     DROP COLLECTION
                   </div>
                   <h3 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 1, marginBottom: 12 }}>{col.name.toUpperCase()}</h3>
@@ -530,7 +569,7 @@ export default function HomePage() {
             </section>
           ),
           newDrops: newDrops.length > 0 && (
-            <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="newdrops" ref={newDropsRef} style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
@@ -539,7 +578,7 @@ export default function HomePage() {
                   </div>
                   <button className="btn-outline" onClick={() => openShop()} style={{ fontSize: 10, padding: "8px 16px" }}>SHOP ALL</button>
                 </div>
-                {renderProductShelf(newDrops)}
+                {renderProductShelf(newDrops, true)}
               </div>
             </section>
           )
@@ -554,6 +593,9 @@ export default function HomePage() {
 
         return sectionOrder.map(key => sectionMap[key]);
       })()}
+
+      {/* BRAND COLLABS MOSAIC CAROUSEL */}
+      <MosaicCarousel />
 
       {/* 6. LIMITED DROPS */}
       {limitedDrops.length > 0 && (

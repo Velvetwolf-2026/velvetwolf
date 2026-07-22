@@ -56,6 +56,7 @@ export function Layout({ children }) {
           media="print"
           href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap"
           data-font-swap=""
+          suppressHydrationWarning
         />
         <script
           dangerouslySetInnerHTML={{
@@ -177,6 +178,13 @@ export default function VelvetWolfRoot() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orders] = useState([]);
   const [customers] = useState([]);
+
+  // Automatically clear search query when navigating away from shop pages
+  useEffect(() => {
+    if (!location.pathname.startsWith("/shop")) {
+      setSearchQuery("");
+    }
+  }, [location.pathname]);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });

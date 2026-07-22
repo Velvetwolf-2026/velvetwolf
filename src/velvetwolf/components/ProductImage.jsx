@@ -1,6 +1,70 @@
-import React from "react";
+import React, { useMemo, useState, useEffect } from "react";
+
+function getProductImages(product, selectedColor) {
+  const list = [];
+  const add = (url) => {
+    if (!url || typeof url !== "string") return;
+    let clean = url.trim();
+    if (clean.includes("::")) clean = clean.split("::")[1];
+    if (clean && !list.includes(clean)) list.push(clean);
+  };
+
+  // Color specific image
+  if (selectedColor && Array.isArray(product.images)) {
+    const matched = product.images.find(
+      (img) => typeof img === "string" && img.startsWith(`${selectedColor}::`)
+    );
+    if (matched) add(matched);
+  }
+
+  // Standard product.image
+  if (product.image) {
+    if (typeof product.image === "string") {
+      if (product.image.trim().startsWith("[")) {
+        try {
+          const parsed = JSON.parse(product.image);
+          if (Array.isArray(parsed)) parsed.forEach(add);
+        } catch {
+          add(product.image);
+        }
+      } else {
+        add(product.image);
+      }
+    } else if (Array.isArray(product.image)) {
+      product.image.forEach(add);
+    }
+  }
+
+  // Additional product.images
+  if (Array.isArray(product.images)) {
+    product.images.forEach(add);
+  }
+
+  // Model image
+  if (product.modelImage) {
+    add(product.modelImage);
+  }
+
+  return list;
+}
 
 export default function ProductImage({ product, height = 280, selectedColor = null, isParentHovered = false }) {
+  const imageList = useMemo(() => getProductImages(product, selectedColor), [product, selectedColor]);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // Dynamic automatic image rotator every few seconds
+  useEffect(() => {
+    if (imageList.length <= 1 || isParentHovered) return;
+
+    // Organic random duration between 3.5s and 5.5s per product card instance
+    const duration = 3500 + Math.floor(Math.random() * 2000);
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % imageList.length);
+    }, duration);
+
+    return () => clearInterval(timer);
+  }, [imageList, isParentHovered]);
+
   const collectionColors = {
     "ai-tech": ["#0a1628", "#1a2a4a", "#4fc3f7"],
     "anime": ["#1a0010", "#2a0020", "#f06292"],
@@ -14,54 +78,9 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
 
   const cols = collectionColors[product.collection] || ["#111", "#1a1a1a", "#888"];
 
-  // Parse product image
-  let imageUrl = null;
+  if (imageList.length > 0) {
+    const showHoverModel = Boolean(isParentHovered && product.modelImage);
 
-  // 1. Try to find a color-specific image if selectedColor is provided
-  if (selectedColor && Array.isArray(product.images)) {
-    const matched = product.images.find(
-      (img) => typeof img === "string" && img.startsWith(`${selectedColor}::`)
-    );
-    if (matched) {
-      imageUrl = matched.split("::")[1];
-    }
-  }
-
-  // 2. Fall back to standard logic
-  if (!imageUrl) {
-    if (product.image) {
-      if (typeof product.image === "string") {
-        if (product.image.trim().startsWith("[")) {
-          try {
-            const parsed = JSON.parse(product.image);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              imageUrl = parsed[0];
-            }
-          } catch {
-            imageUrl = product.image;
-          }
-        } else {
-          imageUrl = product.image;
-        }
-      } else if (Array.isArray(product.image) && product.image.length > 0) {
-        imageUrl = product.image[0];
-      }
-    }
-
-    // Fallback to images array if available
-    if (!imageUrl && Array.isArray(product.images) && product.images.length > 0) {
-      const firstNonPrefixed = product.images.find(img => typeof img === "string" && !img.includes("::"));
-      imageUrl = firstNonPrefixed || product.images[0];
-    }
-  }
-
-  // Strip prefix if any remain
-  if (typeof imageUrl === "string" && imageUrl.includes("::")) {
-    imageUrl = imageUrl.split("::")[1];
-  }
-
-  if (imageUrl) {
-    const showModel = Boolean(isParentHovered && product.modelImage);
     return (
       <div
         style={{
@@ -74,19 +93,29 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
           justifyContent: "center"
         }}
       >
-        <img
-          src={imageUrl}
-          alt={product.name}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transition: "transform 0.5s ease, opacity 0.3s ease",
-            opacity: showModel ? 0 : 1,
-            transform: isParentHovered ? "scale(1.05)" : "scale(1)"
-          }}
-          loading="lazy"
-        />
+        {imageList.map((imgUrl, index) => {
+          const isActive = index === activeIdx && !showHoverModel;
+          return (
+            <img
+              key={imgUrl + index}
+              src={imgUrl}
+              alt={`${product.name} ${index + 1}`}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                transition: "opacity 0.6s ease-in-out, transform 0.5s ease",
+                opacity: isActive ? 1 : 0,
+                transform: isParentHovered ? "scale(1.05)" : "scale(1)",
+                pointerEvents: "none"
+              }}
+              loading="lazy"
+            />
+          );
+        })}
+
         {product.modelImage && (
           <img
             src={product.modelImage}
@@ -97,13 +126,15 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              transition: "transform 0.5s ease, opacity 0.3s ease",
-              opacity: showModel ? 1 : 0,
+              transition: "opacity 0.4s ease-in-out, transform 0.5s ease",
+              opacity: showHoverModel ? 1 : 0,
               transform: isParentHovered ? "scale(1.05)" : "scale(1.02)",
-              pointerEvents: "none"
+              pointerEvents: "none",
+              zIndex: 2
             }}
           />
         )}
+
         <div
           style={{
             position: "absolute",

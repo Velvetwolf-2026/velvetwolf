@@ -22,11 +22,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
  */
 export function getSupabaseLogoUrl(localPath) {
   if (!localPath) return "";
-  // Strip starting slash and any existing Logo/logos prefix
-  const cleanPath = localPath.replace(/^\//, '').replace(/^logos?\//i, '');
+  // Extract filename directly by stripping any folder path
+  const filename = localPath.split('/').filter(Boolean).pop();
   
-  // Ensure it targets the "Logo/" folder inside the "product-images" bucket (capital L to match bucket)
-  const finalPath = `Logo/${cleanPath}`;
+  // Target the "Logo/" folder inside the "product-images" bucket directly
+  const finalPath = `Logo/${filename}`;
   
   const { data } = supabase.storage.from("product-images").getPublicUrl(finalPath);
   return data.publicUrl;

@@ -3,7 +3,7 @@ import { THEME } from "../utils/constants";
 const { gold, surface, border, text } = THEME;
 
 const STAT_CARDS = [
-  { icon: "7", label: "DAYS TO RETURN", desc: "From date of delivery" },
+  { icon: "10", label: "DAYS TO RETURN", desc: "From date of delivery" },
   { icon: "48h", label: "REFUND TIME", desc: "To original payment method" },
   { icon: "EX", label: "FREE EXCHANGE", desc: "Size exchanges at no extra cost" },
   { icon: "Rs", label: "STORE CREDIT", desc: "Instant credit, no wait" },
@@ -30,7 +30,7 @@ export default function ReturnsPage() {
   return (
     <div style={S.page}>
       <div style={S.wrap}>
-        <PageHeader eyebrow="RETURNS" title="RETURNS & EXCHANGE" sub="Hassle-free returns within 7 days of delivery" />
+        <PageHeader eyebrow="RETURNS" title="RETURNS & EXCHANGE" sub="Hassle-free returns within 10 days of delivery" />
 
         <div className="vw-policy-cards" style={{ marginBottom: 44 }}>
           {STAT_CARDS.map((c, i) => (
@@ -46,7 +46,7 @@ export default function ReturnsPage() {
           <Ul
             items={[
               "Items in original condition - unwashed, unworn, tags intact",
-              <>Items returned within <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days of delivery</>,
+              <>Items returned within <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days of delivery</>,
               "Items with a manufacturing defect (full refund or replacement)",
               "Wrong item received (full refund + free return pickup)",
               <>Damaged in transit (share photos within <span style={{ fontFamily: "'Roboto', sans-serif" }}>24</span> hours of delivery)</>
@@ -61,7 +61,7 @@ export default function ReturnsPage() {
               "Limited Edition drops (marked as Final Sale)",
               "Items that have been washed, worn, or altered",
               "Items without original tags or packaging",
-              <>Items returned after <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days</>,
+              <>Items returned after <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days</>,
               "Items purchased during Final Sale events"
             ]}
           />
@@ -130,7 +130,7 @@ export default function ReturnsPage() {
         <Sec title="SIZE EXCHANGE">
           <p style={S.p}>
             We offer <strong style={{ color: text }}>free size exchanges</strong> within{" "}
-            <span style={{ fontFamily: "'Roboto', sans-serif" }}>7</span> days (subject to availability). Initiate a return, select "Exchange", and specify the size you need. If unavailable, we'll issue a full refund.
+            <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days (subject to availability). Initiate a return, select "Exchange", and specify the size you need. If unavailable, we'll issue a full refund.
           </p>
         </Sec>
       </div>
