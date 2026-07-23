@@ -10,7 +10,7 @@ const QUICK_CARDS = [
   { icon: "📦", title: "FREE SHIPPING",  desc: "On all orders above ₹1,999 across India" },
   { icon: "⚡", title: "FAST DISPATCH",  desc: "Orders dispatched within 2–3 business days" },
   { icon: "🔒", title: "SECURE PAYMENT", desc: "256-bit SSL encryption via Razorpay" },
-  { icon: "↩", title: "EASY RETURNS",   desc: "7-day return window on eligible items" },
+  { icon: "↩", title: "EASY RETURNS",   desc: "10-day return window on eligible items" },
 ];
 
 export default function ShoppingPolicy() {
@@ -20,7 +20,7 @@ export default function ShoppingPolicy() {
         <PageHeader eyebrow="POLICIES" title="SHOPPING POLICY" sub="Everything you need to know about shopping with VelvetWolf" />
 
         {/* Quick cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:48 }}>
+        <div className="vw-policy-cards" style={{ marginBottom:48 }}>
           {QUICK_CARDS.map((c, i) => (
             <div key={i} style={{ background:surface, border:`1px solid ${border}`, padding:"20px 22px", borderLeft:`3px solid ${gold}` }}>
               <div style={{ fontSize:22, marginBottom:8 }}>{c.icon}</div>

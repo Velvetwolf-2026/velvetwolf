@@ -28,6 +28,11 @@
   --crimson: #8b1a1a;
   --wolf-red: #c0392b;
 
+  /* Translucent surface veils — sit over the ambient silk backdrop so the
+     cloth motion reads through full-bleed sections while text stays legible. */
+  --obsidian-veil: rgba(10, 10, 10, 0.66);
+  --graphite-veil: rgba(26, 26, 26, 0.62);
+
   /* Fonts — 3-font system */
   --font-display: 'Unbounded', system-ui, sans-serif;  /* hero / headings / product names */
   --font-body:    'Manrope', system-ui, sans-serif;    /* body copy / UI / buttons */
@@ -62,17 +67,35 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Base colour that shows before the silk canvas paints (and if WebGL
+     is unavailable) — keeps the old obsidian look with zero flash. */
+  background: var(--obsidian);
 }
 
 body {
-  background: var(--obsidian);
+  /* Transparent so the fixed silk backdrop (z-index:-1) shows through the
+     page's translucent section veils. */
+  background: transparent;
   color: var(--ivory);
   font-family: var(--font-body);
   font-size: var(--text-body);
   font-weight: 400;
   line-height: 1.65;
   overflow-x: hidden;
-  cursor: crosshair;
+}
+
+/* Ambient silk cloth — fixed decorative backdrop behind all content. */
+.vw-silk-host {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.vw-silk-bg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ------------------------------------------------------------
@@ -386,7 +409,7 @@ body::before {
   color: var(--ivory);
   padding: 12px 16px;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 16px;
   width: 100%;
   outline: none;
   transition: border-color 0.3s;
@@ -407,8 +430,12 @@ body::before {
   transition: all 0.4s ease;
   position: relative;
   overflow: hidden;
-  max-width: 360px;
-  width: 100%;
+  width: 360px;
+  max-width: 100%;
+  height: 590px;
+  display: flex !important;
+  flex-direction: column;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
@@ -736,6 +763,20 @@ textarea.input-dark {
     padding: 32px 20px !important;
   }
 
+  /* OTP row: share available width equally instead of a fixed 46px per box,
+     so 6 boxes always fit inside narrow phones instead of overflowing. */
+  .vw-otp-row {
+    gap: 6px !important;
+  }
+  .vw-otp-input {
+    width: auto !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 46px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+  }
+
   .contact-grid {
     grid-template-columns: 1fr !important;
   }
@@ -746,7 +787,7 @@ textarea.input-dark {
   }
 
   .toast {
-    bottom: 16px !important;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px) !important;
     right: 16px !important;
     left: 16px !important;
     font-size: 10px !important;
@@ -1519,6 +1560,22 @@ p {
   50% { opacity: 0.06; }
 }
 
+/* Color variant pills — always a row; desktop adds a hover reveal below */
+.vw-color-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.vw-color-pill {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--smoke);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
 /* Desktop-only product card enhancements */
 @media (min-width: 1024px) {
   /* Increase spacing for product grid cards */
@@ -1634,6 +1691,65 @@ p {
     grid-template-columns: 1.3fr 0.7fr;
     gap: 60px;
   }
+}
+
+/* Checkout two-column grid — real CSS breakpoint so mobile never renders
+   the desktop layout before JS hydration corrects useBreakpoint(). */
+.vw-checkout-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 380px;
+  gap: 48px;
+}
+@media (max-width: 640px) {
+  .vw-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Policy/returns page info-card grids — stay 2-up down to small phones,
+   then drop to 1 column so cards don't crowd into ~150px. */
+.vw-policy-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 420px) {
+  .vw-policy-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cart line-item layout — real CSS breakpoint, same hydration-safety reason
+   as .vw-checkout-grid above. */
+.vw-cart-item-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .vw-cart-item-grid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.vw-cart-item-price {
+  text-align: left;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+@media (min-width: 640px) {
+  .vw-cart-item-price {
+    text-align: right;
+    flex-direction: column;
+    gap: 0;
+    align-items: initial;
+  }
+}
+
+@media (min-width: 1024px) {
 
   /* Product detail sticky info panel */
   .vw-pdp-sticky {
@@ -1680,8 +1796,473 @@ p {
   border: none !important;
   box-shadow: none !important;
   background: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 .featured-coverflow-card .product-card:hover {
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* ============================================================
+   PREMIUM PDP LUXURY REDESIGN CUSTOM STYLES
+   ============================================================ */
+
+/* 1. Gallery swipe carousel & transitions */
+.vw-gallery-container {
+  position: relative;
+  width: 100%;
+}
+.vw-gallery-mobile-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border: 1px solid var(--smoke);
+  background: var(--onyx);
+  height: 520px;
+}
+.vw-gallery-mobile-carousel::-webkit-scrollbar {
+  display: none;
+}
+.vw-gallery-mobile-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  position: relative;
+}
+.vw-gallery-mobile-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Page Indicator Bullets */
+.vw-gallery-bullets {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.vw-gallery-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.vw-gallery-bullet-active {
+  width: 24px;
+  background: var(--gold);
+  border-radius: 3px;
+}
+
+/* Desktop gallery thumbnails */
+.vw-gallery-desktop-layout {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 16px;
+}
+.vw-gallery-thumbs-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 680px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.vw-gallery-thumbs-column::-webkit-scrollbar {
+  display: none;
+}
+.vw-gallery-thumb-btn {
+  width: 80px;
+  height: 106px;
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-gallery-thumb-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  transition: opacity 0.3s ease;
+}
+.vw-gallery-thumb-btn-active::after,
+.vw-gallery-thumb-btn:hover::after {
+  opacity: 0;
+}
+.vw-gallery-thumb-btn-active {
+  border-color: var(--gold);
+  transform: translateX(4px);
+}
+.vw-gallery-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 2. Color swatch selectors */
+.vw-swatch-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vw-swatch-btn-inner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+.vw-swatch-btn:hover {
+  transform: scale(1.1);
+}
+.vw-swatch-btn-active {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+.vw-swatch-btn-active .vw-swatch-btn-inner {
+  transform: scale(0.9);
+}
+
+/* 3. Size Cards */
+.vw-size-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 10px;
+}
+.vw-size-card {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  color: var(--silver);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 1px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  font-weight: 500;
+}
+.vw-size-card:hover:not(.vw-size-card-disabled) {
+  border-color: var(--gold);
+  color: var(--ivory);
+  background: rgba(255,255,255,0.02);
+}
+.vw-size-card-active {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--obsidian);
+  font-weight: 700;
+}
+.vw-size-card-disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.vw-size-card-disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top right, transparent calc(50% - 1px), var(--silver) 50%, transparent calc(50% + 1px));
+}
+.vw-size-badge-best {
+  position: absolute;
+  top: -8px;
+  right: -2px;
+  background: var(--gold);
+  color: var(--obsidian);
+  font-size: 7px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  padding: 1px 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 4. Trust Badges & Grid cards */
+.vw-trust-badge-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  border-top: 1px solid var(--smoke);
+  border-bottom: 1px solid var(--smoke);
+  padding: 20px 0;
+  margin: 32px 0;
+}
+.vw-trust-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.vw-trust-badge-icon {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--smoke);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+.vw-trust-badge:hover .vw-trust-badge-icon {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.05);
+  transform: translateY(-2px);
+}
+.vw-trust-badge-text {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--silver);
+  text-transform: uppercase;
+}
+
+/* 5. Specs Highlights Grid */
+.vw-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 28px 0;
+}
+.vw-highlight-card {
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  padding: 16px 12px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.vw-highlight-card:hover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.02);
+  transform: translateY(-2px);
+}
+.vw-highlight-title {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.vw-highlight-desc {
+  font-size: 9px;
+  font-family: var(--font-body);
+  color: var(--silver);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* 6. Story & Fabric sections */
+.vw-story-block {
+  margin-bottom: 64px;
+}
+.vw-story-inner {
+  border-left: 2px solid var(--gold);
+  padding-left: 24px;
+}
+.vw-story-quote {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+.vw-story-para {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--silver);
+}
+.vw-fabric-showcase {
+  background: var(--onyx);
+  border: 1px solid var(--smoke);
+  padding: 40px;
+  margin-bottom: 64px;
+}
+.vw-fabric-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+.vw-fabric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  transition: all 0.3s ease;
+}
+.vw-fabric-card:hover {
+  border-color: rgba(201,168,76,0.3);
+  transform: translateY(-3px);
+}
+.vw-fabric-card-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.vw-fabric-card-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--silver);
+}
+
+/* 7. Accordion FAQs */
+.vw-faq-accordion {
+  border-top: 1px solid var(--smoke);
+  margin-bottom: 64px;
+}
+.vw-accordion-item {
+  border-bottom: 1px solid var(--smoke);
+}
+.vw-accordion-trigger {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+}
+.vw-accordion-trigger:hover {
+  color: var(--gold);
+}
+.vw-accordion-chevron {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.6;
+}
+.vw-accordion-trigger:hover .vw-accordion-chevron {
+  opacity: 1;
+}
+.vw-accordion-content {
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-accordion-body {
+  padding-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--silver);
+}
+
+/* 8. Verified verdicts rating summary breakdown */
+.vw-reviews-summary-card {
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--smoke);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: fit-content;
+}
+.vw-reviews-breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--silver);
+}
+.vw-reviews-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.vw-reviews-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--gold);
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+/* 9. Micro interactions & visual details */
+.vw-img-zoom-hover {
+  overflow: hidden;
+}
+.vw-img-zoom-hover img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.vw-img-zoom-hover:hover img {
+  transform: scale(1.05);
+}
+
+/* Mobile Sticky Bottom CTA Redesign */
+@keyframes vw-slide-up-cta {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Responsive Overrides */
+@media (max-width: 1023px) {
+  .vw-fabric-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .vw-fabric-showcase {
+    padding: 24px;
+  }
+}
+@media (max-width: 639px) {
+  .vw-trust-badge-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 12px;
+  }
+  .vw-trust-badge-row > :nth-child(4),
+  .vw-trust-badge-row > :nth-child(5) {
+    grid-column: span 1.5;
+  }
+  .vw-highlights-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

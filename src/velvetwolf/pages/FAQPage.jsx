@@ -17,7 +17,7 @@ const FAQS = [
   { cat: "PRODUCTS", q: "Are your fabrics sustainable?", a: "We use 100% combed cotton and GOTS-certified organic cotton on select lines. Our Bamboo Blend series uses sustainably sourced bamboo-cotton fabric." },
   { cat: "CUSTOM", q: "How does the custom design service work?", a: "Upload your design on our Custom Design page, choose fabric and base colour, enter quantity, and get an instant price estimate. We'll print and ship within 7–10 business days." },
   { cat: "CUSTOM", q: "What file formats are accepted?", a: "We accept PNG, PDF, AI, and PSD files. Minimum resolution 300 DPI. For best results, send vector files. We'll send a digital proof before production." },
-  { cat: "RETURNS", q: "What is your return policy?", a: "We accept returns within 7 days of delivery for unworn, unwashed items with tags intact. Custom orders and Limited Edition drops are non-returnable." },
+  { cat: "RETURNS", q: "What is your return policy?", a: "We accept returns within 10 days of delivery for unworn, unwashed items with tags intact. Custom orders and Limited Edition drops are non-returnable." },
   { cat: "RETURNS", q: "How long does a refund take?", a: "Refunds are processed within 48 hours of receiving the item. Bank processing adds 3–5 days. Choose Store Credit for an instant refund." },
   { cat: "ACCOUNT", q: "Do I need an account to order?", a: "No — you can checkout as a guest. However, an account lets you track orders, save addresses, and access exclusive member offers." },
   { cat: "ACCOUNT", q: "How do I reset my password?", a: "Click 'Forgot Password' on the login page. You'll receive a reset link within 5 minutes. Check spam if you don't see it." },

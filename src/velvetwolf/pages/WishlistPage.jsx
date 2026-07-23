@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
 import { HeroHeader } from "../styles/shared";
@@ -119,30 +120,31 @@ export default function WishlistPage() {
   const { wishlist, user, setPage, toggleWishlist, addToCart, products, showToast } = useContext(AppContext);
 
   // Read URL search params for shared wishlist
-  const query = new URLSearchParams(window.location.search);
-  const sharedSlugs = query.get("shared");
+  const [searchParams] = useSearchParams();
+  const sharedSlugs = searchParams.get("shared");
   const isSharedView = !!sharedSlugs;
 
   const [sharedWishlist, setSharedWishlist] = useState([]);
-  const [folders, setFolders] = useState(() => {
-    const saved = localStorage.getItem("vw_wishlist_folders");
-    return saved ? JSON.parse(saved) : ["unassigned", "classics", "summer", "streetwear"];
-  });
+  const [folders, setFolders] = useState(["unassigned", "classics", "summer", "streetwear"]);
   const [activeFolderFilter, setActiveFolderFilter] = useState("all");
   const [newFolderName, setNewFolderName] = useState("");
   const [showAddFolder, setShowAddFolder] = useState(false);
 
   // Map of itemId -> folderName
-  const [itemFolderMapping, setItemFolderMapping] = useState(() => {
-    const saved = localStorage.getItem("vw_wishlist_item_folders");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [itemFolderMapping, setItemFolderMapping] = useState({});
 
   // Map of itemId -> { priceDrop: boolean, backInStock: boolean }
-  const [itemAlerts, setItemAlerts] = useState(() => {
-    const saved = localStorage.getItem("vw_wishlist_alerts");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [itemAlerts, setItemAlerts] = useState({});
+
+  // Hydrate folder/alert preferences from localStorage after mount (SSR has no access to them)
+  useEffect(() => {
+    const savedFolders = localStorage.getItem("vw_wishlist_folders");
+    if (savedFolders) setFolders(JSON.parse(savedFolders));
+    const savedMapping = localStorage.getItem("vw_wishlist_item_folders");
+    if (savedMapping) setItemFolderMapping(JSON.parse(savedMapping));
+    const savedAlerts = localStorage.getItem("vw_wishlist_alerts");
+    if (savedAlerts) setItemAlerts(JSON.parse(savedAlerts));
+  }, []);
 
   // Parse shared wishlist items from slug params
   useEffect(() => {

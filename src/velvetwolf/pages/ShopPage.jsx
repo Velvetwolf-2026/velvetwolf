@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
 import { useBreakpoint } from "../utils/breakpoints";
@@ -8,6 +8,29 @@ import Icon from "../components/Icon";
 import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { HeroHeader } from "../styles/shared";
 import { apiUrl } from "../utils/api";
+import { loadProductsFromAPI } from "../utils/products";
+
+export async function loader({ params }) {
+  try {
+    const products = await loadProductsFromAPI({ collection: params.collection });
+    return { products };
+  } catch {
+    return { products: [] };
+  }
+}
+
+export function meta({ params }) {
+  const collection = params.collection ? getCollectionById(params.collection) : null;
+  const title = collection ? `${collection.name} — VelvetWolf` : "Shop — VelvetWolf";
+  const description = collection?.description || "Shop the full VelvetWolf catalog of luxury streetwear.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+  ];
+}
 
 const AVAILABLE_COLORS = [
   { name: "Black", value: "#0a0a0a" },
@@ -23,7 +46,9 @@ const NECK_TYPES = ["Crew Neck", "Round Neck", "Hooded"];
 const CATEGORIES = ["tshirt", "cargo", "hoodie", "cap"];
 
 export default function ShopPage() {
-  const { products, searchQuery } = useContext(AppContext);
+  const { products: ctxProducts, searchQuery } = useContext(AppContext);
+  const loaderData = useLoaderData();
+  const products = ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []);
   const { collection: routeCollection } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -232,8 +257,8 @@ export default function ShopPage() {
                 key={color.name}
                 onClick={() => setSelectedColor(selectedColor === color.name ? null : color.name)}
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   borderRadius: "50%",
                   background: color.value,
                   border: selectedColor === color.name ? "2px solid var(--gold)" : "1px solid var(--smoke)",
@@ -416,11 +441,11 @@ export default function ShopPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "120px 0", color: "var(--silver)" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.2, marginBottom: 16 }}>EMPTY DROP</div>
-              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>No pieces match your filters. Try clearing some selections.</p>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 48, opacity: 0.2, marginBottom: 16 }}>ARRIVING SHORTLY</div>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic" }}>"New pieces are in production. Leave your email and you'll be first to know."</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(280px, 1fr))", gap: isMobile ? 12 : 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: isMobile ? 12 : 32 }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
@@ -445,14 +470,14 @@ export default function ShopPage() {
           <div className="vw-filter-drawer" onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid var(--smoke)" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", fontWeight: "bold", letterSpacing: 2 }}>FILTERS & SORT</span>
-              <button 
+              <button
                 onClick={() => setFilterDrawerOpen(false)}
                 style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11 }}
               >
                 CLOSE
               </button>
             </div>
-            
+
             <div className="vw-drawer-content-scroll">
               {/* Sort by selection inside drawer */}
               <div style={{ marginBottom: 24, borderBottom: "1px solid var(--smoke)", paddingBottom: 20 }}>

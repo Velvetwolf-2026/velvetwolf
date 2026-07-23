@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import Icon from "./Icon";
 import { apiUrl } from "../utils/api";
+import { useBreakpoint } from "../utils/breakpoints";
 
 export default function AiFashionAssistant() {
+  const { isMobile } = useBreakpoint();
   const getProductImageUrl = (p) => {
     if (!p) return null;
     if (p.image) {
@@ -97,7 +99,7 @@ export default function AiFashionAssistant() {
   };
 
   return (
-    <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 900 }}>
+    <div style={{ position: "fixed", bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 900 }}>
       {/* Chat bubble button */}
       {!isOpen && (
         <button
@@ -127,8 +129,8 @@ export default function AiFashionAssistant() {
       {isOpen && (
         <div
           style={{
-            width: 360,
-            height: 500,
+            width: "min(360px, calc(100vw - 32px))",
+            height: isMobile ? "min(500px, 70vh)" : 500,
             background: "rgba(10, 10, 10, 0.98)",
             backdropFilter: "blur(20px)",
             border: "1px solid var(--gold)",

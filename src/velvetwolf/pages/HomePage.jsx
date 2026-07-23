@@ -1,27 +1,59 @@
-import React, { useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useState, useEffect, useRef } from "react";
+import { useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
 import MosaicCarousel from "../components/MosaicCarousel";
 import Icon from "../components/Icon";
-import Cinematic3DHero from "../components/Cinematic3DHero";
+import Cinematic3DHero from "../components/ClientOnly3DHero";
 import ProductCard from "../components/ProductCard";
 import { COLLECTIONS } from "../utils/collectionsData";
 import { useBreakpoint } from "../utils/breakpoints";
+import { loadProductsFromAPI } from "../utils/products";
+import { animateCardsEntrance } from "../utils/galleryAnimation";
+
+// Server-rendered on first load so the catalog is present in the HTML for
+// crawlers and link previews, not just after the client fetches it.
+export async function loader() {
+  try {
+    const products = await loadProductsFromAPI();
+    return { products };
+  } catch {
+    return { products: [] };
+  }
+}
+
+export function meta() {
+  const title = "VelvetWolf — Luxury Streetwear";
+  const description = "Premium luxury streetwear built for the modern generation. Shop VelvetWolf's collections of tees, hoodies, and drops.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ];
+}
 
 export default function HomePage() {
-  const { products, openShop, user, showToast } = useContext(AppContext);
+  const { products: ctxProducts, openShop, user, showToast } = useContext(AppContext);
+  const loaderData = useLoaderData();
+  const products = ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []);
   const navigate = useNavigate();
   const { isMobileOrTablet } = useBreakpoint();
 
-  const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
-  const guestProfile = guestProfileRaw ? JSON.parse(guestProfileRaw) : null;
+  const [guestProfile, setGuestProfile] = useState(null);
+  const [lastViewedCategory, setLastViewedCategory] = useState("");
   const activePersonality = user?.personality_type || guestProfile?.personalityType;
-
-  const lastViewedCategory = localStorage.getItem("vw_last_viewed_category") || "";
 
   const [recentlyViewedProducts, setRecentlyViewedProducts] = useState([]);
   const [comingSoonNotifySuccess, setComingSoonNotifySuccess] = useState({});
+
+  useEffect(() => {
+    const guestProfileRaw = localStorage.getItem("vw_guest_style_profile");
+    if (guestProfileRaw) setGuestProfile(JSON.parse(guestProfileRaw));
+    setLastViewedCategory(localStorage.getItem("vw_last_viewed_category") || "");
+  }, []);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("vw_recently_viewed") || "[]");
@@ -61,7 +93,40 @@ export default function HomePage() {
     ? products.filter(p => p.tag === "NEW" || p.is_new).slice(0, 4)
     : products.slice(-4);
 
-  const renderProductShelf = (items) => {
+  const newDropsRef = useRef(null);
+
+  useEffect(() => {
+    if (!newDropsRef.current) return;
+    const el = newDropsRef.current;
+    let animated = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !animated) {
+            animated = true;
+            const cards = Array.from(el.querySelectorAll(".vw-new-drop-card"));
+            if (cards.length > 0) {
+              animateCardsEntrance(cards, {
+                duration: 1.2,
+                stagger: 0.15,
+                ease: "easeInOut",
+                initialScale: 1.15,
+                initialOffsetY: 40
+              });
+            }
+            observer.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [products]);
+
+  const renderProductShelf = (items, isNewDrops = false) => {
     if (isMobileOrTablet) {
       return (
         <div 
@@ -80,7 +145,7 @@ export default function HomePage() {
           className="vw-mobile-swipe-shelf"
         >
           {items.map(p => (
-            <div key={p.id} style={{ flex: "0 0 240px", scrollSnapAlign: "start" }}>
+            <div key={p.id} className={isNewDrops ? "vw-new-drop-card" : ""} style={{ flex: "0 0 360px", maxWidth: "100%", scrollSnapAlign: "start" }}>
               <ProductCard product={p} />
             </div>
           ))}
@@ -88,8 +153,12 @@ export default function HomePage() {
       );
     }
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
-        {items.map(p => <ProductCard key={p.id} product={p} />)}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 24 }}>
+        {items.map(p => (
+          <div key={p.id} className={isNewDrops ? "vw-new-drop-card" : ""}>
+            <ProductCard product={p} />
+          </div>
+        ))}
       </div>
     );
   };
@@ -141,7 +210,7 @@ export default function HomePage() {
       price: 2499,
       description: "Dropping soon. 420 GSM Ultra-heavy cotton fleece, neon decals, cybernetic style.",
       releaseDate: "OCT 12",
-      image: "/mockup_silent.png"
+      image: "/mockup_silent.webp"
     },
     {
       id: "cs-2",
@@ -150,7 +219,7 @@ export default function HomePage() {
       price: 2999,
       description: "Dropping soon. High-grade tactical canvas, utility snap pockets, relaxed taper fit.",
       releaseDate: "OCT 28",
-      image: "/mockup_beast.png"
+      image: "/mockup_beast.webp"
     }
   ];
 
@@ -164,19 +233,19 @@ export default function HomePage() {
   };
 
   const reviews = [
-    { name: "Aarav S.", rating: 5, comment: "The weight of the 220 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
+    { name: "Aarav S.", rating: 5, comment: "The weight of the 240 GSM Egyptian cotton is insane. It fits perfectly oversized without looking baggy.", date: "14 June 2026" },
     { name: "Meera K.", rating: 5, comment: "I ordered the Silent Luxury Tee. The stitch detail is top notch, no logos, just pure comfort. Highly recommended.", date: "09 June 2026" },
     { name: "Rohit D.", rating: 5, comment: "Mind Palace Tee looks absolutely beautiful in person. The graphic print is premium quality.", date: "01 June 2026" }
   ];
 
   /*
   const instagramPosts = [
-    { img: "/mockup_silent.png", tag: "@velvetwolf.in", hash: "#SilentLuxury" },
-    { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#FounderEnergy" },
-    { img: "/mockup_beast.png", tag: "@velvetwolf.in", hash: "#GrindMode" },
-    { img: "/mockup_silent.png", tag: "@velvetwolf.in", hash: "#OversizedCanvas" },
-    { img: "/mockup_founder.png", tag: "@velvetwolf.in", hash: "#BuildInSilence" },
-    { img: "/mockup_beast.png", tag: "@velvetwolf.in", hash: "#StreetCulture" }
+    { img: "/mockup_silent.webp", tag: "@velvetwolf.in", hash: "#SilentLuxury" },
+    { img: "/mockup_founder.webp", tag: "@velvetwolf.in", hash: "#FounderEnergy" },
+    { img: "/mockup_beast.webp", tag: "@velvetwolf.in", hash: "#GrindMode" },
+    { img: "/mockup_silent.webp", tag: "@velvetwolf.in", hash: "#OversizedCanvas" },
+    { img: "/mockup_founder.webp", tag: "@velvetwolf.in", hash: "#BuildInSilence" },
+    { img: "/mockup_beast.webp", tag: "@velvetwolf.in", hash: "#StreetCulture" }
   ];
   */
 
@@ -198,13 +267,13 @@ export default function HomePage() {
   };
 
   return (
-    <div style={{ background: "var(--obsidian)", color: "var(--ivory)", overflowX: "hidden" }}>
+    <div style={{ background: "transparent", color: "var(--ivory)", overflowX: "hidden" }}>
       
       {/* CINEMATIC 3D HERO SHOWCASE */}
       <Cinematic3DHero />
 
       {/* TRUST STRIP */}
-      <div style={{ background: "var(--graphite)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+      <div style={{ background: "var(--graphite-veil)", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{
           maxWidth: 1400,
           margin: "0 auto",
@@ -214,7 +283,7 @@ export default function HomePage() {
           padding: isMobileOrTablet ? "28px 20px" : 0,
         }}>
           {[
-            { icon: "tshirt", title: "Premium Cotton", subtitle: "220 GSM Combed Cotton" },
+            { icon: "tshirt", title: "Premium Cotton", subtitle: "240 GSM Combed Cotton" },
             { icon: "factory", title: "Made in India", subtitle: "Crafted in Tirupur" },
             { icon: "truck", title: "Free Shipping", subtitle: "On orders above \u20b91999" },
             { icon: "undo", title: "Easy Returns", subtitle: "10 Day Return Policy" },
@@ -249,7 +318,7 @@ export default function HomePage() {
       </div>
 
       {/* EDITORIAL BRAND PHILOSOPHY & STORYTELLING */}
-      <section style={{ padding: isMobileOrTablet ? "60px 20px" : "120px 40px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ padding: isMobileOrTablet ? "60px 20px" : "120px 40px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           {/* Section Header */}
           <div style={{ textAlign: "center", marginBottom: isMobileOrTablet ? 40 : 72 }}>
@@ -280,7 +349,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>01 — THE CRAFTSMANSHIP</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>01 — THE CRAFTSMANSHIP</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   ENGINEERED<br />
                   <span style={{ color: "var(--gold)" }}>IN SILENCE.</span>
@@ -290,7 +359,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 1, borderTop: "1px solid var(--smoke)", paddingTop: 16, marginTop: 28 }}>
-                220 GSM · COMBED COTTON · REACTIVE DYE
+                240 GSM · COMBED COTTON · REACTIVE DYE
               </div>
             </div>
 
@@ -311,7 +380,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>02 — THE TIRUPUR WEAVE</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>02 — THE TIRUPUR WEAVE</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   MADE IN<br />
                   <span style={{ color: "var(--gold)" }}>TIRUPUR, INDIA.</span>
@@ -342,7 +411,7 @@ export default function HomePage() {
             >
               <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: "linear-gradient(transparent, var(--gold), transparent)" }} />
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>03 — THE FIT BLUEPRINT</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>03 — THE FIT BLUEPRINT</div>
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 24 : 28, letterSpacing: 1, margin: "0 0 20px 0", lineHeight: 1.2, textTransform: "uppercase" }}>
                   DROPPED SHOULDER<br />
                   <span style={{ color: "var(--gold)" }}>OVERSIZED.</span>
@@ -360,11 +429,11 @@ export default function HomePage() {
       </section>
 
       {/* FEATURED COLLECTIONS */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>THE DROP SELECTION</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>FEATURED COLLECTIONS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>FEATURED COLLECTIONS</h2>
             <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "16px auto 0" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
@@ -395,12 +464,12 @@ export default function HomePage() {
       </section>
 
       {/* FEATURED PRODUCTS */}
-      <section style={{ padding: "80px 40px", background: "var(--obsidian)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--obsidian-veil)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-          <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+          <div className="featured-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>HANDPICKED FOR YOU</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>FEATURED PRODUCTS</h2>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 56, letterSpacing: 3 }}>FEATURED PRODUCTS</h2>
             </div>
             <button className="btn-outline" onClick={() => openShop()} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               DISCOVER NOW <Icon name="arrowRight" size={12} />
@@ -414,7 +483,7 @@ export default function HomePage() {
       {(() => {
         const sectionMap = {
           personalized: activePersonality && personalizedProducts.length > 0 && (
-            <section key="personalized" style={{ padding: "60px 20px", background: "linear-gradient(180deg, var(--onyx), var(--obsidian))", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="personalized" style={{ padding: "60px 20px", background: "linear-gradient(180deg, rgba(17,17,17,0.62), rgba(10,10,10,0.66))", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
@@ -434,7 +503,7 @@ export default function HomePage() {
             </section>
           ),
           continueShopping: continueShoppingProducts.length > 0 && (
-            <section key="continue" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="continue" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -447,9 +516,9 @@ export default function HomePage() {
             </section>
           ),
           trending: trendingToday.length > 0 && (
-            <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="trending" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>REAL-TIME PACK HEAT</div>
                     <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>TRENDING NOW</h2>
@@ -461,7 +530,7 @@ export default function HomePage() {
             </section>
           ),
           aiPicks: aiPicks.length > 0 && (
-            <section key="aipicks" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="aipicks" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -474,7 +543,7 @@ export default function HomePage() {
             </section>
           ),
           recentlyViewed: recentlyViewedProducts.length > 0 && (
-            <section key="recently" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="recently" style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -487,7 +556,7 @@ export default function HomePage() {
             </section>
           ),
           similarToInterests: similarToStyle.length > 0 && (
-            <section key="similar" style={{ padding: "60px 20px", background: "var(--obsidian)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="similar" style={{ padding: "60px 20px", background: "var(--obsidian-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                   <div>
@@ -500,16 +569,16 @@ export default function HomePage() {
             </section>
           ),
           newDrops: newDrops.length > 0 && (
-            <section key="newdrops" style={{ padding: "60px 20px", background: "var(--graphite)", borderBottom: "1px solid var(--smoke)" }}>
+            <section key="newdrops" ref={newDropsRef} style={{ padding: "60px 20px", background: "var(--graphite-veil)", borderBottom: "1px solid var(--smoke)" }}>
               <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32, flexWrap: "wrap", gap: 16 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 4, color: "var(--gold)", marginBottom: 8 }}>JUST RELEASED</div>
                     <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, margin: 0 }}>NEW DROPS</h2>
                   </div>
                   <button className="btn-outline" onClick={() => openShop()} style={{ fontSize: 10, padding: "8px 16px" }}>SHOP ALL</button>
                 </div>
-                {renderProductShelf(newDrops)}
+                {renderProductShelf(newDrops, true)}
               </div>
             </section>
           )
@@ -525,21 +594,24 @@ export default function HomePage() {
         return sectionOrder.map(key => sectionMap[key]);
       })()}
 
+      {/* BRAND COLLABS MOSAIC CAROUSEL */}
+      <MosaicCarousel />
+
       {/* 6. LIMITED DROPS */}
       {limitedDrops.length > 0 && (
-        <section style={{ padding: "80px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+        <section style={{ padding: "80px 40px", background: "var(--obsidian-veil)", borderTop: "1px solid var(--smoke)" }}>
           <div style={{ maxWidth: 1400, margin: "0 auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>SCARCE EDITIONS · HEAVYWEIGHTS</div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 28 : 48, letterSpacing: 2 }}>LIMITED DROPS</h2>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))", justifyContent: "center", gap: 24 }}>
               {limitedDrops.map(p => {
                 const pct = Math.max(10, Math.min(90, (p.stock || 12) * 2.2));
                 return (
-                  <div key={p.id} style={{ display: "flex", flexDirection: "column", maxWidth: 360, width: "100%", margin: "0 auto" }}>
+                  <div key={p.id} style={{ display: "flex", flexDirection: "column", width: 360, maxWidth: "100%", margin: "0 auto" }}>
                     <ProductCard product={p} />
                     <div style={{ padding: "16px", background: "var(--onyx)", borderLeft: "1px solid var(--smoke)", borderRight: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)", boxSizing: "border-box" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--gold)", marginBottom: 6 }}>
@@ -559,11 +631,11 @@ export default function HomePage() {
       )}
 
       {/* 7. COMING SOON */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)", borderTop: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)", borderTop: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>FUTURE DROPS</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 2 }}>COMING SOON</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 28 : 48, letterSpacing: 2 }}>COMING SOON</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 32 }}>
             {comingSoonItems.map(item => (
@@ -643,11 +715,11 @@ export default function HomePage() {
       </section>
 
       {/* CUSTOMER REVIEWS */}
-      <section style={{ padding: "100px 40px", background: "var(--obsidian)", borderTop: "1px solid var(--smoke)" }}>
+      <section style={{ padding: "100px 40px", background: "var(--obsidian-veil)", borderTop: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>TESTIMONIALS</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>WOLF PACK VERDICTS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>WOLF PACK VERDICTS</h2>
             <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "16px auto 0" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
@@ -668,11 +740,11 @@ export default function HomePage() {
       </section>
 
       {/* INSTAGRAM-STYLE GALLERY */}
-      <section style={{ padding: "80px 40px", background: "var(--graphite)" }}>
+      <section style={{ padding: "80px 40px", background: "var(--graphite-veil)" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>STYLE BOOK</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>SHARE YOUR CANVAS</h2>
             <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "var(--silver)", marginTop: 12 }}>
               Tag us <a href="https://www.instagram.com/velvetwolfofficial?igsh=MWJ3Ym94OXgwcHZ4ag==" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "none", fontWeight: "bold" }}>@velvetwolf.in</a> on Instagram to get featured.
             </p>
@@ -726,10 +798,10 @@ export default function HomePage() {
       </section>
 
       {/* NEWSLETTER SIGNUP */}
-      <section style={{ background: "var(--graphite)", padding: "100px 40px", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
+      <section style={{ background: "var(--graphite-veil)", padding: "100px 40px", borderTop: "1px solid var(--smoke)", borderBottom: "1px solid var(--smoke)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 8, color: "var(--gold)", marginBottom: 20 }}>JOIN THE PACK</div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 52, letterSpacing: 2, marginBottom: 16 }}>EXCLUSIVE DROPS</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2, marginBottom: 16 }}>EXCLUSIVE DROPS</h2>
           <p style={{ fontFamily: "'Roboto', sans-serif", fontSize: 15, color: "var(--silver)", lineHeight: 1.7, marginBottom: 36 }}>
             Subscribe to receive priority access to limited volume drops, restocks, and exclusive styling recommendations. No spam. Only noise-free utility.
           </p>
@@ -776,14 +848,14 @@ export default function HomePage() {
       <section className="promise-section" style={{ padding: "100px 40px", maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 16 }}>OUR PROMISE</div>
-          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
+          <h2 className="promise-h2" style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 56, letterSpacing: 3 }}>WHY VELVETWOLF</h2>
           <div className="divider" />
         </div>
         <div className="promise-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 40 }}>
           {[
             ["\u25c6", "Silent Luxury", "No logo. No noise. Just impeccable quality that speaks through fabric weight, stitch precision, and silhouette."],
             ["\u26a1", "Culture First Design", "Every drop is rooted in real youth culture, tech humor, anime, hustle, philosophy. Not trend-chasing."],
-            ["\u2726", "India's Finest", "220 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
+            ["\u2726", "India's Finest", "240 GSM Egyptian cotton. Hand-finished details. Made by master craftspeople in Tirupur, Tamil Nadu."],
           ].map(([icon, title, desc]) => (
             <div key={title} style={{ padding: "40px 32px", border: "1px solid var(--smoke)", position: "relative" }}>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 40, color: "var(--gold)", marginBottom: 20 }}>{icon}</div>

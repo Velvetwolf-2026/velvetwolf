@@ -1,7 +1,6 @@
 import { useContext } from "react";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
-import { useBreakpoint } from "../utils/breakpoints";
 import { HeroHeader } from "../styles/shared";
 
 function QuantityButton({ children, onClick }) {
@@ -12,8 +11,8 @@ function QuantityButton({ children, onClick }) {
         background: "transparent",
         border: "1px solid var(--smoke)",
         color: "var(--ash)",
-        width: 34,
-        height: 34,
+        width: 44,
+        height: 44,
         cursor: "pointer",
         fontFamily: "var(--font-mono)",
         fontSize: 14,
@@ -26,9 +25,8 @@ function QuantityButton({ children, onClick }) {
 
 function CartItemCard({ item, onQtyChange, onRemove }) {
   const { t } = useLanguage();
-  const { isMobile } = useBreakpoint();
   return (
-    <div className="vw-cart-item" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr auto", gap: 20 }}>
+    <div className="vw-cart-item vw-cart-item-grid" style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px" }}>
       <div>
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 4vw, 26px)", letterSpacing: 1, marginBottom: 6 }}>
           {item.name}
@@ -48,6 +46,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
               border: "1px solid var(--smoke)",
               color: "var(--silver)",
               padding: "8px 12px",
+              minHeight: 44,
               cursor: "pointer",
               fontFamily: "var(--font-mono)",
               fontSize: 9,
@@ -58,7 +57,7 @@ function CartItemCard({ item, onQtyChange, onRemove }) {
           </button>
         </div>
       </div>
-      <div style={{ textAlign: isMobile ? "left" : "right", display: "flex", flexDirection: isMobile ? "row" : "column", justifyContent: "space-between", gap: isMobile ? 8 : 0, alignItems: isMobile ? "center" : "initial" }}>
+      <div className="vw-cart-item-price">
         <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px, 4vw, 28px)", color: "var(--gold)" }}>
           ₹{(Number(item.price) * Number(item.qty)).toLocaleString()}
         </div>

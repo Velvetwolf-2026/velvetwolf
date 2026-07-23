@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router";
 import { AppContext } from "../pages/AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
 import { useLanguage } from "../pages/LanguageContext";
@@ -60,7 +60,10 @@ export default function Navbar({ activePage }) {
   };
 
   const displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "";
-  const greetingName = displayName ? displayName.split(" ")[0] : "";
+  let greetingName = displayName ? displayName.split(" ")[0] : "";
+  if (greetingName === "Mobile" && /^\d+$/.test(displayName.split(" ")[1] || "")) {
+    greetingName = displayName.split(" ")[1];
+  }
 
   // Non-bulk nav links
   const regularLinks = [
@@ -410,7 +413,7 @@ export default function Navbar({ activePage }) {
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gold)", letterSpacing: 3, marginBottom: 6 }}>THE TIRUPUR WEAVE</div>
                               <h4 style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--ivory)", letterSpacing: 1, margin: "0 0 10px 0" }}>HEAVYWEIGHT LUXURY</h4>
                               <p style={{ fontFamily: "var(--font-serif)", fontSize: 12, color: "var(--silver)", lineHeight: 1.7, margin: 0, maxWidth: 340 }}>
-                                Every piece crafted from premium 220 GSM combed cotton. Cut, stitched, and hand-finished in Tirupur, India. The weight speaks for itself.
+                                Every piece crafted from premium 240 GSM combed cotton. Cut, stitched, and hand-finished in Tirupur, India. The weight speaks for itself.
                               </p>
                             </div>
                             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(10,10,10,0.96) 0%, rgba(10,10,10,0.4) 60%, rgba(10,10,10,0.2) 100%)", zIndex: 1 }} />
@@ -419,7 +422,7 @@ export default function Navbar({ activePage }) {
                           <div style={{ marginTop: 16, display: "flex", gap: 16 }}>
                             <div style={{ flex: 1, padding: "12px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--gold)", letterSpacing: 2, marginBottom: 2 }}>FABRIC</div>
-                              <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--ivory)" }}>220 GSM Cotton</div>
+                              <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--ivory)" }}>240 GSM Cotton</div>
                             </div>
                             <div style={{ flex: 1, padding: "12px 16px", background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)" }}>
                               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--gold)", letterSpacing: 2, marginBottom: 2 }}>ORIGIN</div>
@@ -492,7 +495,7 @@ export default function Navbar({ activePage }) {
                   width: 8, height: 8,
                   borderRadius: "50%",
                   background: "var(--gold)",
-                  animation: "vw-badge-pulse 2s ease-in-out infinite",
+                  //animation: "vw-badge-pulse 2s ease-in-out infinite",
                   border: "1px solid var(--obsidian)",
                 }} />
               </button>

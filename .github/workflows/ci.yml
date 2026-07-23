@@ -26,8 +26,16 @@ jobs:
     - name: Run Linter
       run: npm run lint
 
-    - name: Run Unit Tests
-      run: npm run test
+    - name: Run Unit Tests With Coverage
+      run: npm run test:coverage
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: coverage/
+        retention-days: 14
 
     - name: Verify Production Build
       run: npm run build

@@ -330,7 +330,7 @@ export function ForgetPassword() {
                     <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>NEW PASSWORD</label>
                     <div style={{ position: "relative" }}>
                       <input className="input-dark" type={showNew ? "text" : "password"} placeholder="Min. 8 characters" value={passwords.new} onChange={(e) => { setPasswords((p) => ({ ...p, new: e.target.value })); setError(""); }} style={{ paddingRight: 44 }} autoComplete="new-password" disabled={loading} />
-                      <button type="button" onClick={() => setShowNew((v) => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}><EyeIcon visible={showNew} /></button>
+                      <button type="button" onClick={() => setShowNew((v) => !v)} style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}><EyeIcon visible={showNew} /></button>
                     </div>
                     {passwords.new && (
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 7 }}>
@@ -345,7 +345,7 @@ export function ForgetPassword() {
                     <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>CONFIRM NEW PASSWORD</label>
                     <div style={{ position: "relative" }}>
                       <input className="input-dark" type={showConfirm ? "text" : "password"} placeholder="Repeat new password" value={passwords.confirm} onChange={(e) => { setPasswords((p) => ({ ...p, confirm: e.target.value })); setError(""); }} style={{ paddingRight: 44, borderColor: pwNoMatch ? "rgba(192,57,43,0.5)" : undefined }} autoComplete="new-password" disabled={loading} />
-                      <button type="button" onClick={() => setShowConfirm((v) => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}><EyeIcon visible={showConfirm} /></button>
+                      <button type="button" onClick={() => setShowConfirm((v) => !v)} style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}><EyeIcon visible={showConfirm} /></button>
                     </div>
                     {pwNoMatch && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#e07070", marginTop: 5 }}>Passwords do not match</p>}
                     {pwMatch && <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#5db87a", marginTop: 5 }}> Passwords match</p>}

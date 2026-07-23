@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { AppContext } from "./AppContext";
 import Icon from "../components/Icon";
 import { HeroHeader } from "../styles/shared";
+import { useBreakpoint } from "../utils/breakpoints";
 
 const FONT_OPTIONS = [
   { value: "Montserrat", label: "Montserrat (Clean Modern)" },
@@ -12,8 +13,8 @@ const FONT_OPTIONS = [
 ];
 
 const FABRICS = [
-  { id: "220gsm", name: "220 GSM Egyptian Long-Staple Cotton", surcharge: 0 },
-  { id: "240gsm", name: "240 GSM Ultra Heavyweight Fleece", surcharge: 200 },
+  { id: "240gsm", name: "240 GSM Egyptian Long-Staple Cotton", surcharge: 0 },
+  { id: "240gsm-fleece", name: "240 GSM Ultra Heavyweight Fleece", surcharge: 200 },
   { id: "180gsm", name: "180 GSM Everyday Jersey Cotton", surcharge: 0 },
   { id: "bamboo", name: "Bamboo Organic Luxury Blend", surcharge: 400 }
 ];
@@ -30,6 +31,7 @@ const COLORS = [
 
 export default function CustomDesignPage() {
   const { addToCart, showToast, setPage } = useContext(AppContext);
+  const { isMobileOrTablet, isMobile } = useBreakpoint();
 
   // Layout states
   const [activeTab, setActiveTab] = useState("base"); // base, graphics, text, embroidery
@@ -37,7 +39,7 @@ export default function CustomDesignPage() {
 
   // Customization choices
   const [baseColor, setBaseColor] = useState("#0a0a0a");
-  const [fabric, setFabric] = useState("220gsm");
+  const [fabric, setFabric] = useState("240gsm");
   const [size, setSize] = useState("M");
   const [qty, setQty] = useState(1);
   const [specialNote, setSpecialNote] = useState("");
@@ -97,7 +99,7 @@ export default function CustomDesignPage() {
       collection: "custom",
       price: itemPrice,
       originalPrice: itemPrice + 500,
-      image: frontImage || logoFile || "/mockup_silent.png",
+      image: frontImage || logoFile || "/mockup_silent.webp",
       sizes: [size],
       colors: [baseColor],
       description: `Custom heavy garment with tailored specs. Fabric: ${fabric}, Color: ${baseColor}, Size: ${size}. Note: ${specialNote || "None"}`,
@@ -144,20 +146,20 @@ export default function CustomDesignPage() {
         sub="Forge your design. Upload graphics, apply text, select embroidery, and inspect the live preview."
       />
 
-      <div className="page-content-pad" style={{ maxWidth: 1400, margin: "40px auto", padding: "0 40px" }}>
-        
+      <div className="page-content-pad" style={{ maxWidth: 1400, margin: "40px auto", padding: isMobile ? "0 16px" : "0 40px" }}>
+
         {/* Customizer Layout Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 50, alignItems: "start" }}>
-          
+        <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1.2fr 1fr", gap: isMobile ? 28 : 50, alignItems: "start" }}>
+
           {/* LEFT: Live Preview Studio Canvas */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 100 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: isMobileOrTablet ? "static" : "sticky", top: 100 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", letterSpacing: 2 }}>
                 LIVE PREVIEW: <span style={{ color: "var(--ivory)" }}>{activeView.toUpperCase()} VIEW</span>
               </div>
-              
+
               {/* View Selector Controls */}
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {["front", "back", "left-sleeve", "right-sleeve"].map(v => (
                   <button
                     key={v}
@@ -184,7 +186,7 @@ export default function CustomDesignPage() {
             <div style={{
               background: "var(--graphite)",
               border: "1px solid var(--smoke)",
-              height: 520,
+              height: isMobile ? 380 : 520,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -379,11 +381,11 @@ export default function CustomDesignPage() {
           </div>
 
           {/* RIGHT: Lab Controls Panel */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 36 }}>
+          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: isMobile ? 20 : 36 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 32 }}>DESIGN CENTER</h2>
             
             {/* Config Category Tabs */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 32, borderBottom: "1px solid var(--smoke)", paddingBottom: 10 }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 32, borderBottom: "1px solid var(--smoke)", paddingBottom: 10, flexWrap: "wrap" }}>
               {[
                 { id: "base", label: "BASE" },
                 { id: "graphics", label: "GRAPHICS" },

@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
 import Navbar from "../components/Navbar";
@@ -52,7 +52,18 @@ export function Login() {
   const query = new URLSearchParams(location.search);
   const redirect = query.get("redirect");
 
-  const [step, setStep] = useState("identifier"); // identifier, password, register_email, otp, mobile_name
+  const [searchParams, setSearchParams] = useSearchParams();
+  const step = searchParams.get("step") || "identifier";
+  const setStep = (newStep) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("step", newStep);
+        return next;
+      }
+    );
+  };
+
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -71,6 +82,40 @@ export function Login() {
   const [pendingToken, setPendingToken] = useState(null);
   const [pendingUserObject, setPendingUserObject] = useState(null);
   const [confirmationResult, setConfirmationResult] = useState(null);
+
+  useEffect(() => {
+    setError("");
+    setInfoMessage("");
+  }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.error("Error clearing recaptcha verifier on unmount:", e);
+        }
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, []);
+
+  const initRecaptcha = () => {
+    if (window.recaptchaVerifier) {
+      return window.recaptchaVerifier;
+    }
+    const container = document.getElementById("recaptcha-container");
+    if (container) {
+      container.innerHTML = "";
+    }
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      "size": "invisible",
+      "callback": () => {},
+      "expired-callback": () => {},
+    });
+    return window.recaptchaVerifier;
+  };
 
   useEffect(() => {
     if (user) {
@@ -182,6 +227,8 @@ export function Login() {
       return "Phone verification is temporarily unavailable. Please try again in a moment.";
     }
     if (code === "auth/quota-exceeded") return "SMS quota exceeded. Please try again later.";
+    if (code === "auth/invalid-verification-code") return "The OTP entered is incorrect. Please try again.";
+    if (code === "auth/code-expired") return "The OTP has expired. Please request a new code.";
     return err?.message || "An error occurred. Please try again.";
   };
 
@@ -214,7 +261,7 @@ export function Login() {
       return;
     }
 
-    const isEmail = input.includes("@");
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
     const isMobile = /^[6-9]\d{9}$/.test(input);
 
     if (!isEmail && !isMobile) {
@@ -248,22 +295,8 @@ export function Login() {
         // Firebase Phone Auth integration
         const phoneNumber = `+91${input}`;
 
-        if (window.recaptchaVerifier) {
-          try {
-            window.recaptchaVerifier.clear();
-          } catch (err) {
-            console.error("Error clearing existing recaptcha verifier:", err);
-          }
-          window.recaptchaVerifier = null;
-        }
-
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => { },
-          'expired-callback': () => { }
-        });
-
-        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        const verifier = initRecaptcha();
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
         setConfirmationResult(confirmation);
 
         setStep("otp");
@@ -499,7 +532,7 @@ export function Login() {
         }
       }
     } catch (err) {
-      setError(err.message || "Verification failed.");
+      setError(formatAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -521,22 +554,8 @@ export function Login() {
         const mobileNumber = resolvedEmail.split("@")[0];
         const phoneNumber = `+91${mobileNumber}`;
 
-        if (window.recaptchaVerifier) {
-          try {
-            window.recaptchaVerifier.clear();
-          } catch (e) {
-            console.error("Error clearing recaptcha verifier:", e);
-          }
-          window.recaptchaVerifier = null;
-        }
-
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          'size': 'invisible',
-          'callback': () => { },
-          'expired-callback': () => { }
-        });
-
-        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+        const verifier = initRecaptcha();
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
         setConfirmationResult(confirmation);
         showToast("New OTP code sent ✓");
         startResendTimer();
@@ -753,7 +772,7 @@ export function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
                       >
                         <EyeIcon visible={showPw} />
                       </button>
@@ -831,7 +850,7 @@ export function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center" }}
+                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
                       >
                         <EyeIcon visible={showPw} />
                       </button>

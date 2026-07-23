@@ -68,6 +68,17 @@ export async function updateProfile(userId, updates) {
     throw new ApiError(400, error.message || "Failed to update profile.");
   }
 
+  if (updates.fullName) {
+    const { error: userError } = await supabaseAdmin
+      .from("users")
+      .update({ name: updates.fullName })
+      .eq("id", normalizedUserId);
+
+    if (userError) {
+      logWarn("Users table name update failed", profileLogContext({ userId: normalizedUserId, error: userError }));
+    }
+  }
+
   return data;
 }
 
@@ -122,17 +133,17 @@ export async function sendEmailUpdateOtp({ userId, newEmail }) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes expiry
   const type = "Change-Email-OTP";
 
-  // Clean up any existing OTPs of this type for the same email
-  await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail).eq("type", type);
+  // Clean up any existing OTPs of this type for the same user
+  await supabaseAdmin.from("otps").delete().eq("email", currentUser.email).like("type", "Change-Email-OTP:%");
 
   // Insert new OTP
   const { error: insertError } = await supabaseAdmin
     .from("otps")
     .insert({
-      email: normalizedEmail,
+      email: currentUser.email,
       otp,
       expires_at: expiresAt,
-      type
+      type: `Change-Email-OTP:${normalizedEmail}`
     });
 
   if (insertError) {
@@ -154,7 +165,7 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
 
   const normalizedEmail = String(newEmail || "").toLowerCase().trim();
   const otpNumber = Number.parseInt(otp, 10);
-  const type = "Change-Email-OTP";
+  const type = `Change-Email-OTP:${normalizedEmail}`;
 
   if (!normalizedEmail || !otp) {
     throw new ApiError(400, "Email and OTP code are required.");
@@ -169,11 +180,22 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
   const isBypassOtp = otp === "123456" && isLocal;
 
   if (!isBypassOtp) {
+    // Fetch current user email to look up the OTP
+    const { data: currentUser, error: currentUserError } = await supabaseAdmin
+      .from("users")
+      .select("email")
+      .eq("id", normalizedUserId)
+      .single();
+
+    if (currentUserError || !currentUser) {
+      throw new ApiError(404, "User not found.");
+    }
+
     // Lookup OTP
     const { data: otpRecord, error: otpError } = await supabaseAdmin
       .from("otps")
       .select("*")
-      .eq("email", normalizedEmail)
+      .eq("email", currentUser.email)
       .eq("type", type)
       .gte("expires_at", new Date().toISOString())
       .maybeSingle();

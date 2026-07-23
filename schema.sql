@@ -237,8 +237,51 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow service role all audit_logs" ON public.audit_logs;
 CREATE POLICY "Allow service role all audit_logs" ON public.audit_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
 
--- Helper RPC for Rate Limiting attempts
-CREATE OR REPLACE FUNCTION public.increment_rate_limit(p_key TEXT)
+-- Rate limiting RPCs.
+-- Fixes a bug in the previous increment_rate_limit(): it only ever
+-- incremented attempts and never reset first_at, so once a key's window
+-- elapsed, checkRateLimit()'s "window expired" branch would return early
+-- forever, permanently disabling enforcement for that key. The gate below
+-- owns resetting the window; record_rate_attempt only increments within it.
+DROP FUNCTION IF EXISTS public.increment_rate_limit(TEXT);
+
+CREATE OR REPLACE FUNCTION public.check_rate_limit_gate(
+    p_key TEXT,
+    p_max INT,
+    p_window_seconds INT,
+    p_block_seconds INT DEFAULT 1800
+)
+RETURNS TABLE(blocked BOOLEAN, retry_after_seconds INT) AS $$
+DECLARE
+    v_row public.rate_limits;
+    v_now TIMESTAMPTZ := now();
+BEGIN
+    SELECT * INTO v_row FROM public.rate_limits WHERE key = p_key FOR UPDATE;
+
+    IF v_row.key IS NOT NULL AND v_row.blocked_until IS NOT NULL AND v_row.blocked_until > v_now THEN
+        RETURN QUERY SELECT TRUE, CEIL(EXTRACT(EPOCH FROM (v_row.blocked_until - v_now)))::INT;
+        RETURN;
+    END IF;
+
+    IF v_row.key IS NULL OR v_row.first_at < v_now - (p_window_seconds || ' seconds')::INTERVAL THEN
+        INSERT INTO public.rate_limits (key, attempts, first_at, blocked_until)
+        VALUES (p_key, 0, v_now, NULL)
+        ON CONFLICT (key) DO UPDATE SET attempts = 0, first_at = v_now, blocked_until = NULL;
+        RETURN QUERY SELECT FALSE, 0;
+        RETURN;
+    END IF;
+
+    IF v_row.attempts >= p_max THEN
+        UPDATE public.rate_limits SET blocked_until = v_now + (p_block_seconds || ' seconds')::INTERVAL WHERE key = p_key;
+        RETURN QUERY SELECT TRUE, p_block_seconds;
+        RETURN;
+    END IF;
+
+    RETURN QUERY SELECT FALSE, 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.record_rate_attempt(p_key TEXT)
 RETURNS VOID AS $$
 BEGIN
     INSERT INTO public.rate_limits (key, attempts, first_at)

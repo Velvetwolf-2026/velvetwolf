@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useBreakpoint } from "../utils/breakpoints";
 
 export default function CinematicParallaxReveal({ activeIndex }) {
   const containerRef = useRef(null);
@@ -7,6 +8,9 @@ export default function CinematicParallaxReveal({ activeIndex }) {
   const [isExiting, setIsExiting] = useState(false);
   const [autoPos, setAutoPos] = useState({ x: 0, y: 0 });
   const autoTime = useRef(0);
+  const { isMobile, isTablet } = useBreakpoint();
+  const scale = isMobile ? 0.62 : isTablet ? 0.82 : 1;
+  const s = (v) => v * scale;
 
   useEffect(() => {
     if (!isHovered) {
@@ -52,6 +56,21 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     setMouse({ x: 0, y: 0 });
   };
 
+  const handleTouchMove = (e) => {
+    if (!containerRef.current || !e.touches[0]) return;
+    const touch = e.touches[0];
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(-0.5, Math.min(0.5, (touch.clientX - rect.left) / rect.width - 0.5));
+    const y = Math.max(-0.5, Math.min(0.5, (touch.clientY - rect.top) / rect.height - 0.5));
+    setMouse({ x, y });
+    if (!isHovered) setIsHovered(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsHovered(false);
+    setMouse({ x: 0, y: 0 });
+  };
+
   // Determine active coordinates (cursor or auto-drift)
   const activeX = isHovered ? mouse.x : autoPos.x;
   const activeY = isHovered ? mouse.y : autoPos.y;
@@ -60,7 +79,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "silent",
       name: "Silent Luxury",
-      image: "/mockup_silent.png",
+      image: "/mockup_silent.webp",
       tag: "SILENT LUXURY",
       bgText: "SILENCE",
       color: "var(--pearl)",
@@ -69,7 +88,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "beast",
       name: "Beast Mode",
-      image: "/mockup_beast.png",
+      image: "/mockup_beast.webp",
       tag: "BEAST MODE ON",
       bgText: "BEAST",
       color: "var(--gold)",
@@ -78,7 +97,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
     {
       id: "founder",
       name: "Founder's Mindset",
-      image: "/mockup_founder.png",
+      image: "/mockup_founder.webp",
       tag: "FOUNDER'S MINDSET",
       bgText: "FOUNDER",
       color: "var(--silver)",
@@ -94,9 +113,12 @@ export default function CinematicParallaxReveal({ activeIndex }) {
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchMove}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       style={{
         width: "100%",
-        height: "500px",
+        height: isMobile ? "400px" : "500px",
         position: "relative",
         display: "flex",
         justifyContent: "center",
@@ -105,8 +127,9 @@ export default function CinematicParallaxReveal({ activeIndex }) {
         border: "1px solid rgba(201, 168, 76, 0.1)",
         borderRadius: "24px",
         background: "radial-gradient(circle at center, #111111 0%, #060606 100%)",
-        cursor: "crosshair",
+        cursor: "grab",
         userSelect: "none",
+        touchAction: "none",
       }}
     >
       {/* 1. Background Grid Layer (Parallax Inverted) */}
@@ -182,8 +205,9 @@ export default function CinematicParallaxReveal({ activeIndex }) {
       <div
         style={{
           position: "relative",
-          width: "360px",
-          height: "440px",
+          width: `${s(360)}px`,
+          height: `${s(440)}px`,
+          maxWidth: "92%",
           zIndex: 5,
           display: "flex",
           justifyContent: "center",
@@ -194,14 +218,14 @@ export default function CinematicParallaxReveal({ activeIndex }) {
         <div
           style={{
             position: "absolute",
-            width: "220px",
-            height: "220px",
+            width: `${s(220)}px`,
+            height: `${s(220)}px`,
             borderRadius: "50%",
             backgroundColor: current.shadow,
             filter: "blur(60px)",
             opacity: 0.6,
-            left: `calc(50% + ${activeX * 120}px)`,
-            top: `calc(50% + ${activeY * 120}px)`,
+            left: `calc(50% + ${activeX * s(120)}px)`,
+            top: `calc(50% + ${activeY * s(120)}px)`,
             transform: "translate(-50%, -50%)",
             transition: isExiting ? "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 1,
@@ -213,13 +237,13 @@ export default function CinematicParallaxReveal({ activeIndex }) {
         <div
           style={{
             position: "absolute",
-            width: "250px",
-            height: "250px",
+            width: `${s(250)}px`,
+            height: `${s(250)}px`,
             borderRadius: "50%",
             border: `1.5px solid ${current.color}`,
             boxShadow: `0 0 30px ${current.shadow}, inset 0 0 20px rgba(0,0,0,0.8)`,
-            left: `calc(50% + ${activeX * 200}px)`,
-            top: `calc(50% + ${activeY * 200}px)`,
+            left: `calc(50% + ${activeX * s(200)}px)`,
+            top: `calc(50% + ${activeY * s(200)}px)`,
             transform: "translate(-50%, -50%)",
             transition: isExiting ? "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 10,
@@ -236,7 +260,7 @@ export default function CinematicParallaxReveal({ activeIndex }) {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            clipPath: `circle(125px at calc(50% + ${activeX * 200}px) calc(50% + ${activeY * 200}px))`,
+            clipPath: `circle(${s(125)}px at calc(50% + ${activeX * s(200)}px) calc(50% + ${activeY * s(200)}px))`,
             transition: isExiting ? "clip-path 0.8s cubic-bezier(0.25, 1, 0.5, 1)" : "none",
             zIndex: 8,
           }}

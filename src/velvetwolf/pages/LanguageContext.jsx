@@ -1,4 +1,4 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 
 const LanguageContext = createContext();
 
@@ -243,9 +243,13 @@ const translations = {
 };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState(() => {
-    return localStorage.getItem("vw_language") || "en";
-  });
+  const [language, setLanguageState] = useState("en");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("vw_language");
+    if (saved && saved !== language) setLanguageState(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setLanguage = (lang) => {
     if (translations[lang]) {

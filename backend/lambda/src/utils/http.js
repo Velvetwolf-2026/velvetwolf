@@ -104,6 +104,18 @@ export function redirectResponse(location, statusCode = 302, extraHeaders = {}, 
   return response;
 }
 
+export function getClientIp(event) {
+  // requestContext.sourceIp comes from API Gateway's own view of the TCP
+  // connection, so it can't be spoofed by a client the way an X-Forwarded-For
+  // header can — prefer it, and only fall back to XFF for the local dev
+  // server, which has no API Gateway in front of it.
+  const sourceIp = event?.requestContext?.http?.sourceIp;
+  if (sourceIp) return sourceIp;
+  const forwardedFor = event?.headers?.["x-forwarded-for"] || event?.headers?.["X-Forwarded-For"];
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return "";
+}
+
 export const getCorsHeaders = (event) => {
   const requestOrigin = event?.headers?.origin || event?.headers?.Origin || "";
 

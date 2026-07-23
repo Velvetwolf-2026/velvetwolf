@@ -13,6 +13,16 @@ const OTP_EXPIRES_MIN = 10;
 const MAX_OTP_ATTEMPTS = 5;
 const RESEND_MAX = 3;
 const RESEND_WINDOW_SECS = 3600;
+const RATE_LIMIT_BLOCK_SECS = 1800;
+
+// Coarser per-IP caps layered on top of the per-identifier ones above — these
+// catch an attacker rotating through many different emails/phones from one
+// source, which a purely per-identifier limit never trips.
+const IP_LOGIN_MAX = 30;
+const IP_LOGIN_WINDOW_SECS = 900;
+const IP_SIGNUP_MAX = 15;
+const IP_OTP_MAX = 15;
+const IP_WINDOW_SECS = 3600;
 
 function getLinkSecret() { return `${process.env.JWT_SECRET}:link`; }
 function getResetSecret() { return `${process.env.JWT_SECRET}:reset`; }
@@ -78,28 +88,24 @@ export function generateCsrfToken() {
 async function checkRateLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_SECS) {
   logInfo("Checking rate limit", authLogContext({ key, max, windowSecs }));
 
-  const { data: record, error } = await supabaseAdmin.from("rate_limits").select("*").eq("key", key).single();
-  if (error && error.code !== "PGRST116") { logError("Rate limit lookup failed", authLogContext({ key, error })); throw new ApiError(400, error.message); }
+  const { data, error } = await supabaseAdmin.rpc("check_rate_limit_gate", {
+    p_key: key,
+    p_max: max,
+    p_window_seconds: windowSecs,
+    p_block_seconds: RATE_LIMIT_BLOCK_SECS,
+  });
+  if (error) { logError("Rate limit check failed", authLogContext({ key, error })); throw new ApiError(400, error.message); }
 
-  if (record?.blocked_until && new Date(record.blocked_until) > new Date()) {
-    const mins = Math.ceil((new Date(record.blocked_until) - Date.now()) / 60000);
-    logWarn("Rate limit currently blocked", authLogContext({ key, blockedUntil: record.blocked_until, mins }));
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row?.blocked) {
+    const mins = Math.max(1, Math.ceil(row.retry_after_seconds / 60));
+    logWarn("Rate limit currently blocked", authLogContext({ key, retryAfterSeconds: row.retry_after_seconds }));
     throw new ApiError(429, `Too many requests. Try again in ${mins} min.`);
-  }
-
-  const windowStart = new Date(Date.now() - windowSecs * 1000);
-  if (record && new Date(record.first_at) < windowStart) return;
-
-  if (record && record.attempts >= max) {
-    const blockedUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    await supabaseAdmin.from("rate_limits").update({ blocked_until: blockedUntil }).eq("key", key);
-    logWarn("Rate limit threshold reached", authLogContext({ key, attempts: record.attempts, max, blockedUntil }));
-    throw new ApiError(429, "Rate limited. Try again later.");
   }
 }
 
 async function recordRateAttempt(key) {
-  const { error } = await supabaseAdmin.rpc("increment_rate_limit", { p_key: key });
+  const { error } = await supabaseAdmin.rpc("record_rate_attempt", { p_key: key });
   if (error) { logError("Failed to record rate limit attempt", authLogContext({ key, error })); throw new ApiError(400, error.message); }
 }
 
@@ -247,7 +253,7 @@ export async function googleCallback({ code, state, error, errorDescription }) {
 }
 
 
-export async function signup({ name, email, password }) {
+export async function signup({ name, email, password }, ip) {
   const normalizedEmail = normalizeEmail(email);
   let userCreated = false;
 
@@ -255,6 +261,7 @@ export async function signup({ name, email, password }) {
 
   try {
     await checkRateLimit(`signup:${normalizedEmail}`);
+    if (ip) await checkRateLimit(`ip:signup:${ip}`, IP_SIGNUP_MAX, IP_WINDOW_SECS);
 
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users").select("id, is_verified").eq("email", normalizedEmail).single();
@@ -284,6 +291,7 @@ export async function signup({ name, email, password }) {
 
     await sendOTP(normalizedEmail, otp, "signup", buildVerifyUrl(normalizedEmail, otp, "signup"));
     await recordRateAttempt(`signup:${normalizedEmail}`);
+    if (ip) await recordRateAttempt(`ip:signup:${ip}`);
 
     logInfo("Signup completed", authLogContext({ email: normalizedEmail }));
     return { message: "OTP sent" };
@@ -297,19 +305,20 @@ export async function signup({ name, email, password }) {
   }
 }
 
-export async function login({ email, password }) {
+export async function login({ email, password }, ip) {
   const normalizedEmail = normalizeEmail(email);
   logInfo("Login requested", authLogContext({ email: normalizedEmail }));
 
   try {
     await checkRateLimit(`login:${normalizedEmail}`, 5, 900);
+    if (ip) await checkRateLimit(`ip:login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
 
     const { data: user, error: userError } = await supabaseAdmin
       .from("users").select("id, email, name, role, password_hash, last_login, is_verified, type")
       .eq("email", normalizedEmail).single();
 
     if (userError && userError.code !== "PGRST116") throw new ApiError(400, userError.message);
-    if (!user) { await recordRateAttempt(`login:${normalizedEmail}`); throw new ApiError(401, "User not registered. Please complete registration."); }
+    if (!user) { await recordRateAttempt(`login:${normalizedEmail}`); if (ip) await recordRateAttempt(`ip:login:${ip}`); throw new ApiError(401, "User not registered. Please complete registration."); }
     if (!user.is_verified) throw new ApiError(403, "Email not verified. Please complete your signup by verifying your email.");
 
     if (user.type === "Google") {
@@ -319,7 +328,7 @@ export async function login({ email, password }) {
     const isMobileEmail = normalizedEmail.endsWith("@mobile.velvetwolf.in");
     if (!isMobileEmail) {
       const isValidPassword = await bcrypt.compare(password, user.password_hash);
-      if (!isValidPassword) { await recordRateAttempt(`login:${normalizedEmail}`); throw new ApiError(401, "Incorrect email or password"); }
+      if (!isValidPassword) { await recordRateAttempt(`login:${normalizedEmail}`); if (ip) await recordRateAttempt(`ip:login:${ip}`); throw new ApiError(401, "Incorrect email or password"); }
 
       // Standard Email Login: return token immediately (No OTP)
       await supabaseAdmin.from("users").update({ last_login: new Date().toISOString() }).eq("id", user.id);
@@ -343,12 +352,13 @@ export async function login({ email, password }) {
   }
 }
 
-export async function resendOtp({ email, kind, type }) {
+export async function resendOtp({ email, kind, type }, ip) {
   const normalizedEmail = normalizeEmail(email);
   const otpKind = normalizeOtpKind(kind || type);
 
   try {
     await checkRateLimit(`resend:${normalizedEmail}`);
+    if (ip) await checkRateLimit(`ip:resend:${ip}`, IP_OTP_MAX, IP_WINDOW_SECS);
 
     const { data: user, error: userError } = await supabaseAdmin.from("users").select("id").eq("email", normalizedEmail).single();
     if (userError || !user) throw new ApiError(404, "User not registered. Please complete registration first.");
@@ -360,6 +370,7 @@ export async function resendOtp({ email, kind, type }) {
 
     await sendOTP(normalizedEmail, otp, otpKind, buildVerifyUrl(normalizedEmail, otp, otpKind));
     await recordRateAttempt(`resend:${normalizedEmail}`);
+    if (ip) await recordRateAttempt(`ip:resend:${ip}`);
 
     logInfo("Resend OTP completed", authLogContext({ email: normalizedEmail, otpKind }));
     return { message: "New OTP sent" };
@@ -369,11 +380,12 @@ export async function resendOtp({ email, kind, type }) {
   }
 }
 
-export async function forgotPassword({ email }) {
+export async function forgotPassword({ email }, ip) {
   const normalizedEmail = normalizeEmail(email);
 
   try {
     await checkRateLimit(`forgot:${normalizedEmail}`);
+    if (ip) await checkRateLimit(`ip:forgot:${ip}`, IP_OTP_MAX, IP_WINDOW_SECS);
 
     const { data: user, error: userError } = await supabaseAdmin.from("users").select("id").eq("email", normalizedEmail).single();
     if (userError || !user) throw new ApiError(404, "User not registered. Please complete the registration.");
@@ -385,6 +397,7 @@ export async function forgotPassword({ email }) {
 
     await sendOTP(normalizedEmail, otp, "forgot", buildVerifyUrl(normalizedEmail, otp, "forgot"));
     await recordRateAttempt(`forgot:${normalizedEmail}`);
+    if (ip) await recordRateAttempt(`ip:forgot:${ip}`);
 
     logInfo("Forgot password OTP sent", authLogContext({ email: normalizedEmail }));
     return { message: "Reset OTP sent" };
@@ -579,7 +592,13 @@ export async function verifyFirebaseIdToken(idToken) {
   }
 }
 
-export async function firebaseLogin({ identifier, phone, token }) {
+export async function firebaseLogin({ identifier, phone, token }, ip) {
+  // Firebase already verifies the token's signature, so this endpoint can't
+  // be brute-forced the way a password can — but it was completely
+  // unthrottled, so a flat per-IP cap still guards against hammering it with
+  // garbage/replayed tokens.
+  if (ip) await checkRateLimit(`ip:firebase-login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
+
   // 1. Verify the Firebase ID Token
   const payload = await verifyFirebaseIdToken(token);
   

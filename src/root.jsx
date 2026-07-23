@@ -1,104 +1,97 @@
-import { useState, useEffect, lazy, Suspense, useCallback } from "react";
-import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Meta,
+  Links,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useNavigate,
+  useLocation,
+} from "react-router";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
-const FAQPage = lazy(() => import("./velvetwolf/pages/FAQPage"));
-const Policy = lazy(() => import("./velvetwolf/pages/Policy"));
-const ShoppingPolicy = lazy(() => import("./velvetwolf/pages/ShoppingPolicy"));
-const ContactPage = lazy(() => import("./velvetwolf/pages/ContactPage"));
-const ReturnsPage = lazy(() => import("./velvetwolf/pages/ReturnsPage"));
-const SizeGuide = lazy(() => import("./velvetwolf/pages/SizeGuide"));
-const TermsPage = lazy(() => import("./velvetwolf/pages/TermsPage"));
-const TrackOrder = lazy(() => import("./velvetwolf/pages/TrackOrder"));
-const ForgetPassword = lazy(() => import("./velvetwolf/pages/ForgetPassword"));
-const Login = lazy(() => import("./velvetwolf/pages/Login"));
-const AccountPage = lazy(() => import("./velvetwolf/pages/AccountPage"));
-const CheckoutPage = lazy(() => import("./velvetwolf/pages/CheckoutPage"));
-const PaymentStatusPage = lazy(() => import("./velvetwolf/pages/PaymentStatusPage"));
-const CollectionsPage = lazy(() => import("./velvetwolf/pages/Collections"));
-
-const HomePage = lazy(() => import("./velvetwolf/pages/HomePage"));
-const ShopPage = lazy(() => import("./velvetwolf/pages/ShopPage"));
-const QuizPage = lazy(() => import("./velvetwolf/pages/QuizPage"));
-const CustomDesignPage = lazy(() => import("./velvetwolf/pages/CustomDesignPage"));
-const BulkOrderPage = lazy(() => import("./velvetwolf/pages/BulkOrderPage"));
-const BulkOrderSuccessPage = lazy(() => import("./velvetwolf/pages/BulkOrderSuccessPage"));
-const ProductDetailPage = lazy(() => import("./velvetwolf/pages/ProductDetailPage"));
-const CartPage = lazy(() => import("./velvetwolf/pages/CartPage"));
-const WishlistPage = lazy(() => import("./velvetwolf/pages/WishlistPage"));
 
 import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
 import { loadProductsFromAPI } from "./velvetwolf/utils/products";
 import { apiUrl } from "./velvetwolf/utils/api";
-import Navbar from "./velvetwolf/components/Navbar";
-import Footer from "./velvetwolf/components/Footer";
 import ProductModal from "./velvetwolf/components/ProductModal";
 import CartSidebar from "./velvetwolf/components/CartSidebar";
 import WishlistSidebar from "./velvetwolf/components/WishlistSidebar";
 import Toast from "./velvetwolf/components/Toast";
-import Icon from "./velvetwolf/components/Icon";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
+import SilkBackground from "./velvetwolf/components/SilkBackground";
+import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 
-// Admin layout lazy-loaded
-const AdminLayout = lazy(() => import("./velvetwolf/admin/AdminLayout"));
-
+import "./index.css";
 
 let productsLoadPromise = null;
 
-// Shared layout wrapper for rendering Navbar & Footer
-function Layout({ children }) {
-  const location = useLocation();
-
-  // Floating back button for all info/policy pages
-  const showBackButton = [
-    "/privacy-policy",
-    "/terms",
-    "/shipping-policy",
-    "/returns",
-    "/size-guide",
-    "/track-order",
-    "/faq",
-    "/contact"
-  ].includes(location.pathname);
-
+// The document shell. React Router's framework mode renders this around every
+// route on both the server and the client — this replaces index.html.
+export function Layout({ children }) {
   return (
-    <>
-      <Navbar activePage={location.pathname} />
-      {children}
-      {showBackButton && (
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            position: "fixed",
-            top: 80,
-            left: 24,
-            zIndex: 850,
-            background: "var(--graphite)",
-            border: "1px solid var(--smoke)",
-            color: "var(--ash)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: 2,
-            padding: "8px 16px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6
+    <html lang="en">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#0a0a0a" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Non-render-blocking font load: fetch as a plain resource, then
+            promote it to a stylesheet once loaded. The inline script (not a
+            React onLoad prop) is needed because it must exist as real HTML
+            before hydration — a JS-attached listener would miss the "already
+            loaded" case entirely. */}
+        <link
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          media="print"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap"
+          data-font-swap=""
+          suppressHydrationWarning
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var l=document.currentScript.previousElementSibling;function swap(){l.media="all";}if(l.sheet){swap();}else{l.addEventListener("load",swap);}})();`,
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--gold)"; e.currentTarget.style.color = "var(--gold)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--smoke)"; e.currentTarget.style.color = "var(--ash)"; }}
-        >
-          ← BACK
-        </button>
-      )}
-      <Footer onNavigate={() => { }} />
-    </>
+        />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Roboto:wght@400;500;700&display=swap"
+          />
+        </noscript>
+        <Meta />
+        <Links />
+      </head>
+      <body>
+        {children}
+        <ScrollRestoration />
+        <Scripts />
+        <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+      </body>
+    </html>
   );
 }
 
-export default function VelvetWolf() {
+export function ErrorBoundary() {
+  return (
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#ececea", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "sans-serif" }}>
+      <h1 style={{ margin: 0 }}>Something went wrong</h1>
+      <a href="/" style={{ color: "#c9a84c" }}>Return home</a>
+    </div>
+  );
+}
+
+export default function VelvetWolfRoot() {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -111,24 +104,25 @@ export default function VelvetWolf() {
 
   // Phase 2: PWA, Preferences & Notification Center states
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem("vw_notifications");
-    return saved ? JSON.parse(saved) : [
-      { id: "notif-1", title: "EXCLUSIVE RESTOCK", message: "Silent Luxury Tees in all sizes are back in stock.", category: "restock", time: "2 hours ago", unread: true },
-      { id: "notif-2", title: "PRICE DROP ALERT", message: "Mind Palace Tee is now at ₹1,999 (was ₹2,499).", category: "price-drop", time: "1 day ago", unread: false },
-      { id: "notif-3", title: "NEW DROP ACCESS", message: "AI Tech wear drops are now live for Wolf Pack members.", category: "new-drop", time: "2 days ago", unread: false }
-    ];
+  const [notifications, setNotifications] = useState([
+    { id: "notif-1", title: "EXCLUSIVE RESTOCK", message: "Silent Luxury Tees in all sizes are back in stock.", category: "restock", time: "2 hours ago", unread: true },
+    { id: "notif-2", title: "PRICE DROP ALERT", message: "Mind Palace Tee is now at ₹1,999 (was ₹2,499).", category: "price-drop", time: "1 day ago", unread: false },
+    { id: "notif-3", title: "NEW DROP ACCESS", message: "AI Tech wear drops are now live for Wolf Pack members.", category: "new-drop", time: "2 days ago", unread: false }
+  ]);
+  const [userPreferences, setUserPreferences] = useState({
+    sizes: [],
+    fits: [],
+    colors: [],
+    categories: []
   });
 
-  const [userPreferences, setUserPreferences] = useState(() => {
-    const saved = localStorage.getItem("vw_user_preferences");
-    return saved ? JSON.parse(saved) : {
-      sizes: [],
-      fits: [],
-      colors: [],
-      categories: []
-    };
-  });
+  // Hydrate localStorage-backed preferences after mount (unavailable during SSR)
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem("vw_notifications");
+    if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+    const savedPreferences = localStorage.getItem("vw_user_preferences");
+    if (savedPreferences) setUserPreferences(JSON.parse(savedPreferences));
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -184,6 +178,13 @@ export default function VelvetWolf() {
   const [searchQuery, setSearchQuery] = useState("");
   const [orders] = useState([]);
   const [customers] = useState([]);
+
+  // Automatically clear search query when navigating away from shop pages
+  useEffect(() => {
+    if (!location.pathname.startsWith("/shop")) {
+      setSearchQuery("");
+    }
+  }, [location.pathname]);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
@@ -583,90 +584,16 @@ export default function VelvetWolf() {
     };
   }, []);
 
-  // Admin access validation
-  const canAccessAdmin = Boolean(user?.isAdmin);
-  useEffect(() => {
-    if (location.pathname.startsWith("/admin") && !canAccessAdmin) {
-      if (!user) {
-        navigate("/login");
-        showToast("Please sign in with an admin account.", "info");
-      } else {
-        navigate("/account");
-        showToast("Admin access required.", "error");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, user, canAccessAdmin]);
-
   return (
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
+        {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
+        <SilkBackground />
+        <SmoothScroll />
+
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-        <Suspense fallback={
-          <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING VELVETWOLF...</div>
-          </div>
-        }>
-          <Routes>
-            {/* Admin chunk lazy-loaded */}
-            <Route
-              path="/admin/*"
-              element={
-                canAccessAdmin ? (
-                  <Suspense fallback={
-                    <div style={{ minHeight: "100vh", background: "var(--obsidian)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 4, color: "var(--gold)" }}>LOADING ADMIN...</div>
-                    </div>
-                  }>
-                    <AdminLayout Icon={Icon} />
-                  </Suspense>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-
-            {/* Standalone Auth Pages */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Login />} />
-            <Route path="/forget-password" element={<ForgetPassword />} />
-
-            {/* Pages wrapped with Header & Footer */}
-            <Route
-              path="*"
-              element={
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/quiz" element={<QuizPage />} />
-                    <Route path="/shop" element={<ShopPage />} />
-                    <Route path="/shop/:collection" element={<ShopPage />} />
-                    <Route path="/product/:slug" element={<ProductDetailPage />} />
-                    <Route path="/collections" element={<CollectionsPage />} />
-                    <Route path="/cart" element={<CartPage />} />
-                    <Route path="/wishlist" element={<WishlistPage />} />
-                    <Route path="/account" element={<AccountPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/payment-status" element={<PaymentStatusPage />} />
-                    <Route path="/custom" element={<CustomDesignPage />} />
-                    <Route path="/bulk" element={<BulkOrderPage />} />
-                    <Route path="/bulk/success" element={<BulkOrderSuccessPage />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/faq" element={<FAQPage />} />
-                    <Route path="/privacy-policy" element={<Policy />} />
-                    <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/shipping-policy" element={<ShoppingPolicy />} />
-                    <Route path="/returns" element={<ReturnsPage />} />
-                    <Route path="/size-guide" element={<SizeGuide />} />
-                    <Route path="/track-order" element={<TrackOrder />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Layout>
-              }
-            />
-          </Routes>
-        </Suspense>
+        <Outlet />
 
         {selectedProduct && <ProductModal key={selectedProduct.id} />}
         {cartOpen && <CartSidebar />}

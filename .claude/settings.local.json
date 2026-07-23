@@ -21,7 +21,11 @@
       "Bash(ls -la .env*)",
       "Bash(find . -maxdepth 2 -iname \".env*\" -not -path \"*/node_modules/*\")",
       "Skill(run)",
-      "Skill(run:*)"
+      "Skill(run:*)",
+      "WebFetch(domain:claude.ai)",
+      "Bash(git -C /v/Coding/velvetwolf status --short)",
+      "Bash(git -C /v/Coding/velvetwolf status --short .claude/)",
+      "Bash(git -C /v/Coding/velvetwolf check-ignore -v .claude/launch.json)"
     ]
   }
 }

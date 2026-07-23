@@ -2,6 +2,18 @@ import { useContext } from "react";
 import { AppContext } from "./AppContext";
 import { BROWSE_COLLECTIONS } from "../utils/collectionsData";
 
+export function meta() {
+  const title = "All Collections — VelvetWolf";
+  const description = "Every drop tells a story. Browse every VelvetWolf collection in one place.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+  ];
+}
+
 // ARROW ICON
 function ArrowIcon({ color = "currentColor", size = 12 }) {
   return (
