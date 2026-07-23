@@ -131,7 +131,6 @@ export async function sendEmailUpdateOtp({ userId, newEmail }) {
   // Generate 6-digit OTP
   const otp = crypto.randomInt(100000, 1000000);
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes expiry
-  const type = "Change-Email-OTP";
 
   // Clean up any existing OTPs of this type for the same user
   await supabaseAdmin.from("otps").delete().eq("email", currentUser.email).like("type", "Change-Email-OTP:%");
