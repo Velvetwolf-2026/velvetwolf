@@ -4,7 +4,7 @@
 // Dual-row marquee carousel with opposite direction
 // auto-scrolling brand logo tiles & glassmorphism.
 // ─────────────────────────────────────────────
-import { useState, useRef, useEffect, useCallback, useContext } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
 import { getSupabaseLogoUrl } from "../utils/supabase";
 
@@ -136,7 +136,7 @@ function getTransparentImageSrc(imgSrc, callback) {
       const transparentDataUrl = canvas.toDataURL("image/png");
       processedImageCache.set(imgSrc, transparentDataUrl);
       callback(transparentDataUrl);
-    } catch (e) {
+    } catch {
       processedImageCache.set(imgSrc, imgSrc);
       callback(imgSrc);
     }

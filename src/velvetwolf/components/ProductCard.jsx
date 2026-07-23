@@ -4,7 +4,6 @@ import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";
 import ProductImage from "./ProductImage";
 import { getCollectionById } from "../utils/collectionsData";
-import { useBreakpoint } from "../utils/breakpoints";
 import { TAG_COLORS } from "../utils/constants";
 
 export default function ProductCard({ product }) {
@@ -15,7 +14,6 @@ export default function ProductCard({ product }) {
   const discount = Math.round((1 - product.price / (product.originalPrice || product.price)) * 100);
   const defaultSize = product.sizes?.[0] || "M";
   const defaultColor = product.colors?.[0] || "Black";
-  const { isMobile } = useBreakpoint();
 
   const productUrl = `/product/${product.slug || product.id}`;
 

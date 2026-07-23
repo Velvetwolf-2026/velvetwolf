@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";
@@ -38,7 +38,7 @@ export function meta() {
 export default function HomePage() {
   const { products: ctxProducts, openShop, user, showToast } = useContext(AppContext);
   const loaderData = useLoaderData();
-  const products = ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []);
+  const products = useMemo(() => ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []), [ctxProducts, loaderData]);
   const navigate = useNavigate();
   const { isMobileOrTablet } = useBreakpoint();
 
