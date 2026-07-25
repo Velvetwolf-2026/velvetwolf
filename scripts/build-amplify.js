@@ -19,6 +19,12 @@ async function buildAmplify() {
   fs.mkdirSync(computeDir, { recursive: true });
   fs.mkdirSync(staticDir, { recursive: true });
 
+  // Create package.json in compute directory so AWS Lambda treats index.js as ES Module
+  fs.writeFileSync(
+    path.join(computeDir, 'package.json'),
+    JSON.stringify({ type: "module" }, null, 2)
+  );
+
   // 2. Copy static client assets to .amplify-hosting/static
   const clientBuildDir = path.join(rootDir, 'build', 'client');
   if (fs.existsSync(clientBuildDir)) {
