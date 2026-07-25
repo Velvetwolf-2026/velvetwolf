@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "react-router dev",
     "build": "react-router build",
+    "build:amplify": "react-router build && node scripts/build-amplify.js",
     "start": "react-router-serve ./build/server/index.js",
     "lint": "eslint .",
     "test": "vitest run",
