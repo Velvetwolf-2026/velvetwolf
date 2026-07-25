@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Link } from "react-router";
 import { AppContext } from "../pages/AppContext";
 import Icon from "./Icon";

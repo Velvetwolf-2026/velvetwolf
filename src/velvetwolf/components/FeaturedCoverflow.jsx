@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import Icon from "./Icon";
 import { useBreakpoint } from "../utils/breakpoints";

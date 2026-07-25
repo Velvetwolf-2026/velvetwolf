@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { AppContext } from "./AppContext";
 import Icon from "../components/Icon";
 import { HeroHeader } from "../styles/shared";

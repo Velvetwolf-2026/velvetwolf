@@ -1,4 +1,3 @@
-import React from "react";
 
 const iconMapping = {
   wolf: { name: "wolf", style: "ios-filled" },

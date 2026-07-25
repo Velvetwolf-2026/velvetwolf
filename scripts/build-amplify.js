@@ -113,6 +113,7 @@ export default handler;
       js: 'import { createRequire as __esbuild_createRequire } from "module"; const require = __esbuild_createRequire(import.meta.url);',
     },
     external: ['fsevents', 'sharp', 'bcrypt', 'pg'],
+    ignoreAnnotations: true,
     minify: false,
     sourcemap: false,
   });

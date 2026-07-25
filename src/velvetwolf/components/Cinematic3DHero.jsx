@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useContext } from "react";
+import { useEffect, useRef, useContext } from "react";
 import * as THREE from "three";
 import { AppContext } from "../pages/AppContext";
 import { useBreakpoint } from "../utils/breakpoints";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { Reflector } from "three/examples/jsm/objects/Reflector.js";
 
 export default function Cinematic3DHero() {
   const { openShop } = useContext(AppContext);
