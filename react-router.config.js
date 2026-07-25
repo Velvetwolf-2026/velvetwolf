@@ -3,3 +3,4 @@ export default {
   ssr: true,
   appDirectory: "src",
 };
+
