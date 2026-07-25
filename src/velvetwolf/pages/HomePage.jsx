@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef, useMemo } from "react";
+import { useContext, useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import FeaturedCoverflow from "../components/FeaturedCoverflow";

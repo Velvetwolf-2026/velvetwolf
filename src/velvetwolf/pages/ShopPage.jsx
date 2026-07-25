@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
 import { useParams, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";

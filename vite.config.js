@@ -9,6 +9,13 @@ export default defineConfig({
     // duplicate module instances caused by barrel re-exports or circular deps.
     dedupe: ['react', 'react-dom'],
   },
+  build: {
+    rollupOptions: {
+      treeshake: {
+        moduleSideEffects: (id, external) => !external,
+      },
+    },
+  },
   server: {
     host: '127.0.0.1'
   }
