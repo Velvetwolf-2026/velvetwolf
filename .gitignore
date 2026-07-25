@@ -54,3 +54,4 @@ backend/lambda/.env
 
 backend/lambda/.env
 backend/lambda/function.zip
+/.claude

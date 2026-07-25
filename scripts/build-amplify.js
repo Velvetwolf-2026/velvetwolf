@@ -42,21 +42,61 @@ import * as build from "./index.js";
 
 const handleRequest = createRequestHandler(build);
 
+function getHeaderValue(headersObj, keyName) {
+  if (!headersObj) return null;
+  const val = headersObj[keyName] || headersObj[keyName.toLowerCase()] || headersObj[keyName.toUpperCase()];
+  if (!val) return null;
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) {
+    if (typeof val[0] === "string") return val[0];
+    if (val[0] && typeof val[0] === "object" && val[0].value) return val[0].value;
+  }
+  return String(val);
+}
+
 export async function handler(event, context) {
   try {
-    const host = event.headers?.host || event.headers?.Host || "localhost";
-    const rawPath = event.rawPath || event.path || "/";
-    const rawQueryString = event.rawQueryString || "";
-    
-    const urlString = \`https://\${host}\${rawPath}\${rawQueryString ? "?" + rawQueryString : ""}\`;
+    let rawPath = event.rawPath || event.path || "/";
+    if (!rawPath && event.Records?.[0]?.cf?.request?.uri) {
+      rawPath = event.Records[0].cf.request.uri;
+    }
+
+    let rawQueryString = event.rawQueryString || "";
+    if (!rawQueryString && event.queryStringParameters) {
+      rawQueryString = new URLSearchParams(event.queryStringParameters).toString();
+    }
+
+    const host = getHeaderValue(event.headers, "x-forwarded-host") ||
+                 getHeaderValue(event.headers, "host") ||
+                 "velvetwolf.in";
+
+    const cleanPath = rawPath.startsWith("/") ? rawPath : "/" + rawPath;
+    const urlString = \`https://\${host}\${cleanPath}\${rawQueryString ? "?" + rawQueryString : ""}\`;
     const url = new URL(urlString);
 
     const method = event.requestContext?.http?.method || event.httpMethod || "GET";
 
-    const headers = new Headers();
+    const requestHeaders = new Headers();
     if (event.headers) {
-      for (const [key, value] of Object.entries(event.headers)) {
-        if (value) headers.set(key, value);
+      for (const [key, val] of Object.entries(event.headers)) {
+        if (val === undefined || val === null) continue;
+        let strVal = "";
+        if (typeof val === "string") {
+          strVal = val;
+        } else if (Array.isArray(val)) {
+          strVal = val.map(v => (typeof v === "object" && v?.value) ? v.value : String(v)).join(", ");
+        } else if (typeof val === "object" && val.value) {
+          strVal = val.value;
+        } else {
+          strVal = String(val);
+        }
+        if (strVal && strVal !== "[object Object]") {
+          try {
+            requestHeaders.set(key.toLowerCase(), strVal);
+          } catch (e) {
+            // ignore header formatting errors
+          }
+        }
       }
     }
 
@@ -69,30 +109,48 @@ export async function handler(event, context) {
 
     const request = new Request(url.href, {
       method,
-      headers,
+      headers: requestHeaders,
       body: ["GET", "HEAD"].includes(method) ? undefined : body,
     });
 
     const response = await handleRequest(request);
 
     const responseHeaders = {};
+    const cookies = [];
+
     response.headers.forEach((val, key) => {
-      responseHeaders[key] = val;
+      const lowerKey = key.toLowerCase();
+      if (["transfer-encoding", "connection", "keep-alive"].includes(lowerKey)) {
+        return;
+      }
+      if (lowerKey === "set-cookie") {
+        cookies.push(val);
+      } else {
+        responseHeaders[key] = val;
+      }
     });
 
     const responseBody = await response.text();
 
-    return {
+    const resultPayload = {
       statusCode: response.status,
       headers: responseHeaders,
       body: responseBody,
+      isBase64Encoded: false,
     };
+
+    if (cookies.length > 0) {
+      resultPayload.cookies = cookies;
+    }
+
+    return resultPayload;
   } catch (error) {
     console.error("AWS Amplify SSR Error:", error);
     return {
       statusCode: 500,
       headers: { "Content-Type": "text/html" },
       body: "<h1>500 - Internal Server Error</h1><pre>" + (error.stack || error.message || error) + "</pre>",
+      isBase64Encoded: false,
     };
   }
 }
