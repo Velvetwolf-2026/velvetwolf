@@ -126,7 +126,7 @@ export async function handler(event, context) {
 
     response.headers.forEach((val, key) => {
       const lowerKey = key.toLowerCase();
-      if (["transfer-encoding", "connection", "keep-alive"].includes(lowerKey)) {
+      if (["transfer-encoding", "connection", "keep-alive", "content-encoding", "content-length"].includes(lowerKey)) {
         return;
       }
       if (lowerKey === "set-cookie") {
