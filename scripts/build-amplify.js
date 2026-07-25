@@ -29,7 +29,7 @@ async function buildAmplify() {
     process.exit(1);
   }
 
-  // 3. Create temporary entry file for bundling the compute server
+  // 3. Create temporary entry file for bundling the compute server for AWS Lambda
   const serverBuildFile = path.join(rootDir, 'build', 'server', 'index.js');
   if (!fs.existsSync(serverBuildFile)) {
     console.error('Error: build/server/index.js does not exist.');
@@ -37,20 +37,66 @@ async function buildAmplify() {
   }
 
   const tmpEntryFile = path.join(rootDir, 'build', 'server', 'amplify-server-entry.js');
-  const serverEntryContent = `import http from 'node:http';
-import { createRequestHandler } from "react-router";
+  const serverEntryContent = `import { createRequestHandler } from "react-router";
 import * as build from "./index.js";
 
-const handler = createRequestHandler(build);
-const port = process.env.PORT || 3000;
+const handleRequest = createRequestHandler(build);
 
-const server = http.createServer((req, res) => {
-  handler(req, res);
-});
+export async function handler(event, context) {
+  try {
+    const host = event.headers?.host || event.headers?.Host || "localhost";
+    const rawPath = event.rawPath || event.path || "/";
+    const rawQueryString = event.rawQueryString || "";
+    
+    const urlString = \`https://\${host}\${rawPath}\${rawQueryString ? "?" + rawQueryString : ""}\`;
+    const url = new URL(urlString);
 
-server.listen(port, () => {
-  console.log("Amplify SSR server running on port " + port);
-});
+    const method = event.requestContext?.http?.method || event.httpMethod || "GET";
+
+    const headers = new Headers();
+    if (event.headers) {
+      for (const [key, value] of Object.entries(event.headers)) {
+        if (value) headers.set(key, value);
+      }
+    }
+
+    let body = undefined;
+    if (event.body) {
+      body = event.isBase64Encoded
+        ? Buffer.from(event.body, "base64").toString("utf-8")
+        : event.body;
+    }
+
+    const request = new Request(url.href, {
+      method,
+      headers,
+      body: ["GET", "HEAD"].includes(method) ? undefined : body,
+    });
+
+    const response = await handleRequest(request);
+
+    const responseHeaders = {};
+    response.headers.forEach((val, key) => {
+      responseHeaders[key] = val;
+    });
+
+    const responseBody = await response.text();
+
+    return {
+      statusCode: response.status,
+      headers: responseHeaders,
+      body: responseBody,
+    };
+  } catch (error) {
+    console.error("AWS Amplify SSR Error:", error);
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "text/html" },
+      body: "<h1>500 - Internal Server Error</h1><pre>" + (error.stack || error.message || error) + "</pre>",
+    };
+  }
+}
+export default handler;
 `;
   fs.writeFileSync(tmpEntryFile, serverEntryContent);
 
