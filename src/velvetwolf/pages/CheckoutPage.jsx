@@ -574,7 +574,7 @@ export default function CheckoutPage() {
                       }
                     `}</style>
                     <lottie-player
-                      src="/shopping cart.json"
+                      src="/shopping-cart.json"
                       background="transparent"
                       speed="1"
                       style={{

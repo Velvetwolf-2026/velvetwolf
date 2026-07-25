@@ -193,12 +193,24 @@ export default handler;
   // Route every top-level file actually present in build/client statically,
   // instead of a hardcoded list — otherwise assets like sw.js or manifest.json
   // silently fall through to the (much slower, crashable) Compute route.
-  const staticRoutes = fs.readdirSync(staticDir, { withFileTypes: true }).map((entry) => ({
-    path: entry.isDirectory() ? `/${entry.name}/*` : `/${entry.name}`,
-    target: {
-      kind: "Static"
+  // Amplify's manifest schema only allows a fixed character set in route
+  // paths, so filenames with spaces/parens etc. are skipped rather than
+  // breaking deploy-manifest validation for the whole deploy.
+  const VALID_ROUTE_PATH = /^[A-Za-z0-9_\-.*$/~"'@:+\\]+$/;
+  const staticRoutes = [];
+  for (const entry of fs.readdirSync(staticDir, { withFileTypes: true })) {
+    const routePath = entry.isDirectory() ? `/${entry.name}/*` : `/${entry.name}`;
+    if (!VALID_ROUTE_PATH.test(routePath)) {
+      console.warn(`⚠ Skipping static route for "${entry.name}" — filename has characters not allowed in deploy-manifest.json route paths.`);
+      continue;
     }
-  }));
+    staticRoutes.push({
+      path: routePath,
+      target: {
+        kind: "Static"
+      }
+    });
+  }
 
   const manifest = {
     version: 1,
