@@ -190,6 +190,16 @@ export default handler;
   console.log('✓ Bundled SSR server to .amplify-hosting/compute/default/index.js');
 
   // 5. Create deploy-manifest.json for AWS Amplify SSR
+  // Route every top-level file actually present in build/client statically,
+  // instead of a hardcoded list — otherwise assets like sw.js or manifest.json
+  // silently fall through to the (much slower, crashable) Compute route.
+  const staticRoutes = fs.readdirSync(staticDir, { withFileTypes: true }).map((entry) => ({
+    path: entry.isDirectory() ? `/${entry.name}/*` : `/${entry.name}`,
+    target: {
+      kind: "Static"
+    }
+  }));
+
   const manifest = {
     version: 1,
     framework: {
@@ -197,24 +207,7 @@ export default handler;
       version: "8.2.0"
     },
     routes: [
-      {
-        path: "/assets/*",
-        target: {
-          kind: "Static"
-        }
-      },
-      {
-        path: "/favicon.ico",
-        target: {
-          kind: "Static"
-        }
-      },
-      {
-        path: "/logo.png",
-        target: {
-          kind: "Static"
-        }
-      },
+      ...staticRoutes,
       {
         path: "/*",
         target: {
