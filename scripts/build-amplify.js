@@ -176,7 +176,11 @@ export default handler;
     banner: {
       js: 'import { createRequire as __esbuild_createRequire } from "module"; const require = __esbuild_createRequire(import.meta.url);',
     },
-    external: ['fsevents', 'sharp', 'bcrypt', 'pg'],
+    // three.js is only reachable through Cinematic3DHero's client-only lazy()
+    // boundary (see ClientOnly3DHero.jsx) — it's never evaluated during SSR,
+    // but esbuild has no way to know that and was inlining all ~734kB of it
+    // into this bundle anyway, adding ~9.8s of pure V8 parse time per cold start.
+    external: ['fsevents', 'sharp', 'bcrypt', 'pg', 'three', 'three/*'],
     ignoreAnnotations: true,
     minify: false,
     sourcemap: false,
