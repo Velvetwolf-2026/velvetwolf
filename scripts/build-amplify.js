@@ -166,9 +166,20 @@ export default handler;
 
   // 4. Bundle compute server entrypoint using esbuild into .amplify-hosting/compute/default/index.js
   console.log('Bundling SSR compute server with esbuild...');
+  // Cinematic3DHero (and the ~734kB of three.js it pulls in) is only reached
+  // through a client-only lazy() boundary — see ClientOnly3DHero.jsx — and is
+  // never evaluated during SSR. Without code splitting, esbuild collapses that
+  // dynamic import() into the same file as everything else, which forces
+  // Node's ESM loader to eagerly resolve every top-level static import in the
+  // bundle (including three's) up front — costing ~9.8s of pure V8 parse time
+  // per cold start, or crashing outright if three is marked external instead.
+  // splitting:true keeps it as a real separate chunk that's only loaded if the
+  // dynamic import() actually fires, which it never does server-side.
   await esbuild({
     entryPoints: [tmpEntryFile],
-    outfile: path.join(computeDir, 'index.js'),
+    outdir: computeDir,
+    entryNames: 'index',
+    splitting: true,
     bundle: true,
     platform: 'node',
     target: 'node20',
@@ -176,11 +187,7 @@ export default handler;
     banner: {
       js: 'import { createRequire as __esbuild_createRequire } from "module"; const require = __esbuild_createRequire(import.meta.url);',
     },
-    // three.js is only reachable through Cinematic3DHero's client-only lazy()
-    // boundary (see ClientOnly3DHero.jsx) — it's never evaluated during SSR,
-    // but esbuild has no way to know that and was inlining all ~734kB of it
-    // into this bundle anyway, adding ~9.8s of pure V8 parse time per cold start.
-    external: ['fsevents', 'sharp', 'bcrypt', 'pg', 'three', 'three/*'],
+    external: ['fsevents', 'sharp', 'bcrypt', 'pg'],
     ignoreAnnotations: true,
     minify: false,
     sourcemap: false,
