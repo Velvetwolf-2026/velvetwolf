@@ -20,6 +20,3 @@ Required keys:
 - `SECRET_KEY`
 - `EMAIL_FROM`
 - `FRONTEND_URL`
-
-
-Z###
