@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'build']),
+  globalIgnores(['dist', 'build', 'coverage', '.amplify-hosting']),
   {
     files: ['src/**/*.{js,jsx}'],
     extends: [
@@ -31,6 +31,12 @@ export default defineConfig([
       'react-refresh/only-export-components': ['warn', {
         allowExportNames: ['loader', 'action', 'meta', 'links', 'headers', 'shouldRevalidate', 'handle', 'ErrorBoundary', 'HydrateFallback'],
       }],
+    },
+  },
+  {
+    files: ['src/tests/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
     },
   },
   {

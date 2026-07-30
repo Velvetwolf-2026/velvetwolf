@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
-import { getCollectionById } from "../utils/collectionsData";
+import { getCollectionById, INITIAL_COLLECTION_PRODUCTS } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
 import { useBreakpoint } from "../utils/breakpoints";
 import ProductCard from "../components/ProductCard";
