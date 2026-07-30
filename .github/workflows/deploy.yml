@@ -1,0 +1,52 @@
+name: Build and Push Container Image
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  id-token: write   # required for OIDC federation to AWS
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: velvetwolf-web
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg VITE_API_BASE_URL="${{ secrets.VITE_API_BASE_URL }}" \
+            --build-arg VITE_FIREBASE_API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}" \
+            --build-arg VITE_FIREBASE_APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}" \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" \
+            --build-arg VITE_FIREBASE_PROJECT_ID="${{ secrets.VITE_FIREBASE_PROJECT_ID }}" \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET="${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" \
+            --build-arg VITE_RECAPTCHA_SITEKEY="${{ secrets.VITE_RECAPTCHA_SITEKEY }}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            --build-arg VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
+            -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            -t "$REGISTRY/$ECR_REPOSITORY:latest" \
+            .
+          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$ECR_REPOSITORY:latest"

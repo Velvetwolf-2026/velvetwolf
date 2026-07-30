@@ -1,0 +1,9 @@
+node_modules
+build
+.amplify-hosting
+coverage
+.git
+.env
+.env.local
+backend
+*.log
