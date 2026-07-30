@@ -126,7 +126,7 @@ export async function handler(event, context) {
 
     response.headers.forEach((val, key) => {
       const lowerKey = key.toLowerCase();
-      if (["transfer-encoding", "connection", "keep-alive"].includes(lowerKey)) {
+      if (["transfer-encoding", "connection", "keep-alive", "content-encoding", "content-length"].includes(lowerKey)) {
         return;
       }
       if (lowerKey === "set-cookie") {
@@ -166,9 +166,20 @@ export default handler;
 
   // 4. Bundle compute server entrypoint using esbuild into .amplify-hosting/compute/default/index.js
   console.log('Bundling SSR compute server with esbuild...');
+  // Cinematic3DHero (and the ~734kB of three.js it pulls in) is only reached
+  // through a client-only lazy() boundary — see ClientOnly3DHero.jsx — and is
+  // never evaluated during SSR. Without code splitting, esbuild collapses that
+  // dynamic import() into the same file as everything else, which forces
+  // Node's ESM loader to eagerly resolve every top-level static import in the
+  // bundle (including three's) up front — costing ~9.8s of pure V8 parse time
+  // per cold start, or crashing outright if three is marked external instead.
+  // splitting:true keeps it as a real separate chunk that's only loaded if the
+  // dynamic import() actually fires, which it never does server-side.
   await esbuild({
     entryPoints: [tmpEntryFile],
-    outfile: path.join(computeDir, 'index.js'),
+    outdir: computeDir,
+    entryNames: 'index',
+    splitting: true,
     bundle: true,
     platform: 'node',
     target: 'node20',
@@ -190,6 +201,28 @@ export default handler;
   console.log('✓ Bundled SSR server to .amplify-hosting/compute/default/index.js');
 
   // 5. Create deploy-manifest.json for AWS Amplify SSR
+  // Route every top-level file actually present in build/client statically,
+  // instead of a hardcoded list — otherwise assets like sw.js or manifest.json
+  // silently fall through to the (much slower, crashable) Compute route.
+  // Amplify's manifest schema only allows a fixed character set in route
+  // paths, so filenames with spaces/parens etc. are skipped rather than
+  // breaking deploy-manifest validation for the whole deploy.
+  const VALID_ROUTE_PATH = /^[A-Za-z0-9_\-.*$/~"'@:+\\]+$/;
+  const staticRoutes = [];
+  for (const entry of fs.readdirSync(staticDir, { withFileTypes: true })) {
+    const routePath = entry.isDirectory() ? `/${entry.name}/*` : `/${entry.name}`;
+    if (!VALID_ROUTE_PATH.test(routePath)) {
+      console.warn(`⚠ Skipping static route for "${entry.name}" — filename has characters not allowed in deploy-manifest.json route paths.`);
+      continue;
+    }
+    staticRoutes.push({
+      path: routePath,
+      target: {
+        kind: "Static"
+      }
+    });
+  }
+
   const manifest = {
     version: 1,
     framework: {
@@ -197,24 +230,7 @@ export default handler;
       version: "8.2.0"
     },
     routes: [
-      {
-        path: "/assets/*",
-        target: {
-          kind: "Static"
-        }
-      },
-      {
-        path: "/favicon.ico",
-        target: {
-          kind: "Static"
-        }
-      },
-      {
-        path: "/logo.png",
-        target: {
-          kind: "Static"
-        }
-      },
+      ...staticRoutes,
       {
         path: "/*",
         target: {

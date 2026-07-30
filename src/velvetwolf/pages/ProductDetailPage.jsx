@@ -50,12 +50,22 @@ const COLOR_MAP = {
 // shell — this is what makes them indexable and gives share links a real card.
 export async function loader({ params }) {
   try {
-    const res = await fetch(`${apiUrl("/products")}/${params.slug}`);
-    if (!res.ok) return { product: null };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    const res = await fetch(`${apiUrl("/products")}/${params.slug}`, {
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
+
+    if (!res.ok) {
+      const fallback = INITIAL_COLLECTION_PRODUCTS.find(p => p.id === params.slug || p.name.toLowerCase().replace(/\s+/g, '-') === params.slug);
+      return { product: fallback || null };
+    }
     const data = await res.json();
     return { product: data.product || null };
   } catch {
-    return { product: null };
+    const fallback = INITIAL_COLLECTION_PRODUCTS.find(p => p.id === params.slug || p.name.toLowerCase().replace(/\s+/g, '-') === params.slug);
+    return { product: fallback || null };
   }
 }
 

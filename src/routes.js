@@ -34,4 +34,5 @@ export default [
 
   route("sitemap.xml", "./routes/sitemap-xml.jsx"),
   route("robots.txt", "./routes/robots-txt.jsx"),
+  route("healthz", "./routes/healthz.jsx"),
 ];
