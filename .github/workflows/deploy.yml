@@ -9,7 +9,10 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1
+  # Frontend container runs in Mumbai (closer to velvetwolf.in's actual user
+  # base) even though the backend Lambda/API Gateway stays in us-east-1 —
+  # server-side API calls during SSR take the cross-region latency hit instead.
+  AWS_REGION: ap-south-1
   LIGHTSAIL_SERVICE: velvetwolf-web
   CONTAINER_LABEL: web
 
