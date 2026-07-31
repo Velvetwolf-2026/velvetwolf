@@ -1,4 +1,4 @@
-name: Build and Push Container Image
+name: Build and Deploy to Lightsail
 
 on:
   push:
@@ -10,10 +10,11 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: velvetwolf-web
+  LIGHTSAIL_SERVICE: velvetwolf-web
+  CONTAINER_LABEL: web
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,13 +26,15 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+      # `aws lightsail push-container-image` shells out to this plugin binary —
+      # it's not bundled with the AWS CLI, so it has to be installed separately.
+      - name: Install lightsailctl plugin
+        run: |
+          curl -sSL "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o /usr/local/bin/lightsailctl
+          chmod +x /usr/local/bin/lightsailctl
 
-      - name: Build and push image
+      - name: Build image
         env:
-          REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
@@ -45,8 +48,34 @@ jobs:
             --build-arg VITE_RECAPTCHA_SITEKEY="${{ secrets.VITE_RECAPTCHA_SITEKEY }}" \
             --build-arg VITE_SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
             --build-arg VITE_SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
-            -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
-            -t "$REGISTRY/$ECR_REPOSITORY:latest" \
+            -t "velvetwolf-web:$IMAGE_TAG" \
             .
-          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker push "$REGISTRY/$ECR_REPOSITORY:latest"
+
+      # Lightsail keeps its own private per-service image registry — this pushes
+      # into it directly (no ECR involved) and prints a reference like
+      # ":velvetwolf-web.web.7" that the deployment step below needs.
+      - name: Push image to Lightsail
+        id: push
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          OUTPUT=$(aws lightsail push-container-image \
+            --region "$AWS_REGION" \
+            --service-name "$LIGHTSAIL_SERVICE" \
+            --label "$CONTAINER_LABEL" \
+            --image "velvetwolf-web:$IMAGE_TAG")
+          echo "$OUTPUT"
+          REF=$(echo "$OUTPUT" | grep -oE ":${LIGHTSAIL_SERVICE}\.${CONTAINER_LABEL}\.[0-9]+" | tail -1)
+          if [ -z "$REF" ]; then
+            echo "Could not parse pushed image reference from lightsailctl output" >&2
+            exit 1
+          fi
+          echo "image_ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Lightsail container service
+        run: |
+          aws lightsail create-container-service-deployment \
+            --region "$AWS_REGION" \
+            --service-name "$LIGHTSAIL_SERVICE" \
+            --containers "{\"app\":{\"image\":\"${{ steps.push.outputs.image_ref }}\",\"ports\":{\"80\":\"HTTP\"}}}" \
+            --public-endpoint "{\"containerName\":\"app\",\"containerPort\":80,\"healthCheck\":{\"path\":\"/healthz\",\"healthyThreshold\":2,\"unhealthyThreshold\":2,\"timeoutSeconds\":5,\"intervalSeconds\":10,\"successCodes\":\"200\"}}"
