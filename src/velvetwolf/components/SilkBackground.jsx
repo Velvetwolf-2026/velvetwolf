@@ -201,7 +201,7 @@ export default function SilkBackground() {
           cancelAnimationFrame(raf);
         } else if (!prefersReduce && !running) {
           running = true;
-          clock.getDelta(); // discard the large hidden-tab delta
+          lastTime = performance.now(); // reset time to discard large hidden-tab delta
           raf = requestAnimationFrame(tick);
         }
       };
