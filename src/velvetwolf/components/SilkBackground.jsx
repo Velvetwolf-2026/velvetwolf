@@ -120,7 +120,7 @@ export default function SilkBackground() {
         canvas.remove();
         return;
       }
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
       renderer.setClearColor(0x0a0a0a, 1); // matches --obsidian
 
       const scene = new THREE.Scene();
@@ -129,8 +129,8 @@ export default function SilkBackground() {
 
       const geo = new THREE.PlaneGeometry(
         22, 14,
-        isMobile ? 110 : 200,
-        isMobile ? 76 : 140
+        isMobile ? 40 : 80,
+        isMobile ? 30 : 60
       );
       const uniforms = {
         uTime: { value: 0 },
@@ -201,7 +201,7 @@ export default function SilkBackground() {
           cancelAnimationFrame(raf);
         } else if (!prefersReduce && !running) {
           running = true;
-          clock.getDelta(); // discard the large hidden-tab delta
+          lastTime = performance.now(); // reset time to discard large hidden-tab delta
           raf = requestAnimationFrame(tick);
         }
       };

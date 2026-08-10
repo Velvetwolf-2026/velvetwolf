@@ -40,12 +40,15 @@ export default function SmoothScroll() {
       while (el && el !== document.body && el !== root) {
         if (el.nodeType === 1) {
           if (el.hasAttribute("data-native-scroll")) return true;
-          const style = window.getComputedStyle(el);
-          const oy = style.overflowY;
-          if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1) {
-            const up = deltaY < 0 && el.scrollTop > 0;
-            const down = deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1;
-            if (up || down) return true;
+          // Only query computed style if element actually has vertical scrollable height
+          if (el.scrollHeight > el.clientHeight + 1) {
+            const style = window.getComputedStyle(el);
+            const oy = style.overflowY;
+            if (oy === "auto" || oy === "scroll") {
+              const up = deltaY < 0 && el.scrollTop > 0;
+              const down = deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+              if (up || down) return true;
+            }
           }
         }
         el = el.parentNode;
