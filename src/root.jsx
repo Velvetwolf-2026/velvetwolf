@@ -26,6 +26,16 @@ import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 
 import "./index.css";
 
+// Chrome's default Cross-Origin-Opener-Policy blocks Firebase's popup-based
+// Google sign-in from closing its own popup after success — the resulting
+// stuck cleanup loop is what caused the runaway request storm during login.
+// Opting out here lets Firebase manage its own popup lifecycle normally.
+export function headers() {
+  return {
+    "Cross-Origin-Opener-Policy": "unsafe-none",
+  };
+}
+
 let productsLoadPromise = null;
 
 // The document shell. React Router's framework mode renders this around every
