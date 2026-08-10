@@ -81,7 +81,7 @@ export default function Cinematic3DHero() {
       powerPreference: "high-performance"
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -100,8 +100,8 @@ export default function Cinematic3DHero() {
     const goldSpot = new THREE.SpotLight(0xffffff, 1.2, 30, Math.PI / 4, 0.5, 1);
     goldSpot.position.set(4, 6, 4);
     goldSpot.castShadow = true;
-    goldSpot.shadow.mapSize.width = 2048;
-    goldSpot.shadow.mapSize.height = 2048;
+    goldSpot.shadow.mapSize.width = 1024;
+    goldSpot.shadow.mapSize.height = 1024;
     goldSpot.shadow.bias = -0.0005;
     scene.add(goldSpot);
 
@@ -380,10 +380,20 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
 
     let animationFrameId;
     const startTime = performance.now() * 0.001;
-
     const targetColor = new THREE.Color(activeColorRef.current.hex);
 
+    let isVisible = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      const becameVisible = entry.isIntersecting && !isVisible;
+      isVisible = entry.isIntersecting;
+      if (becameVisible) {
+        animate();
+      }
+    }, { threshold: 0.05 });
+    if (canvas3dRef.current) observer.observe(canvas3dRef.current);
+
     const animate = () => {
+      if (!isVisible) return;
       animationFrameId = requestAnimationFrame(animate);
 
       const elapsedTime = (performance.now() * 0.001) - startTime;
@@ -453,20 +463,24 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
     // Window Resize Handling
     // ----------------------------------------------------
     const handleResize = () => {
-      if (!canvas3dRef.current) return;
+      if (!canvas3dRef.current || !canvas3dRef.current.parentElement) return;
       const w = canvas3dRef.current.parentElement.clientWidth;
       const h = canvas3dRef.current.parentElement.clientHeight;
+      if (w === 0 || h === 0) return;
 
       camera.aspect = w / h;
+      camera.position.z = w < 600 ? 8.8 : 7.5;
       camera.updateProjectionMatrix();
 
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
     };
+    handleResize();
 
     window.addEventListener("resize", handleResize);
 
     // Cleanup
     return () => {
+      observer.disconnect();
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
@@ -480,7 +494,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
   return (
     <section
       style={{
-        background: "rgba(13, 13, 13, 0.6)",
+        background: "transparent",
         color: "#FAF9F6",
         minHeight: "100vh",
         display: "flex",
@@ -498,7 +512,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           right: "10%",
           width: "600px",
           height: "600px",
-          background: "radial-gradient(circle, rgba(201, 162, 77, 0.06) 0%, rgba(0,0,0,0) 70%)",
+          background: "radial-gradient(circle, rgba(201, 162, 77, 0.08) 0%, rgba(0,0,0,0) 70%)",
           pointerEvents: "none",
           zIndex: 1
         }}
@@ -510,41 +524,29 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           left: "5%",
           width: "400px",
           height: "400px",
-          background: "radial-gradient(circle, rgba(201, 162, 77, 0.04) 0%, rgba(0,0,0,0) 75%)",
+          background: "radial-gradient(circle, rgba(201, 162, 77, 0.06) 0%, rgba(0,0,0,0) 75%)",
           pointerEvents: "none",
           zIndex: 1
         }}
       />
-      {/* Desktop Grid Lines Background */}
-      {!isMobileOrTablet && <div className="vw-hero-grid-bg" />}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "-5%",
-          left: "5%",
-          width: "400px",
-          height: "400px",
-          background: "radial-gradient(circle, rgba(201, 162, 77, 0.03) 0%, rgba(0,0,0,0) 75%)",
-          pointerEvents: "none",
-          zIndex: 1
-        }}
-      />
+      {/* Grid Lines Background */}
+      <div className="vw-hero-grid-bg" />
 
       <div
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          padding: isMobileOrTablet ? "100px 20px 60px" : "120px 40px 70px 40px",
+          padding: isMobileOrTablet ? "90px 20px 50px" : "120px 40px 70px 40px",
           width: "100%",
           zIndex: 2,
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: isMobileOrTablet ? "40px" : "24px"
+          gap: isMobileOrTablet ? "30px" : "24px"
         }}
       >
         {/* LEFT COLUMN: HERO CONTENT */}
-        <div style={{ flex: isMobileOrTablet ? "1 1 500px" : "1 1 440px", zIndex: 3 }}>
+        <div style={{ flex: isMobileOrTablet ? "1 1 100%" : "1 1 440px", zIndex: 3 }}>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -561,7 +563,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: isMobileOrTablet ? "clamp(40px, 8vw, 64px)" : "clamp(56px, 5.5vw, 96px)",
+              fontSize: isMobileOrTablet ? "clamp(38px, 9vw, 60px)" : "clamp(56px, 5.5vw, 96px)",
               lineHeight: 1.0,
               letterSpacing: isMobileOrTablet ? -1 : 2,
               marginBottom: 28,
@@ -651,7 +653,7 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           </div>
         </div>
 
-        {/* RIGHT COLUMN: INTERACTIVE 3D MODEL SHOWCASE */}
+        {/* RIGHT COLUMN: INTERACTIVE 3D MODEL SHOWCASE (ENABLED ON ALL DEVICES) */}
         <div
           ref={containerRef}
           onPointerDown={handlePointerDown}
@@ -660,8 +662,9 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
           onPointerLeave={handlePointerUp}
           onWheel={handleWheel}
           style={{
-            flex: isMobileOrTablet ? "1 1 500px" : "1 1 540px",
-            height: isMobileOrTablet ? "500px" : "640px",
+            flex: isMobileOrTablet ? "1 1 100%" : "1 1 540px",
+            height: isMobileOrTablet ? "420px" : "640px",
+            width: "100%",
             position: "relative",
             display: "flex",
             justifyContent: "center",
@@ -670,37 +673,17 @@ uniform float uBackEnabled; uniform sampler2D uBackTex; uniform vec2 uBackCenter
             touchAction: "none"
           }}
         >
-          {isMobileOrTablet ? (
-            <img
-              src="/mockup_founder.webp"
-              alt="VelvetWolf tee"
-              loading="eager"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                zIndex: 2,
-                borderRadius: 12
-              }}
-            />
-          ) : (
-            <canvas
-              ref={canvas3dRef}
-              style={{
-                width: "100%",
-                height: "100%",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                zIndex: 2
-              }}
-            />
-          )}
-
-
+          <canvas
+            ref={canvas3dRef}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              zIndex: 2
+            }}
+          />
         </div>
       </div>
       {/* Scroll indicator (Desktop only) */}
