@@ -57,3 +57,4 @@ backend/lambda/function.zip
 /.claude
 
 
+.claude/settings.json

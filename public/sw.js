@@ -39,11 +39,15 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
 
-  // Skip caching for API calls, Supabase DB operations, or Cashfree requests
+  // Skip caching for API calls, React Router manifests, Supabase DB operations, Firebase, or Cashfree requests
   if (
     requestUrl.pathname.includes("/api/") ||
+    requestUrl.pathname.includes("_manifest") ||
     requestUrl.href.includes("supabase.co") ||
-    requestUrl.href.includes("cashfree.com")
+    requestUrl.href.includes("cashfree.com") ||
+    requestUrl.href.includes("googleapis.com") ||
+    requestUrl.href.includes("firebase") ||
+    requestUrl.href.includes("identitytoolkit")
   ) {
     return;
   }

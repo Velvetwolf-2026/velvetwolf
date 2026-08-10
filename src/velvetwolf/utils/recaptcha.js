@@ -14,11 +14,15 @@ export function loadRecaptcha() {
     }
     
     if (scriptLoaded) {
-      // Already loading or loaded, poll for readiness
+      // Already loading or loaded, poll for readiness with a 10s timeout
+      const startTime = Date.now();
       const check = setInterval(() => {
         if (window.grecaptcha && window.grecaptcha.execute) {
           clearInterval(check);
           resolve(window.grecaptcha);
+        } else if (Date.now() - startTime > 10000) {
+          clearInterval(check);
+          reject(new Error("reCAPTCHA script load timed out."));
         }
       }, 100);
       return;

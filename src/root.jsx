@@ -32,7 +32,7 @@ import "./index.css";
 // Opting out here lets Firebase manage its own popup lifecycle normally.
 export function headers() {
   return {
-    "Cross-Origin-Opener-Policy": "unsafe-none",
+    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
   };
 }
 

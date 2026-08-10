@@ -168,7 +168,7 @@ export default function SilkBackground() {
       };
       window.addEventListener("pointermove", onMove, { passive: true });
 
-      const clock = new THREE.Clock();
+      let lastTime = performance.now();
 
       const renderFrame = () => {
         uniforms.uScroll.value = scroll * 0.0012;
@@ -185,7 +185,9 @@ export default function SilkBackground() {
 
       const tick = () => {
         if (!running) return;
-        const dt = Math.min(clock.getDelta(), 0.05);
+        const now = performance.now();
+        const dt = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
         uniforms.uTime.value += dt * 0.55;
         renderFrame();
         raf = requestAnimationFrame(tick);
