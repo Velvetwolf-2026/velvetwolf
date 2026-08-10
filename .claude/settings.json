@@ -91,7 +91,24 @@
       "Bash(PORT=4175 timeout 6 npx react-router-serve ./build/server/index.js)",
       "Bash(curl -s -o /dev/null -w \"healthz status: %{http_code}\\\\n\" http://127.0.0.1:4175/healthz)",
       "Bash(curl -s -o /dev/null -w \"home status: %{http_code}\\\\n\" http://127.0.0.1:4175/)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(git ls-tree *)",
+      "Bash(grep -E \"^Dockerfile$|deploy.yml|dockerignore\")",
+      "Bash(git pull *)",
+      "Bash(PORT=8080 timeout 6 npx react-router-serve ./build/server/index.js)",
+      "Bash(curl -s -o /dev/null -w \"healthz status: %{http_code}\\\\n\" http://127.0.0.1:8080/healthz)",
+      "Bash(curl -s -o /dev/null -w \"home status: %{http_code}\\\\n\" http://127.0.0.1:8080/)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(nslookup -type=CNAME _3166234ee5115fa16bce25afb985f190.velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup -type=CNAME _3166234ee5115fa16bce25afb985f190.velvetwolf.in.velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup -type=CNAME _3166234ee5115fa16bce25afb985f190.velvetwolf.in 1.1.1.1)",
+      "Bash(nslookup -type=CNAME www.velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup www.velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup -type=NS velvetwolf.in 8.8.8.8)",
+      "Bash(nslookup d1gvvuye1w541z.cloudfront.net 8.8.8.8)"
     ],
     "additionalDirectories": [
       "v:\\Coding\\velvetwolf"
