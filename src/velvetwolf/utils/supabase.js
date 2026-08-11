@@ -27,7 +27,8 @@ export const supabase = isSupabaseAvailable
  * @returns {string} The public Supabase URL for the image.
  */
 export function getSupabaseLogoUrl(localPath) {
-  if (!localPath || !supabase) return "";
+  if (!localPath) return "";
+  if (!supabase) return localPath;
   // Extract filename directly by stripping any folder path
   const filename = localPath.split('/').filter(Boolean).pop();
 
@@ -35,5 +36,9 @@ export function getSupabaseLogoUrl(localPath) {
   const finalPath = `Logo/${filename}`;
 
   const { data } = supabase.storage.from("product-images").getPublicUrl(finalPath);
-  return data?.publicUrl || localPath;
+  const rawUrl = data?.publicUrl || localPath;
+  if (rawUrl && rawUrl.startsWith("http") && !rawUrl.includes("?")) {
+    return `${rawUrl}?cors=1`;
+  }
+  return rawUrl;
 }

@@ -264,6 +264,10 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
   const verifiedShipping = Number(shipping_amount || 0);
   const verifiedTax = Number(tax_amount || 0);
   const verifiedTotal = Math.max(0, verifiedSubtotal - discountAmount + verifiedShipping + verifiedTax);
+
+  if (total_amount && Math.abs(Number(total_amount) - verifiedTotal) > 1) {
+    logError("Client total amount mismatch detected (price tampering attempt blocked)", logContext({ clientTotal: total_amount, verifiedTotal, clientSubtotal: subtotal, verifiedSubtotal }));
+  }
   
   // Create an order in Supabase
   const orderId = crypto.randomUUID();

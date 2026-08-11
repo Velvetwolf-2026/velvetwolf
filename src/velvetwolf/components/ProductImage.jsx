@@ -100,6 +100,7 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
               key={imgUrl + index}
               src={imgUrl}
               alt={`${product.name} ${index + 1}`}
+              crossOrigin="anonymous"
               style={{
                 position: "absolute",
                 inset: 0,
@@ -120,6 +121,7 @@ export default function ProductImage({ product, height = 280, selectedColor = nu
           <img
             src={product.modelImage}
             alt={`${product.name} Model Preview`}
+            crossOrigin="anonymous"
             style={{
               position: "absolute",
               inset: 0,

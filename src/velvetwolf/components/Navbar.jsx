@@ -150,7 +150,7 @@ export default function Navbar({ activePage }) {
                 flexShrink: 0,
               }}
             >
-              <img src={getSupabaseLogoUrl("/vw-logo.png")} alt="VelvetWolf" style={{ width: 30, height: 30, objectFit: "contain" }} />
+              <img src={getSupabaseLogoUrl("/vw-logo.png")} alt="VelvetWolf" crossOrigin="anonymous" style={{ width: 30, height: 30, objectFit: "contain" }} />
             </div>
             <div>
               <div
