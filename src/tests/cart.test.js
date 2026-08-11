@@ -57,8 +57,12 @@ describe("Cart Utility Tests", () => {
 
     await mergeGuestCart("user-uuid");
 
-    // Expect addCartItemDB to be called twice (once for each guest item)
-    expect(fetch).toHaveBeenCalledTimes(2);
+    // Expect batch /cart/merge to be called once
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/cart/merge"),
+      expect.objectContaining({ method: "POST" })
+    );
     expect(localStorage.removeItem).toHaveBeenCalledWith("vw_guest_cart");
     expect(localStorage.getItem("vw_guest_cart")).toBeNull();
   });

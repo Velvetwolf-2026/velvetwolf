@@ -31,3 +31,10 @@ export async function removeItem(body, event) {
   const result = await cartService.removeCartItemById(user.id, data.cartItemId);
   return jsonResponse(200, result, {}, event);
 }
+
+export async function mergeCart(body, event) {
+  const user = requireAuth(event);
+  const items = Array.isArray(body?.items) ? body.items : [];
+  const updatedItems = await cartService.mergeCartItemsByUserId(user.id, items);
+  return jsonResponse(200, { success: true, items: updatedItems }, {}, event);
+}
