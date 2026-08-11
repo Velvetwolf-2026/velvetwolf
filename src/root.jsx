@@ -480,7 +480,12 @@ export default function VelvetWolfRoot() {
         const data = await res.json();
         if (data.authenticated && data.user) {
           const normalized = normalizeUserRoleState(data.user);
-          setUser(normalized);
+          setUser(prev => {
+            if (prev && prev.id === normalized.id && prev.email === normalized.email && prev.role === normalized.role && prev.personality_type === normalized.personality_type) {
+              return prev;
+            }
+            return normalized;
+          });
           localStorage.setItem("user", JSON.stringify(normalized));
           if (data.token) {
             localStorage.setItem("token", data.token);
@@ -560,7 +565,10 @@ export default function VelvetWolfRoot() {
             .then(() => {
               localStorage.removeItem("vw_guest_style_profile");
               showToast(`Synced your personality type (${personalityType}) to your account!`);
-              setUser(prev => prev ? { ...prev, personality_type: personalityType } : null);
+              setUser(prev => {
+                if (!prev || prev.personality_type === personalityType) return prev;
+                return { ...prev, personality_type: personalityType };
+              });
             })
             .catch(err => {
               console.error("Failed to sync guest style profile to backend", err);
@@ -574,7 +582,7 @@ export default function VelvetWolfRoot() {
       setWishlist([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user?.id, user?.email]);
 
   // Initial products load
   useEffect(() => {

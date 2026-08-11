@@ -109,25 +109,29 @@ export function Login() {
     if (container) {
       container.innerHTML = "";
     }
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      "size": "invisible",
-      "callback": () => {},
-      "expired-callback": () => {},
-    });
+    try {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        "size": "invisible",
+        "callback": () => {},
+        "expired-callback": () => {},
+      });
+    } catch (e) {
+      console.error("Error creating recaptcha verifier:", e);
+    }
     return window.recaptchaVerifier;
   };
 
+  const userId = user ? (user.id || user.email || "authed") : null;
+
   useEffect(() => {
-    if (user) {
-      if (redirect) {
-        navigate(redirect.startsWith("/") ? redirect : `/${redirect}`);
-      } else if (user.isAdmin) {
-        navigate("/admin");
-      } else {
-        setPage("account");
-      }
+    if (userId) {
+      const target = redirect
+        ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
+        : (user?.isAdmin ? "/admin" : "/account");
+      navigate(target, { replace: true });
     }
-  }, [user, setPage, navigate, redirect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Password strength helper
   const checks = {
@@ -168,6 +172,7 @@ export function Login() {
       setError("Google Login is not available at the moment.");
       return;
     }
+    if (googleLoading || loading) return;
     setGoogleLoading(true);
     setError("");
     setInfoMessage("");
@@ -199,9 +204,14 @@ export function Login() {
       localStorage.setItem("user", JSON.stringify(nextUser));
       setUser(nextUser);
       showToast(`Successfully logged in with Google!`);
-      navigate("/");
+      const target = redirect
+        ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
+        : (nextUser.isAdmin ? "/admin" : "/account");
+      navigate(target, { replace: true });
     } catch (err) {
-      if (err.message && err.message.includes("email and password")) {
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        setError("Sign-in cancelled.");
+      } else if (err.message && err.message.includes("email and password")) {
         setInfoMessage("You signed up with email and password. Redirecting to password sign-in...");
         const googleEmail = result?.user?.email;
         if (googleEmail) {
@@ -376,11 +386,10 @@ export function Login() {
         localStorage.setItem("user", JSON.stringify(nextUser));
         setUser(nextUser);
         showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
-        if (nextUser.isAdmin) {
-          navigate("/admin");
-        } else {
-          navigate("/");
-        }
+        const target = redirect
+          ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
+          : (nextUser.isAdmin ? "/admin" : "/account");
+        navigate(target, { replace: true });
       }
     } catch (err) {
       const msg = err.message || "Login failed. Please try again.";
@@ -528,7 +537,10 @@ export function Login() {
           localStorage.setItem("user", JSON.stringify(nextUser));
           setUser(nextUser);
           showToast(isExistingUser ? `Successfully logged in!` : `Account created! Welcome to the pack ◆`);
-          navigate("/");
+          const target = redirect
+            ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
+            : (nextUser.isAdmin ? "/admin" : "/account");
+          navigate(target, { replace: true });
         }
       }
     } catch (err) {
@@ -600,7 +612,10 @@ export function Login() {
       localStorage.setItem("user", JSON.stringify(nextUser));
       setUser(nextUser);
       showToast(`Account created! Welcome to the pack ◆`);
-      navigate("/");
+      const target = redirect
+        ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
+        : (nextUser.isAdmin ? "/admin" : "/account");
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err.message || "Failed to save profile name.");
     } finally {
