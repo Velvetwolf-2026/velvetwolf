@@ -203,7 +203,10 @@ async function confirmOrder(orderId) {
 export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, shipping_amount, tax_amount, payment_method, couponCode }) {
   if (!cart || cart.length === 0) throw new ApiError(400, "Cart is empty");
   
-  // 1. Validate stock for all items
+  // 1. Validate stock and verify prices for all items directly from the database
+  let verifiedSubtotal = 0;
+  const verifiedOrderItems = [];
+
   for (const item of cart) {
     const variant = await getVariantForItem(item.id, item.size, item.color);
     if (!variant) {
@@ -212,43 +215,72 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     if (variant.stock_qty < item.qty) {
       throw new ApiError(400, `Insufficient stock for item ${item.name}. Only ${variant.stock_qty} left.`);
     }
+
+    // Lookup official DB product price to prevent client-side price tampering
+    let unitPrice = Number(item.price);
+    if (isValidUuid(item.id)) {
+      const { data: dbProduct } = await supabaseAdmin
+        .from("products")
+        .select("price")
+        .eq("id", item.id)
+        .maybeSingle();
+
+      if (dbProduct && Number(dbProduct.price) > 0) {
+        unitPrice = Number(dbProduct.price);
+      }
+    }
+
+    const itemTotalPrice = unitPrice * Number(item.qty);
+    verifiedSubtotal += itemTotalPrice;
+
+    verifiedOrderItems.push({
+      product_id: isValidUuid(item.id) ? item.id : null,
+      product_name: item.name,
+      size: item.size,
+      color: item.color,
+      quantity: Number(item.qty),
+      unit_price: unitPrice,
+      total_price: itemTotalPrice,
+    });
   }
 
-  // 2. Validate coupon if present
+  // 2. Validate coupon and calculate verified discount
   let discountAmount = 0;
   if (couponCode) {
     try {
-      const coupon = await validateCoupon(couponCode, subtotal);
+      const coupon = await validateCoupon(couponCode, verifiedSubtotal);
       if (coupon.discount_type === "percentage") {
-        discountAmount = Math.round((Number(subtotal) * Number(coupon.discount_value)) / 100);
+        discountAmount = Math.round((verifiedSubtotal * Number(coupon.discount_value)) / 100);
       } else if (coupon.discount_type === "fixed") {
         discountAmount = Number(coupon.discount_value);
       }
-      // Cap discount amount at subtotal
-      discountAmount = Math.min(discountAmount, Number(subtotal));
+      discountAmount = Math.min(discountAmount, verifiedSubtotal);
     } catch (err) {
       throw new ApiError(400, err.message || "Invalid coupon code");
     }
   }
+
+  // 3. Compute verified total amount
+  const verifiedShipping = Number(shipping_amount || 0);
+  const verifiedTax = Number(tax_amount || 0);
+  const verifiedTotal = Math.max(0, verifiedSubtotal - discountAmount + verifiedShipping + verifiedTax);
   
   // Create an order in Supabase
   const orderId = crypto.randomUUID();
-
-  // Validate user_id as a UUID, otherwise fallback to null (for guest checkout)
   const orderUserId = isValidUuid(user_id) ? user_id : null;
 
   const { error: orderError } = await supabaseAdmin.from("orders").insert({
     id: orderId,
     user_id: orderUserId,
-    total_amount: Number(total_amount),
-    subtotal: Number(subtotal),
-    shipping_amount: Number(shipping_amount),
-    tax_amount: Number(tax_amount),
+    total_amount: Number(verifiedTotal.toFixed(2)),
+    subtotal: Number(verifiedSubtotal.toFixed(2)),
+    shipping_amount: Number(verifiedShipping.toFixed(2)),
+    tax_amount: Number(verifiedTax.toFixed(2)),
     payment_method: payment_method,
     shipping_address: address,
     status: payment_method === "cod" ? "confirmed" : "pending",
     coupon_code: couponCode || null,
-    discount_amount: Number(discountAmount)
+    discount_amount: Number(discountAmount.toFixed(2))
   });
 
   if (orderError) {
@@ -257,18 +289,12 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
   }
 
   // Insert order items
-  const orderItems = cart.map(item => ({
-    order_id: orderId,
-    product_id: isValidUuid(item.id) ? item.id : null,
-    product_name: item.name,
-    size: item.size,
-    color: item.color,
-    quantity: item.qty,
-    unit_price: Number(item.price),
-    total_price: Number(item.price) * Number(item.qty)
+  const orderItemsWithId = verifiedOrderItems.map(item => ({
+    ...item,
+    order_id: orderId
   }));
 
-  const { error: itemsError } = await supabaseAdmin.from("order_items").insert(orderItems);
+  const { error: itemsError } = await supabaseAdmin.from("order_items").insert(orderItemsWithId);
   if (itemsError) {
     logError("Failed to insert order items", logContext({ error: itemsError }));
     throw new ApiError(500, "Failed to create order items");
@@ -293,7 +319,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
   try {
     const cashfreeRes = await createPaymentOrder({
       orderId: orderId,
-      amount: Number(total_amount),
+      amount: Number(verifiedTotal.toFixed(2)),
       customerId: customerId,
       customerPhone: phone,
       customerEmail: email,
@@ -320,26 +346,28 @@ export async function verifyCheckout(orderId) {
     const isSuccess = payments.some(p => p.payment_status === "SUCCESS");
 
     if (isSuccess) {
-      // Get current order status
+      // Check current order status to ensure idempotency
       const { data: currentOrder, error: statusError } = await supabaseAdmin
         .from("orders")
-        .select("status")
+        .select("*")
         .eq("id", orderId)
         .maybeSingle();
 
       if (statusError) throw new ApiError(500, "Failed to check order status");
       
       if (currentOrder && currentOrder.status !== "confirmed") {
-        const { data, error } = await supabaseAdmin.from("orders")
+        const { data: updatedOrder, error: updateError } = await supabaseAdmin
+          .from("orders")
           .update({ status: "confirmed" })
           .eq("id", orderId)
-          .select().single();
-          
-        if (error) throw new ApiError(500, "Failed to update order status");
+          .select()
+          .single();
 
-        // Decrement stock & send confirmation email
+        if (updateError) throw new ApiError(500, "Failed to update order status");
+
+        // Decrement stock & send confirmation email ONCE
         await confirmOrder(orderId);
-        return { success: true, status: "SUCCESS", order: data };
+        return { success: true, status: "SUCCESS", order: updatedOrder || currentOrder };
       } else {
         // Already confirmed
         return { success: true, status: "SUCCESS", order: currentOrder };

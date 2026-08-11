@@ -187,3 +187,17 @@ export async function removeCartItemById(userId, cartItemId) {
 
   return { success: true };
 }
+
+export async function mergeCartItemsByUserId(userId, items = []) {
+  logInfo("Batch merging cart items for user", cartLogContext({ userId, count: items.length }));
+  for (const item of items) {
+    if (item?.id && (item.qty || item.quantity) > 0) {
+      try {
+        await addCartItemByUserId(userId, item.id, item.qty || item.quantity, item.size, item.color);
+      } catch (err) {
+        logError("Failed to merge individual cart item", cartLogContext({ userId, itemId: item.id, error: err }));
+      }
+    }
+  }
+  return getCartByUserId(userId);
+}

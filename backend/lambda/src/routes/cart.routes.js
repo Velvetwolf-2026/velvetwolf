@@ -13,5 +13,8 @@ export async function handleCartRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/cart/remove")
     return cartController.removeItem(body, event);
 
+  if (method === "POST" && route === "/cart/merge")
+    return cartController.mergeCart(body, event);
+
   return null;
 }

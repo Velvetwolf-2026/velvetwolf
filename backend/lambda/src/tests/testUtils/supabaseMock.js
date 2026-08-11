@@ -37,6 +37,9 @@ export function createSupabaseMock(responseQueues = {}, calls = []) {
         return builder;
       }),
       eq: vi.fn(() => builder),
+      neq: vi.fn(() => builder),
+      is: vi.fn(() => builder),
+      in: vi.fn(() => builder),
       like: vi.fn(() => builder),
       or: vi.fn(() => builder),
       gte: vi.fn(() => builder),

@@ -91,10 +91,27 @@ export async function removeCartItemDB(cartItemId) {
 
 export async function mergeGuestCart(userId) {
   const guestCart = JSON.parse(localStorage.getItem('vw_guest_cart') || '[]');
+  if (!guestCart || guestCart.length === 0) return;
 
-  for (const item of guestCart) {
-    await addCartItemDB(userId, item, item.qty, item.size, item.color);
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(apiUrl('/cart/merge'), {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        userId,
+        items: guestCart
+      }),
+    });
+
+    if (response.ok) {
+      localStorage.removeItem('vw_guest_cart');
+    }
+  } catch (err) {
+    console.error('[mergeGuestCart]', err.message);
   }
-
-  localStorage.removeItem('vw_guest_cart');
 }

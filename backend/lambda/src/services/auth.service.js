@@ -413,10 +413,10 @@ export async function verifyOtp({ email, otp, type }) {
   const normalizedType = normalizeOtpKind(type);
 
   try {
-    const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
-                    (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
-                    process.env.PORT === "5000";
-    const isBypassOtp = otp === "123456" && isLocal;
+    const isLocalEnv = process.env.NODE_ENV === "development" || process.env.ALLOW_OTP_BYPASS === "true";
+    const isLocalUrl = (process.env.FRONTEND_URL || "").includes("localhost") || 
+                       (process.env.BACKEND_PUBLIC_URL || "").includes("localhost");
+    const isBypassOtp = otp === "123456" && isLocalEnv && isLocalUrl;
 
     let otpRecord = null;
     let otpError = null;
