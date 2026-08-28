@@ -68,14 +68,14 @@ export default function Navbar({ activePage }) {
   // Non-bulk nav links
   const regularLinks = [
     ["shop", "shop"],
-    ["collections", "collection"],
+    ["categories", "collection"],
     ["customDesign", "custom"],
     ["styleQuiz", "quiz"],
   ];
 
   const goToPage = (pg) => {
     setMobileOpen(false);
-    pg === "shop" ? openShop() : setPage(pg);
+    pg === "shop" || pg === "categories" ? openShop() : setPage(pg);
   };
 
   useEffect(() => {

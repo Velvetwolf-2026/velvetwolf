@@ -110,9 +110,9 @@ export function AccountPage() {
       setEmailError("Email address is required.");
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(newEmail.trim())) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError("Please enter a valid email address (e.g. name@gmail.com).");
       return;
     }
     
@@ -173,9 +173,9 @@ export function AccountPage() {
     await signOutUser();
   };
 
-  let displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Wolf";
-  if (displayName.startsWith("Mobile ") && /^\d+$/.test(displayName.split(" ")[1] || "")) {
-    displayName = displayName.split(" ")[1];
+  let displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
+  if (displayName === "Mobile" || displayName.startsWith("Mobile ")) {
+    displayName = user?.phone || "User";
   }
   const displayInitial = displayName[0].toUpperCase();
   const profileUserId = user?.id || null;

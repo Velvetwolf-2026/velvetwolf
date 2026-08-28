@@ -20,7 +20,7 @@ export default function ProductModal() {
   const sizes  = Array.isArray(p?.sizes)  && p.sizes.length  ? p.sizes  : [];
   const colors = Array.isArray(p?.colors) && p.colors.length ? p.colors : [];
   const [size, setSize]   = useState(sizes[0]  ?? "M");
-  const [color, setColor] = useState(colors[0] ?? "#0a0a0a");
+  const [color, setColor] = useState(colors[0] ?? "Black");
   const [qty, setQty] = useState(1);
 
   if (!p) return null;

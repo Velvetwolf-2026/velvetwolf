@@ -224,8 +224,9 @@ export default function HomePage() {
   ];
 
   const handleComingSoonNotify = (itemId, email) => {
-    if (!email || !email.includes("@")) {
-      showToast("Please enter a valid email.", "error");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      showToast("Please enter a valid email address (e.g. name@domain.com).", "error");
       return;
     }
     setComingSoonNotifySuccess(prev => ({ ...prev, [itemId]: true }));
@@ -256,7 +257,7 @@ export default function HomePage() {
       setNewsletterError("Email is required.");
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(newsletterEmail.trim())) {
       setNewsletterError("Please enter a valid email address.");
       return;
@@ -433,7 +434,7 @@ export default function HomePage() {
         <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 54 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", marginBottom: 12 }}>THE DROP SELECTION</div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobileOrTablet ? 30 : 52, letterSpacing: 2 }}>FEATURED COLLECTIONS</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 22 : (isMobileOrTablet ? 28 : 52), letterSpacing: isMobile ? 1 : 2, wordBreak: "break-word" }}>FEATURED COLLECTIONS</h2>
             <div style={{ width: 60, height: 2, background: "var(--gold)", margin: "16px auto 0" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
