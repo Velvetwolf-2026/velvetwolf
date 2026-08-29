@@ -40,7 +40,7 @@ export default function HomePage() {
   const loaderData = useLoaderData();
   const products = useMemo(() => ctxProducts.length > 0 ? ctxProducts : (loaderData?.products || []), [ctxProducts, loaderData]);
   const navigate = useNavigate();
-  const { isMobileOrTablet } = useBreakpoint();
+  const { isMobileOrTablet, isMobile } = useBreakpoint();
 
   const [guestProfile, setGuestProfile] = useState(null);
   const [lastViewedCategory, setLastViewedCategory] = useState("");
