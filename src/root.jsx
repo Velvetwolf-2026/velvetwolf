@@ -524,18 +524,10 @@ export default function VelvetWolfRoot() {
             localStorage.setItem("token", data.token);
           }
         } else {
-          // Restore cached user from local storage if available to persist session on reload
-          const cachedUser = localStorage.getItem("user");
-          if (cachedUser) {
-            try {
-              const parsed = JSON.parse(cachedUser);
-              if (parsed) setUser(normalizeUserRoleState(parsed));
-            } catch {
-              setUser(null);
-            }
-          } else {
-            setUser(null);
-          }
+          // Server returned unauthenticated — clear stale local session to prevent 401 sync loops
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+          setUser(null);
         }
       } catch (err) {
         console.warn("[Background Session Check Failed]", err.message);

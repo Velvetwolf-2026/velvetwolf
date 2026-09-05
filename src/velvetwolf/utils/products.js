@@ -12,7 +12,7 @@ export async function loadProductsFromAPI({ collection, search } = {}) {
       : apiUrl('/products');
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort('Timeout loading products'), 8000);
 
     const response = await fetch(url, {
       credentials: 'include',
@@ -27,7 +27,9 @@ export async function loadProductsFromAPI({ collection, search } = {}) {
 
     return payload.products;
   } catch (err) {
-    console.warn('[loadProductsFromAPI] Fallback to initial products:', err.message);
+    if (err?.name !== 'AbortError') {
+      console.warn('[loadProductsFromAPI] Fallback to initial products:', err.message);
+    }
     return filterProducts(INITIAL_COLLECTION_PRODUCTS, { collection, search });
   }
 }
