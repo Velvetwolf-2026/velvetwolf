@@ -1700,9 +1700,11 @@ p {
   grid-template-columns: 1.2fr 380px;
   gap: 48px;
 }
-@media (max-width: 640px) {
+@media (max-width: 960px) {
   .vw-checkout-grid {
     grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 20px 16px !important;
   }
 }
 

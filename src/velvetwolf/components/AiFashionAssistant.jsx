@@ -99,7 +99,7 @@ export default function AiFashionAssistant() {
   };
 
   return (
-    <div style={{ position: "fixed", bottom: isMobile ? 16 : 24, right: isMobile ? 16 : 24, zIndex: 900 }}>
+    <div style={{ position: "fixed", bottom: isMobile ? 76 : 24, right: isMobile ? 16 : 24, zIndex: 900 }}>
       {/* Chat bubble button */}
       {!isOpen && (
         <button

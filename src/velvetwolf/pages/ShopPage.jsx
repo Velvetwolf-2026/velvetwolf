@@ -140,7 +140,7 @@ export default function ShopPage() {
     }
   }, [searchQuery, routeCollection, navigate]);
 
-  const baseList = aiProducts !== null ? aiProducts : products;
+  const baseList = (Array.isArray(aiProducts) && aiProducts.length > 0) ? aiProducts : products;
 
   const filtered = baseList
     .filter(p => !activeCollection || p.collection === activeCollection)

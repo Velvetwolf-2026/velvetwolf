@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   useNavigate,
   useLocation,
+  useNavigationType,
 } from "react-router";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
@@ -47,6 +48,10 @@ export function Layout({ children }) {
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#0a0a0a" />
+        <meta name="msapplication-TileImage" content="/logo.png" />
+        <meta name="msapplication-TileColor" content="#0a0a0a" />
+        <meta property="og:image" content="/logo.png" />
+        <meta name="twitter:image" content="/logo.png" />
         <link rel="icon" type="image/png" href="/logo.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -270,18 +275,20 @@ export default function VelvetWolfRoot() {
     };
   };
 
+  const isValidUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
   const syncCartFromDB = async (userId) => {
     try {
       const items = await loadCartFromDB(userId);
       setCart(items);
       try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
-      if (err.message === "Authentication required." || err.message.includes("401") || err.message.includes("Unauthorized")) {
-        setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      }
       console.warn('[syncCartFromDB]', err.message);
+      // Fallback to local stored cart for user if network or DB sync has issues
+      try {
+        const cached = JSON.parse(localStorage.getItem(`vw_cart_${userId}`) || localStorage.getItem('vw_guest_cart') || "[]");
+        if (cached.length > 0) setCart(cached);
+      } catch { /* ignore */ }
     }
   };
 
@@ -290,11 +297,6 @@ export default function VelvetWolfRoot() {
       const items = await loadWishlistFromDB(userId);
       setWishlist(items);
     } catch (err) {
-      if (err.message === "Authentication required." || err.message.includes("401") || err.message.includes("Unauthorized")) {
-        setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      }
       console.warn('[syncWishlistFromDB]', err.message);
     }
   };
@@ -303,17 +305,26 @@ export default function VelvetWolfRoot() {
     try {
       trackAddToCart(product, qty, size, color);
       const backendUserId = getBackendUserId(user);
-      if (backendUserId) {
-        await addCartItemDB(backendUserId, product, qty, size, color);
-        await syncCartFromDB(backendUserId);
-      } else {
+      let syncedToDb = false;
+
+      if (backendUserId && !product.isCustom && isValidUuid(product?.id)) {
+        try {
+          await addCartItemDB(backendUserId, product, qty, size, color);
+          await syncCartFromDB(backendUserId);
+          syncedToDb = true;
+        } catch (dbErr) {
+          console.warn('[addToCart DB sync fallback]', dbErr.message);
+        }
+      }
+
+      if (!syncedToDb) {
         const guest = getGuestCart();
         const idx = guest.findIndex(i => i.id === product.id && i.size === size && i.color === color);
         if (idx > -1) guest[idx].qty += qty;
         else guest.push({ ...product, size, color, qty });
         saveGuestCart(guest);
       }
-      showToast("Added to cart");
+      showToast("Added to cart ✓");
     } catch (err) {
       showToast('Could not add to cart. Please try again.', 'error');
       console.error('[addToCart]', err.message);
@@ -456,10 +467,32 @@ export default function VelvetWolfRoot() {
     userPreferences, saveUserPreferences
   };
 
-  // Scroll to top on navigation
+  const navType = useNavigationType();
+
+  // Scroll position restoration on route navigation
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [location.pathname]);
+    const key = `vw_scroll_${location.pathname}`;
+    const savedScroll = sessionStorage.getItem(key);
+
+    if (navType === "POP" && savedScroll !== null) {
+      const y = parseInt(savedScroll, 10);
+      if (!isNaN(y)) {
+        setTimeout(() => window.scrollTo({ top: y, behavior: "instant" }), 50);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    const onScroll = () => {
+      sessionStorage.setItem(key, String(window.scrollY));
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      sessionStorage.setItem(key, String(window.scrollY));
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [location.pathname, navType]);
 
   // Handle global unauthorized API calls
   useEffect(() => {
@@ -491,12 +524,30 @@ export default function VelvetWolfRoot() {
             localStorage.setItem("token", data.token);
           }
         } else {
-          setUser(null);
-          localStorage.removeItem("user");
-          localStorage.removeItem("token");
+          // Restore cached user from local storage if available to persist session on reload
+          const cachedUser = localStorage.getItem("user");
+          if (cachedUser) {
+            try {
+              const parsed = JSON.parse(cachedUser);
+              if (parsed) setUser(normalizeUserRoleState(parsed));
+            } catch {
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
         }
       } catch (err) {
         console.warn("[Background Session Check Failed]", err.message);
+        const cachedUser = localStorage.getItem("user");
+        if (cachedUser) {
+          try {
+            const parsed = JSON.parse(cachedUser);
+            if (parsed) setUser(normalizeUserRoleState(parsed));
+          } catch {
+            setUser(null);
+          }
+        }
       }
     };
 

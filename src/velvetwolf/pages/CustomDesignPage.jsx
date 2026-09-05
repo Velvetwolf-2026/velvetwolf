@@ -44,11 +44,15 @@ export default function CustomDesignPage() {
   const [qty, setQty] = useState(1);
   const [specialNote, setSpecialNote] = useState("");
 
-  // Print Uploads
+  // Print Uploads & Scale Controls
   const [logoFile, setLogoFile] = useState(null);       // small front left chest
+  const [logoScale, setLogoScale] = useState(100);
   const [frontImage, setFrontImage] = useState(null);   // large center front
+  const [frontScale, setFrontScale] = useState(100);
   const [backImage, setBackImage] = useState(null);     // large center back
+  const [backScale, setBackScale] = useState(100);
   const [sleeveImage, setSleeveImage] = useState(null); // sleeve graphic
+  const [sleeveScale, setSleeveScale] = useState(100);
 
   // Custom Typography
   const [text, setText] = useState("");
@@ -483,14 +487,24 @@ export default function CustomDesignPage() {
                 {/* Quantity */}
                 <div>
                   <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 12 }}>QUANTITY</label>
-                  <input
-                    type="number"
-                    className="input-dark"
-                    min="1"
-                    value={qty}
-                    onChange={e => setQty(Math.max(1, Number(e.target.value)))}
-                    style={{ width: "100%", padding: 12 }}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)", width: "fit-content" }}>
+                    <button type="button" onClick={() => setQty(q => Math.max(1, Number(q || 1) - 1))} style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="minus" size={14}/></button>
+                    <input
+                      type="number"
+                      className="input-dark"
+                      min="1"
+                      value={qty}
+                      onFocus={e => e.target.select()}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === "") { setQty(""); return; }
+                        setQty(Math.max(1, parseInt(val, 10) || 1));
+                      }}
+                      onBlur={() => { if (!qty || Number(qty) < 1) setQty(1); }}
+                      style={{ width: 60, padding: 8, textAlign: "center", border: "none", background: "transparent" }}
+                    />
+                    <button type="button" onClick={() => setQty(q => Number(q || 1) + 1)} style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={14}/></button>
+                  </div>
                 </div>
               </div>
             )}
@@ -518,6 +532,19 @@ export default function CustomDesignPage() {
                       </button>
                     )}
                   </div>
+                  {logoFile && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
+                        <span>RESIZE LOGO</span>
+                        <span>{logoScale}%</span>
+                      </div>
+                      <input 
+                        type="range" min="50" max="150" value={logoScale} 
+                        onChange={e => setLogoScale(Number(e.target.value))} 
+                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Upload Front Chest Image */}
@@ -540,6 +567,19 @@ export default function CustomDesignPage() {
                       </button>
                     )}
                   </div>
+                  {frontImage && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
+                        <span>RESIZE GRAPHIC</span>
+                        <span>{frontScale}%</span>
+                      </div>
+                      <input 
+                        type="range" min="50" max="150" value={frontScale} 
+                        onChange={e => setFrontScale(Number(e.target.value))} 
+                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Upload Back Image */}
@@ -562,6 +602,19 @@ export default function CustomDesignPage() {
                       </button>
                     )}
                   </div>
+                  {backImage && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
+                        <span>RESIZE BACK ART</span>
+                        <span>{backScale}%</span>
+                      </div>
+                      <input 
+                        type="range" min="50" max="150" value={backScale} 
+                        onChange={e => setBackScale(Number(e.target.value))} 
+                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Sleeve Graphic */}
@@ -584,6 +637,19 @@ export default function CustomDesignPage() {
                       </button>
                     )}
                   </div>
+                  {sleeveImage && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
+                        <span>RESIZE SLEEVE ART</span>
+                        <span>{sleeveScale}%</span>
+                      </div>
+                      <input 
+                        type="range" min="50" max="150" value={sleeveScale} 
+                        onChange={e => setSleeveScale(Number(e.target.value))} 
+                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}

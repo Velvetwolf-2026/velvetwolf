@@ -103,7 +103,12 @@ export function Login() {
 
   const initRecaptcha = () => {
     if (window.recaptchaVerifier) {
-      return window.recaptchaVerifier;
+      try {
+        window.recaptchaVerifier.clear();
+      } catch (e) {
+        console.error("Error clearing recaptcha verifier:", e);
+      }
+      window.recaptchaVerifier = null;
     }
     const container = document.getElementById("recaptcha-container");
     if (container) {
@@ -271,11 +276,11 @@ export function Login() {
       return;
     }
 
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(input);
     const isMobile = /^[6-9]\d{9}$/.test(input);
 
     if (!isEmail && !isMobile) {
-      setError("Please enter a valid email address or 10-digit mobile number.");
+      setError("Please enter a valid email address (e.g., name@domain.com) or 10-digit mobile number.");
       return;
     }
 
@@ -314,16 +319,9 @@ export function Login() {
         startResendTimer();
         showToast("OTP code has been sent!");
       } else {
-        // Email Flow
+        // Email Flow - proceed to password if account exists, otherwise register
         if (data.exists) {
-          if (data.type === "Google") {
-            setInfoMessage("You signed up with Google. Redirecting to Google sign-in...");
-            setTimeout(() => {
-              handleGoogle();
-            }, 1500);
-          } else {
-            setStep("password");
-          }
+          setStep("password");
         } else {
           setStep("register_email");
         }
