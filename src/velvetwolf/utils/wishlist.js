@@ -16,6 +16,13 @@ export async function loadWishlistFromDB(userId) {
 
   const payload = await response.json().catch(() => ({}));
 
+  if (response.status === 401) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('vw-unauthorized'));
+    }
+    throw new Error(payload.error || 'Invalid or expired token. Please sign in again.');
+  }
+
   if (!response.ok) {
     throw new Error(payload.error || 'Failed to load wishlist.');
   }
