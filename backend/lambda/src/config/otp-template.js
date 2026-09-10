@@ -102,12 +102,14 @@ export function buildOtpEmail({ otp, kind, verifyUrl = null }) {
         <div style="margin-top:24px;padding:16px 18px;border-left:3px solid #d7b85a;background-color:rgba(255,255,255,0.02);color:#bbbbbb;font-size:14px;line-height:1.7;">
           ${escapeHtml(content.expiryText)}
         </div>
+        <!-- "Activate Account" / action button commented out as of now
         <div style="margin-top:28px;">
           ${verifyUrl
             ? `<a href="${verifyUrl}" style="display:inline-block;padding:14px 28px;background:linear-gradient(90deg, #d7b85a, #f0d37a);color:#0a0a0a;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(content.actionText)}</a>`
             : `<span style="display:inline-block;padding:14px 28px;background:linear-gradient(90deg, #d7b85a, #f0d37a);color:#0a0a0a;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;">${escapeHtml(content.actionText)}</span>`
           }
         </div>
+        -->
       </div>
       <div style="padding:22px 32px 30px;border-top:1px solid rgba(215,184,90,0.12);font-size:12px;line-height:1.8;color:#888888;">
         ${escapeHtml(content.footerText)}<br />
