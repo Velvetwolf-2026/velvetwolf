@@ -10,31 +10,30 @@ loadBackendEnv();
  * Throws ApiError(401) if the token is missing or invalid.
  */
 export function requireAuth(event) {
+  const authHeader =
+    event.headers?.authorization ||
+    event.headers?.Authorization ||
+    "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+
   const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
-  let token = "";
+  let cookieToken = "";
 
   if (cookieHeader) {
     const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="));
     if (match) {
-      token = match.split("=")[1]?.trim();
+      cookieToken = match.split("=")[1]?.trim();
     }
   }
 
-  if (!token && event.cookies && Array.isArray(event.cookies)) {
+  if (!cookieToken && event.cookies && Array.isArray(event.cookies)) {
     const match = event.cookies.find((c) => c.trim().startsWith("token="));
     if (match) {
-      token = match.split("=")[1]?.trim();
+      cookieToken = match.split("=")[1]?.trim();
     }
   }
 
-  if (!token) {
-    const authHeader =
-      event.headers?.authorization ||
-      event.headers?.Authorization ||
-      "";
-    token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-  }
-
+  const token = bearerToken || cookieToken;
 
   if (!token) {
     logWarn("Request missing Authorization header", {
@@ -44,12 +43,11 @@ export function requireAuth(event) {
     throw new ApiError(401, "Authentication required.");
   }
 
-  // Determine if authentication was performed via HttpOnly cookie
-  const usedCookie = (!!cookieHeader && cookieHeader.split(";").some((c) => c.trim().startsWith("token="))) ||
-                     (!!event.cookies && Array.isArray(event.cookies) && event.cookies.some((c) => c.trim().startsWith("token=")));
+  // CSRF token verification is ONLY required when authentication relies EXCLUSIVELY on HttpOnly cookie (no Bearer token provided)
+  const usedCookieOnly = !bearerToken && !!cookieToken;
 
   const method = event.requestContext?.http?.method || event.httpMethod || "GET";
-  if (usedCookie && ["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
+  if (usedCookieOnly && ["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
     const csrfHeaderToken = event.headers?.["x-csrf-token"] || event.headers?.["X-CSRF-Token"] || "";
     let csrfCookieToken = "";
     if (cookieHeader) {
