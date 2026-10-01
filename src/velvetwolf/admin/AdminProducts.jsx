@@ -156,7 +156,10 @@ export default function AdminProducts() {
   };
 
   const startEdit = (p) => {
-    setEditProduct({ ...p });
+    setEditProduct({ 
+      ...p,
+      original_price: p.original_price ?? p.originalPrice ?? p.price
+    });
     setAdding(false);
     setIsTshirtEdit(checkIfTshirt(p));
   };
@@ -211,6 +214,12 @@ export default function AdminProducts() {
 
   const handleSave = async () => {
     if (!editProduct) return;
+    if (!editProduct.name?.trim()) { showToast("Product name is required.", "error"); return; }
+    if (!editProduct.price || Number(editProduct.price) <= 0) { showToast("Enter a valid price.", "error"); return; }
+    if (editProduct.original_price && Number(editProduct.original_price) < Number(editProduct.price)) {
+      showToast("Original price must be ≥ sale price.", "error");
+      return;
+    }
     setSaving(true);
     try {
       const cleanedNewImages = (editProduct.newImages || []).map(({ base64, fileName, contentType, color }) => ({
@@ -225,7 +234,7 @@ export default function AdminProducts() {
         style: editProduct.style || "Unisex",
         fit: editProduct.fit || "Oversized",
         price: Number(editProduct.price),
-        original_price: Number(editProduct.original_price ?? editProduct.originalPrice ?? editProduct.price),
+        original_price: editProduct.original_price ? Number(editProduct.original_price) : Number(editProduct.price),
         stock: Number(editProduct.stock ?? 0),
         description: editProduct.description,
         tag: editProduct.tag,
@@ -565,9 +574,40 @@ export default function AdminProducts() {
                     {COLLECTIONS.find((c) => c.id === p.collection)?.name || p.collection}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
-                    {editProduct?.id === p.id
-                      ? <input className="input-dark" type="number" value={editProduct.price} onChange={(e) => setEditProduct((ep) => ({ ...ep, price: Number(e.target.value) }))} style={{ padding: "6px 10px", fontSize: 11, width: 90 }} />
-                      : <span style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)" }}>₹{Number(p.price).toLocaleString()}</span>}
+                    {editProduct?.id === p.id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div>
+                          <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginBottom: 2 }}>SALE (₹)</label>
+                          <input 
+                            className="input-dark" 
+                            type="number" 
+                            value={editProduct.price} 
+                            onChange={(e) => setEditProduct((ep) => ({ ...ep, price: e.target.value }))} 
+                            style={{ padding: "6px 8px", fontSize: 11, width: 95 }} 
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--silver)", marginBottom: 2 }}>ORIGINAL (₹)</label>
+                          <input 
+                            className="input-dark" 
+                            placeholder="MRP" 
+                            type="number" 
+                            value={editProduct.original_price ?? ""} 
+                            onChange={(e) => setEditProduct((ep) => ({ ...ep, original_price: e.target.value }))} 
+                            style={{ padding: "6px 8px", fontSize: 11, width: 95 }} 
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--gold)" }}>₹{Number(p.price).toLocaleString()}</span>
+                        {(p.original_price || p.originalPrice) && Number(p.original_price || p.originalPrice) > Number(p.price) && (
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", textDecoration: "line-through" }}>
+                            ₹{Number(p.original_price || p.originalPrice).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: "14px 16px" }}>
                     {editProduct?.id === p.id
