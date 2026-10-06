@@ -1,16 +1,12 @@
 import { apiUrl } from './api';
 
 export async function loadWishlistFromDB(userId) {
-  const token = localStorage.getItem('token');
   const url = userId 
     ? `${apiUrl('/wishlist')}?userId=${encodeURIComponent(userId)}`
     : `${apiUrl('/wishlist')}`;
   const response = await fetch(
     url, {
       credentials: 'include',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
     }
   );
 
@@ -31,13 +27,11 @@ export async function loadWishlistFromDB(userId) {
 }
 
 export async function toggleWishlistDB(userId, product) {
-  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/wishlist/toggle'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({
       userId,

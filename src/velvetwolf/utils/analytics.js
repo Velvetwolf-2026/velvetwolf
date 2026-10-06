@@ -15,16 +15,18 @@ export const trackEvent = (eventName, params = {}) => {
   if (typeof window !== "undefined" && window.fbq) {
     if (eventName === "view_item") {
       window.fbq("track", "ViewContent", {
-        content_names: [params.items?.[0]?.item_name],
-        content_ids: [params.items?.[0]?.item_id],
+        content_name: params.items?.[0]?.item_name,
+        content_names: [params.items?.[0]?.item_name].filter(Boolean),
+        content_ids: [String(params.items?.[0]?.item_id || "")].filter(Boolean),
         content_type: "product",
         value: params.value,
         currency: params.currency || "INR",
       });
     } else if (eventName === "add_to_cart") {
       window.fbq("track", "AddToCart", {
-        content_names: [params.items?.[0]?.item_name],
-        content_ids: [params.items?.[0]?.item_id],
+        content_name: params.items?.[0]?.item_name,
+        content_names: [params.items?.[0]?.item_name].filter(Boolean),
+        content_ids: [String(params.items?.[0]?.item_id || "")].filter(Boolean),
         content_type: "product",
         value: params.value,
         currency: params.currency || "INR",
@@ -33,15 +35,24 @@ export const trackEvent = (eventName, params = {}) => {
       window.fbq("track", "InitiateCheckout", {
         value: params.value,
         currency: params.currency || "INR",
-        num_items: params.items?.length,
+        content_ids: params.items?.map(i => String(i.item_id)),
+        content_type: "product",
+        num_items: params.items?.length || 0,
       });
     } else if (eventName === "purchase") {
-      window.fbq("track", "Purchase", {
+      const purchaseData = {
         value: params.value,
         currency: params.currency || "INR",
-        content_ids: params.items?.map(i => i.item_id),
+        content_ids: params.items?.map(i => String(i.item_id)),
         content_type: "product",
-      });
+        num_items: params.items?.reduce((acc, i) => acc + (Number(i.quantity) || 1), 0) || 1,
+      };
+      if (params.transaction_id) {
+        // Meta deduplication: match browser event with server Conversions API event_id
+        window.fbq("track", "Purchase", purchaseData, { eventID: String(params.transaction_id) });
+      } else {
+        window.fbq("track", "Purchase", purchaseData);
+      }
     }
   }
 };

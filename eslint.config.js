@@ -34,7 +34,9 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/tests/**/*.{js,jsx}'],
+    // Resource routes (sitemap, healthz, the /api proxy) only run on the
+    // server, so Node globals like process are available there.
+    files: ['src/tests/**/*.{js,jsx}', 'src/routes/**/*.{js,jsx}'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },

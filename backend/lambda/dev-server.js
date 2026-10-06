@@ -49,8 +49,14 @@ const server = http.createServer(async (req, res) => {
         res.setHeader(key, value);
       }
     }
-    if (result.cookies && Array.isArray(result.cookies)) {
-      res.setHeader("Set-Cookie", result.cookies);
+    // The handler emits cookies in whichever field the event's payload format
+    // expects (see attachCookies in src/utils/http.js) — accept both.
+    const cookies = [
+      ...(Array.isArray(result.cookies) ? result.cookies : []),
+      ...(result.multiValueHeaders?.["Set-Cookie"] || []),
+    ];
+    if (cookies.length > 0) {
+      res.setHeader("Set-Cookie", cookies);
     }
     res.writeHead(result.statusCode || 200);
     res.end(result.body || "");

@@ -87,6 +87,19 @@ export function requireAuth(event) {
 }
 
 /**
+ * For routes that work for both guests and signed-in users (e.g. checkout).
+ * Returns the decoded payload when a valid token is present, otherwise null —
+ * never throws, so a missing/expired token simply means "guest".
+ */
+export function getOptionalAuth(event) {
+  try {
+    return requireAuth(event);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Same as requireAuth but additionally asserts role === "admin".
  * Throws ApiError(403) if the user is authenticated but not an admin.
  */

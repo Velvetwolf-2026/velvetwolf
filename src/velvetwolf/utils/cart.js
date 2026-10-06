@@ -1,16 +1,12 @@
 import { apiUrl } from './api';
 
 export async function loadCartFromDB(userId) {
-  const token = localStorage.getItem('token');
   const url = userId 
     ? `${apiUrl('/cart')}?userId=${encodeURIComponent(userId)}`
     : `${apiUrl('/cart')}`;
   const response = await fetch(
     url, {
       credentials: 'include',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
     }
   );
 
@@ -31,13 +27,11 @@ export async function loadCartFromDB(userId) {
 }
 
 export async function addCartItemDB(userId, product, qty = 1, size = null, color = null) {
-  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/add'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({
       userId,
@@ -56,13 +50,11 @@ export async function addCartItemDB(userId, product, qty = 1, size = null, color
 }
 
 export async function updateCartQtyDB(cartItemId, qty) {
-  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/update'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({
       cartItemId,
@@ -78,13 +70,11 @@ export async function updateCartQtyDB(cartItemId, qty) {
 }
 
 export async function removeCartItemDB(cartItemId) {
-  const token = localStorage.getItem('token');
   const response = await fetch(apiUrl('/cart/remove'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({ cartItemId }),
   });
@@ -100,14 +90,12 @@ export async function mergeGuestCart(userId) {
   const guestCart = JSON.parse(localStorage.getItem('vw_guest_cart') || '[]');
   if (!guestCart || guestCart.length === 0) return;
 
-  const token = localStorage.getItem('token');
   try {
     const response = await fetch(apiUrl('/cart/merge'), {
       method: 'POST',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       body: JSON.stringify({
         userId,

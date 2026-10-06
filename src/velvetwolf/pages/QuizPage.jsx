@@ -209,13 +209,11 @@ export default function QuizPage() {
 
     if (user) {
       try {
-        const token = localStorage.getItem("token");
         const res = await fetch(apiUrl("/user/style-profile"), {
           method: "POST",
           credentials: 'include',
           headers: {
             "Content-Type": "application/json",
-            "Authorization": token ? `Bearer ${token}` : ""
           },
           body: JSON.stringify(resultsPayload)
         });

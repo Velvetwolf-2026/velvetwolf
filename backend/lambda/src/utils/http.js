@@ -1,4 +1,12 @@
+import crypto from "crypto";
 import { loadBackendEnv } from "../config/env.js";
+
+// Headers set by the frontend's /api/* proxy (src/routes/api-proxy.js). Behind
+// the proxy every request reaches API Gateway from the proxy's own IP, so the
+// real visitor IP travels in CLIENT_IP_HEADER — trusted only when the shared
+// secret matches, otherwise anyone could spoof it to dodge rate limits.
+export const PROXY_SECRET_HEADER = "x-vw-proxy-secret";
+export const PROXY_CLIENT_IP_HEADER = "x-vw-client-ip";
 
 export class ApiError extends Error {
   constructor(statusCode, message) {
@@ -11,6 +19,7 @@ export class ApiError extends Error {
 const SENSITIVE_KEYS = new Set([
   "authorization", "password", "password_hash", "token",
   "access_token", "refresh_token", "id_token", "otp", "secret", "client_secret",
+  PROXY_SECRET_HEADER,
 ]);
 
 function isPlainObject(value) {
@@ -62,6 +71,21 @@ export function logInfo(message, context = {}) { writeLog("info", message, conte
 export function logWarn(message, context = {}) { writeLog("warn", message, context); }
 export function logError(message, context = {}) { writeLog("error", message, context); }
 
+// API Gateway reads cookies from a different response field depending on the
+// payload format: HTTP API v2 events ("version": "2.0") only honour the
+// top-level `cookies` array and silently drop `multiValueHeaders`, while REST
+// API (v1) events only honour `multiValueHeaders`. Use the one this request's
+// format expects so Set-Cookie actually reaches the browser.
+function attachCookies(response, cookies, event) {
+  if (cookies.length === 0) return response;
+  if (event?.version === "2.0") {
+    response.cookies = cookies;
+  } else {
+    response.multiValueHeaders = { "Set-Cookie": cookies };
+  }
+  return response;
+}
+
 export function jsonResponse(statusCode, payload, extraHeaders = {}, event) {
   const { "Set-Cookie": setCookie, ...headers } = extraHeaders;
   const cookies = [];
@@ -76,11 +100,7 @@ export function jsonResponse(statusCode, payload, extraHeaders = {}, event) {
     body: JSON.stringify(payload),
   };
 
-  if (cookies.length > 0) {
-    response.multiValueHeaders = { "Set-Cookie": cookies };
-  }
-
-  return response;
+  return attachCookies(response, cookies, event);
 }
 
 export function redirectResponse(location, statusCode = 302, extraHeaders = {}, event) {
@@ -97,14 +117,31 @@ export function redirectResponse(location, statusCode = 302, extraHeaders = {}, 
     body: "",
   };
 
-  if (cookies.length > 0) {
-    response.multiValueHeaders = { "Set-Cookie": cookies };
-  }
+  return attachCookies(response, cookies, event);
+}
 
-  return response;
+function getHeader(event, name) {
+  const headers = event?.headers || {};
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === name);
+  return key ? String(headers[key] || "") : "";
+}
+
+function getTrustedProxyClientIp(event) {
+  const expected = process.env.PROXY_SHARED_SECRET || "";
+  const provided = getHeader(event, PROXY_SECRET_HEADER);
+  if (!expected || !provided) return "";
+
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return "";
+
+  return getHeader(event, PROXY_CLIENT_IP_HEADER).trim();
 }
 
 export function getClientIp(event) {
+  const proxiedIp = getTrustedProxyClientIp(event);
+  if (proxiedIp) return proxiedIp;
+
   // requestContext.sourceIp comes from API Gateway's own view of the TCP
   // connection, so it can't be spoofed by a client the way an X-Forwarded-For
   // header can — prefer it, and only fall back to XFF for the local dev
@@ -129,16 +166,18 @@ export const getCorsHeaders = (event) => {
     .map((o) => o.trim())
     .filter(Boolean);
 
-  let selectedOrigin = "";
-  if (requestOrigin) {
-    if (configuredOrigins.length === 0 || configuredOrigins.includes(requestOrigin) || requestOrigin.startsWith("http://localhost:") || requestOrigin.startsWith("http://127.0.0.1:")) {
-      selectedOrigin = requestOrigin;
-    }
-  } else if (configuredOrigins.length >= 1) {
-    selectedOrigin = configuredOrigins[0];
-  } else {
-    selectedOrigin = "*";
-  }
+  // Localhost origins are trusted (with credentials) only for local development
+  // — never on the deployed Lambda, where AWS always sets AWS_LAMBDA_FUNCTION_NAME.
+  const isLocalBackend = !process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === "development";
+  const isLocalhostOrigin = requestOrigin.startsWith("http://localhost:") || requestOrigin.startsWith("http://127.0.0.1:");
+
+  // The browser reaches the API same-origin through the /api proxy, so CORS is
+  // only for explicitly configured origins (and localhost in local dev). Any
+  // other origin gets no Access-Control-Allow-Origin at all, so other sites
+  // can't read responses — with or without credentials.
+  const isAllowedOrigin =
+    Boolean(requestOrigin) &&
+    (configuredOrigins.includes(requestOrigin) || (isLocalBackend && isLocalhostOrigin));
 
   const headers = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-CSRF-Token",
@@ -147,11 +186,9 @@ export const getCorsHeaders = (event) => {
     Vary: "Origin",
   };
 
-  if (selectedOrigin && selectedOrigin !== "*") {
-    headers["Access-Control-Allow-Origin"] = selectedOrigin;
+  if (isAllowedOrigin) {
+    headers["Access-Control-Allow-Origin"] = requestOrigin;
     headers["Access-Control-Allow-Credentials"] = "true";
-  } else {
-    headers["Access-Control-Allow-Origin"] = "*";
   }
 
   return headers;

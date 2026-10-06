@@ -10,6 +10,7 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/tests/setup.js",
     singleThread: true,
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**", "**/.git/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],

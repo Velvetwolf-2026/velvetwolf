@@ -457,5 +457,24 @@ DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_pr
 DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
 CREATE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (auth.uid() = user_id);
 
+-- Coupons
+-- Public read exposed every code (incl. inactive/private ones) via the anon
+-- key. Coupons are only ever validated through the backend
+-- (/checkout/coupon/validate, service role), so anon needs no access.
+DROP POLICY IF EXISTS "Allow select coupons" ON public.coupons;
+
+-- ==========================================
+-- VERIFY: run this and confirm no customer-data table has qual = 'true'
+-- for the public/anon role (products, product_variants, product_reviews and
+-- collections are intentionally public).
+-- ==========================================
+-- SELECT tablename, policyname, cmd, roles, qual
+-- FROM pg_policies WHERE schemaname = 'public' ORDER BY tablename;
+
+-- ==========================================
+-- MIGRATION: EXTEND ORDERS TABLE WITH META TRACKING
+-- ==========================================
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::jsonb;
+
 
 

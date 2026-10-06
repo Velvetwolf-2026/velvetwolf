@@ -1,7 +1,7 @@
 import { StrictMode, startTransition } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
-import { API_BASE_URL } from "./velvetwolf/utils/api";
+import { isBackendUrl } from "./velvetwolf/utils/api";
 
 // Helper to extract csrf_token value from cookies
 function getCsrfTokenFromCookie() {
@@ -9,21 +9,28 @@ function getCsrfTokenFromCookie() {
   return match ? match[2] : "";
 }
 
-// Global fetch interceptor to inject credentials: 'include' and X-CSRF-Token header
+// The session now lives only in the HttpOnly cookie. Remove the JWT that older
+// versions of the site kept in localStorage, where any injected script could
+// read it.
+try { localStorage.removeItem("token"); } catch { /* storage unavailable */ }
+
+// Global fetch interceptor to inject credentials: 'include' and X-CSRF-Token header.
+// Auth is cookie-only, so the backend rejects state-changing requests that
+// lack a matching X-CSRF-Token (double-submit check in requireAuth).
 const originalFetch = window.fetch;
 window.fetch = function (url, options) {
   const urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.href : '');
-  if (urlStr.startsWith('/') || urlStr.includes(API_BASE_URL)) {
-    options = options || {};
-    options.credentials = 'include';
+  if (isBackendUrl(urlStr)) {
+    options = { ...(options || {}), credentials: 'include' };
 
     // Inject CSRF token for state-changing requests
     const method = String(options.method || 'GET').toUpperCase();
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
       const csrfToken = getCsrfTokenFromCookie();
       if (csrfToken) {
-        options.headers = options.headers || {};
-        options.headers['X-CSRF-Token'] = csrfToken;
+        const headers = new Headers(options.headers || {});
+        headers.set('X-CSRF-Token', csrfToken);
+        options.headers = headers;
       }
     }
   }

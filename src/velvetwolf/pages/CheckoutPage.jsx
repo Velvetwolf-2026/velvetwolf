@@ -5,6 +5,7 @@ import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 import { getSupabaseLogoUrl } from "../utils/supabase";
+import { getMetaTrackingData } from "../utils/metaPixel";
 
 function loadCashfreeScript() {
   return new Promise((resolve, reject) => {
@@ -153,6 +154,9 @@ export default function CheckoutPage() {
     sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
     sessionStorage.setItem("vw_last_checkout_total", String(total));
     try {
+      const metaCookies = getMetaTrackingData();
+      // The backend identifies the customer from the session cookie (not from
+      // the body), so signed-in orders show up under their account.
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
         credentials: 'include',
@@ -162,12 +166,19 @@ export default function CheckoutPage() {
           address,
           total_amount: total,
           subtotal: cartTotal,
+          // Ignored by the current backend (it recomputes shipping/tax and reads
+          // the user from the token); kept so an older backend still works
+          // while frontend and Lambda deploys roll out independently.
           shipping_amount: shipping,
           tax_amount: tax,
           payment_method: paymentMethod,
           user_id: user?.id,
           couponCode: appliedCoupon?.code || null,
-          whatsappUpdates
+          whatsappUpdates,
+          meta: {
+            fbp: metaCookies.fbp,
+            fbc: metaCookies.fbc,
+          }
         })
       });
 
@@ -198,8 +209,10 @@ export default function CheckoutPage() {
       if (data.paymentSessionId) {
         // Initialize Cashfree sdk dynamically
         const Cashfree = await loadCashfreeScript();
+        // The backend reports which Cashfree environment created this
+        // session; the SDK mode must match it.
         const cashfree = Cashfree({
-          mode: "sandbox", // In production this would be "production"
+          mode: data.cashfreeMode === "production" ? "production" : "sandbox",
         });
 
         const checkoutOptions = {

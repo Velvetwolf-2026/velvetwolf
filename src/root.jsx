@@ -24,6 +24,7 @@ import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 import SilkBackground from "./velvetwolf/components/SilkBackground";
 import SmoothScroll from "./velvetwolf/components/SmoothScroll";
+import MetaPixel from "./velvetwolf/components/MetaPixel";
 
 import "./index.css";
 
@@ -435,7 +436,6 @@ export default function VelvetWolfRoot() {
         localStorage.removeItem(`vw_cart_${user.id}`);
       }
       localStorage.removeItem("user");
-      localStorage.removeItem("token");
       localStorage.removeItem("vw_guest_style_profile");
       // Call backend logout endpoint to clear HttpOnly cookie
       await fetch(apiUrl("/auth/logout"), { method: "POST", credentials: 'include' });
@@ -499,7 +499,6 @@ export default function VelvetWolfRoot() {
     const handleUnauthorized = () => {
       setUser(null);
       localStorage.removeItem("user");
-      localStorage.removeItem("token");
     };
     window.addEventListener("vw-unauthorized", handleUnauthorized);
     return () => window.removeEventListener("vw-unauthorized", handleUnauthorized);
@@ -520,13 +519,9 @@ export default function VelvetWolfRoot() {
             return normalized;
           });
           localStorage.setItem("user", JSON.stringify(normalized));
-          if (data.token) {
-            localStorage.setItem("token", data.token);
-          }
         } else {
           // Server returned unauthenticated — clear stale local session to prevent 401 sync loops
           localStorage.removeItem("user");
-          localStorage.removeItem("token");
           setUser(null);
         }
       } catch (err) {
@@ -597,7 +592,6 @@ export default function VelvetWolfRoot() {
             credentials: 'include',
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem("token")}`
             },
             body: JSON.stringify({ personalityType, quizScore })
           })
@@ -648,6 +642,7 @@ export default function VelvetWolfRoot() {
   return (
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
+        <MetaPixel />
         {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
         <SilkBackground />
         <SmoothScroll />

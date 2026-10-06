@@ -25,7 +25,12 @@
       "WebFetch(domain:claude.ai)",
       "Bash(git -C /v/Coding/velvetwolf status --short)",
       "Bash(git -C /v/Coding/velvetwolf status --short .claude/)",
-      "Bash(git -C /v/Coding/velvetwolf check-ignore -v .claude/launch.json)"
+      "Bash(git -C /v/Coding/velvetwolf check-ignore -v .claude/launch.json)",
+      "Bash(ls \"V:/Coding/velvetwolf/node_modules\" | wc -l; ls \"V:/Coding/velvetwolf/node_modules/.bin\" | grep -i vitest)",
+      "Bash(\"V:/Coding/velvetwolf/node_modules/.bin/vitest\" run *)",
+      "Bash(git rm *)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(\"V:/Coding/velvetwolf/node_modules/.bin/eslint\" backend/lambda/src src/velvetwolf/pages/CheckoutPage.jsx)"
     ]
   }
 }

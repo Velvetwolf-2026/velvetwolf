@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { loadBackendEnv } from "./env.js";
+import { loadBackendEnv, isLocalDevelopment } from "./env.js";
 import { buildOtpEmail } from "./otp-template.js";
 import { ApiError, logError } from "../utils/http.js";
 
@@ -51,9 +51,7 @@ export async function sendOTP(email, otp, kind = "login", verifyUrl = null) {
   } catch (err) {
     logError("SMTP sendOTP failed", { email, kind, errorCode: err?.code, errorMessage: err?.message });
     
-    const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
-                    (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
-                    process.env.PORT === "5000";
+    const isLocal = isLocalDevelopment();
 
     if (isLocal) {
       console.log("\n=========================================");
@@ -90,10 +88,7 @@ export async function sendEmail({ to, cc, subject, html, text, replyTo, attachme
   } catch (err) {
     logError("SMTP sendEmail failed", { to: allowed, errorCode: err?.code, errorMessage: err?.message });
     
-    const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
-                    (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
-                    process.env.PORT === "5000" ||
-                    process.env.NODE_ENV === "development";
+    const isLocal = isLocalDevelopment();
 
     if (isLocal) {
       console.log("\n=========================================");

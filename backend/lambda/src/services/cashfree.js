@@ -2,6 +2,13 @@ import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 let cashfreeInstance = null;
 
+// Mode for the browser Checkout SDK. It must match the environment the
+// payment session was created in, so the frontend takes it from the
+// /checkout/create response instead of hard-coding it.
+export function getCashfreeCheckoutMode() {
+  return process.env.CASHFREE_ENVIRONMENT === "PRODUCTION" ? "production" : "sandbox";
+}
+
 function getCashfree() {
   if (!cashfreeInstance) {
     // Switch between SANDBOX and PRODUCTION based on CASHFREE_ENVIRONMENT
