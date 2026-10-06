@@ -32,6 +32,7 @@ function resetSupabaseMock(responseQueues) {
 
 const VARIANT = { id: "variant-1", stock_qty: 10, size: "M", color: "Black" };
 const CART_ITEM = { id: "11111111-1111-1111-1111-111111111111", name: "Mind Palace Tee", size: "M", color: "Black", price: 1299, qty: 1 };
+const DB_PRODUCT = { data: { price: 1299 }, error: null };
 
 describe("checkout.service", () => {
   beforeEach(() => {
@@ -93,6 +94,7 @@ describe("checkout.service", () => {
           { data: [VARIANT], error: null }, // stock check in initiateCheckout
           { data: [VARIANT], error: null }, // stock decrement lookup in confirmOrder
         ],
+        products: [DB_PRODUCT],
         orders: [
           { data: null, error: null }, // insert
           { data: createdOrder, error: null }, // select in confirmOrder
@@ -120,6 +122,7 @@ describe("checkout.service", () => {
     it("initiates a Cashfree payment session for online payment and leaves the order pending (no stock decrement yet)", async () => {
       resetSupabaseMock({
         product_variants: [{ data: [VARIANT], error: null }],
+        products: [DB_PRODUCT],
         orders: [{ data: null, error: null }],
         order_items: [{ data: null, error: null }],
       });
@@ -139,6 +142,7 @@ describe("checkout.service", () => {
     it("wraps a Cashfree failure as a 500 ApiError and does not silently succeed", async () => {
       resetSupabaseMock({
         product_variants: [{ data: [VARIANT], error: null }],
+        products: [DB_PRODUCT],
         orders: [{ data: null, error: null }],
         order_items: [{ data: null, error: null }],
       });
@@ -151,15 +155,100 @@ describe("checkout.service", () => {
         })
       ).rejects.toMatchObject({ statusCode: 500 });
     });
+
+    describe("server-side pricing (tamper protection)", () => {
+      const insertedOrder = () => calls.find((c) => c.table === "orders" && c.method === "insert").payload;
+
+      it("charges the DB price and server-computed shipping/tax, ignoring client-sent amounts", async () => {
+        resetSupabaseMock({
+          product_variants: [{ data: [VARIANT], error: null }],
+          products: [DB_PRODUCT],
+          orders: [{ data: null, error: null }],
+          order_items: [{ data: null, error: null }],
+        });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+
+        await initiateCheckout({
+          cart: [{ ...CART_ITEM, price: 1 }], address: { email: "a@b.com" },
+          total_amount: 1, subtotal: 1, shipping_amount: 0, tax_amount: 0, payment_method: "card",
+        });
+
+        // 1299 subtotal (< 1999) -> 149 shipping, round(1299 * 0.18) = 234 tax
+        expect(insertedOrder()).toMatchObject({ subtotal: 1299, shipping_amount: 149, tax_amount: 234, total_amount: 1682 });
+        expect(createPaymentOrder).toHaveBeenCalledWith(expect.objectContaining({ amount: 1682 }));
+      });
+
+      it("gives free shipping at or above the threshold", async () => {
+        resetSupabaseMock({
+          product_variants: [{ data: [VARIANT], error: null }],
+          products: [{ data: { price: 1999 }, error: null }],
+          orders: [{ data: null, error: null }],
+          order_items: [{ data: null, error: null }],
+        });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+
+        await initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "card" });
+
+        expect(insertedOrder()).toMatchObject({ subtotal: 1999, shipping_amount: 0, tax_amount: 360, total_amount: 2359 });
+      });
+
+      it("rejects a catalog item that no longer exists in the DB instead of using the client price", async () => {
+        resetSupabaseMock({
+          product_variants: [{ data: [VARIANT], error: null }],
+          products: [{ data: null, error: null }],
+        });
+
+        await expect(
+          initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "card" })
+        ).rejects.toMatchObject({ statusCode: 400 });
+        expect(calls.some((c) => c.table === "orders")).toBe(false);
+      });
+
+      it("rejects an unknown non-catalog, non-custom item", async () => {
+        resetSupabaseMock({});
+        await expect(
+          initiateCheckout({ cart: [{ ...CART_ITEM, id: "free-stuff" }], address: {}, payment_method: "card" })
+        ).rejects.toMatchObject({ statusCode: 400 });
+      });
+
+      it.each([0, -2, 1.5, "abc", 101])("rejects invalid quantity %s", async (qty) => {
+        resetSupabaseMock({});
+        await expect(
+          initiateCheckout({ cart: [{ ...CART_ITEM, qty }], address: {}, payment_method: "card" })
+        ).rejects.toMatchObject({ statusCode: 400 });
+      });
+
+      it("prices a custom tee from its chosen options, not the client price", async () => {
+        resetSupabaseMock({
+          orders: [{ data: null, error: null }],
+          order_items: [{ data: null, error: null }],
+        });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+
+        await initiateCheckout({
+          cart: [{ id: "custom-tee-123", name: "Custom Tee", isCustom: true, price: 1, qty: 2, size: "M", color: "#0a0a0a",
+            customMeta: { fabric: "bamboo", isEmbroidery: true } }],
+          address: {}, payment_method: "card",
+        });
+
+        // (1499 + 400 bamboo + 250 embroidery) * 2 = 4298
+        expect(insertedOrder()).toMatchObject({ subtotal: 4298 });
+      });
+
+      it("rejects a custom tee with no options and a price the customiser can't produce", async () => {
+        resetSupabaseMock({});
+        await expect(
+          initiateCheckout({ cart: [{ id: "custom-tee-123", name: "Custom Tee", isCustom: true, price: 10, qty: 1 }], address: {}, payment_method: "card" })
+        ).rejects.toMatchObject({ statusCode: 400 });
+      });
+    });
   });
 
   describe("verifyCheckout (payment confirmation -> order status transition)", () => {
-    it("confirms a pending order when Cashfree reports a successful payment", async () => {
-      const confirmedOrder = { id: "order-1", status: "confirmed" };
+    it("confirms a pending order when Cashfree reports a successful payment, without leaking order details", async () => {
       resetSupabaseMock({
         orders: [
-          { data: { status: "pending" }, error: null }, // status check
-          { data: confirmedOrder, error: null }, // update -> select -> single
+          { data: [{ id: "order-1" }], error: null }, // conditional update claimed the row
           { data: { id: "order-1", payment_method: "card", shipping_address: { email: "a@b.com", name: "Alex Guest" } }, error: null }, // confirmOrder's select
         ],
         order_items: [{ data: [], error: null }],
@@ -168,23 +257,23 @@ describe("checkout.service", () => {
 
       const result = await verifyCheckout("order-1");
 
-      expect(result).toMatchObject({ success: true, status: "SUCCESS" });
+      expect(result).toEqual({ success: true, status: "SUCCESS", orderId: "order-1" });
       const orderUpdate = calls.find((c) => c.table === "orders" && c.method === "update");
       expect(orderUpdate.payload).toMatchObject({ status: "confirmed" });
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(createShiprocketOrder).toHaveBeenCalledTimes(1);
     });
 
-    it("is idempotent: does not re-confirm, double-decrement stock, or re-email an already-confirmed order", async () => {
+    it("is idempotent: when the order was already claimed (confirmed / concurrent request), it does not re-run confirmation", async () => {
       resetSupabaseMock({
-        orders: [{ data: { status: "confirmed" }, error: null }],
+        orders: [{ data: [], error: null }], // conditional update matched no pending row
       });
       verifyPayment.mockResolvedValueOnce([{ payment_status: "SUCCESS" }]);
 
       const result = await verifyCheckout("order-1");
 
       expect(result).toMatchObject({ success: true, status: "SUCCESS" });
-      expect(calls.some((c) => c.table === "orders" && c.method === "update")).toBe(false);
+      expect(calls.some((c) => c.table === "product_variants")).toBe(false);
       expect(sendEmail).not.toHaveBeenCalled();
       expect(createShiprocketOrder).not.toHaveBeenCalled();
     });

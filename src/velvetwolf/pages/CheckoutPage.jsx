@@ -155,15 +155,24 @@ export default function CheckoutPage() {
     sessionStorage.setItem("vw_last_checkout_total", String(total));
     try {
       const metaCookies = getMetaTrackingData();
+      // The backend identifies the customer from this token (not from the
+      // body), so signed-in orders show up under their account.
+      const token = localStorage.getItem("token");
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
         credentials: 'include',
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           cart,
           address,
           total_amount: total,
           subtotal: cartTotal,
+          // Ignored by the current backend (it recomputes shipping/tax and reads
+          // the user from the token); kept so an older backend still works
+          // while frontend and Lambda deploys roll out independently.
           shipping_amount: shipping,
           tax_amount: tax,
           payment_method: paymentMethod,

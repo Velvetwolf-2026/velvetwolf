@@ -20,6 +20,8 @@ COPY . .
 # be real env vars during `npm run build` — passing them only at container
 # runtime is too late, the bundle is already built by then.
 ARG VITE_API_BASE_URL
+# "true" = browser calls API Gateway directly (rollback switch for the /api proxy)
+ARG VITE_API_DIRECT
 ARG VITE_FIREBASE_API_KEY
 ARG VITE_FIREBASE_APP_ID
 ARG VITE_FIREBASE_AUTH_DOMAIN
@@ -30,6 +32,7 @@ ARG VITE_RECAPTCHA_SITEKEY
 ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_SUPABASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_API_DIRECT=$VITE_API_DIRECT \
     VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
     VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
     VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \

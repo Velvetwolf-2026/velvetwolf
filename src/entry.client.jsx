@@ -1,7 +1,7 @@
 import { StrictMode, startTransition } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
-import { API_BASE_URL } from "./velvetwolf/utils/api";
+import { isBackendUrl } from "./velvetwolf/utils/api";
 
 // Helper to extract csrf_token value from cookies
 function getCsrfTokenFromCookie() {
@@ -13,7 +13,7 @@ function getCsrfTokenFromCookie() {
 const originalFetch = window.fetch;
 window.fetch = function (url, options) {
   const urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.href : '');
-  if (urlStr.startsWith('/') || urlStr.includes(API_BASE_URL)) {
+  if (isBackendUrl(urlStr)) {
     options = options || {};
     options.credentials = 'include';
 

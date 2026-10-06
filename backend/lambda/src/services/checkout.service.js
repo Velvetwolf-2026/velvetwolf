@@ -16,6 +16,49 @@ const isValidUuid = (uuid) => {
   return typeof uuid === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
 };
 
+// Pricing rules — must stay in sync with CheckoutPage.jsx (shipping/tax) and
+// CustomDesignPage.jsx (custom tee pricing). The server recomputes everything
+// from these so a tampered request can't change what the customer is charged.
+const FREE_SHIPPING_THRESHOLD = 1999;
+const SHIPPING_FEE = 149;
+const TAX_RATE = 0.18;
+const MAX_ITEM_QTY = 100;
+
+const CUSTOM_TEE_BASE_PRICE = 1499;
+const CUSTOM_EMBROIDERY_SURCHARGE = 250;
+const CUSTOM_FABRIC_SURCHARGES = { "240gsm": 0, "240gsm-fleece": 200, "180gsm": 0, "bamboo": 400 };
+const VALID_CUSTOM_TEE_PRICES = new Set(
+  Object.values(CUSTOM_FABRIC_SURCHARGES).flatMap((surcharge) => [
+    CUSTOM_TEE_BASE_PRICE + surcharge,
+    CUSTOM_TEE_BASE_PRICE + surcharge + CUSTOM_EMBROIDERY_SURCHARGE,
+  ])
+);
+
+export function calculateShipping(subtotal) {
+  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+}
+
+export function calculateTax(subtotal) {
+  return Math.round(subtotal * TAX_RATE);
+}
+
+const isCustomItem = (item) => item?.isCustom === true || String(item?.id || "").startsWith("custom-");
+
+// Custom tees have no DB product row, so their price is derived from the
+// chosen options rather than trusted from the client.
+function getCustomItemUnitPrice(item) {
+  const fabric = item?.customMeta?.fabric;
+  if (fabric && Object.prototype.hasOwnProperty.call(CUSTOM_FABRIC_SURCHARGES, fabric)) {
+    const embroidery = item.customMeta.isEmbroidery ? CUSTOM_EMBROIDERY_SURCHARGE : 0;
+    return CUSTOM_TEE_BASE_PRICE + CUSTOM_FABRIC_SURCHARGES[fabric] + embroidery;
+  }
+  // Options missing (older cart entry) — accept the client price only if it is
+  // one of the prices the customiser can actually produce.
+  const clientPrice = Number(item?.price);
+  if (VALID_CUSTOM_TEE_PRICES.has(clientPrice)) return clientPrice;
+  throw new ApiError(400, "Invalid price for custom item. Please re-create your custom design.");
+}
+
 // Helper to sanitize phone numbers for Cashfree (expects 10 digits)
 const sanitizePhone = (phone) => {
   const digits = String(phone || "").replace(/\D/g, "");
@@ -224,37 +267,57 @@ async function confirmOrder(orderId) {
   }
 }
 
-export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, shipping_amount, tax_amount, payment_method, couponCode, meta }) {
-  if (!cart || cart.length === 0) throw new ApiError(400, "Cart is empty");
-  
+export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta }) {
+  if (!Array.isArray(cart) || cart.length === 0) throw new ApiError(400, "Cart is empty");
+  if (!address || typeof address !== "object") throw new ApiError(400, "Shipping address is required");
+
   // 1. Validate stock and verify prices for all items directly from the database
   let verifiedSubtotal = 0;
   const verifiedOrderItems = [];
 
   for (const item of cart) {
+    const qty = Number(item?.qty);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_ITEM_QTY) {
+      throw new ApiError(400, `Invalid quantity for item ${item?.name || ""}.`.trim());
+    }
+
+    // Only real catalog products (UUID ids) and custom designs can be ordered.
+    const isCatalogItem = isValidUuid(item.id);
+    if (!isCatalogItem && !isCustomItem(item)) {
+      throw new ApiError(400, `Item ${item?.name || ""} is no longer available. Please remove it from your cart.`);
+    }
+
     const variant = await getVariantForItem(item.id, item.size, item.color);
     if (!variant) {
       throw new ApiError(400, `Selected variant for item ${item.name} is not available.`);
     }
-    if (variant.stock_qty < item.qty) {
+    if (variant.stock_qty < qty) {
       throw new ApiError(400, `Insufficient stock for item ${item.name}. Only ${variant.stock_qty} left.`);
     }
 
-    // Lookup official DB product price to prevent client-side price tampering
-    let unitPrice = Number(item.price);
-    if (isValidUuid(item.id)) {
-      const { data: dbProduct } = await supabaseAdmin
+    // Price always comes from the server: the DB for catalog products, the
+    // customiser's pricing rules for custom designs. Never the client's number.
+    let unitPrice;
+    if (isCatalogItem) {
+      const { data: dbProduct, error: productError } = await supabaseAdmin
         .from("products")
         .select("price")
         .eq("id", item.id)
         .maybeSingle();
 
-      if (dbProduct && Number(dbProduct.price) > 0) {
-        unitPrice = Number(dbProduct.price);
+      if (productError) {
+        logError("Product price lookup failed", logContext({ productId: item.id, error: productError }));
+        throw new ApiError(500, "Failed to verify product prices");
       }
+      if (!dbProduct || !(Number(dbProduct.price) > 0)) {
+        throw new ApiError(400, `Item ${item.name} is no longer available. Please remove it from your cart.`);
+      }
+      unitPrice = Number(dbProduct.price);
+    } else {
+      unitPrice = getCustomItemUnitPrice(item);
     }
 
-    const itemTotalPrice = unitPrice * Number(item.qty);
+    const itemTotalPrice = unitPrice * qty;
     verifiedSubtotal += itemTotalPrice;
 
     verifiedOrderItems.push({
@@ -262,7 +325,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
       product_name: item.name,
       size: item.size,
       color: item.color,
-      quantity: Number(item.qty),
+      quantity: qty,
       unit_price: unitPrice,
       total_price: itemTotalPrice,
     });
@@ -284,9 +347,10 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     }
   }
 
-  // 3. Compute verified total amount
-  const verifiedShipping = Number(shipping_amount || 0);
-  const verifiedTax = Number(tax_amount || 0);
+  // 3. Compute verified total amount (same formula as CheckoutPage.jsx: both
+  // shipping and tax are based on the pre-discount subtotal)
+  const verifiedShipping = calculateShipping(verifiedSubtotal);
+  const verifiedTax = calculateTax(verifiedSubtotal);
   const verifiedTotal = Math.max(0, verifiedSubtotal - discountAmount + verifiedShipping + verifiedTax);
 
   if (total_amount && Math.abs(Number(total_amount) - verifiedTotal) > 1) {
@@ -375,35 +439,29 @@ export async function verifyCheckout(orderId) {
     const isSuccess = payments.some(p => p.payment_status === "SUCCESS");
 
     if (isSuccess) {
-      // Check current order status to ensure idempotency
-      const { data: currentOrder, error: statusError } = await supabaseAdmin
+      // Atomic pending -> confirmed transition: the status filter on the UPDATE
+      // means only one concurrent request (page reload, double tab, retry) can
+      // win it, so stock is decremented and the email sent exactly once.
+      const { data: claimedRows, error: updateError } = await supabaseAdmin
         .from("orders")
-        .select("*")
+        .update({ status: "confirmed" })
         .eq("id", orderId)
-        .maybeSingle();
+        .eq("status", "pending")
+        .select("id");
 
-      if (statusError) throw new ApiError(500, "Failed to check order status");
-      
-      if (currentOrder && currentOrder.status !== "confirmed") {
-        const { data: updatedOrder, error: updateError } = await supabaseAdmin
-          .from("orders")
-          .update({ status: "confirmed" })
-          .eq("id", orderId)
-          .select()
-          .single();
+      if (updateError) throw new ApiError(500, "Failed to update order status");
 
-        if (updateError) throw new ApiError(500, "Failed to update order status");
-
+      if (Array.isArray(claimedRows) && claimedRows.length > 0) {
         // Decrement stock & send confirmation email ONCE
         await confirmOrder(orderId);
-        return { success: true, status: "SUCCESS", order: updatedOrder || currentOrder };
-      } else {
-        // Already confirmed
-        return { success: true, status: "SUCCESS", order: currentOrder };
       }
+
+      // Response deliberately excludes order details (address, email, phone):
+      // this endpoint is unauthenticated and only needs to report the outcome.
+      return { success: true, status: "SUCCESS", orderId };
     }
 
-    return { success: true, status: "PENDING_OR_FAILED", details: payments };
+    return { success: true, status: "PENDING_OR_FAILED", orderId };
   } catch (error) {
     logError("Cashfree verification failed", logContext({ orderId, error }));
     throw new ApiError(500, "Failed to verify payment");

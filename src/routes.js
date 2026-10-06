@@ -32,6 +32,9 @@ export default [
     route("*", "./velvetwolf/components/NotFoundRedirect.jsx"),
   ]),
 
+  // Same-origin proxy to the Lambda backend (first-party auth cookies).
+  route("api/*", "./routes/api-proxy.js"),
+
   route("sitemap.xml", "./routes/sitemap-xml.jsx"),
   route("robots.txt", "./routes/robots-txt.jsx"),
   route("healthz", "./routes/healthz.jsx"),

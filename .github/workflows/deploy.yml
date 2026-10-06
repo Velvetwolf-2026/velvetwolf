@@ -36,12 +36,31 @@ jobs:
           curl -sSL "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o /usr/local/bin/lightsailctl
           chmod +x /usr/local/bin/lightsailctl
 
+      # The browser talks to the backend through the /api proxy, so without the
+      # shared secret every visitor would reach the Lambda with the proxy's IP
+      # and one person tripping a rate limit would lock everyone out.
+      - name: Check proxy configuration
+        env:
+          API_UPSTREAM_URL: ${{ secrets.API_UPSTREAM_URL }}
+          PROXY_SHARED_SECRET: ${{ secrets.PROXY_SHARED_SECRET }}
+          VITE_API_DIRECT: ${{ vars.VITE_API_DIRECT }}
+        run: |
+          if [ "$VITE_API_DIRECT" = "true" ]; then
+            echo "VITE_API_DIRECT=true: browser calls API Gateway directly; proxy secrets not required."
+            exit 0
+          fi
+          if [ -z "$API_UPSTREAM_URL" ] || [ -z "$PROXY_SHARED_SECRET" ]; then
+            echo "::error::Set the API_UPSTREAM_URL and PROXY_SHARED_SECRET repository secrets (or the VITE_API_DIRECT=true variable to roll back)."
+            exit 1
+          fi
+
       - name: Build image
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
             --build-arg VITE_API_BASE_URL="${{ secrets.VITE_API_BASE_URL }}" \
+            --build-arg VITE_API_DIRECT="${{ vars.VITE_API_DIRECT }}" \
             --build-arg VITE_FIREBASE_API_KEY="${{ secrets.VITE_FIREBASE_API_KEY }}" \
             --build-arg VITE_FIREBASE_APP_ID="${{ secrets.VITE_FIREBASE_APP_ID }}" \
             --build-arg VITE_FIREBASE_AUTH_DOMAIN="${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" \
@@ -75,10 +94,23 @@ jobs:
           fi
           echo "image_ref=$REF" >> "$GITHUB_OUTPUT"
 
+      # Runtime env for the /api/* same-origin proxy (src/routes/api-proxy.js).
+      # Set here — not in the Lightsail console — because every deployment
+      # replaces the container definition, wiping console-set variables.
+      # Built with jq so secret values can't break the JSON quoting.
       - name: Deploy to Lightsail container service
+        env:
+          IMAGE_REF: ${{ steps.push.outputs.image_ref }}
+          API_UPSTREAM_URL: ${{ secrets.API_UPSTREAM_URL }}
+          PROXY_SHARED_SECRET: ${{ secrets.PROXY_SHARED_SECRET }}
         run: |
+          CONTAINERS=$(jq -n \
+            --arg image "$IMAGE_REF" \
+            --arg upstream "$API_UPSTREAM_URL" \
+            --arg secret "$PROXY_SHARED_SECRET" \
+            '{app: {image: $image, ports: {"80": "HTTP"}, environment: {API_UPSTREAM_URL: $upstream, PROXY_SHARED_SECRET: $secret}}}')
           aws lightsail create-container-service-deployment \
             --region "$AWS_REGION" \
             --service-name "$LIGHTSAIL_SERVICE" \
-            --containers "{\"app\":{\"image\":\"${{ steps.push.outputs.image_ref }}\",\"ports\":{\"80\":\"HTTP\"}}}" \
+            --containers "$CONTAINERS" \
             --public-endpoint "{\"containerName\":\"app\",\"containerPort\":80,\"healthCheck\":{\"path\":\"/healthz\",\"healthyThreshold\":2,\"unhealthyThreshold\":2,\"timeoutSeconds\":5,\"intervalSeconds\":10,\"successCodes\":\"200\"}}"
