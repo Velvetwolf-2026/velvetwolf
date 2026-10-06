@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
-import { createPaymentOrder, verifyPayment } from "./cashfree.js";
+import { createPaymentOrder, verifyPayment, getCashfreeCheckoutMode } from "./cashfree.js";
 import { ApiError, logError } from "../utils/http.js";
 import { sendEmail } from "../config/smtp.js";
 import { buildOrderEmail } from "../config/order-template.js";
@@ -423,6 +423,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
       success: true, 
       orderId, 
       paymentSessionId: cashfreeRes.payment_session_id,
+      cashfreeMode: getCashfreeCheckoutMode(),
       method: payment_method
     };
   } catch (error) {

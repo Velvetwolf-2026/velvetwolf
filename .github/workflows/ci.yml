@@ -17,11 +17,14 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        # Same version as package.json engines, the Dockerfile and Amplify
+        node-version-file: '.nvmrc'
         cache: 'npm'
 
+    # npm ci installs exactly what package-lock.json pins (npm install may
+    # silently resolve newer versions than production builds with)
     - name: Install Dependencies
-      run: npm install
+      run: npm ci
 
     - name: Run Linter
       run: npm run lint

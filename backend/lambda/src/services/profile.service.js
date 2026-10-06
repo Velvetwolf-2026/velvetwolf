@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../config/supabase.js";
+import { isLocalDevelopment } from "../config/env.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 import { sendOTP } from "../config/smtp.js";
 import crypto from "crypto";
@@ -173,10 +174,7 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
   logInfo("Verifying email update OTP", profileLogContext({ userId: normalizedUserId, newEmail: normalizedEmail }));
 
   // Check if it's bypass OTP in local dev environment
-  const isLocal = (process.env.FRONTEND_URL || "").includes("localhost") || 
-                  (process.env.BACKEND_PUBLIC_URL || "").includes("localhost") || 
-                  process.env.PORT === "5000";
-  const isBypassOtp = otp === "123456" && isLocal;
+  const isBypassOtp = otp === "123456" && isLocalDevelopment();
 
   if (!isBypassOtp) {
     // Fetch current user email to look up the OTP

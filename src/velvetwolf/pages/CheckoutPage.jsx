@@ -213,8 +213,10 @@ export default function CheckoutPage() {
       if (data.paymentSessionId) {
         // Initialize Cashfree sdk dynamically
         const Cashfree = await loadCashfreeScript();
+        // The backend reports which Cashfree environment created this
+        // session; the SDK mode must match it.
         const cashfree = Cashfree({
-          mode: "sandbox", // In production this would be "production"
+          mode: data.cashfreeMode === "production" ? "production" : "sandbox",
         });
 
         const checkoutOptions = {

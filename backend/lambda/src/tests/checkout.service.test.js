@@ -19,7 +19,7 @@ vi.mock("../services/meta-capi.service.js", () => ({ sendPurchaseToMeta }));
 
 const createPaymentOrder = vi.fn();
 const verifyPayment = vi.fn();
-vi.mock("../services/cashfree.js", () => ({ createPaymentOrder, verifyPayment }));
+vi.mock("../services/cashfree.js", () => ({ createPaymentOrder, verifyPayment, getCashfreeCheckoutMode: () => "sandbox" }));
 
 const { initiateCheckout, verifyCheckout, validateCoupon } = await import("../services/checkout.service.js");
 
@@ -133,7 +133,7 @@ describe("checkout.service", () => {
         total_amount: 1299, subtotal: 1299, shipping_amount: 0, tax_amount: 0, payment_method: "card",
       });
 
-      expect(result).toMatchObject({ success: true, method: "card", paymentSessionId: "sess_123" });
+      expect(result).toMatchObject({ success: true, method: "card", paymentSessionId: "sess_123", cashfreeMode: "sandbox" });
       expect(sendEmail).not.toHaveBeenCalled();
       expect(createShiprocketOrder).not.toHaveBeenCalled();
       expect(calls.some((c) => c.table === "product_variants" && c.method === "update")).toBe(false);
