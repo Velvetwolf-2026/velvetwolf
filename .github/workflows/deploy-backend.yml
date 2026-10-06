@@ -1,0 +1,142 @@
+name: Deploy Backend to Lambda
+
+# Updates the CODE of the existing Lambda function only. API Gateway, the
+# function's environment variables (secrets, PROXY_SHARED_SECRET, ...),
+# memory, timeout and runtime are left exactly as configured in AWS.
+# (Not `sam deploy`: the live API's /dev stage was not created from
+# backend/lambda/template.yaml, so deploying that template could create a
+# second API with a new URL.)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/lambda/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # required for OIDC federation to AWS
+  contents: read
+
+# Never run two backend deploys at once; let an in-progress one finish.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+env:
+  # The Lambda + API Gateway live in us-east-1 (the frontend is in ap-south-1).
+  AWS_REGION: us-east-1
+  LAMBDA_FUNCTION_NAME: ${{ vars.LAMBDA_FUNCTION_NAME }}
+
+jobs:
+  # Gate: never ship a commit that fails lint or tests (backend tests run as
+  # part of the root test suite).
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check configuration
+        run: |
+          if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
+            echo "::error::Set the LAMBDA_FUNCTION_NAME repository variable (Settings > Secrets and variables > Actions > Variables)."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: backend/lambda/package-lock.json
+
+      # Production dependencies only, installed on Linux x64 so native modules
+      # (bcrypt) get Linux binaries — a zip built on Windows/macOS would not
+      # run on Lambda.
+      - name: Install production dependencies
+        working-directory: backend/lambda
+        run: npm ci --omit=dev
+
+      - name: Package function
+        working-directory: backend/lambda
+        run: |
+          zip -qr "$GITHUB_WORKSPACE/function.zip" index.js package.json src node_modules \
+            -x 'src/tests/*' '*.test.js' '.env*'
+          ls -lh "$GITHUB_WORKSPACE/function.zip"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Keep the currently deployed code so a failed smoke test can restore it.
+      - name: Save current code for rollback
+        run: |
+          LOCATION=$(aws lambda get-function --function-name "$LAMBDA_FUNCTION_NAME" --query 'Code.Location' --output text)
+          curl -sSfL "$LOCATION" -o previous.zip
+          ls -lh previous.zip
+
+      - name: Update function code
+        run: |
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --zip-file fileb://function.zip \
+            --publish \
+            --query '{Version: Version, CodeSha256: CodeSha256, Runtime: Runtime}' \
+            --output table
+          aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION_NAME"
+
+      # GET / is the backend's health route. API_UPSTREAM_URL is the API
+      # Gateway stage URL, already stored for the frontend's /api proxy.
+      - name: Smoke test
+        id: smoke
+        env:
+          API_URL: ${{ secrets.API_UPSTREAM_URL }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$API_URL/" || true)
+            echo "Attempt $attempt: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::Backend health check failed after deploy."
+          exit 1
+
+      - name: Roll back on failed smoke test
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          echo "Restoring the previously deployed code..."
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --zip-file fileb://previous.zip \
+            --publish \
+            --query 'Version' --output text
+          aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION_NAME"
+          echo "::warning::Rolled back to the previous backend code."
