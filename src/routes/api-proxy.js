@@ -92,7 +92,17 @@ export async function proxyToApi(request) {
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
   } catch (error) {
-    console.error(JSON.stringify({ level: "error", message: "API proxy upstream request failed", path: upstreamPath, error: error?.message }));
+    // Node's fetch only says "fetch failed"; the real reason (DNS lookup,
+    // TLS, connection refused, ...) is in error.cause. Log the upstream host
+    // too (not the full URL) so a misconfigured API_UPSTREAM_URL is obvious.
+    console.error(JSON.stringify({
+      level: "error",
+      message: "API proxy upstream request failed",
+      path: upstreamPath,
+      upstreamHost: (() => { try { return new URL(upstreamBase).host; } catch { return "invalid-url"; } })(),
+      error: error?.message,
+      cause: error?.cause?.code || error?.cause?.message || null,
+    }));
     return jsonError(502, "Backend is unavailable. Please try again.");
   }
 

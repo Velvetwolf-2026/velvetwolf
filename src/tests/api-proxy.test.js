@@ -21,6 +21,7 @@ describe("api-proxy", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     delete process.env.API_UPSTREAM_URL;
     delete process.env.PROXY_SHARED_SECRET;
@@ -106,6 +107,22 @@ describe("api-proxy", () => {
     const res = await proxyToApi(new Request("https://www.velvetwolf.in/api/products"));
 
     expect(res.status).toBe(502);
+  });
+
+  it("logs the underlying network error and upstream host when the backend is unreachable", async () => {
+    const err = new TypeError("fetch failed");
+    err.cause = Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" });
+    fetchMock.mockRejectedValueOnce(err);
+    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await proxyToApi(new Request("https://www.velvetwolf.in/api/auth/firebase-login", { method: "POST", body: "{}" }));
+
+    const logged = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(logged).toMatchObject({
+      path: "/auth/firebase-login",
+      upstreamHost: "abc123.execute-api.us-east-1.amazonaws.com",
+      cause: "ENOTFOUND",
+    });
   });
 
   it("does not send a secret header when none is configured", async () => {
