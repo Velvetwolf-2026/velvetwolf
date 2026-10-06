@@ -133,6 +133,20 @@ describe("api-proxy", () => {
     expect(fetchMock.mock.calls[0][1].headers.get("x-vw-proxy-secret")).toBeNull();
   });
 
+  it("prefers the build-time VITE_API_BASE_URL over the runtime API_UPSTREAM_URL", () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://good.execute-api.us-east-1.amazonaws.com/dev/");
+    process.env.API_UPSTREAM_URL = "https://typo.execute-api.us-east-1.amazonaws.com/dev";
+    expect(getUpstreamBaseUrl()).toBe("https://good.execute-api.us-east-1.amazonaws.com/dev");
+    vi.unstubAllEnvs();
+  });
+
+  it("tolerates stray quotes or whitespace in the fallback API_UPSTREAM_URL", () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    process.env.API_UPSTREAM_URL = ' "https://abc123.execute-api.us-east-1.amazonaws.com/dev"\n';
+    expect(getUpstreamBaseUrl()).toBe("https://abc123.execute-api.us-east-1.amazonaws.com/dev");
+    vi.unstubAllEnvs();
+  });
+
   it("refuses a relative upstream, which would proxy to itself", () => {
     process.env.API_UPSTREAM_URL = "/api";
     vi.stubEnv("VITE_API_BASE_URL", "/api");
