@@ -35,10 +35,17 @@ const FORWARD_RESPONSE_HEADERS = [
   "retry-after",
 ];
 
+// Prefer VITE_API_BASE_URL: the same API Gateway URL browsers called directly
+// before the proxy existed, so it is known to be correct. API_UPSTREAM_URL
+// (runtime env) is only a fallback for builds without it.
 export function getUpstreamBaseUrl() {
-  const candidate = process.env.API_UPSTREAM_URL || import.meta.env.VITE_API_BASE_URL || "";
-  // Must be absolute — a relative value (e.g. "/api") would proxy to itself.
-  return /^https?:\/\//i.test(candidate) ? candidate.replace(/\/+$/, "") : "";
+  const candidates = [import.meta.env.VITE_API_BASE_URL, process.env.API_UPSTREAM_URL];
+  for (const raw of candidates) {
+    const candidate = String(raw || "").trim().replace(/^["']|["']$/g, "");
+    // Must be absolute — a relative value (e.g. "/api") would proxy to itself.
+    if (/^https?:\/\//i.test(candidate)) return candidate.replace(/\/+$/, "");
+  }
+  return "";
 }
 
 // Lightsail's load balancer appends the connecting client's IP to

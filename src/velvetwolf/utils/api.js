@@ -9,9 +9,11 @@ function trimTrailingSlash(value) {
 
 // Direct backend URL (API Gateway). Used by server-side code (SSR loaders),
 // which has no cookies to protect and can't fetch a relative URL.
+// Same order as the /api proxy: the build-time URL browsers used directly
+// (known good) first, the runtime API_UPSTREAM_URL only as a fallback.
 const DIRECT_API_BASE_URL =
-  trimTrailingSlash(globalThis.process?.env?.API_UPSTREAM_URL) ||
   trimTrailingSlash(import.meta.env.VITE_API_BASE_URL) ||
+  trimTrailingSlash(globalThis.process?.env?.API_UPSTREAM_URL) ||
   DEFAULT_API_BASE_URL;
 
 // Build with VITE_API_DIRECT=true to make the browser call API Gateway
