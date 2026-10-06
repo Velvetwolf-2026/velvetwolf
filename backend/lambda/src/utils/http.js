@@ -171,16 +171,13 @@ export const getCorsHeaders = (event) => {
   const isLocalBackend = !process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === "development";
   const isLocalhostOrigin = requestOrigin.startsWith("http://localhost:") || requestOrigin.startsWith("http://127.0.0.1:");
 
-  let selectedOrigin = "";
-  if (requestOrigin) {
-    if (configuredOrigins.length === 0 || configuredOrigins.includes(requestOrigin) || (isLocalBackend && isLocalhostOrigin)) {
-      selectedOrigin = requestOrigin;
-    }
-  } else if (configuredOrigins.length >= 1) {
-    selectedOrigin = configuredOrigins[0];
-  } else {
-    selectedOrigin = "*";
-  }
+  // The browser reaches the API same-origin through the /api proxy, so CORS is
+  // only for explicitly configured origins (and localhost in local dev). Any
+  // other origin gets no Access-Control-Allow-Origin at all, so other sites
+  // can't read responses — with or without credentials.
+  const isAllowedOrigin =
+    Boolean(requestOrigin) &&
+    (configuredOrigins.includes(requestOrigin) || (isLocalBackend && isLocalhostOrigin));
 
   const headers = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-CSRF-Token",
@@ -189,11 +186,9 @@ export const getCorsHeaders = (event) => {
     Vary: "Origin",
   };
 
-  if (selectedOrigin && selectedOrigin !== "*") {
-    headers["Access-Control-Allow-Origin"] = selectedOrigin;
+  if (isAllowedOrigin) {
+    headers["Access-Control-Allow-Origin"] = requestOrigin;
     headers["Access-Control-Allow-Credentials"] = "true";
-  } else {
-    headers["Access-Control-Allow-Origin"] = "*";
   }
 
   return headers;

@@ -41,16 +41,8 @@ export async function verifyEmailOtp(body, event) {
   if (!otp) throw new ApiError(400, "OTP is required.");
 
   const result = await profileService.verifyEmailUpdateOtp({ userId: user.id, newEmail, otp });
-  const headers = {};
-  if (result.token) {
-    const csrfToken = authService.generateCsrfToken();
-    result.csrfToken = csrfToken;
-    headers["Set-Cookie"] = [
-      authService.getAuthCookieHeader(result.token),
-      authService.getCsrfCookieHeader(csrfToken)
-    ];
-  }
-  return jsonResponse(200, result, headers, event);
+  // Email is part of the JWT, so a new session cookie is issued.
+  return authService.buildSessionResponse(result, event);
 }
 
 export async function getStyleProfile(query, event) {
