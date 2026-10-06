@@ -14,6 +14,9 @@ vi.mock("../config/smtp.js", () => ({ sendEmail }));
 const createShiprocketOrder = vi.fn().mockResolvedValue({ success: true });
 vi.mock("../services/shiprocket.service.js", () => ({ createShiprocketOrder }));
 
+const sendPurchaseToMeta = vi.fn().mockResolvedValue({ success: true });
+vi.mock("../services/meta-capi.service.js", () => ({ sendPurchaseToMeta }));
+
 const createPaymentOrder = vi.fn();
 const verifyPayment = vi.fn();
 vi.mock("../services/cashfree.js", () => ({ createPaymentOrder, verifyPayment }));

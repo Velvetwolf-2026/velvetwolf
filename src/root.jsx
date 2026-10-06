@@ -24,6 +24,7 @@ import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 import SilkBackground from "./velvetwolf/components/SilkBackground";
 import SmoothScroll from "./velvetwolf/components/SmoothScroll";
+import MetaPixel from "./velvetwolf/components/MetaPixel";
 
 import "./index.css";
 
@@ -648,6 +649,7 @@ export default function VelvetWolfRoot() {
   return (
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
+        <MetaPixel />
         {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
         <SilkBackground />
         <SmoothScroll />

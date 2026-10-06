@@ -457,5 +457,10 @@ DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_pr
 DROP POLICY IF EXISTS "Allow select user_style_profiles" ON public.user_style_profiles;
 CREATE POLICY "Allow select user_style_profiles" ON public.user_style_profiles FOR SELECT USING (auth.uid() = user_id);
 
+-- ==========================================
+-- MIGRATION: EXTEND ORDERS TABLE WITH META TRACKING
+-- ==========================================
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::jsonb;
+
 
 

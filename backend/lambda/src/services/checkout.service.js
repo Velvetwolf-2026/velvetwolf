@@ -5,6 +5,7 @@ import { ApiError, logError } from "../utils/http.js";
 import { sendEmail } from "../config/smtp.js";
 import { buildOrderEmail } from "../config/order-template.js";
 import { createShiprocketOrder } from "./shiprocket.service.js";
+import { sendPurchaseToMeta } from "./meta-capi.service.js";
 
 function logContext(context = {}) {
   return { service: "checkout", ...context };
@@ -199,9 +200,31 @@ async function confirmOrder(orderId) {
   } catch (srErr) {
     logError("Shiprocket sync failed inside order confirmation", logContext({ orderId, error: srErr }));
   }
+
+  // 7. Dispatch conversion event to Meta Conversions API (CAPI)
+  try {
+    const orderMeta = order.meta || order.shipping_address?._meta || {};
+    const skus = (items || []).map((i) => i.product_id || i.product_name);
+    await sendPurchaseToMeta({
+      id: order.id,
+      paidAt: order.created_at ? new Date(order.created_at).getTime() : Date.now(),
+      email: order.shipping_address?.email,
+      phone: order.shipping_address?.phone,
+      total: Number(order.total_amount),
+      skus,
+      meta: {
+        ip: orderMeta.ip,
+        ua: orderMeta.ua,
+        fbp: orderMeta.fbp,
+        fbc: orderMeta.fbc,
+      },
+    });
+  } catch (capiErr) {
+    logError("Meta CAPI dispatch failed inside order confirmation", logContext({ orderId, error: capiErr }));
+  }
 }
 
-export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, shipping_amount, tax_amount, payment_method, couponCode }) {
+export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, shipping_amount, tax_amount, payment_method, couponCode, meta }) {
   if (!cart || cart.length === 0) throw new ApiError(400, "Cart is empty");
   
   // 1. Validate stock and verify prices for all items directly from the database
@@ -282,10 +305,11 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     shipping_amount: Number(verifiedShipping.toFixed(2)),
     tax_amount: Number(verifiedTax.toFixed(2)),
     payment_method: payment_method,
-    shipping_address: address,
+    shipping_address: { ...address, _meta: meta || {} },
     status: payment_method === "cod" ? "confirmed" : "pending",
     coupon_code: couponCode || null,
-    discount_amount: Number(discountAmount.toFixed(2))
+    discount_amount: Number(discountAmount.toFixed(2)),
+    meta: meta || {},
   });
 
   if (orderError) {

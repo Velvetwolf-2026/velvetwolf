@@ -5,6 +5,7 @@ import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
 import { getSupabaseLogoUrl } from "../utils/supabase";
+import { getMetaTrackingData } from "../utils/metaPixel";
 
 function loadCashfreeScript() {
   return new Promise((resolve, reject) => {
@@ -153,6 +154,7 @@ export default function CheckoutPage() {
     sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
     sessionStorage.setItem("vw_last_checkout_total", String(total));
     try {
+      const metaCookies = getMetaTrackingData();
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
         credentials: 'include',
@@ -167,7 +169,11 @@ export default function CheckoutPage() {
           payment_method: paymentMethod,
           user_id: user?.id,
           couponCode: appliedCoupon?.code || null,
-          whatsappUpdates
+          whatsappUpdates,
+          meta: {
+            fbp: metaCookies.fbp,
+            fbc: metaCookies.fbc,
+          }
         })
       });
 
