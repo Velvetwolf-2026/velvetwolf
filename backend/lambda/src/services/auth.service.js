@@ -5,7 +5,7 @@ import { loadBackendEnv, isLocalDevelopment } from "../config/env.js";
 import { normalizeOtpKind } from "../config/otp-template.js";
 import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
-import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
+import { ApiError, jsonResponse, logError, logInfo, logWarn } from "../utils/http.js";
 
 loadBackendEnv();
 
@@ -82,6 +82,22 @@ export function getLogoutCsrfCookieHeader() {
 
 export function generateCsrfToken() {
   return crypto.randomBytes(32).toString("hex");
+}
+
+// Set-Cookie values that establish a browser session: the HttpOnly JWT plus a
+// fresh JS-readable CSRF token for the double-submit check in requireAuth.
+export function getSessionCookieHeaders(token) {
+  return [getAuthCookieHeader(token), getCsrfCookieHeader(generateCsrfToken())];
+}
+
+// JSON response for an endpoint that may sign the user in. The JWT goes only
+// into the HttpOnly cookie — never the response body, where page scripts
+// (including injected ones) could read it. `authenticated: true` tells the
+// frontend a session was created.
+export function buildSessionResponse(result, event) {
+  if (!result?.token) return jsonResponse(200, result, {}, event);
+  const { token, ...body } = result;
+  return jsonResponse(200, { ...body, authenticated: true }, { "Set-Cookie": getSessionCookieHeaders(token) }, event);
 }
 
 

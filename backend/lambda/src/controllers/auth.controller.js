@@ -32,32 +32,16 @@ export async function login(body, event) {
   }
 
   const result = await authService.login(data, getClientIp(event));
-  const headers = {};
-  if (result.token) {
-    const csrfToken = authService.generateCsrfToken();
-    result.csrfToken = csrfToken;
-    headers["Set-Cookie"] = [
-      authService.getAuthCookieHeader(result.token),
-      authService.getCsrfCookieHeader(csrfToken)
-    ];
-  }
-  return jsonResponse(200, result, headers, event);
+  return authService.buildSessionResponse(result, event);
 }
 
 export async function verifyOtp(body, event) {
   const data = validate(verifyOtpSchema)(body);
   const result = await authService.verifyOtp(data);
-  const headers = {};
   if (result.token) {
     await auditLog({ action: "user.login", resource: "users", meta: { email: data.email, type: data.type } });
-    const csrfToken = authService.generateCsrfToken();
-    result.csrfToken = csrfToken;
-    headers["Set-Cookie"] = [
-      authService.getAuthCookieHeader(result.token),
-      authService.getCsrfCookieHeader(csrfToken)
-    ];
   }
-  return jsonResponse(200, result, headers, event);
+  return authService.buildSessionResponse(result, event);
 }
 
 export async function resendOtp(body, event) {
@@ -91,15 +75,7 @@ export async function googleCallback(query, event) {
       error: query.error,
       errorDescription: query.error_description,
     });
-    const headers = {};
-    if (result.token) {
-      const csrfToken = authService.generateCsrfToken();
-      headers["Set-Cookie"] = [
-        authService.getAuthCookieHeader(result.token),
-        authService.getCsrfCookieHeader(csrfToken)
-      ];
-      result.redirect = `${result.redirect.replace(/\/$/, "")}${result.redirect.includes("?") ? "&" : "?"}csrf_token=${encodeURIComponent(csrfToken)}`;
-    }
+    const headers = result.token ? { "Set-Cookie": authService.getSessionCookieHeaders(result.token) } : {};
     return redirectResponse(result.redirect, 302, headers, event);
   } catch (err) {
     const mode = (query.state && String(query.state).includes("signup")) ? "signup" : "login";
@@ -111,15 +87,7 @@ export async function googleCallback(query, event) {
 
 export async function verifyOtpLink(query, event) {
   const result = await authService.verifyOtpLink(query.t);
-  const headers = {};
-  if (result.token) {
-    const csrfToken = authService.generateCsrfToken();
-    headers["Set-Cookie"] = [
-      authService.getAuthCookieHeader(result.token),
-      authService.getCsrfCookieHeader(csrfToken)
-    ];
-    result.redirect = `${result.redirect.replace(/\/$/, "")}${result.redirect.includes("?") ? "&" : "?"}csrf_token=${encodeURIComponent(csrfToken)}`;
-  }
+  const headers = result.token ? { "Set-Cookie": authService.getSessionCookieHeaders(result.token) } : {};
   return redirectResponse(result.redirect, 302, headers, event);
 }
 
@@ -135,17 +103,8 @@ export async function discover(body, event) {
 export async function firebaseLogin(body, event) {
   const data = validate(firebaseLoginSchema)(body);
   const result = await authService.firebaseLogin(data, getClientIp(event));
-  const headers = {};
-  if (result.token) {
-    const csrfToken = authService.generateCsrfToken();
-    result.csrfToken = csrfToken;
-    headers["Set-Cookie"] = [
-      authService.getAuthCookieHeader(result.token),
-      authService.getCsrfCookieHeader(csrfToken)
-    ];
-  }
   await auditLog({ action: "user.login", resource: "users", meta: { phone: data.phone, type: "Mobile" } });
-  return jsonResponse(200, result, headers, event);
+  return authService.buildSessionResponse(result, event);
 }
 
 export async function logout(body, event) {
@@ -161,23 +120,12 @@ export async function logout(body, event) {
 export async function getSession(body, event) {
   try {
     const user = requireAuth(event);
-    const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
-    let token = "";
-    if (cookieHeader) {
-      const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="));
-      if (match) {
-        token = match.split("=")[1]?.trim();
-      }
-    }
-    if (!token) {
-      const authHeader = event.headers?.authorization || event.headers?.Authorization || "";
-      token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-    }
-    const csrfToken = authService.generateCsrfToken();
+    // Refresh the CSRF cookie; the JWT itself is never echoed back (it stays
+    // in the HttpOnly cookie).
     const headers = {
-      "Set-Cookie": authService.getCsrfCookieHeader(csrfToken)
+      "Set-Cookie": authService.getCsrfCookieHeader(authService.generateCsrfToken())
     };
-    return jsonResponse(200, { authenticated: true, user, token, csrfToken }, headers, event);
+    return jsonResponse(200, { authenticated: true, user }, headers, event);
   } catch {
     return jsonResponse(200, { authenticated: false, user: null }, {}, event);
   }
