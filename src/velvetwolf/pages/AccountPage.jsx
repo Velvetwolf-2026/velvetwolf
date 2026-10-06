@@ -52,12 +52,8 @@ export function AccountPage() {
   useEffect(() => {
     if (tab === "style" && user?.personality_type && !styleProfile) {
       setStyleProfileLoading(true);
-      const token = localStorage.getItem("token");
       fetch(apiUrl("/user/style-profile"), {
         credentials: 'include',
-        headers: {
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
       })
       .then(res => res.json())
       .then(data => {
@@ -74,13 +70,9 @@ export function AccountPage() {
     if (!window.confirm("Are you sure you want to clear your style profile? This will reset all personalized views.")) return;
     
     try {
-      const token = localStorage.getItem("token");
       const res = await fetch(apiUrl("/user/style-profile"), {
         method: "DELETE",
         credentials: 'include',
-        headers: {
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
       });
       
       if (res.ok) {

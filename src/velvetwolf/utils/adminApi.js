@@ -3,10 +3,8 @@ import { apiUrl } from './api';
 // ─── INTERNAL HELPERS ─────────────────────────────────────────────────────────
 
 function getAdminHeaders() {
-  const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 

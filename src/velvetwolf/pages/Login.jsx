@@ -10,6 +10,13 @@ import { executeRecaptcha } from "../utils/recaptcha";
 import { updateProfile } from "../utils/profile";
 import { getSupabaseLogoUrl } from "../utils/supabase";
 
+// True when the response created a session (the HttpOnly cookie is set).
+// `user` alone is not enough: the mobile-login "OTP sent" response includes
+// it too. `token` is the older backend's signal, kept so either deploy order works.
+function isSignedInResponse(data) {
+  return Boolean(data?.authenticated || data?.token);
+}
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
@@ -79,7 +86,6 @@ export function Login() {
   // Resolved discovery state
   const [resolvedEmail, setResolvedEmail] = useState("");
   const [isExistingUser, setIsExistingUser] = useState(false);
-  const [pendingToken, setPendingToken] = useState(null);
   const [pendingUserObject, setPendingUserObject] = useState(null);
   const [confirmationResult, setConfirmationResult] = useState(null);
 
@@ -196,10 +202,8 @@ export function Login() {
       
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Google login failed.");
-      
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
+
+      // The session lives in an HttpOnly cookie set by this response.
       const nextUser = {
         ...data.user,
         role: data.user?.role || "customer",
@@ -369,9 +373,9 @@ export function Login() {
         throw new Error(data.error || "Incorrect password. Please try again.");
       }
 
-      // Email password login returns JWT directly (No OTP)
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      // Email password login signs in directly (No OTP); the session cookie
+      // was set by this response.
+      if (isSignedInResponse(data)) {
         const nextUser = {
           ...data.user,
           email: data.user.email || resolvedEmail,
@@ -514,15 +518,13 @@ export function Login() {
         }
       }
 
-      if (data.token) {
+      if (isSignedInResponse(data)) {
         if (isMobile && !isExistingUser) {
-          // New mobile user: store token and ask for Name (Step 5)
-          setPendingToken(data.token);
+          // New mobile user: already signed in via cookie; ask for Name (Step 5)
           setPendingUserObject(data.user);
           setStep("mobile_name");
         } else {
           // Complete login
-          localStorage.setItem("token", data.token);
           const nextUser = {
             ...data.user,
             email: resolvedEmail,
@@ -589,10 +591,6 @@ export function Login() {
     setLoading(true);
     try {
       const mobileNumber = resolvedEmail.split("@")[0];
-      // Save token before calling updateProfile to ensure it uses the token header in dev
-      if (pendingToken) {
-        localStorage.setItem("token", pendingToken);
-      }
       const profile = await updateProfile(pendingUserObject.id, {
         fullName: fullName.trim(),
         phone: mobileNumber,
