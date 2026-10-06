@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router";
 
-export const PIXEL_ID =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_META_PIXEL_ID) ||
-  (typeof process !== "undefined" && process.env && (process.env.NEXT_PUBLIC_META_PIXEL_ID || process.env.VITE_META_PIXEL_ID)) ||
-  "";
+// Baked in at build time (Vite); passed to the Docker build in deploy.yml.
+export const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "";
 
 export default function MetaPixel() {
   const location = useLocation();
