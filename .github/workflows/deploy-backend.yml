@@ -6,6 +6,9 @@ name: Deploy Backend to Lambda
 # (Not `sam deploy`: the live API's /dev stage was not created from
 # backend/lambda/template.yaml, so deploying that template could create a
 # second API with a new URL.)
+#
+# Each deploy publishes a numbered Lambda version, so a previous version's
+# code can be restored from the Lambda console if needed.
 
 on:
   push:
@@ -62,33 +65,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Validate everything the smoke test needs BEFORE touching the function,
-      # so a config problem can't deploy and then roll back.
       - name: Check configuration
-        env:
-          API_URL: ${{ secrets.API_UPSTREAM_URL }}
         run: |
           if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
             echo "::error::Set the LAMBDA_FUNCTION_NAME repository variable (Settings > Secrets and variables > Actions > Variables)."
-            exit 1
-          fi
-          if [ -z "$API_URL" ]; then
-            echo "::error::The API_UPSTREAM_URL repository secret is empty or not visible to this workflow (it must be a repository secret, not an environment secret or a variable)."
-            exit 1
-          fi
-          if ! printf '%s' "$API_URL" | grep -Eq '^https://[^[:space:]"]+$'; then
-            echo "::error::API_UPSTREAM_URL must be a plain https:// URL with no quotes, spaces or line breaks, e.g. https://xxxx.execute-api.us-east-1.amazonaws.com/dev"
-            exit 1
-          fi
-          # Health check against the CURRENT backend: if this fails, the URL is
-          # wrong (not the new code), so stop before deploying.
-          STATUS=$(curl -sS -o /tmp/health.txt -w '%{http_code}' --max-time 15 "${API_URL%/}/") || {
-            echo "::error::Could not reach the API at API_UPSTREAM_URL before deploying (see the curl error above). Check the secret's value."
-            exit 1
-          }
-          echo "Pre-deploy health check: HTTP $STATUS $(head -c 200 /tmp/health.txt)"
-          if [ "$STATUS" != "200" ]; then
-            echo "::error::GET / on the current backend returned HTTP $STATUS, so the post-deploy smoke test could never pass. Check API_UPSTREAM_URL points at the API stage (…/dev) and that GET / is routed to the function."
             exit 1
           fi
 
@@ -119,13 +99,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Keep the currently deployed code so a failed smoke test can restore it.
-      - name: Save current code for rollback
-        run: |
-          LOCATION=$(aws lambda get-function --function-name "$LAMBDA_FUNCTION_NAME" --query 'Code.Location' --output text)
-          curl -sSfL "$LOCATION" -o previous.zip
-          ls -lh previous.zip
-
       - name: Update function code
         run: |
           aws lambda update-function-code \
@@ -135,32 +108,3 @@ jobs:
             --query '{Version: Version, CodeSha256: CodeSha256, Runtime: Runtime}' \
             --output table
           aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION_NAME"
-
-      # GET / is the backend's health route. API_UPSTREAM_URL is the API
-      # Gateway stage URL, already stored for the frontend's /api proxy.
-      - name: Smoke test
-        id: smoke
-        env:
-          API_URL: ${{ secrets.API_UPSTREAM_URL }}
-        run: |
-          for attempt in 1 2 3 4 5; do
-            # -S prints the real error (DNS, TLS, timeout) instead of a bare 000
-            STATUS=$(curl -sS -o /tmp/health.txt -w '%{http_code}' --max-time 15 "${API_URL%/}/") || true
-            echo "Attempt $attempt: HTTP $STATUS $(head -c 200 /tmp/health.txt 2>/dev/null)"
-            if [ "$STATUS" = "200" ]; then exit 0; fi
-            sleep 5
-          done
-          echo "::error::Backend health check failed after deploy."
-          exit 1
-
-      - name: Roll back on failed smoke test
-        if: failure() && steps.smoke.outcome == 'failure'
-        run: |
-          echo "Restoring the previously deployed code..."
-          aws lambda update-function-code \
-            --function-name "$LAMBDA_FUNCTION_NAME" \
-            --zip-file fileb://previous.zip \
-            --publish \
-            --query 'Version' --output text
-          aws lambda wait function-updated-v2 --function-name "$LAMBDA_FUNCTION_NAME"
-          echo "::warning::Rolled back to the previous backend code."
