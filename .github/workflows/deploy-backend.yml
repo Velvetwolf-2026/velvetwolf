@@ -62,10 +62,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Validate everything the smoke test needs BEFORE touching the function,
+      # so a config problem can't deploy and then roll back.
       - name: Check configuration
+        env:
+          API_URL: ${{ secrets.API_UPSTREAM_URL }}
         run: |
           if [ -z "$LAMBDA_FUNCTION_NAME" ]; then
             echo "::error::Set the LAMBDA_FUNCTION_NAME repository variable (Settings > Secrets and variables > Actions > Variables)."
+            exit 1
+          fi
+          if [ -z "$API_URL" ]; then
+            echo "::error::The API_UPSTREAM_URL repository secret is empty or not visible to this workflow (it must be a repository secret, not an environment secret or a variable)."
+            exit 1
+          fi
+          if ! printf '%s' "$API_URL" | grep -Eq '^https://[^[:space:]"]+$'; then
+            echo "::error::API_UPSTREAM_URL must be a plain https:// URL with no quotes, spaces or line breaks, e.g. https://xxxx.execute-api.us-east-1.amazonaws.com/dev"
+            exit 1
+          fi
+          # Health check against the CURRENT backend: if this fails, the URL is
+          # wrong (not the new code), so stop before deploying.
+          STATUS=$(curl -sS -o /tmp/health.txt -w '%{http_code}' --max-time 15 "${API_URL%/}/") || {
+            echo "::error::Could not reach the API at API_UPSTREAM_URL before deploying (see the curl error above). Check the secret's value."
+            exit 1
+          }
+          echo "Pre-deploy health check: HTTP $STATUS $(head -c 200 /tmp/health.txt)"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::GET / on the current backend returned HTTP $STATUS, so the post-deploy smoke test could never pass. Check API_UPSTREAM_URL points at the API stage (…/dev) and that GET / is routed to the function."
             exit 1
           fi
 
@@ -121,8 +144,9 @@ jobs:
           API_URL: ${{ secrets.API_UPSTREAM_URL }}
         run: |
           for attempt in 1 2 3 4 5; do
-            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$API_URL/" || true)
-            echo "Attempt $attempt: HTTP $STATUS"
+            # -S prints the real error (DNS, TLS, timeout) instead of a bare 000
+            STATUS=$(curl -sS -o /tmp/health.txt -w '%{http_code}' --max-time 15 "${API_URL%/}/") || true
+            echo "Attempt $attempt: HTTP $STATUS $(head -c 200 /tmp/health.txt 2>/dev/null)"
             if [ "$STATUS" = "200" ]; then exit 0; fi
             sleep 5
           done
