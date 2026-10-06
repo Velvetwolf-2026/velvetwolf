@@ -179,7 +179,6 @@ export function ForgetPassword() {
       setResetToken("");
 
       // Clear any stale session so user can log in fresh with new password
-      localStorage.removeItem("token");
       localStorage.removeItem("user");
       setUser(null);
     } catch (err) {

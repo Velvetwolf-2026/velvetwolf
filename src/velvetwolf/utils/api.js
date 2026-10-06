@@ -14,8 +14,10 @@ const DIRECT_API_BASE_URL =
   trimTrailingSlash(import.meta.env.VITE_API_BASE_URL) ||
   DEFAULT_API_BASE_URL;
 
-// Rollback switch: build with VITE_API_DIRECT=true to make the browser call
-// API Gateway directly again (the pre-proxy behaviour).
+// Build with VITE_API_DIRECT=true to make the browser call API Gateway
+// directly (the pre-proxy behaviour). Note: auth is cookie-only, and the
+// browser won't send those cookies cross-site, so in direct mode users can't
+// stay signed in — only useful together with reverting the cookie-only change.
 const USE_DIRECT_API = import.meta.env.VITE_API_DIRECT === "true";
 
 // In the browser, go through the same-origin proxy so auth cookies are

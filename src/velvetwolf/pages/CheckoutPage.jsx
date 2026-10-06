@@ -155,16 +155,12 @@ export default function CheckoutPage() {
     sessionStorage.setItem("vw_last_checkout_total", String(total));
     try {
       const metaCookies = getMetaTrackingData();
-      // The backend identifies the customer from this token (not from the
-      // body), so signed-in orders show up under their account.
-      const token = localStorage.getItem("token");
+      // The backend identifies the customer from the session cookie (not from
+      // the body), so signed-in orders show up under their account.
       const res = await fetch(apiUrl('/checkout/create'), {
         method: "POST",
         credentials: 'include',
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
           address,

@@ -6,13 +6,11 @@ export async function updateProfile(userId, updates) {
     throw new Error('Enter a valid 10-digit Indian mobile number');
   }
 
-  const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/update'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
       id: userId,
@@ -33,13 +31,11 @@ export async function updateProfile(userId, updates) {
 
 
 export async function sendEmailUpdateOtp(newEmail) {
-  const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/email/send-otp'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ newEmail })
   });
@@ -52,13 +48,11 @@ export async function sendEmailUpdateOtp(newEmail) {
 }
 
 export async function verifyEmailUpdateOtp(newEmail, otp) {
-  const token = localStorage.getItem('token');
   const res = await fetch(apiUrl('/profile/email/verify-otp'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ newEmail, otp })
   });
