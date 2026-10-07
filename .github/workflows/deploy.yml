@@ -134,9 +134,9 @@ jobs:
             --arg image "$IMAGE_REF" \
             --arg upstream "$API_UPSTREAM_URL" \
             --arg secret "$PROXY_SHARED_SECRET" \
-            '{app: {image: $image, ports: {"80": "HTTP"}, environment: {API_UPSTREAM_URL: $upstream, PROXY_SHARED_SECRET: $secret}}}')
+            '{app: {image: $image, ports: {"3000": "HTTP"}, environment: {API_UPSTREAM_URL: $upstream, PROXY_SHARED_SECRET: $secret}}}')
           aws lightsail create-container-service-deployment \
             --region "$AWS_REGION" \
             --service-name "$LIGHTSAIL_SERVICE" \
             --containers "$CONTAINERS" \
-            --public-endpoint "{\"containerName\":\"app\",\"containerPort\":80,\"healthCheck\":{\"path\":\"/healthz\",\"healthyThreshold\":2,\"unhealthyThreshold\":2,\"timeoutSeconds\":5,\"intervalSeconds\":10,\"successCodes\":\"200\"}}"
+            --public-endpoint "{\"containerName\":\"app\",\"containerPort\":3000,\"healthCheck\":{\"path\":\"/healthz\",\"healthyThreshold\":2,\"unhealthyThreshold\":2,\"timeoutSeconds\":5,\"intervalSeconds\":10,\"successCodes\":\"200\"}}"
