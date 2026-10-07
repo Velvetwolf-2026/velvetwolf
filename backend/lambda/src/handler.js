@@ -55,7 +55,7 @@ function getRequestId(event) {
 function getRequestContext(event, method, route, query, body, requestId) {
   return {
     requestId, method, route, query, body,
-    sourceIp: event.requestContext?.http?.sourceIp,
+    sourceIp: event.requestContext?.http?.sourceIp || event.requestContext?.identity?.sourceIp,
     userAgent: event.headers?.["user-agent"] || event.headers?.["User-Agent"],
   };
 }
