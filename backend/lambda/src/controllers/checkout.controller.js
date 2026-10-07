@@ -2,6 +2,7 @@ import * as checkoutService from "../services/checkout.service.js";
 import { jsonResponse, getClientIp, logInfo, logWarn } from "../utils/http.js";
 import { verifyWebhookSignature } from "../services/cashfree.js";
 import { getOptionalAuth } from "../middleware/auth.js";
+import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 
 export async function createSession(body, event) {
   // Can be called by guest or logged in user. The order owner comes from the
@@ -100,6 +101,21 @@ export async function validateCoupon(body, event) {
     return jsonResponse(400, { error: "Coupon code is required" }, {}, event);
   }
 
-  const result = await checkoutService.validateCouponEndpoint(code, subtotal);
-  return jsonResponse(200, result, {}, event);
+  // Limit guessing of coupon codes per visitor IP. Only failed attempts
+  // count, so customers applying a valid code are never limited.
+  const rateKey = `coupon:${getClientIp(event) || "unknown"}`;
+  await assertNotRateLimited(rateKey, COUPON_RATE_LIMIT);
+
+  try {
+    const result = await checkoutService.validateCouponEndpoint(code, subtotal);
+    return jsonResponse(200, result, {}, event);
+  } catch (error) {
+    if (error?.statusCode >= 400 && error?.statusCode < 500) {
+      await recordRateLimitedAttempt(rateKey);
+    }
+    throw error;
+  }
 }
+
+// 20 failed coupon attempts per 15 minutes, then a 15-minute block.
+const COUPON_RATE_LIMIT = { max: 20, windowSecs: 15 * 60, blockSecs: 15 * 60 };
