@@ -119,7 +119,7 @@ export async function logout(body, event) {
 
 export async function getSession(body, event) {
   try {
-    const user = requireAuth(event);
+    const user = await requireAuth(event);
     // Refresh the CSRF cookie; the JWT itself is never echoed back (it stays
     // in the HttpOnly cookie).
     const headers = {

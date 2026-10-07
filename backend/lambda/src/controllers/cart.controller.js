@@ -5,13 +5,13 @@ import { ApiError, jsonResponse } from "../utils/http.js";
 import { requireAuth } from "../middleware/auth.js";
 
 export async function getCart(query, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const items = await cartService.getCartByUserId(user.id);
   return jsonResponse(200, { items }, {}, event);
 }
 
 export async function addItem(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   body.userId = user.id; // Enforce user ID from JWT
   const data = validate(cartAddSchema)(body);
   const result = await cartService.addCartItemByUserId(data.userId, data.productId, data.quantity, data.size, data.color);
@@ -19,21 +19,21 @@ export async function addItem(body, event) {
 }
 
 export async function updateItem(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const data = validate(cartUpdateSchema)(body);
   const result = await cartService.updateCartItemQuantity(user.id, data.cartItemId, data.quantity);
   return jsonResponse(200, result, {}, event);
 }
 
 export async function removeItem(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const data = validate(cartRemoveSchema)(body);
   const result = await cartService.removeCartItemById(user.id, data.cartItemId);
   return jsonResponse(200, result, {}, event);
 }
 
 export async function mergeCart(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const items = Array.isArray(body?.items) ? body.items : [];
   const updatedItems = await cartService.mergeCartItemsByUserId(user.id, items);
   return jsonResponse(200, { success: true, items: updatedItems }, {}, event);

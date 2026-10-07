@@ -51,19 +51,23 @@ RUN npm run build
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-# The ECS target group's health check is configured for port 80, so the
-# container must listen there too — running as root (no USER directive) means
-# binding to the privileged port works without extra setup.
-ENV PORT=80
+# Unprivileged port: the app runs as the non-root "node" user, which can't
+# bind ports below 1024. Lightsail's public endpoint maps to this port
+# (containerPort in .github/workflows/deploy.yml).
+ENV PORT=3000
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/build ./build
 
-EXPOSE 80
+# Files stay root-owned (read-only for the app); the process runs as "node",
+# so a compromise of the server can't modify the app or the image.
+USER node
+
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD node -e "require('http').get('http://127.0.0.1:' + (process.env.PORT || 80) + '/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://127.0.0.1:' + (process.env.PORT || 3000) + '/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 CMD ["npm", "start"]

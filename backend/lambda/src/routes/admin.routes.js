@@ -6,7 +6,7 @@ export async function handleAdminRoutes(method, route, body, query, event) {
   if (!route.startsWith("/admin")) return null;
 
   // Auth: verify JWT and assert role === "admin" — throws 401/403 if invalid
-  const admin = requireAdmin(event);
+  const admin = await requireAdmin(event);
 
   if (method === "GET" && route === "/admin/dashboard")
     return adminController.getDashboard(admin, event);

@@ -478,3 +478,33 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::json
 
 
 
+
+-- ==========================================
+-- MIGRATION: SESSION REVOCATION
+-- ==========================================
+-- Tokens issued before this time are rejected (set on password reset and
+-- email change). NULL = no revocation. Safe to run before or after deploying
+-- the backend; the code tolerates the column being absent.
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS sessions_valid_after TIMESTAMPTZ;
+
+-- ==========================================
+-- MIGRATION: ATOMIC STOCK DECREMENT
+-- ==========================================
+-- Takes p_qty from a variant only if that much stock remains, in a single
+-- statement, so concurrent order confirmations can't oversell the last unit.
+-- Returns false when stock was insufficient (the backend flags the order).
+-- Note: the live product_variants table uses stock_qty (the CREATE TABLE
+-- near the top of this file still says "stock").
+CREATE OR REPLACE FUNCTION public.decrement_variant_stock(p_variant_id UUID, p_qty INT)
+RETURNS BOOLEAN AS $$
+    WITH updated AS (
+        UPDATE public.product_variants
+        SET stock_qty = stock_qty - p_qty
+        WHERE id = p_variant_id AND p_qty > 0 AND stock_qty >= p_qty
+        RETURNING 1
+    )
+    SELECT EXISTS (SELECT 1 FROM updated);
+$$ LANGUAGE sql;
+
+-- Backend (service role) only; not callable with the public anon key.
+REVOKE EXECUTE ON FUNCTION public.decrement_variant_stock(UUID, INT) FROM PUBLIC, anon, authenticated;

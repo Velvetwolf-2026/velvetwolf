@@ -5,6 +5,7 @@ import { loadBackendEnv, isLocalDevelopment } from "../config/env.js";
 import { normalizeOtpKind } from "../config/otp-template.js";
 import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
+import { revokeUserSessions } from "./session.service.js";
 import { ApiError, jsonResponse, logError, logInfo, logWarn } from "../utils/http.js";
 
 loadBackendEnv();
@@ -542,6 +543,10 @@ export async function resetPassword({ resetToken, newPassword }) {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
   const { error } = await supabaseAdmin.from("users").update({ password_hash: hashedPassword }).eq("email", normalizedEmail);
   if (error) { logError("Password reset DB update failed", authLogContext({ email: normalizedEmail, error })); throw new ApiError(400, error.message); }
+
+  // A password reset must sign out every existing session (e.g. one an
+  // attacker obtained before the reset).
+  await revokeUserSessions({ email: normalizedEmail });
 
   logInfo("Password reset successful", authLogContext({ email: normalizedEmail }));
   return { success: true, message: "Password updated successfully." };

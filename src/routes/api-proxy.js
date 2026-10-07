@@ -23,6 +23,10 @@ const FORWARD_REQUEST_HEADERS = [
   "user-agent",
   "x-csrf-token",
   "x-request-id",
+  // Cashfree payment webhook (POST /api/checkout/webhook) signature headers
+  "x-webhook-signature",
+  "x-webhook-timestamp",
+  "x-webhook-version",
 ];
 
 // fetch() has already decompressed the body, so content-encoding/length from

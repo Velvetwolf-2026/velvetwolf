@@ -5,6 +5,7 @@ import { ApiError, logError } from "../utils/http.js";
 import { sendEmail } from "../config/smtp.js";
 import { buildOrderEmail } from "../config/order-template.js";
 import { createShiprocketOrder } from "./shiprocket.service.js";
+import { auditLog } from "../utils/audit.js";
 import { sendPurchaseToMeta } from "./meta-capi.service.js";
 
 function logContext(context = {}) {
@@ -78,7 +79,7 @@ const sanitizeEmail = (email) => {
 async function getVariantForItem(productId, size, color) {
   if (!productId || !isValidUuid(productId)) {
     // Return a dummy variant for custom designs to bypass database check
-    return { id: crypto.randomUUID(), stock_qty: 99999, size: size || "M", color: color || "Black" };
+    return { id: crypto.randomUUID(), stock_qty: 99999, size: size || "M", color: color || "Black", isPlaceholder: true };
   }
   let query = supabaseAdmin
     .from("product_variants")
@@ -108,7 +109,7 @@ async function getVariantForItem(productId, size, color) {
       return fallbackData[0];
     }
     // Return default fallback variant for catalog products missing explicit variant rows in DB
-    return { id: crypto.randomUUID(), stock_qty: 999, size: size || "M", color: color || "Black" };
+    return { id: crypto.randomUUID(), stock_qty: 999, size: size || "M", color: color || "Black", isPlaceholder: true };
   }
   return data[0];
 }
@@ -160,6 +161,50 @@ export async function validateCouponEndpoint(code, subtotal) {
   };
 }
 
+// Postgres/PostgREST "function does not exist": migration not run yet.
+const MISSING_FUNCTION_CODES = new Set(["PGRST202", "42883"]);
+
+// Atomically takes `item.quantity` from the variant's stock in the DB
+// (decrement_variant_stock only succeeds while enough stock remains), so two
+// orders confirming at once can't both take the last unit. If stock ran out
+// in the meantime the order is still paid/confirmed, so it is flagged for the
+// team to refund or restock instead of driving stock negative.
+async function decrementVariantStock(variant, item, order) {
+  const { data: decremented, error } = await supabaseAdmin.rpc("decrement_variant_stock", {
+    p_variant_id: variant.id,
+    p_qty: item.quantity,
+  });
+
+  if (error && MISSING_FUNCTION_CODES.has(error.code)) {
+    // Before the migration: previous (non-atomic) behaviour.
+    logError("decrement_variant_stock missing; using non-atomic stock update (run the migration in schema.sql)", logContext({ orderId: order.id }));
+    const { error: updateError } = await supabaseAdmin
+      .from("product_variants")
+      .update({ stock_qty: Math.max(0, variant.stock_qty - item.quantity) })
+      .eq("id", variant.id);
+    if (updateError) {
+      logError("Failed to decrement variant stock", logContext({ variantId: variant.id, orderId: order.id, error: updateError }));
+    }
+    return;
+  }
+
+  if (error) {
+    logError("Failed to decrement variant stock", logContext({ variantId: variant.id, orderId: order.id, error }));
+    return;
+  }
+
+  if (decremented !== true) {
+    logError("Oversold: not enough stock left when confirming a paid order", logContext({ orderId: order.id, variantId: variant.id, quantity: item.quantity }));
+    await auditLog({
+      action: "order.oversold",
+      userId: order.user_id || undefined,
+      resource: "orders",
+      resourceId: order.id,
+      meta: { variantId: variant.id, productId: item.product_id, productName: item.product_name, size: item.size, color: item.color, quantity: item.quantity },
+    });
+  }
+}
+
 // Confirmation tasks: Decrement stock & Send receipt email
 async function confirmOrder(orderId) {
   // 1. Fetch order details
@@ -189,16 +234,9 @@ async function confirmOrder(orderId) {
   for (const item of items) {
     if (!item.product_id || !isValidUuid(item.product_id)) continue; // Skip custom/deleted items
     const variant = await getVariantForItem(item.product_id, item.size, item.color);
-    if (variant) {
-      const newStock = Math.max(0, variant.stock_qty - item.quantity);
-      const { error: updateError } = await supabaseAdmin
-        .from("product_variants")
-        .update({ stock_qty: newStock })
-        .eq("id", variant.id);
-
-      if (updateError) {
-        logError("Failed to decrement variant stock", logContext({ variantId: variant.id, orderId, error: updateError }));
-      }
+    // Placeholder variants (no stock row in the DB) have nothing to decrement.
+    if (variant && !variant.isPlaceholder) {
+      await decrementVariantStock(variant, item, order);
     }
   }
 

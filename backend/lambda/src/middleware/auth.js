@@ -1,15 +1,78 @@
 import jwt from "jsonwebtoken";
 import { loadBackendEnv } from "../config/env.js";
-import { ApiError, logWarn } from "../utils/http.js";
+import { supabaseAdmin } from "../config/supabase.js";
+import { ApiError, logError, logWarn } from "../utils/http.js";
 
 loadBackendEnv();
 
+// Postgres "undefined_column": the sessions_valid_after migration hasn't run.
+const UNDEFINED_COLUMN = "42703";
+
 /**
- * Extracts and verifies the JWT from the Authorization: Bearer <token> header.
- * Returns the decoded payload { id, email, name, role }.
- * Throws ApiError(401) if the token is missing or invalid.
+ * Checks the token against the user's current DB record:
+ * - rejects tokens issued before users.sessions_valid_after (set on password
+ *   reset / email change), so stolen or old sessions stop working;
+ * - rejects tokens for deleted users;
+ * - returns the CURRENT role, so a demoted admin loses access immediately
+ *   instead of keeping the role baked into a 7-day token.
  */
-export function requireAuth(event) {
+async function loadSessionUser(payload, event) {
+  let { data: user, error } = await supabaseAdmin
+    .from("users")
+    .select("id, role, sessions_valid_after")
+    .eq("id", payload.id)
+    .maybeSingle();
+
+  // Before the migration runs, fall back to the columns that exist so
+  // deploying this code first doesn't break sign-in.
+  if (error?.code === UNDEFINED_COLUMN) {
+    ({ data: user, error } = await supabaseAdmin
+      .from("users")
+      .select("id, role")
+      .eq("id", payload.id)
+      .maybeSingle());
+  }
+
+  if (error) {
+    logError("Session user lookup failed", { service: "auth-middleware", userId: payload.id, error });
+    // 503, not 401: a DB blip must not make the frontend sign the user out.
+    throw new ApiError(503, "Unable to verify your session right now. Please try again.");
+  }
+  if (!user) {
+    logWarn("Token for a user that no longer exists", { service: "auth-middleware", userId: payload.id, route: event.rawPath || event.path });
+    throw new ApiError(401, "Invalid or expired token. Please sign in again.");
+  }
+
+  if (user.sessions_valid_after) {
+    // JWT iat is in whole seconds; compare at that granularity so a token
+    // issued in the same second as the revocation (e.g. the new session after
+    // an email change) is still accepted.
+    const validAfterSecs = Math.floor(new Date(user.sessions_valid_after).getTime() / 1000);
+    if (typeof payload.iat !== "number" || payload.iat < validAfterSecs) {
+      logWarn("Revoked session token used", { service: "auth-middleware", userId: payload.id, route: event.rawPath || event.path });
+      throw new ApiError(401, "Your session has ended. Please sign in again.");
+    }
+  }
+
+  return { ...payload, role: user.role || "customer" };
+}
+
+/**
+ * Verifies the session (cookie or Bearer token), the CSRF double-submit for
+ * cookie-only state-changing requests, and that the session hasn't been
+ * revoked. Returns the payload { id, email, name, role } with the user's
+ * current role. Throws ApiError(401/403) when not authenticated.
+ */
+export async function requireAuth(event) {
+  const payload = verifyRequestToken(event);
+  return loadSessionUser(payload, event);
+}
+
+/**
+ * Extracts and verifies the JWT from the HttpOnly session cookie or an
+ * Authorization: Bearer header (signature, expiry and CSRF only — no DB).
+ */
+function verifyRequestToken(event) {
   const authHeader =
     event.headers?.authorization ||
     event.headers?.Authorization ||
@@ -91,20 +154,21 @@ export function requireAuth(event) {
  * Returns the decoded payload when a valid token is present, otherwise null —
  * never throws, so a missing/expired token simply means "guest".
  */
-export function getOptionalAuth(event) {
+export async function getOptionalAuth(event) {
   try {
-    return requireAuth(event);
+    return await requireAuth(event);
   } catch {
     return null;
   }
 }
 
 /**
- * Same as requireAuth but additionally asserts role === "admin".
+ * Same as requireAuth but additionally asserts role === "admin" (the role
+ * currently in the DB, not the one in the token).
  * Throws ApiError(403) if the user is authenticated but not an admin.
  */
-export function requireAdmin(event) {
-  const payload = requireAuth(event);
+export async function requireAdmin(event) {
+  const payload = await requireAuth(event);
 
   if (payload.role !== "admin") {
     logWarn("Non-admin attempted to access admin route", {

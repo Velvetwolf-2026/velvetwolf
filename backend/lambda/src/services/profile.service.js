@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../config/supabase.js";
+import { revokeUserSessions } from "./session.service.js";
 import { isLocalDevelopment } from "../config/env.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 import { sendOTP } from "../config/smtp.js";
@@ -253,6 +254,10 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
     logError("JWT secret missing while creating token", profileLogContext({ userId: normalizedUserId }));
     throw new ApiError(500, "JWT_SECRET is missing in backend environment.");
   }
+
+  // Sessions carry the old email: end them all, then issue this device a new
+  // one (signed after the revocation, so it stays valid).
+  await revokeUserSessions({ id: normalizedUserId });
 
   const token = jwt.sign(
     {
