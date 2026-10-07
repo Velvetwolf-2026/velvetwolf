@@ -7,7 +7,7 @@ export async function createSession(body, event) {
   // verified session token only — never from the request body, otherwise
   // anyone could attach an order to another customer's account.
   const { cart, address, total_amount, subtotal, payment_method, couponCode, meta } = body;
-  const authUser = getOptionalAuth(event);
+  const authUser = await getOptionalAuth(event);
 
   // Meta CAPI matching data. The IP comes from getClientIp (API Gateway's
   // source IP, or the visitor IP forwarded by the trusted /api proxy) — a raw

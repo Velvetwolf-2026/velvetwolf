@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import * as authService from "../services/auth.service.js";
 
 export async function getProfile(query, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   if (!query.id) throw new ApiError(400, "id is required.");
   if (query.id !== user.id) {
     throw new ApiError(403, "Access denied. Cannot view another user's profile.");
@@ -14,7 +14,7 @@ export async function getProfile(query, event) {
 }
 
 export async function updateProfile(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const { id, fullName, phone, gender, dob } = body;
   if (!id) throw new ApiError(400, "id is required.");
   if (id !== user.id) {
@@ -26,7 +26,7 @@ export async function updateProfile(body, event) {
 }
 
 export async function sendEmailOtp(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const { newEmail } = body;
   if (!newEmail) throw new ApiError(400, "New email is required.");
 
@@ -35,7 +35,7 @@ export async function sendEmailOtp(body, event) {
 }
 
 export async function verifyEmailOtp(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const { newEmail, otp } = body;
   if (!newEmail) throw new ApiError(400, "New email is required.");
   if (!otp) throw new ApiError(400, "OTP is required.");
@@ -46,13 +46,13 @@ export async function verifyEmailOtp(body, event) {
 }
 
 export async function getStyleProfile(query, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const profile = await profileService.getStyleProfile(user.id);
   return jsonResponse(200, { profile }, {}, event);
 }
 
 export async function saveStyleProfile(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const { personalityType, quizScore } = body;
   if (!personalityType) throw new ApiError(400, "personalityType is required.");
   if (!quizScore) throw new ApiError(400, "quizScore is required.");
@@ -62,13 +62,13 @@ export async function saveStyleProfile(body, event) {
 }
 
 export async function clearStyleProfile(body, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const result = await profileService.clearStyleProfile(user.id);
   return jsonResponse(200, result, {}, event);
 }
 
 export async function getUserOrders(query, event) {
-  const user = requireAuth(event);
+  const user = await requireAuth(event);
   const orders = await profileService.getUserOrders(user.id);
   return jsonResponse(200, { orders }, {}, event);
 }

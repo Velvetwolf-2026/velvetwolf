@@ -478,3 +478,11 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT '{}'::json
 
 
 
+
+-- ==========================================
+-- MIGRATION: SESSION REVOCATION
+-- ==========================================
+-- Tokens issued before this time are rejected (set on password reset and
+-- email change). NULL = no revocation. Safe to run before or after deploying
+-- the backend; the code tolerates the column being absent.
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS sessions_valid_after TIMESTAMPTZ;

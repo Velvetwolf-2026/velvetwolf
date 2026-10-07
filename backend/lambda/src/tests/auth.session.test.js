@@ -1,5 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import jwt from "jsonwebtoken";
+
+// requireAuth looks the user up to check revocation and the current role.
+vi.mock("../config/supabase.js", async () => {
+  const { createSupabaseMock } = await import("./testUtils/supabaseMock.js");
+  const user = { data: { id: "u1", role: "customer", sessions_valid_after: null }, error: null };
+  return createSupabaseMock({ users: Array(20).fill(user) });
+});
 
 const { buildSessionResponse } = await import("../services/auth.service.js");
 const { getSession } = await import("../controllers/auth.controller.js");

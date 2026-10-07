@@ -4,6 +4,13 @@ import jwt from "jsonwebtoken";
 const initiateCheckout = vi.fn().mockResolvedValue({ success: true, orderId: "order-1" });
 vi.mock("../services/checkout.service.js", () => ({ initiateCheckout }));
 
+// requireAuth looks the user up to check revocation and the current role.
+vi.mock("../config/supabase.js", async () => {
+  const { createSupabaseMock } = await import("./testUtils/supabaseMock.js");
+  const user = { data: { id: "22222222-2222-2222-2222-222222222222", role: "customer", sessions_valid_after: null }, error: null };
+  return createSupabaseMock({ users: Array(20).fill(user) });
+});
+
 const { createSession } = await import("../controllers/checkout.controller.js");
 const { getCorsHeaders } = await import("../utils/http.js");
 
