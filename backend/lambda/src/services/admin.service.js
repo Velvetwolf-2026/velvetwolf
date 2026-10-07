@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
+import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 const VALID_ORDER_STATUSES = [
   "pending", "confirmed", "processing", "in_production",
@@ -123,7 +124,7 @@ export async function getAdminProducts({ collection, search, page = 1, limit = 1
     .order("created_at", { ascending: false }).range(offset, offset + limit - 1);
 
   if (collection) query = query.eq("collection", collection);
-  if (search) query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,tag.ilike.%${search}%`);
+  if (search) { const term = sanitizeFilterValue(search); query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%,tag.ilike.%${term}%`); }
 
   const { data, error, count } = await query;
   if (error) { logError("Admin products query failed", adminLogContext({ error })); throw new ApiError(500, "Failed to load products."); }
@@ -304,7 +305,7 @@ export async function getAdminCustomers({ page = 1, limit = 50, search } = {}) {
     .select("id, name, email, role, is_verified, last_login, created_at", { count: "exact" })
     .eq("role", "customer").order("created_at", { ascending: false }).range(offset, offset + limit - 1);
 
-  if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+  if (search) { const term = sanitizeFilterValue(search); query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%`); }
 
   const { data: users, error, count } = await query;
   if (error) { logError("Admin customers query failed", adminLogContext({ error })); throw new ApiError(500, "Failed to load customers."); }

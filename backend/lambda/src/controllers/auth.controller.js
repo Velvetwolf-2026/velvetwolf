@@ -9,6 +9,7 @@ import { jsonResponse, redirectResponse, ApiError, getClientIp } from "../utils/
 import { auditLog } from "../utils/audit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { verifyRecaptcha } from "../services/recaptcha.service.js";
+import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 
 export async function signup(body, event) {
   const data = validate(signupSchema)(body);
@@ -96,6 +97,12 @@ export async function discover(body, event) {
   if (!email) {
     return jsonResponse(400, { error: "Email/identifier is required" }, {}, event);
   }
+  // Every lookup counts: 30 per IP per 15 minutes is plenty for real
+  // sign-ins and stops scripted checks of which emails have accounts.
+  const rateKey = `discover:${getClientIp(event) || "unknown"}`;
+  await assertNotRateLimited(rateKey, { max: 30, windowSecs: 15 * 60, blockSecs: 15 * 60 });
+  await recordRateLimitedAttempt(rateKey);
+
   const result = await authService.discoverUser({ email });
   return jsonResponse(200, result, {}, event);
 }

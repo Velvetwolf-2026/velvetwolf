@@ -7,6 +7,7 @@ import { buildOrderEmail } from "../config/order-template.js";
 import { createShiprocketOrder } from "./shiprocket.service.js";
 import { auditLog } from "../utils/audit.js";
 import { sendPurchaseToMeta } from "./meta-capi.service.js";
+import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 function logContext(context = {}) {
   return { service: "checkout", ...context };
@@ -93,7 +94,7 @@ async function getVariantForItem(productId, size, color) {
     if (color.startsWith("#")) {
       query = query.eq("color_hex", color);
     } else {
-      query = query.or(`color.eq.${color},color_hex.eq.${color}`);
+      { const safeColor = sanitizeFilterValue(color); query = query.or(`color.eq.${safeColor},color_hex.eq.${safeColor}`); }
     }
   }
 

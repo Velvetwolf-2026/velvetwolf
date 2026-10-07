@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logInfo } from "../utils/http.js";
+import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 function cartLogContext(context = {}) {
   return { service: "cart", ...context };
@@ -18,7 +19,7 @@ async function getVariantByProductSizeColor(productId, size, color) {
     if (color.startsWith("#")) {
       query = query.eq("color_hex", color);
     } else {
-      query = query.or(`color.eq.${color},color_hex.eq.${color}`);
+      { const safeColor = sanitizeFilterValue(color); query = query.or(`color.eq.${safeColor},color_hex.eq.${safeColor}`); }
     }
   }
 

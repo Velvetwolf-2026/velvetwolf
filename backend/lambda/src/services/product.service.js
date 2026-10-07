@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logInfo } from "../utils/http.js";
+import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 function parseCommentAndImages(rawComment) {
   if (!rawComment) return { comment: "", images: [] };
@@ -82,7 +83,7 @@ export async function getProducts({ collection, search, limit = 100, offset = 0 
 
   if (collection) query = query.eq("collection", collection);
   if (search) {
-    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,tag.ilike.%${search}%`);
+    { const term = sanitizeFilterValue(search); query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%,tag.ilike.%${term}%`); }
   }
 
   const { data, error } = await query;
