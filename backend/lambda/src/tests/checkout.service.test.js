@@ -115,8 +115,41 @@ describe("checkout.service", () => {
       expect(createPaymentOrder).not.toHaveBeenCalled();
       expect(sendEmail).toHaveBeenCalledTimes(1);
       expect(createShiprocketOrder).toHaveBeenCalledWith(expect.any(String));
-      const variantUpdate = calls.find((c) => c.table === "product_variants" && c.method === "update");
-      expect(variantUpdate.payload.stock_qty).toBe(VARIANT.stock_qty - CART_ITEM.qty);
+      // Stock is taken atomically in the DB, not via read-then-write
+      expect(supabaseAdmin.rpc).toHaveBeenCalledWith("decrement_variant_stock", { p_variant_id: VARIANT.id, p_qty: CART_ITEM.qty });
+      expect(calls.some((c) => c.table === "product_variants" && c.method === "update")).toBe(false);
+    });
+
+    describe("stock decrement on confirmation", () => {
+      const confirmCod = async (rpcResult, { variant = VARIANT } = {}) => {
+        resetSupabaseMock({
+          product_variants: [{ data: [variant], error: null }, { data: [variant], error: null }],
+          products: [DB_PRODUCT],
+          orders: [{ data: null, error: null }, { data: { id: "order-1", user_id: null, shipping_address: { email: "a@b.com", name: "Alex Guest" } }, error: null }],
+          order_items: [{ data: null, error: null }, { data: [{ product_id: CART_ITEM.id, product_name: "Tee", size: "M", color: "Black", quantity: 1, products: {} }], error: null }],
+        });
+        supabaseAdmin.rpc.mockImplementation((fn) =>
+          Promise.resolve(fn === "decrement_variant_stock" ? rpcResult : { data: null, error: null }));
+        await initiateCheckout({ cart: [CART_ITEM], address: { email: "a@b.com" }, payment_method: "cod" });
+      };
+
+      it("flags the order in the audit log when stock ran out before confirmation (oversold)", async () => {
+        await confirmCod({ data: false, error: null });
+        const audit = calls.find((c) => c.table === "audit_logs" && c.method === "insert");
+        expect(audit.payload).toMatchObject({ action: "order.oversold", resource: "orders", resource_id: "order-1" });
+        expect(sendEmail).toHaveBeenCalledTimes(1); // the paid order is still confirmed
+      });
+
+      it("falls back to the previous update when the migration hasn't run yet", async () => {
+        await confirmCod({ data: null, error: { code: "PGRST202", message: "function not found" } });
+        const update = calls.find((c) => c.table === "product_variants" && c.method === "update");
+        expect(update.payload.stock_qty).toBe(VARIANT.stock_qty - CART_ITEM.qty);
+      });
+
+      it("does not flag anything for a normal decrement", async () => {
+        await confirmCod({ data: true, error: null });
+        expect(calls.some((c) => c.table === "audit_logs")).toBe(false);
+      });
     });
 
     it("initiates a Cashfree payment session for online payment and leaves the order pending (no stock decrement yet)", async () => {
