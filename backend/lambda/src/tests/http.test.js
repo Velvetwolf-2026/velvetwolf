@@ -68,6 +68,14 @@ describe("getClientIp — trusted proxy header", () => {
     expect(getClientIp(event({ "x-vw-proxy-secret": "", "x-vw-client-ip": "1.1.1.1" }))).toBe("13.233.0.10");
   });
 
+  it("reads the source IP from REST API (v1) events, ignoring a spoofable X-Forwarded-For", () => {
+    const restEvent = {
+      headers: { "X-Forwarded-For": "1.1.1.1, 52.95.4.10" },
+      requestContext: { identity: { sourceIp: "49.36.1.2" } },
+    };
+    expect(getClientIp(restEvent)).toBe("49.36.1.2");
+  });
+
   it("falls back to API Gateway's source IP when the proxy sent no client IP", () => {
     expect(getClientIp(event({ "x-vw-proxy-secret": "s3cret" }))).toBe("13.233.0.10");
   });

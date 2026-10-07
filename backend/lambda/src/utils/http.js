@@ -142,11 +142,13 @@ export function getClientIp(event) {
   const proxiedIp = getTrustedProxyClientIp(event);
   if (proxiedIp) return proxiedIp;
 
-  // requestContext.sourceIp comes from API Gateway's own view of the TCP
-  // connection, so it can't be spoofed by a client the way an X-Forwarded-For
-  // header can — prefer it, and only fall back to XFF for the local dev
-  // server, which has no API Gateway in front of it.
-  const sourceIp = event?.requestContext?.http?.sourceIp;
+  // The source IP comes from API Gateway's own view of the TCP connection, so
+  // it can't be spoofed by a client the way an X-Forwarded-For header can —
+  // prefer it, and only fall back to XFF for the local dev server, which has
+  // no API Gateway in front of it. HTTP APIs (payload v2) put it in
+  // requestContext.http.sourceIp; REST APIs (v1, what production uses) in
+  // requestContext.identity.sourceIp.
+  const sourceIp = event?.requestContext?.http?.sourceIp || event?.requestContext?.identity?.sourceIp;
   if (sourceIp) return sourceIp;
   const forwardedFor = event?.headers?.["x-forwarded-for"] || event?.headers?.["X-Forwarded-For"];
   if (forwardedFor) return forwardedFor.split(",")[0].trim();
