@@ -565,7 +565,10 @@ export async function discoverUser({ email }) {
     throw new ApiError(400, error.message);
   }
 
-  return { exists: Boolean(user), email: normalizedEmail, name: user?.name || null, type: user?.type || null };
+  // Only whether the account exists (the login page needs that to choose
+  // password vs sign-up). Name/type would let anyone look up who is behind
+  // an email address.
+  return { exists: Boolean(user) };
 }
 
 export async function verifyFirebaseIdToken(idToken) {
@@ -639,6 +642,14 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
     name = `Mobile ${verifiedMobile}`;
     type = "Mobile";
   } else if (isEmail) {
+    // The token proves the user controls a Firebase account, not that they
+    // own its email: with the public web API key anyone can create a Firebase
+    // account claiming someone else's address. Only a verified email (always
+    // true for Google sign-in) may sign in to the account with that email.
+    if (payload.email_verified !== true) {
+      logWarn("Rejected Firebase login with unverified email", authLogContext({ email: payload.email, provider: payload.firebase?.sign_in_provider }));
+      throw new ApiError(401, "Please verify your email address before signing in.");
+    }
     finalEmail = normalizeEmail(payload.email);
     name = payload.name || finalEmail.split("@")[0] || "User";
     type = "Google";
