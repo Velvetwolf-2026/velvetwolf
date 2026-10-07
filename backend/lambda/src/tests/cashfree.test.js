@@ -44,6 +44,28 @@ describe("cashfree service (thin wrapper around the Cashfree PG SDK)", () => {
       );
     });
 
+    it("asks Cashfree to send the payment webhook to the https backend URL", async () => {
+      const saved = process.env.BACKEND_PUBLIC_URL;
+      process.env.BACKEND_PUBLIC_URL = "https://www.velvetwolf.in/api/";
+      PGCreateOrder.mockResolvedValueOnce({ data: {} });
+
+      await createPaymentOrder({ orderId: "o1", amount: 1, customerId: "c", customerPhone: "9876543210", customerEmail: "a@b.com", customerName: "A" });
+
+      expect(PGCreateOrder.mock.calls[0][0].order_meta.notify_url).toBe("https://www.velvetwolf.in/api/checkout/webhook");
+      if (saved === undefined) delete process.env.BACKEND_PUBLIC_URL; else process.env.BACKEND_PUBLIC_URL = saved;
+    });
+
+    it("sends no notify_url when the backend URL isn't https (local dev)", async () => {
+      const saved = process.env.BACKEND_PUBLIC_URL;
+      process.env.BACKEND_PUBLIC_URL = "http://localhost:5000";
+      PGCreateOrder.mockResolvedValueOnce({ data: {} });
+
+      await createPaymentOrder({ orderId: "o1", amount: 1, customerId: "c", customerPhone: "9876543210", customerEmail: "a@b.com", customerName: "A" });
+
+      expect(PGCreateOrder.mock.calls[0][0].order_meta.notify_url).toBeUndefined();
+      if (saved === undefined) delete process.env.BACKEND_PUBLIC_URL; else process.env.BACKEND_PUBLIC_URL = saved;
+    });
+
     it("wraps an SDK failure in a plain Error carrying Cashfree's error message", async () => {
       PGCreateOrder.mockRejectedValueOnce({ response: { data: { message: "Invalid customer phone" } } });
 

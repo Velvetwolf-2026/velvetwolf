@@ -1,6 +1,30 @@
+import crypto from "crypto";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 
 let cashfreeInstance = null;
+
+/**
+ * Verifies a Cashfree payment webhook (API version 2023-08-01):
+ * signature = base64(HMAC-SHA256(timestamp + rawBody, client secret)).
+ * rawBody must be the exact bytes received — re-serialised JSON won't match.
+ */
+export function verifyWebhookSignature(rawBody, signature, timestamp) {
+  const secret = process.env.CASHFREE_SECRET_KEY;
+  if (!secret || !rawBody || !signature || !timestamp) return false;
+
+  const expected = crypto.createHmac("sha256", secret).update(`${timestamp}${rawBody}`).digest("base64");
+  const a = Buffer.from(String(signature));
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+// Where Cashfree sends this order's payment webhook. Requires an https
+// BACKEND_PUBLIC_URL (e.g. https://www.velvetwolf.in/api); otherwise no
+// notify_url is sent and orders are confirmed only via the return page.
+function getWebhookNotifyUrl() {
+  const base = String(process.env.BACKEND_PUBLIC_URL || "").trim().replace(/\/+$/, "");
+  return base.startsWith("https://") ? `${base}/checkout/webhook` : null;
+}
 
 // Mode for the browser Checkout SDK. It must match the environment the
 // payment session was created in, so the frontend takes it from the
@@ -62,6 +86,10 @@ export const createPaymentOrder = async (orderData) => {
         return_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/?order_id={order_id}`,
       },
     };
+    // Server-to-server confirmation, so a paid order is confirmed even if the
+    // customer closes the tab before returning to the site.
+    const notifyUrl = getWebhookNotifyUrl();
+    if (notifyUrl) request.order_meta.notify_url = notifyUrl;
 
     const cashfree = getCashfree();
     // PGCreateOrder is an instance method in v5 SDK

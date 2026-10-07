@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import jwt from "jsonwebtoken";
 
 const initiateCheckout = vi.fn().mockResolvedValue({ success: true, orderId: "order-1" });
-vi.mock("../services/checkout.service.js", () => ({ initiateCheckout }));
+const verifyCheckout = vi.fn().mockResolvedValue({ success: true, status: "SUCCESS" });
+vi.mock("../services/checkout.service.js", () => ({ initiateCheckout, verifyCheckout }));
 
 // requireAuth looks the user up to check revocation and the current role.
 vi.mock("../config/supabase.js", async () => {
