@@ -1,4 +1,5 @@
-// The gallery hall: floor, wall, tees floating in pools of light, and one white key + rim pair that
+// The gallery hall: floor, wall, tees floating in pools of light, framed photographs in the Quiet
+// Hours room, and one white key + rim pair that
 // follows whatever the camera is looking at. No HDRI and no coloured light, so colorways stay true.
 import * as THREE from 'three';
 import { Garment } from './garment.js';
@@ -88,6 +89,54 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     return { x, z, group: bay, garment, pool };
   }
 
+  // A framed photograph hung where a tee would float: thin black frame, bone mat, the print.
+  // The print is shown as a lightbox: unlit and outside tone mapping, so its colours stay exactly
+  // as photographed while the frame and mat take the gallery light.
+  const FRAME = { w: 1.76, h: 2.2, mat: 0.1, edge: 0.045, depth: 0.05, y: 1.66 };
+  const frameGeo = new THREE.BoxGeometry(FRAME.w + 2 * (FRAME.mat + FRAME.edge), FRAME.h + 2 * (FRAME.mat + FRAME.edge), FRAME.depth);
+  const matGeo = new THREE.PlaneGeometry(FRAME.w + 2 * FRAME.mat, FRAME.h + 2 * FRAME.mat);
+  const photoGeo = new THREE.PlaneGeometry(FRAME.w, FRAME.h);
+  const frameMat = new THREE.MeshStandardMaterial({ color: '#121214', roughness: 0.5, metalness: 0.25 });
+  const matMat = new THREE.MeshStandardMaterial({ color: '#d6d1c5', roughness: 0.95 });
+  function addFrame(x, z, { rotation = 0 } = {}) {
+    const bay = new THREE.Group();
+    bay.position.set(x, 0, z);
+    const pool = new THREE.Mesh(poolGeo, new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, depthWrite: false, opacity: 0.12, blending: THREE.AdditiveBlending }));
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.y = 0.004;
+    const contact = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.7), new THREE.MeshBasicMaterial({ map: contactTex, transparent: true, depthWrite: false, opacity: 0.4 }));
+    contact.rotation.x = -Math.PI / 2;
+    contact.rotation.z = -rotation;
+    contact.position.y = 0.006;
+    bay.add(pool, contact);
+    const g = new THREE.Group();
+    g.position.y = FRAME.y;
+    g.rotation.y = rotation;
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.castShadow = shadows;
+    const mat = new THREE.Mesh(matGeo, matMat);
+    mat.position.z = FRAME.depth / 2 + 0.001;
+    const photoMat = new THREE.MeshBasicMaterial({ color: '#ececec', toneMapped: false, visible: false });
+    const photo = new THREE.Mesh(photoGeo, photoMat);
+    photo.position.z = FRAME.depth / 2 + 0.002;
+    g.add(frame, mat, photo);
+    bay.add(g);
+    scene.add(bay);
+    return {
+      x, z, group: bay, frame: g, pool,
+      anchorY: 0.24, anchorZ: 0.3, // where the placard pins, just under the frame
+      setPhoto(src, aniso = 8) {
+        new THREE.TextureLoader().load(src, (t) => {
+          t.colorSpace = THREE.SRGBColorSpace;
+          t.anisotropy = aniso;
+          photoMat.map = t;
+          photoMat.visible = true;
+          photoMat.needsUpdate = true;
+        });
+      },
+    };
+  }
+
   // wall lettering
   const letters = [];
   function addLettering(x, text, { y = 4.6, w = 13, opacity = 0.07 } = {}) {
@@ -106,7 +155,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
   // ---- bays ----
   const bays = {
     hero: addBay(0, 0, { rotation: 0.5 }),
-    drop: [addBay(9, 0, { rotation: 0.32, light: true }), addBay(12, 0, { rotation: 0, light: true }), addBay(15, 0, { rotation: -0.32, light: true })],
+    drop: [addFrame(9, 0, { rotation: 0.2 }), addFrame(12, 0), addFrame(15, 0, { rotation: -0.2 })],
     color: addBay(26, 0, { rotation: -0.35, color: '#141416' }),
     craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
     teaser: addBay(46, 0, { rotation: 0.2 }),
@@ -152,6 +201,6 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     aimLights,
     setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
     redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); },
-    garments: () => [bays.hero, ...bays.drop, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio].map((b) => b.garment),
+    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio].map((b) => b.garment),
   };
 }

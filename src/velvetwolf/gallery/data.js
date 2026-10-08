@@ -1,6 +1,6 @@
 // Gallery data. Real products come from the API; this file only holds the five
 // colorways and the "house" designs the 3D engine uses to dress its decorative
-// exhibits (hero, colorway room, cloth close-up, shop backdrop). None of the
+// exhibits (hero, colorway room, cloth close-up). None of the
 // house pieces are sold as products.
 
 // The five dyes every VelvetWolf tee comes in. `site` is the colour name the
@@ -21,13 +21,6 @@ const HOUSE_PIECES = [
   { id: 'silence', color: 'noir', front: 'wordmark', back: null },
   { id: 'horizon', color: 'sand', front: 'horizon', back: null },
   { id: 'monogram', color: 'forest', front: 'monogram', back: null },
-];
-
-// Backdrop trio in the drop bays (seen behind the shop header).
-export const DROP_TRIO = [
-  { id: 'silence', color: 'noir' },
-  { id: 'horizon', color: 'sand' },
-  { id: 'monogram', color: 'forest' },
 ];
 
 export const productById = (id) => HOUSE_PIECES.find((p) => p.id === id);

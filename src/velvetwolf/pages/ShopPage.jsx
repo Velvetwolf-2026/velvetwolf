@@ -4,7 +4,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Link, useLoaderData, useNavigate, useParams } from "react-router";
 import { AppContext } from "./AppContext";
-import Icon from "../components/Icon";
 import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { apiUrl } from "../utils/api";
 import { loadProductsFromAPI } from "../utils/products";
@@ -34,14 +33,6 @@ export function meta({ params }) {
   ];
 }
 
-export function links() {
-  return [
-    { rel: "preconnect", href: "https://fonts.googleapis.com" },
-    { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-    { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@200;300;400;500&display=swap" },
-  ];
-}
-
 // Search words that jump straight to a collection (same rules as before).
 function collectionForQuery(q) {
   if (q.includes("ai") || q.includes("tech")) return "ai-tech";
@@ -55,28 +46,24 @@ function collectionForQuery(q) {
   return null;
 }
 
-function ProductTile({ product, colorId, inWishlist, onToggleWishlist, eager }) {
+// Photo-first card: the on-body photo covers the stage (4:5); the featured
+// product takes a double tile. Hover lifts the photo slightly (no 3D fade:
+// products have photos but no print artwork for the 3D tee).
+function ProductTile({ product, colorId, feature, eager }) {
   const colors = colorwaysOf(product);
   const shown = colorId && colors.includes(colorId) ? colorId : colors[0];
   const photo = photoFor(product, shown);
   const original = Number(product.originalPrice) || 0;
   const onSale = original > Number(product.price);
+  const soldOut = product.stock !== undefined && product.stock !== null && Number(product.stock) <= 0;
+  const cls = ["card", photo && "has-photo", feature && "card-feature"].filter(Boolean).join(" ");
   return (
-    <div className="card">
-      <button
-        type="button"
-        className="wish"
-        aria-pressed={inWishlist}
-        aria-label={inWishlist ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}
-        onClick={() => onToggleWishlist(product)}
-      >
-        <Icon name={inWishlist ? "heartFill" : "heart"} size={15} color={inWishlist ? "var(--gold)" : "var(--bone)"} />
-      </button>
-      <Link to={productHref(product)} className="card-photo" aria-label={`${product.name}, ${COLORWAYS[shown].name}, ${money(product.price)}`}>
-        {photo && <img src={photo} alt={product.name} loading={eager ? "eager" : "lazy"} decoding="async" />}
-        {product.stock !== undefined && Number(product.stock) <= 0 && <span className="tag">Sold out</span>}
-      </Link>
-      <Link to={productHref(product)} className="info" style={{ textDecoration: "none" }}>
+    <Link to={productHref(product)} className={cls} aria-label={`${product.name}, ${COLORWAYS[shown].name}, ${money(product.price)}`}>
+      <div className="stage">
+        {photo && <img className="stage-photo" src={photo} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />}
+        {soldOut && <span className="tag">Sold out</span>}
+      </div>
+      <div className="info">
         <span className="card-title">{product.name}</span>
         <span className="card-meta">{String(product.collection || "").replace(/-/g, " ")}</span>
         <span className="card-row">
@@ -88,13 +75,13 @@ function ProductTile({ product, colorId, inWishlist, onToggleWishlist, eager }) 
             {money(product.price)}
           </span>
         </span>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }
 
 export default function ShopPage() {
-  const { products: ctxProducts, searchQuery, wishlist = [], toggleWishlist } = useContext(AppContext);
+  const { products: ctxProducts, searchQuery } = useContext(AppContext);
   const loaderData = useLoaderData();
   const products = useMemo(
     () => (ctxProducts.length > 0 ? ctxProducts : loaderData?.products || []),
@@ -177,7 +164,7 @@ export default function ShopPage() {
         <h1 className="display">{heading}</h1>
         <p className="shop-sub">
           {aiLoading ? "Searching…" : `${list.length} ${list.length === 1 ? "tee" : "tees"}`}
-          {" "}in five colours. Pick a colour to see every design in it.
+          {" "}in five colours, photographed worn. Pick a colour to see every design in it.
         </p>
       </header>
 
@@ -218,17 +205,15 @@ export default function ShopPage() {
 
       {list.length > 0 ? (
         <ul className="grid">
-          {list.map((p, i) => (
-            <li key={p.id}>
-              <ProductTile
-                product={p}
-                colorId={colorView === "all" ? null : colorView}
-                inWishlist={wishlist.some((w) => w.id === p.id)}
-                onToggleWishlist={toggleWishlist}
-                eager={i < 4}
-              />
-            </li>
-          ))}
+          {list.map((p, i) => {
+            // the newest tee takes a double tile, but only in the default view
+            const feature = i === 0 && colorView === "all" && sort === "featured" && !routeCollection;
+            return (
+              <li key={p.id} className={feature ? "is-feature" : undefined}>
+                <ProductTile product={p} colorId={colorView === "all" ? null : colorView} feature={feature} eager={i < 4} />
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <div className="shop-empty">

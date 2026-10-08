@@ -3,7 +3,7 @@
    .vwg (page) / .vwg-stage (fixed 3D canvas) so none of it leaks into the rest
    of the site. Layout tiers mirror layoutOf() in three/rig.js. */
 
-.vwg, .vwg-stage {
+.vwg, .vwg-stage, .vwg-nav, .vwg-foot {
   --hall: #0A0A0B;
   --panel: #111113;
   --raise: #18181B;
@@ -27,7 +27,7 @@
   --t-h1: clamp(38px, 5.4vw, 88px);
 
   --gutter: max(16px, 4vw);
-  --nav-h: 70px; /* site Navbar height */
+  --nav-h: 64px; /* GalleryHeader height */
   --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
 }
 
@@ -108,17 +108,18 @@
 @keyframes vwgCue { 0% { transform: scaleY(0.2); opacity: 0.4; } 50% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 
 /* Quiet Hours: the newest drops, pinned into the three pools of light (positioned from the 3D scene) */
-.vwg .drop-cards { list-style: none; margin: 0; padding: 0; }
-.vwg .drop-card { display: grid; gap: 12px; }
-.vwg .drop-card .drop-photo { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--raise); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55); }
-.vwg .drop-card .drop-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease); }
-.vwg .drop-card .drop-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%); }
-.vwg.is-gl .drop-cards li { position: absolute; left: 0; top: 0; will-change: transform; transition: opacity 0.4s; }
-.vwg.is-gl .drop-cards:not(.is-near) li { opacity: 0.25; }
-.vwg:not(.is-gl) .drop-cards {
-  position: absolute; left: var(--gutter); right: var(--gutter); bottom: 10vh;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 900px; margin-inline: auto;
+.vwg .drop-placards { list-style: none; margin: 0; padding: 0; }
+.vwg.is-gl .drop-placards li { position: absolute; left: 0; top: 0; width: 210px; will-change: transform; transition: opacity 0.4s; }
+.vwg.is-gl .drop-placards:not(.is-near) li { opacity: 0.25; }
+.vwg.is-gl .drop-placards li.is-off { visibility: hidden; }
+.vwg:not(.is-gl) .drop-placards {
+  position: absolute; left: var(--gutter); right: var(--gutter); bottom: 12vh;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;
 }
+/* the placard photo only shows when there is no 3D hall to hang it in */
+.vwg .pl-photo { display: none; }
+.vwg:not(.is-gl) .pl-photo { display: block; width: 100%; aspect-ratio: 4 / 5; max-height: 34vh; object-fit: cover; margin-bottom: 12px; background: var(--raise); }
+.vwg .pl-tech { text-transform: capitalize; }
 .vwg .drop-all { position: absolute; right: var(--gutter); top: calc(var(--nav-h) + 5vh + 8px); }
 .vwg .drop-empty { position: absolute; left: var(--gutter); bottom: 14vh; color: var(--bone-2); }
 
@@ -181,17 +182,20 @@
 .vwg .search-note { margin: 0 0 18px; color: var(--bone-2); font-size: var(--t-small); }
 
 .vwg .grid { list-style: none; margin: 0; padding: 0 0 96px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.vwg .grid > li { display: grid; min-width: 0; }
 .vwg .card { position: relative; display: grid; text-decoration: none; color: inherit; border: 1px solid var(--line); background: var(--panel); transition: border-color 0.25s; }
-.vwg .card-photo { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--raise); }
-.vwg .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--ease), opacity 0.3s; }
+.vwg .stage { position: relative; aspect-ratio: 4 / 5; max-width: 100%; overflow: hidden; background: var(--raise); }
+/* photo-first: the on-body photo covers the stage */
+.vwg .stage-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s var(--ease); }
 /* a pool of white light over each photo, like the plinths in the hall */
-.vwg .card-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 255, 255, 0.08), transparent 70%); }
-.vwg .tag { position: absolute; left: 10px; top: 10px; z-index: 1; padding: 6px 9px; background: rgba(10, 10, 11, 0.7); border: 1px solid var(--line-2); font: 600 10px/1 var(--g-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bone); }
-.vwg .wish {
-  position: absolute; right: 8px; top: 8px; z-index: 2; width: 36px; height: 36px; display: grid; place-items: center;
-  background: rgba(10, 10, 11, 0.6); border: 1px solid var(--line-2); border-radius: 50%; cursor: pointer; color: var(--bone); font-size: 15px; line-height: 1;
-}
-.vwg .wish[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+.vwg .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 255, 255, 0.08), transparent 70%); }
+.vwg .tag { position: absolute; left: 10px; top: 10px; z-index: 2; padding: 6px 9px; background: rgba(10, 10, 11, 0.7); border: 1px solid var(--line-2); font: 600 10px/1 var(--g-body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bone); }
+/* the featured product takes a double tile in the default shop view */
+.vwg .grid > li.is-feature { grid-column: span 2; grid-row: span 2; }
+.vwg .card-feature { grid-template-rows: minmax(0, 1fr) auto; }
+.vwg .card-feature .stage { aspect-ratio: auto; min-height: 0; }
+.vwg .card-feature .card-title { font-size: 16px; }
+.vwg .card-feature .info { padding: 16px 18px 18px; }
 .vwg .info { display: grid; gap: 3px; padding: 14px 14px 15px; border-top: 1px solid var(--line); min-width: 0; }
 .vwg .card-title { font: 400 13px/1.3 var(--g-display); letter-spacing: 0.16em; text-transform: uppercase; overflow-wrap: anywhere; }
 .vwg .card-meta { font-size: 12.5px; color: var(--bone-3); text-transform: capitalize; }
@@ -209,8 +213,53 @@
   .vwg .placard-link:hover .pl-title { text-decoration: underline; text-underline-offset: 5px; }
   .vwg .swatch-row:hover { color: var(--bone-2); }
   .vwg .card:hover { border-color: var(--line-2); }
-  .vwg .card:hover .card-photo img, .vwg .drop-card a:hover .drop-photo img { transform: scale(1.04); }
+  .vwg .card.has-photo:hover .stage-photo { transform: scale(1.04); }
   .vwg .coll-link:hover { color: var(--bone); }
+}
+
+/* ---------- site header (every public page) ---------- */
+.vwg-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 800;
+  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) var(--gutter) 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: linear-gradient(to bottom, rgba(10, 10, 11, 0.88), rgba(10, 10, 11, 0));
+  color: var(--bone); transition: background-color 0.3s;
+}
+/* once the page scrolls under it, a solid backing keeps the links legible */
+.vwg-nav.is-scrolled { background: rgba(10, 10, 11, 0.94); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.vwg-nav .brand { font: 400 13px/1 var(--g-display); letter-spacing: 0.34em; text-decoration: none; white-space: nowrap; color: var(--bone); }
+.vwg-nav .nav-links { display: flex; align-items: center; gap: clamp(14px, 2.4vw, 32px); }
+.vwg-nav .nav-links a, .vwg-nav .cart-btn {
+  font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--bone-2); text-decoration: none; padding-block: 10px; background: none; border: 0; cursor: pointer; white-space: nowrap;
+}
+.vwg-nav .nav-links a[aria-current] { color: var(--bone); text-decoration: underline; text-underline-offset: 7px; text-decoration-thickness: 1px; }
+.vwg-nav .cart-count { color: var(--sand); font-variant-numeric: tabular-nums; margin-left: 4px; }
+.vwg-nav :focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+/* ---------- site footer (every public page) ---------- */
+.vwg-foot {
+  position: relative; z-index: 2; background: var(--hall); border-top: 1px solid var(--line);
+  padding: 80px var(--gutter) 56px; display: grid; gap: 48px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  color: var(--bone); font: 400 var(--t-body)/1.6 var(--g-body); -webkit-font-smoothing: antialiased;
+}
+.vwg-foot .eyebrow { margin: 0 0 14px; font: 600 var(--t-label)/1.4 var(--g-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--bone-2); }
+.vwg-foot .foot-brand { font: 300 clamp(22px, 2.4vw, 32px)/1.15 var(--g-display); letter-spacing: -0.01em; margin: 0 0 14px; max-width: 18ch; color: var(--bone); }
+.vwg-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--bone-2); }
+.vwg-foot a { color: var(--bone-2); text-decoration: none; }
+.vwg-foot p { margin: 0; color: var(--bone-2); max-width: 46ch; }
+.vwg-foot .foot-small { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 12px; color: var(--bone-3); }
+.vwg-foot .foot-support { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.vwg-foot .foot-support a { color: var(--bone-3); }
+.vwg-foot .credit-line { flex-basis: 100%; }
+.vwg-foot .credit-line a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.vwg-foot :focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+
+@media (hover: hover) {
+  .vwg-nav .nav-links a:hover, .vwg-nav .cart-btn:hover { color: var(--bone); }
+  .vwg-foot a:hover, .vwg-foot .foot-support a:hover { color: var(--bone); }
 }
 
 /* side layout on tablets and small laptops */
@@ -229,7 +278,7 @@
   .vwg .copy-top { top: calc(var(--nav-h) + 12px); bottom: auto; }
   .vwg .scene-drop .sticky::after { display: none; }
   .vwg .placard-hero, .vwg .scroll-cue { display: none; }
-  .vwg:not(.is-gl) .drop-cards { bottom: 16vh; gap: 10px; }
+  .vwg:not(.is-gl) .drop-placards { bottom: 18vh; gap: 10px; }
   .vwg .drop-all { top: auto; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); left: var(--gutter); right: auto; }
   .vwg-poster-tee { left: 50%; top: 30%; width: 72vw; }
   .vwg-shop { padding-top: calc(var(--nav-h) + 26vh); }
@@ -237,14 +286,20 @@
 
 /* ===== PHONE ===== */
 @media (max-width: 599px) and (min-height: 500px), (max-width: 599px) and (orientation: portrait) {
+  .vwg, .vwg-stage, .vwg-nav, .vwg-foot { --nav-h: 56px; }
+  .vwg-nav .hide-sm { display: none !important; }
+  .vwg-nav .brand { font-size: 12px; letter-spacing: 0.28em; }
+  .vwg-foot { grid-template-columns: 1fr; gap: 32px; padding-block: 56px 40px; }
   .vwg .hide-sm { display: none !important; }
   .vwg .copy-top p { font-size: 14px; }
   .vwg .copy-hero { gap: 16px; }
   .vwg .lede { font-size: 15px; }
-  .vwg .drop-card { gap: 8px; }
-  .vwg .drop-card .placard { font-size: 11px; padding-top: 8px; }
-  .vwg .drop-card .pl-title { font-size: 10px; letter-spacing: 0.12em; }
-  .vwg .drop-card .pl-coll { display: none; }
+  .vwg.is-gl .drop-placards li { width: 32vw; }
+  .vwg.is-gl .drop-placards .placard { font-size: 11px; }
+  .vwg .drop-placards .pl-tech { display: none; }
+  /* two columns: the featured tile is one full-width row with its own 4:5 photo */
+  .vwg .grid > li.is-feature { grid-row: span 1; }
+  .vwg .card-feature .stage { aspect-ratio: 4 / 5; }
   .vwg .swatch-row { grid-template-columns: 14px 6em minmax(0, 1fr); padding: 9px 0; gap: 12px; }
   .vwg .sw-status { display: none; }
   .vwg .specs div { padding: 10px 0; }
@@ -269,6 +324,8 @@
 
 /* ===== TABLET (stacked, 600px and wider) ===== */
 @media (min-width: 600px) and (max-width: 819px) and (min-height: 500px), (min-width: 600px) and (max-width: 1199px) and (orientation: portrait) {
+  .vwg-foot { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 32px; }
+  .vwg-foot > :first-child { grid-column: 1 / -1; }
   .vwg { --t-body: 16px; --t-lead: 18px; --t-h2: clamp(34px, 5.2vw, 52px); --t-h1: clamp(46px, 7.4vw, 78px); --gutter: max(28px, 5vw); }
   .vwg .sticky::after { inset: 56% 0 0; background: linear-gradient(to bottom, rgba(10, 10, 11, 0), rgba(10, 10, 11, 0.9) 36%); }
   .vwg .copy, .vwg .copy-top { right: auto; width: min(640px, calc(100% - 2 * var(--gutter))); gap: 18px; }
@@ -280,6 +337,8 @@
 
 /* phones on their side, and other short landscape windows */
 @media (orientation: landscape) and (max-height: 499px) {
+  .vwg, .vwg-stage, .vwg-nav, .vwg-foot { --nav-h: 52px; }
+  .vwg-nav, .vwg-foot { padding-left: max(var(--gutter), env(safe-area-inset-left, 0px)); padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
   .vwg { --t-h1: clamp(30px, 4.4vw, 44px); --t-h2: clamp(24px, 3vw, 34px); }
   .vwg .copy { gap: 12px; top: calc(50% + var(--nav-h) / 2); transform: translateY(-50%); }
   .vwg .copy-hero { gap: 14px; }
@@ -299,13 +358,18 @@
 
 /* touch: larger targets, no iOS focus zoom */
 @media (pointer: coarse) {
+  .vwg-nav .nav-links a, .vwg-nav .cart-btn { min-height: 44px; display: inline-flex; align-items: center; padding-block: 0; }
   .vwg a, .vwg button, .vwg label, .vwg input, .vwg select { touch-action: manipulation; }
   .vwg .filter span, .vwg .coll-link, .vwg .sort select { min-height: 44px; }
   .vwg .swatch-row { min-height: 44px; }
-  .vwg .wish { width: 44px; height: 44px; }
   .vwg input, .vwg select { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .vwg *, .vwg *::before, .vwg *::after, .vwg-poster { animation: none !important; transition-duration: 0.01ms !important; }
+}
+
+/* the smallest phones */
+@media (max-width: 380px) {
+  .vwg-nav .nav-links { gap: 12px; }
 }

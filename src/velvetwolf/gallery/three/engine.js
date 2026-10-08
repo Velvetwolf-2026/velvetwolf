@@ -9,7 +9,7 @@ import { Rig, resolve, lerpPose, dwellEase, layoutOf } from './rig.js';
 import { createStages } from './stages.js';
 import { createGoldDust } from './dust.js';
 import { damp, nearestAngle } from './util.js';
-import { COLORWAYS, DROP_TRIO, productById } from '../data.js';
+import { COLORWAYS, productById } from '../data.js';
 
 const HOME_ORDER = ['hero', 'drop', 'color', 'craft', 'teaser'];
 
@@ -81,13 +81,11 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     garment.setPrint('back', prints.get(p.back));
   }
   dress(B.hero.garment, 'nocturne', 'noir');
-  DROP_TRIO.forEach((d, i) => dress(B.drop[i].garment, d.id, d.color));
   dress(B.color.garment, 'essential', 'noir');
   dress(B.craft.garment, 'silence', 'bone');
-  // On the home page the drop bays hold real product photos (positioned from
-  // dropFrames()), so the house tees there only appear as the shop backdrop.
-  const setDropTees = (visible) => B.drop.forEach((b) => { b.garment.group.visible = visible; });
-  setDropTees(false);
+  // Quiet Hours: framed photographs hang where the drop tees used to float.
+  // The page supplies them (the newest products) through setDropPhotos().
+  const hungPhotos = [];
 
   // ---- state ----
   let W = 1, H = 1, Hs = 1;
@@ -199,10 +197,10 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     // exhibits
     const breathe = (g, ph) => { g.pivot.position.y = reducedMotion ? 0 : Math.sin(t * 0.7 + ph) * 0.025; };
     if (!reducedMotion) B.hero.garment.pivot.rotation.y = 0.5 + t * 0.16;
-    B.drop.forEach((b, i) => breathe(b.garment, i));
     if (!reducedMotion) B.color.garment.pivot.rotation.y = -0.35 + Math.sin(t * 0.3) * 0.35;
     if (!reducedMotion) B.teaser.garment.pivot.rotation.y = 0.2 + Math.sin(t * 0.35) * 0.32;
     breathe(B.hero.garment, 0.4); breathe(B.color.garment, 1.1); breathe(B.teaser.garment, 2.3);
+    // (drop bays are framed photographs now; they don't float)
 
     // colorway scroll: blend through the five dyes
     const n = colorList.length;
@@ -270,19 +268,20 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   return {
     onReady(cb) { if (ready) cb(); else readyCb = cb; },
     dispose,
-    setView(name, st) { view = name; station = st || name; setDropTees(name === 'shop'); applyGoal(); },
+    setView(name, st) { view = name; station = st || name; applyGoal(); },
     setStation(st) { station = st; applyGoal(); },
     setOccluded(v) { occluded = !!v; },
     setHomeProgress(s, ct) { homeS = s; colorT = ct; },
     setColorList(list) { colorList = list; },
-    dropAnchors() { return B.drop.map((b) => project(b.x, 0.42, 0.6)); },
-    // Screen-space frame of each drop bay's exhibit (where a tee would float):
-    // [centreX, top, bottom] in CSS pixels, for pinning product photos into the pools.
-    dropFrames() {
-      return B.drop.map((b) => {
-        const top = project(b.x, TEE_Y + 0.98, 0);
-        const bottom = project(b.x, TEE_Y - 0.98, 0);
-        return [top[0], top[1], bottom[1]];
+    dropAnchors() { return B.drop.map((b) => project(b.x, b.anchorY ?? 0.42, b.anchorZ ?? 0.6)); },
+    // Hang up to three photographs (URLs) in the Quiet Hours frames, left to right.
+    // Re-hanging the same list is a no-op, so pages can call this on every render.
+    setDropPhotos(urls) {
+      B.drop.forEach((b, i) => {
+        const src = urls[i] || null;
+        if (!src || hungPhotos[i] === src) return;
+        hungPhotos[i] = src;
+        b.setPhoto(src, aniso);
       });
     },
     stages,

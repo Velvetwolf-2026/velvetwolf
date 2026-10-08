@@ -26,7 +26,8 @@ export function layoutOf(W, H) {
 const area = (desk, mob, tab = mob) => ({ desk, mob, tab });
 export const STATIONS = {
   hero:      { target: [0, 1.42, 0],     dir: [0.34, 0.1, 1],   frame: [2.5, 3.0], focus: [0, 1.62, 0],   spot: 0.42, area: area([0.46, 0.1, 0.98, 0.96], [0.02, 0.07, 0.98, 0.52], [0.1, 0.08, 0.9, 0.66]) },
-  drop:      { target: [12, 1.3, 0],     dir: [0, 0.13, 1],     frame: [8.4, 2.9], focus: [12, 1.5, 0],   spot: 0.66, area: area([0.04, 0.22, 0.96, 0.8], [0.0, 0.34, 1.0, 0.7], [0.02, 0.3, 0.98, 0.72]) },
+  // three framed photos; on phones and tablets the side frames run off the edges and peek in
+  drop:      { target: [12, 1.62, 0],    dir: [0, 0.1, 1],      frame: [9.4, 3.1], frameMob: [4.6, 3.1], frameTab: [7.2, 3.1], focus: [12, 1.6, 0],   spot: 0.66, area: area([0.04, 0.22, 0.96, 0.8], [0.0, 0.34, 1.0, 0.7], [0.02, 0.3, 0.98, 0.72]) },
   color:     { target: [26, 1.45, 0],    dir: [-0.3, 0.07, 1],  frame: [2.5, 2.8], focus: [26, 1.62, 0],  spot: 0.42, area: area([0.48, 0.08, 0.98, 0.96], [0.02, 0.06, 0.98, 0.5], [0.1, 0.07, 0.9, 0.6]) },
   craft:     { target: [36.05, 1.95, 0.3], dir: [0.22, 0.12, 1], frame: [1.7, 1.7], focus: [36, 1.8, 0], spot: 0.42, area: area([0.5, 0.06, 1.0, 0.96], [0.0, 0.06, 1.0, 0.5], [0.06, 0.06, 0.94, 0.6]) },
   teaser:    { target: [46, 1.45, 0],    dir: [0.16, 0.07, 1],  frame: [2.5, 2.9], focus: [46, 1.62, 0],  spot: 0.42, area: area([0.48, 0.08, 0.98, 0.96], [0.02, 0.06, 0.98, 0.5], [0.1, 0.07, 0.9, 0.58]) },
@@ -47,14 +48,15 @@ export function resolve(name, W, H, fovDeg, Hs = H) {
   const L = layoutOf(W, Hs);
   let a = !L.stacked ? s.area.desk : L.tablet ? s.area.tab : s.area.mob;
   if (a === 'panel') a = [0.02, 0.1, Math.max(0.3, (W - L.panelW) / W) - 0.02, 0.96];
+  const fr = (L.stacked && (L.tablet ? s.frameTab : s.frameMob)) || s.frame;
   const k = Hs / H;
   const [x0, , x1] = a;
   const y0 = a[1] * k, y1 = a[3] * k;
   const tan = Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
   const aspect = W / H;
   const dist = Math.max(
-    s.frame[1] / 2 / (tan * (y1 - y0)),
-    s.frame[0] / 2 / (tan * aspect * (x1 - x0))
+    fr[1] / 2 / (tan * (y1 - y0)),
+    fr[0] / 2 / (tan * aspect * (x1 - x0))
   ) * 1.06;
   _v.set(...s.dir).normalize();
   return {

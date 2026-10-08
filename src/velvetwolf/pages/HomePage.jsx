@@ -1,8 +1,9 @@
 // Home: the VelvetWolf Gallery. Five sticky "rooms"; the scroll position maps to
 // a camera station in the shared 3D hall (GalleryProvider). The Quiet Hours room
-// shows the newest drops from the catalogue, pinned into the pools of light.
+// hangs the newest drops from the catalogue as framed photographs in the hall,
+// with a placard pinned under each frame.
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLoaderData, useNavigate } from "react-router";
+import { Link, useLoaderData, useLocation, useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { loadProductsFromAPI } from "../utils/products";
 import { useGallery } from "../gallery/galleryContext";
@@ -33,16 +34,10 @@ export function meta() {
   ];
 }
 
-export function links() {
-  return [
-    { rel: "preconnect", href: "https://fonts.googleapis.com" },
-    { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-    { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@200;300;400;500&display=swap" },
-  ];
-}
-
 const ORDER = ["hero", "drop", "color", "craft", "teaser"];
-const DROP_COUNT = 3; // one per pool of light in the Quiet Hours room
+const DROP_COUNT = 3; // one per frame in the Quiet Hours room
+// Hash links from the header/footer to a room.
+const HASH_ROOMS = { "#drop": "drop", "#colors": "color", "#cloth": "craft" };
 const reducedMotion = () => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export default function HomePage() {
@@ -55,13 +50,14 @@ export default function HomePage() {
   const drops = useMemo(() => newestDrops(products, DROP_COUNT), [products]);
   const lowest = useMemo(() => fromPrice(products), [products]);
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { engine, status } = useGallery();
   const glReady = status === "ready";
 
   const sceneRefs = useRef([]);
   const dropStickyRef = useRef(null);
   const dropListRef = useRef(null);
-  const dropCardRefs = useRef([]);
+  const placardRefs = useRef([]);
   const geometry = useRef({ tops: [], heights: [] });
   const [activeColor, setActiveColor] = useState(0);
   const [teaserText, setTeaserText] = useState("Say less.");
@@ -71,6 +67,23 @@ export default function HomePage() {
   useEffect(() => {
     engine?.setView("home");
   }, [engine]);
+
+  // Hang the newest drops in the three frames (each in its first colourway).
+  useEffect(() => {
+    if (!engine) return;
+    engine.setDropPhotos(drops.map((p) => photoFor(p, colorwaysOf(p)[0])).filter(Boolean));
+  }, [engine, drops]);
+
+  // /#drop, /#colors, /#cloth: jump to that room (after layout has settled).
+  useEffect(() => {
+    const room = HASH_ROOMS[hash];
+    if (!room) return undefined;
+    const t = setTimeout(() => {
+      const el = sceneRefs.current[ORDER.indexOf(room)];
+      if (el) window.scrollTo({ top: el.offsetTop, behavior: "auto" });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   // Measure the rooms (re-measure on resize/load: their heights are in vh).
   useEffect(() => {
@@ -89,8 +102,8 @@ export default function HomePage() {
     };
   }, []);
 
-  // Per frame: scroll position -> camera station, colorway scrub, and the drop
-  // cards pinned into the three pools of light.
+  // Per frame: scroll position -> camera station, colorway scrub, and the
+  // placards pinned under the three framed photographs.
   useEffect(() => {
     let raf = 0;
     let lastActive = -1;
@@ -113,21 +126,24 @@ export default function HomePage() {
       const active = Math.round(colorT * (COLOR_ORDER.length - 1));
       if (active !== lastActive) { lastActive = active; setActiveColor(active); }
 
-      // Pin each product photo where a tee would float (reads before writes).
+      // Pin a placard under each frame (only while the room is on screen;
+      // reads before writes so phones don't pay for a layout per placard).
       const list = dropListRef.current, host = dropStickyRef.current;
       if (engine && list && host && Math.abs(s - 1) < 1.05) {
-        const frames = engine.dropFrames();
+        const anchors = engine.dropAnchors();
         const box = host.getBoundingClientRect();
-        const cards = dropCardRefs.current.filter(Boolean);
-        cards.forEach((el, i) => {
-          const f = frames[i];
-          if (!f) return;
-          const [cx, top, bottom] = f;
-          const w = Math.max(84, Math.min(320, (bottom - top) * 0.8)); // 4:5 photo, as tall as the tee
-          const edge = 12;
-          const x = Math.min(Math.max(cx - box.left, w / 2 + edge), box.width - w / 2 - edge);
-          el.style.width = `${w.toFixed(1)}px`;
-          el.style.transform = `translate(${(x - w / 2).toFixed(1)}px, ${(top - box.top).toFixed(1)}px)`;
+        const placards = placardRefs.current.filter(Boolean);
+        const halves = placards.map((el) => el.offsetWidth / 2);
+        placards.forEach((el, i) => {
+          const a = anchors[i];
+          if (!a) return;
+          const [x, py] = a;
+          // a frame that runs off the screen edge (phones) keeps its placard hidden
+          el.classList.toggle("is-off", x < -2 || x > box.width + box.left + 2);
+          // keep each label inside the page gutter on narrow screens
+          const half = halves[i], edge = 16;
+          const cx = Math.min(Math.max(x - box.left, half + edge), box.width - half - edge);
+          el.style.transform = `translate(${cx.toFixed(1)}px, ${(py - box.top).toFixed(1)}px) translateX(-50%)`;
         });
         list.classList.toggle("is-near", Math.abs(s - 1) < 0.5);
       }
@@ -205,26 +221,25 @@ export default function HomePage() {
           <div className="copy copy-top">
             <p className="eyebrow">New drops</p>
             <h2 className="h2" id="drop-h">Quiet Hours</h2>
-            <p>The newest tees in the store, fresh off the press. Each one is lit in plain white light, so the colour on screen stays close to the cloth.</p>
+            <p>The newest tees in the store, hung in the hall. Each one is printed large on heavyweight cotton.</p>
           </div>
           <Link className="text-link drop-all" to="/shop">See all {products.length > 0 ? `${products.length} tees` : "tees"}</Link>
           {drops.length > 0 ? (
-            <ol className="drop-cards" ref={dropListRef}>
+            // Placards pin under the three framed photographs in the hall; the
+            // photo inside a placard only shows when there's no 3D hall (no WebGL).
+            <ol className="drop-placards" ref={dropListRef}>
               {drops.map((p, i) => {
                 const color = colorwaysOf(p)[0];
                 const photo = photoFor(p, color);
                 return (
-                  <li key={p.id} className="drop-card" ref={(el) => { dropCardRefs.current[i] = el; }}>
-                    <Link to={productHref(p)} className="drop-photo" aria-label={`${p.name}, ${money(p.price)}`}>
-                      {photo && <img src={photo} alt={p.name} loading={i === 0 ? "eager" : "lazy"} decoding="async" />}
+                  <li key={p.id} className="placard placard-drop" ref={(el) => { placardRefs.current[i] = el; }}>
+                    <Link to={productHref(p)} className="placard-link">
+                      {photo && <img className="pl-photo" src={photo} alt={p.name} loading="lazy" decoding="async" />}
+                      <span className="pl-title">{p.name}</span>
+                      <span className="pl-color">{COLORWAYS[color].name}</span>
+                      <span className="pl-tech">{String(p.collection || "").replace(/-/g, " ")}</span>
+                      <span className="pl-price">{money(p.price)}</span>
                     </Link>
-                    <div className="placard">
-                      <Link to={productHref(p)} className="placard-link">
-                        <span className="pl-title">{p.name}</span>
-                        <span className="pl-coll">{String(p.collection || "").replace(/-/g, " ")}</span>
-                        <span className="pl-price">{money(p.price)}</span>
-                      </Link>
-                    </div>
                   </li>
                 );
               })}
@@ -301,9 +316,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <p className="fine credit">
-        3D tee: <a href="https://sketchfab.com/3d-models/oversized-t-shirt-3b6e78d6a1a74370a6e5af6f312d38f7" target="_blank" rel="noopener noreferrer">&ldquo;Oversized t-shirt&rdquo;</a> by kylelhb, <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>, recoloured with prints added.
-      </p>
     </main>
   );
 }
