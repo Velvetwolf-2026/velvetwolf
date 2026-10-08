@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import { useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import Icon from "../components/Icon";
 import { HeroHeader } from "../styles/shared";
@@ -32,9 +33,12 @@ const COLORS = [
 export default function CustomDesignPage() {
   const { addToCart, showToast, setPage } = useContext(AppContext);
   const { isMobileOrTablet, isMobile } = useBreakpoint();
+  // A line typed on the home page teaser arrives as ?text= and opens the text tab.
+  const [searchParams] = useSearchParams();
+  const initialText = (searchParams.get("text") || "").slice(0, 40);
 
   // Layout states
-  const [activeTab, setActiveTab] = useState("base"); // base, graphics, text, embroidery
+  const [activeTab, setActiveTab] = useState(initialText ? "text" : "base"); // base, graphics, text, embroidery
   const [activeView, setActiveView] = useState("front"); // front, back, left-sleeve, right-sleeve
 
   // Customization choices
@@ -55,7 +59,7 @@ export default function CustomDesignPage() {
   const [sleeveScale, setSleeveScale] = useState(100);
 
   // Custom Typography
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [textFont, setTextFont] = useState("Montserrat");
   const [textColor, setTextColor] = useState("#faf9f7");
   const [textScale, setTextScale] = useState(20);

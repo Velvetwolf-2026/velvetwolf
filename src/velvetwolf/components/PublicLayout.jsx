@@ -1,6 +1,8 @@
 import { useLocation, Outlet } from "react-router";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import { GalleryProvider } from "../gallery/GalleryProvider";
+import { isGalleryPath } from "../gallery/galleryContext";
 
 // Shared layout wrapper for rendering Navbar & Footer around public routes.
 export default function PublicLayout() {
@@ -19,7 +21,8 @@ export default function PublicLayout() {
   ].includes(location.pathname);
 
   return (
-    <>
+    // Home and shop share one persistent 3D gallery canvas.
+    <GalleryProvider active={isGalleryPath(location.pathname)}>
       <Navbar activePage={location.pathname} />
       <Outlet />
       {showBackButton && (
@@ -49,6 +52,6 @@ export default function PublicLayout() {
         </button>
       )}
       <Footer onNavigate={() => { }} />
-    </>
+    </GalleryProvider>
   );
 }

@@ -1,0 +1,157 @@
+// The gallery hall: floor, wall, tees floating in pools of light, and one white key + rim pair that
+// follows whatever the camera is looking at. No HDRI and no coloured light, so colorways stay true.
+import * as THREE from 'three';
+import { Garment } from './garment.js';
+import { concreteTexture, radialTexture, wallLettering } from './textures.js';
+
+export const HALL_COLOR = '#0A0A0B';
+export const TEE_Y = 1.62; // garment centre height (tees float, no stand)
+
+function beamMaterial() {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    uniforms: { uOpacity: { value: 0.03 } },
+    vertexShader: /* glsl */ `
+      varying float vH; varying vec3 vN; varying vec3 vV;
+      void main() {
+        vH = position.y;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal);
+        vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform float uOpacity; varying float vH; varying vec3 vN; varying vec3 vV;
+      void main() {
+        float facing = pow(abs(dot(vN, vV)), 2.2);
+        float h = clamp(vH / 7.0 + 0.5, 0.0, 1.0);
+        gl_FragColor = vec4(vec3(1.0), uOpacity * facing * mix(0.25, 1.0, h));
+      }`,
+  });
+}
+
+// lite: on phones and low-power tablets the exhibits you only look at use the light mesh tier;
+// the close-up pieces (cloth, product, studio) keep the full mesh.
+export function buildWorld(scene, kit, prints, { shadows = true, beams = true, lite = false } = {}) {
+  const lightKit = kit.light || kit;
+  scene.background = new THREE.Color(HALL_COLOR);
+  scene.fog = new THREE.Fog(HALL_COLOR, 10, 30);
+
+  // floor: dark polished concrete
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(220, 60),
+    new THREE.MeshStandardMaterial({ color: '#111113', roughness: 0.92, metalness: 0, roughnessMap: concreteTexture() })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(36, 0, 0);
+  floor.receiveShadow = shadows;
+  scene.add(floor);
+
+  // back wall
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(220, 16),
+    new THREE.MeshStandardMaterial({ color: '#141416', roughness: 0.96 })
+  );
+  wall.position.set(36, 8, -6);
+  scene.add(wall);
+
+  const poolTex = radialTexture([[0, 'rgba(255,255,255,0.55)'], [0.45, 'rgba(255,255,255,0.12)'], [1, 'rgba(255,255,255,0)']]);
+  const contactTex = radialTexture([[0, 'rgba(0,0,0,0.85)'], [0.5, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]);
+  const poolGeo = new THREE.PlaneGeometry(4.2, 4.2);
+  const beamGeo = new THREE.CylinderGeometry(0.35, 1.5, 7, 32, 1, true);
+
+  function addBay(x, z, { color = '#141416', ink = '#E8E4DA', rotation = 0, beam = beams, light = lite } = {}) {
+    const bay = new THREE.Group();
+    bay.position.set(x, 0, z);
+    const pool = new THREE.Mesh(poolGeo, new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, depthWrite: false, opacity: 0.16, blending: THREE.AdditiveBlending }));
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.y = 0.004;
+    // soft shadow on the floor under the floating tee
+    const contact = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6), new THREE.MeshBasicMaterial({ map: contactTex, transparent: true, depthWrite: false, opacity: 0.5 }));
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = 0.006;
+    bay.add(pool, contact);
+    if (beam) {
+      const b = new THREE.Mesh(beamGeo, beamMaterial());
+      b.position.y = 3.5 + 0.2;
+      b.renderOrder = 3;
+      bay.add(b);
+    }
+    const garment = new Garment(light ? lightKit : kit, { color, ink, castShadow: shadows });
+    garment.group.position.y = TEE_Y;
+    garment.pivot.rotation.y = rotation;
+    bay.add(garment.group);
+    scene.add(bay);
+    return { x, z, group: bay, garment, pool };
+  }
+
+  // wall lettering
+  const letters = [];
+  function addLettering(x, text, { y = 4.6, w = 13, opacity = 0.07 } = {}) {
+    const l = wallLettering();
+    l.draw(text);
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, w / 4),
+      new THREE.MeshBasicMaterial({ map: l.texture, transparent: true, opacity, depthWrite: false })
+    );
+    m.position.set(x, y, -5.95);
+    scene.add(m);
+    letters.push(l);
+    return l;
+  }
+
+  // ---- bays ----
+  const bays = {
+    hero: addBay(0, 0, { rotation: 0.5 }),
+    drop: [addBay(9, 0, { rotation: 0.32, light: true }), addBay(12, 0, { rotation: 0, light: true }), addBay(15, 0, { rotation: -0.32, light: true })],
+    color: addBay(26, 0, { rotation: -0.35, color: '#141416' }),
+    craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
+    teaser: addBay(46, 0, { rotation: 0.2 }),
+    pdp: addBay(60, 0, { rotation: 0, beam: false, light: false }),
+    studio: addBay(72, 0, { rotation: 0, beam: false, light: false }),
+  };
+  const wallDrop = addLettering(12, 'QUIET HOURS', { y: 3.85, w: 11, opacity: 0.07 });
+  const wallPdp = addLettering(60, 'NOCTURNE', { y: 3.55, w: 8.4, opacity: 0.055 });
+  const wallStudio = addLettering(72, 'STUDIO', { y: 3.55, w: 8.4, opacity: 0.055 });
+
+  // ---- light ----
+  scene.add(new THREE.HemisphereLight('#ffffff', '#0b0b0c', 0.32));
+  const key = new THREE.SpotLight('#ffffff', 95, 0, 0.42, 0.75, 2);
+  key.castShadow = shadows;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.bias = -0.0005;
+  key.shadow.normalBias = 0.02;
+  key.shadow.camera.near = 2;
+  key.shadow.camera.far = 16;
+  const rim = new THREE.SpotLight('#ffffff', 80, 0, 0.5, 0.8, 2);
+  const fill = new THREE.DirectionalLight('#ffffff', 0.35);
+  scene.add(key, key.target, rim, rim.target, fill, fill.target);
+
+  const focus = new THREE.Vector3(0, TEE_Y, 0);
+  let spot = 0.42;
+  function aimLights(f, angle) {
+    focus.copy(f);
+    spot = angle;
+    key.position.set(f.x + 1.7, 6.6, f.z + 3.6);
+    key.target.position.copy(f).setY(f.y - 0.6);
+    key.angle = angle;
+    key.intensity = 95 * (0.42 / angle) ** 0.6;
+    rim.position.set(f.x - 1.8, 4.4, f.z - 3.6);
+    rim.target.position.copy(f);
+    fill.position.set(f.x - 4, 2.2, f.z + 6);
+    fill.target.position.copy(f);
+  }
+  aimLights(focus, spot);
+
+  return {
+    bays,
+    lights: { key, rim, fill },
+    aimLights,
+    setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
+    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); },
+    garments: () => [bays.hero, ...bays.drop, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio].map((b) => b.garment),
+  };
+}

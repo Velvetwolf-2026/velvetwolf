@@ -23,6 +23,7 @@ import Toast from "./velvetwolf/components/Toast";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 import SilkBackground from "./velvetwolf/components/SilkBackground";
+import { isGalleryPath } from "./velvetwolf/gallery/galleryContext";
 import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 import MetaPixel from "./velvetwolf/components/MetaPixel";
 
@@ -643,8 +644,9 @@ export default function VelvetWolfRoot() {
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
         <MetaPixel />
-        {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
-        <SilkBackground />
+        {/* Ambient silk cloth behind the whole site + eased momentum scroll.
+            The gallery routes (home, shop) draw their own 3D hall instead. */}
+        {!isGalleryPath(location.pathname) && <SilkBackground />}
         <SmoothScroll />
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
