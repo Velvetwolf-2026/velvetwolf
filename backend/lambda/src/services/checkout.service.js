@@ -21,8 +21,11 @@ const isValidUuid = (uuid) => {
 // Pricing rules — must stay in sync with CheckoutPage.jsx (shipping/tax) and
 // CustomDesignPage.jsx (custom tee pricing). The server recomputes everything
 // from these so a tampered request can't change what the customer is charged.
-const FREE_SHIPPING_THRESHOLD = 1999;
-const SHIPPING_FEE = 149;
+// Delivery speeds the customer can choose. Standard is always free.
+export const DELIVERY_OPTIONS = {
+  standard: { fee: 0 },
+  express: { fee: 149 },
+};
 const TAX_RATE = 0.18;
 const MAX_ITEM_QTY = 100;
 
@@ -36,8 +39,12 @@ const VALID_CUSTOM_TEE_PRICES = new Set(
   ])
 );
 
-export function calculateShipping(subtotal) {
-  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+// Unknown or missing values mean Standard, so an old client can never be
+// charged for Express it didn't choose.
+export const normalizeDelivery = (delivery) => (delivery === "express" ? "express" : "standard");
+
+export function calculateShipping(delivery) {
+  return DELIVERY_OPTIONS[normalizeDelivery(delivery)].fee;
 }
 
 export function calculateTax(subtotal) {
@@ -306,9 +313,15 @@ async function confirmOrder(orderId) {
   }
 }
 
-export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta }) {
+export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery }) {
   if (!Array.isArray(cart) || cart.length === 0) throw new ApiError(400, "Cart is empty");
   if (!address || typeof address !== "object") throw new ApiError(400, "Shipping address is required");
+  // Prepaid only. COD orders placed before this change are unaffected: they
+  // are confirmed already and nothing here touches them.
+  if (String(payment_method || "").toLowerCase() === "cod") {
+    throw new ApiError(400, "Cash on delivery is no longer available. Please pay online (UPI, card, netbanking or wallet).");
+  }
+  const deliverySpeed = normalizeDelivery(delivery);
 
   // 1. Validate stock and verify prices for all items directly from the database
   let verifiedSubtotal = 0;
@@ -386,9 +399,9 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     }
   }
 
-  // 3. Compute verified total amount (same formula as CheckoutPage.jsx: both
-  // shipping and tax are based on the pre-discount subtotal)
-  const verifiedShipping = calculateShipping(verifiedSubtotal);
+  // 3. Compute verified total amount (same formula as CheckoutPage.jsx):
+  // shipping from the chosen delivery speed, tax on the pre-discount subtotal
+  const verifiedShipping = calculateShipping(deliverySpeed);
   const verifiedTax = calculateTax(verifiedSubtotal);
   const verifiedTotal = Math.max(0, verifiedSubtotal - discountAmount + verifiedShipping + verifiedTax);
 
@@ -409,10 +422,11 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     tax_amount: Number(verifiedTax.toFixed(2)),
     payment_method: payment_method,
     shipping_address: { ...address, _meta: meta || {} },
-    status: payment_method === "cod" ? "confirmed" : "pending",
+    status: "pending", // confirmed once the payment is verified
     coupon_code: couponCode || null,
     discount_amount: Number(discountAmount.toFixed(2)),
-    meta: meta || {},
+    // delivery speed kept with the order (no separate column needed)
+    meta: { ...(meta || {}), delivery: deliverySpeed },
   });
 
   if (orderError) {
@@ -432,13 +446,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     throw new ApiError(500, "Failed to create order items");
   }
 
-  if (payment_method === "cod") {
-    // Confirm COD order immediately (decrements stock & sends email)
-    await confirmOrder(orderId);
-    return { success: true, orderId, method: "cod" };
-  }
-
-  // Otherwise, initiate Cashfree payment
+  // Initiate the Cashfree payment
   let customerId = orderUserId;
   if (!customerId || !/^[a-zA-Z0-9._-]+$/.test(customerId)) {
     customerId = `GUEST_${Date.now()}`;

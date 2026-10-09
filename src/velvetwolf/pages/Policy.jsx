@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
         </Sec>
 
         <Sec title="2. HOW WE USE YOUR INFORMATION">
-          <Ul items={["To process and fulfil your orders and send order confirmations","To communicate about shipping, delivery, and order updates","To respond to customer service inquiries","To personalise your shopping experience","To send marketing emails and SMS (only if you opt in)","To prevent fraud and maintain site security","To comply with Indian law (IT Act 2000, GST regulations)","To send transactional OTP verification emails during login, signup, password reset, and account authentication."]} />
+          <Ul items={["To process and fulfil your orders and send order confirmations","To communicate about shipping, delivery, and order updates","To respond to customer service inquiries","To personalise your shopping experience","To send marketing emails and SMS (only if you opt in)","To prevent fraud and maintain site security","To comply with Indian law (IT Act 2000, GST regulations)","To send transactional OTP verification emails during login, signup, and account authentication."]} />
         </Sec>
 
         <Sec title="3. SHARING YOUR INFORMATION">

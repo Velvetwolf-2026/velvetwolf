@@ -19,12 +19,6 @@ export async function handleAuthRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/auth/resend-otp")
     return authController.resendOtp(body, event);
 
-  if (method === "POST" && route === "/auth/forgot-password")
-    return authController.forgotPassword(body, event);
-
-  if (method === "POST" && route === "/auth/reset-password")
-    return authController.resetPassword(body, event);
-
   if (method === "GET" && route === "/auth/google")
     return authController.googleRedirect(query, event);
 

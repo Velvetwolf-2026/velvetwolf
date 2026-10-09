@@ -8,7 +8,7 @@ export async function createSession(body, event) {
   // Can be called by guest or logged in user. The order owner comes from the
   // verified session token only — never from the request body, otherwise
   // anyone could attach an order to another customer's account.
-  const { cart, address, total_amount, subtotal, payment_method, couponCode, meta } = body;
+  const { cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery } = body;
   const authUser = await getOptionalAuth(event);
 
   // Meta CAPI matching data. The IP comes from getClientIp (API Gateway's
@@ -27,6 +27,7 @@ export async function createSession(body, event) {
     subtotal,
     payment_method,
     couponCode,
+    delivery,
     meta: {
       ...(meta || {}),
       ip,

@@ -165,17 +165,18 @@ export default function CartPage() {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: 2,
-                color: cartTotal >= 1999 ? "#81c784" : "var(--silver)",
+                color: "#81c784",
               }}
             >
               <span>{t("shop") === "दुकान" ? "शिपिंग" : (t("shop") === "கடை" ? "ஷிப்பிங்" : "SHIPPING")}</span>
-              <span>{cartTotal >= 1999 ? (t("shop") === "दुकान" ? "मुफ़्त" : (t("shop") === "கடை" ? "இலவசம்" : "FREE")) : "₹149"}</span>
+              {/* Standard delivery is free; Express (₹149) is chosen at checkout. */}
+              <span>{t("shop") === "दुकान" ? "मुफ़्त" : (t("shop") === "கடை" ? "இலவசம்" : "FREE")}</span>
             </div>
 
             <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 18, display: "flex", justifyContent: "space-between", marginBottom: 22 }}>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 24 }}>{t("shop") === "दुकान" ? "कुल" : (t("shop") === "கடை" ? "மொத்தம்" : "TOTAL")}</span>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 30, color: "var(--gold)" }}>
-                ₹{(cartTotal + (cartTotal >= 1999 ? 0 : 149)).toLocaleString()}
+                ₹{cartTotal.toLocaleString()}
               </span>
             </div>
 

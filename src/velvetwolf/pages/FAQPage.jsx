@@ -8,7 +8,7 @@ const { gold, surface, border, muted, text } = THEME;
 const FAQS = [
   { cat: "ORDERS", q: "How do I place an order?", a: "Browse collections, select size and colour, add to cart, and checkout. You'll receive a confirmation email within 15 minutes of payment." },
   { cat: "ORDERS", q: "Can I modify or cancel my order?", a: "Orders can be modified or cancelled within 1 hour by emailing orders@velvetwolf.in. After that, the order enters production and cannot be changed." },
-  { cat: "ORDERS", q: "Is COD available?", a: "Yes! Cash on Delivery is available for orders up to ₹5,000 at select pin codes. A ₹50 handling fee applies." },
+  { cat: "ORDERS", q: "Is COD available?", a: "No. All orders are prepaid: pay securely by UPI, card, netbanking or wallet at checkout." },
   { cat: "SHIPPING", q: "When will my order ship?", a: "We dispatch all orders within 2–3 business days of payment. You'll receive a tracking link via email and SMS once dispatched." },
   { cat: "SHIPPING", q: "Do you ship internationally?", a: "International shipping is not available currently. Join our newsletter to be notified when it goes live." },
   { cat: "SHIPPING", q: "My order hasn't updated in 48 hours.", a: "Contact us at info@velvetwolf.in with your order ID. We'll investigate and respond within 4 hours." },
@@ -20,7 +20,7 @@ const FAQS = [
   { cat: "RETURNS", q: "What is your return policy?", a: "We accept returns within 10 days of delivery for unworn, unwashed items with tags intact. Custom orders and Limited Edition drops are non-returnable." },
   { cat: "RETURNS", q: "How long does a refund take?", a: "Refunds are processed within 48 hours of receiving the item. Bank processing adds 3–5 days. Choose Store Credit for an instant refund." },
   { cat: "ACCOUNT", q: "Do I need an account to order?", a: "No — you can checkout as a guest. However, an account lets you track orders, save addresses, and access exclusive member offers." },
-  { cat: "ACCOUNT", q: "How do I reset my password?", a: "Click 'Forgot Password' on the login page. You'll receive a reset link within 5 minutes. Check spam if you don't see it." },
+  { cat: "ACCOUNT", q: "How do I reset my password?", a: "There's no password to reset. Enter your email on the sign-in page and we'll send a 6-digit code (check spam if you don't see it), or sign in with your mobile number or Google." },
 ];
 
 function FAQAnswer({ faq, formatText }) {

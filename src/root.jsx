@@ -232,7 +232,7 @@ export default function VelvetWolfRoot() {
       trackorder: "/track-order",
       login: "/login",
       signup: "/signup",
-      forgetpassword: "/forget-password",
+      forgetpassword: "/login",
       admin: "/admin"
     };
     const path = paths[nextPage] || "/";
@@ -553,7 +553,8 @@ export default function VelvetWolfRoot() {
         navigate("/account");
       });
     } else if (resetToken) {
-      navigate(`/forget-password?reset_token=${resetToken}`);
+      // Password resets are gone (sign-in is code-only): old links just sign in.
+      navigate("/login");
     } else if (authError) {
       showToast(decodeURIComponent(authError), "info");
       navigate(authMode === "signup" ? "/signup" : "/login");

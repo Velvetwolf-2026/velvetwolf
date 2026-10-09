@@ -508,3 +508,27 @@ $$ LANGUAGE sql;
 
 -- Backend (service role) only; not callable with the public anon key.
 REVOKE EXECUTE ON FUNCTION public.decrement_variant_stock(UUID, INT) FROM PUBLIC, anon, authenticated;
+
+-- ==========================================
+-- MIGRATION: SAVED ADDRESSES
+-- ==========================================
+-- Delivery addresses saved to an account (Account > Addresses, and pickable
+-- at checkout). Deleted with the account. Backend (service role) only.
+CREATE TABLE IF NOT EXISTS public.addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT '',
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT NOT NULL,
+    city TEXT NOT NULL,
+    district TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL,
+    pincode TEXT NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
+ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow service role all addresses" ON public.addresses;
+CREATE POLICY "Allow service role all addresses" ON public.addresses FOR ALL TO service_role USING (true) WITH CHECK (true);

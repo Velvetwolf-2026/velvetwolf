@@ -10,10 +10,6 @@ export const signupSchema = z.object({
     .string({ required_error: "Email is required" })
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .optional(),
   recaptchaToken: z.string().optional(),
 });
 
@@ -22,7 +18,6 @@ export const loginSchema = z.object({
     .string({ required_error: "Email is required" })
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
-  password: z.string().optional(),
   recaptchaToken: z.string().optional(),
 });
 
@@ -47,19 +42,7 @@ export const resendOtpSchema = z.object({
   type: z.string().optional(),
 });
 
-export const forgotPasswordSchema = z.object({
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
-});
-
-export const resetPasswordSchema = z.object({
-  resetToken: z.string({ required_error: "Reset token is required" }).min(1, "Reset token is required"),
-  newPassword: z
-    .string({ required_error: "New password is required" })
-    .min(8, "Password must be at least 8 characters"),
-});export const firebaseLoginSchema = z.object({
+export const firebaseLoginSchema = z.object({
   identifier: z.string().optional(),
   phone: z.string().optional(), // keeping for backward compatibility
   token: z.string({ required_error: "Firebase token is required" }).min(1, "Firebase token is required"),

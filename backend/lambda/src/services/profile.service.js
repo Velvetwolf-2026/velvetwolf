@@ -387,3 +387,32 @@ export async function getUserOrders(userId) {
   return data || [];
 }
 
+
+// Deletes the account and everything tied to it: profile, cart, wishlist,
+// style profile and saved addresses go with it (ON DELETE CASCADE). Past
+// orders stay on record without the account link (orders.user_id is
+// ON DELETE SET NULL), because invoices have to be kept.
+export async function deleteAccount(userId) {
+  const { data: user, error: userError } = await supabaseAdmin
+    .from("users").select("id, email, role").eq("id", userId).maybeSingle();
+  if (userError) {
+    logError("Account lookup failed before delete", profileLogContext({ userId, error: userError }));
+    throw new ApiError(500, "Could not delete your account. Please try again.");
+  }
+  if (!user) throw new ApiError(404, "Account not found.");
+  if (user.role === "admin") {
+    throw new ApiError(403, "Admin accounts can't be deleted from here. Remove the admin role first.");
+  }
+
+  await supabaseAdmin.from("otps").delete().eq("email", user.email);
+
+  const { error: deleteError } = await supabaseAdmin.from("users").delete().eq("id", userId);
+  if (deleteError) {
+    logError("Account delete failed", profileLogContext({ userId, error: deleteError }));
+    // 23503: something still references the user without a cascade rule.
+    throw new ApiError(deleteError.code === "23503" ? 409 : 500, "Could not delete your account. Please contact support.");
+  }
+
+  logInfo("Account deleted", profileLogContext({ userId }));
+  return { success: true };
+}

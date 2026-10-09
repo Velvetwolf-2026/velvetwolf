@@ -7,7 +7,7 @@ import { THEME } from "../utils/constants";
 const { gold, surface, border, muted } = THEME;
 
 const QUICK_CARDS = [
-  { icon: "📦", title: "FREE SHIPPING",  desc: "On all orders above ₹1,999 across India" },
+  { icon: "📦", title: "FREE SHIPPING",  desc: "Free standard delivery on every order across India" },
   { icon: "⚡", title: "FAST DISPATCH",  desc: "Orders dispatched within 2–3 business days" },
   { icon: "🔒", title: "SECURE PAYMENT", desc: "256-bit SSL encryption via Razorpay" },
   { icon: "↩", title: "EASY RETURNS",   desc: "10-day return window on eligible items" },
@@ -31,25 +31,22 @@ export default function ShoppingPolicy() {
         </div>
 
         <Sec title="PLACING AN ORDER">
-          <Ul items={["Browse and add items to your cart. Size charts are on each product page.","Enter your delivery address accurately — we are not responsible for failed delivery due to incorrect addresses.","Choose payment: UPI, card, net banking, EMI, or COD.","Order confirmation email within 15 minutes of successful payment.","Orders can be modified within 1 hour by emailing orders@velvetwolf.in"]} />
+          <Ul items={["Browse and add items to your cart. Size charts are on each product page.","Enter your delivery address accurately — we are not responsible for failed delivery due to incorrect addresses.","Choose payment: UPI, card, net banking or wallet. All orders are prepaid.","Order confirmation email within 15 minutes of successful payment.","Orders can be modified within 1 hour by emailing orders@velvetwolf.in"]} />
         </Sec>
 
         <Sec title="SHIPPING & DELIVERY">
           <DataTable
             headers={["Shipping Type", "Estimated Time", "Cost"]}
             rows={[
-              ["Standard (Orders < ₹1,999)", "5–7 business days", "₹79"],
-              ["Standard (Orders ≥ ₹1,999)", "5–7 business days", "FREE"],
-              ["Express Delivery",            "2–3 business days", "₹149"],
-              ["Same-Day (Chennai only)",     "Within 8 hours",    "₹199"],
-              ["COD Orders",                  "5–7 business days", "₹79 + ₹50 COD fee"],
+              ["Standard", "4–7 working days", "FREE"],
+              ["Express",  "2–4 working days", "₹149"],
             ]}
           />
           <Ul items={["We ship Pan-India including J&K and North-East (add 2–3 extra days).","International shipping not available at this time.","Tracking link sent via email and SMS once dispatched."]} />
         </Sec>
 
         <Sec title="PAYMENT OPTIONS">
-          <Ul items={["UPI (Google Pay, PhonePe, Paytm, BHIM)","Credit & Debit Cards (Visa, Mastercard, RuPay, Amex)","Net Banking (all major Indian banks)","EMI — 0% EMI on orders above ₹2,999 on select cards","Cash on Delivery (COD) — available on orders up to ₹5,000","VelvetWolf Gift Cards"]} />
+          <Ul items={["UPI (Google Pay, PhonePe, Paytm, BHIM)","Credit & Debit Cards (Visa, Mastercard, RuPay, Amex)","Net Banking (all major Indian banks)","EMI — 0% EMI on orders above ₹2,999 on select cards","VelvetWolf Gift Cards"]} />
         </Sec>
 
         <Sec title="GST & INVOICING">

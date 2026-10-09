@@ -2,6 +2,10 @@ import * as profileService from "../services/profile.service.js";
 import { ApiError, jsonResponse } from "../utils/http.js";
 import { requireAuth } from "../middleware/auth.js";
 import * as authService from "../services/auth.service.js";
+import * as addressService from "../services/address.service.js";
+import { addressSchema, deleteAccountSchema } from "../schemas/common.schema.js";
+import { validate } from "../middleware/validate.js";
+import { auditLog } from "../utils/audit.js";
 
 export async function getProfile(query, event) {
   const user = await requireAuth(event);
@@ -73,3 +77,41 @@ export async function getUserOrders(query, event) {
   return jsonResponse(200, { orders }, {}, event);
 }
 
+// ---- saved addresses ----
+export async function listAddresses(query, event) {
+  const user = await requireAuth(event);
+  const addresses = await addressService.listAddresses(user.id);
+  return jsonResponse(200, { addresses }, {}, event);
+}
+
+export async function createAddress(body, event) {
+  const user = await requireAuth(event);
+  const data = validate(addressSchema)(body);
+  const address = await addressService.createAddress(user.id, data);
+  return jsonResponse(201, { address }, {}, event);
+}
+
+export async function updateAddress(addressId, body, event) {
+  const user = await requireAuth(event);
+  const data = validate(addressSchema)(body);
+  const address = await addressService.updateAddress(user.id, addressId, data);
+  return jsonResponse(200, { address }, {}, event);
+}
+
+export async function deleteAddress(addressId, event) {
+  const user = await requireAuth(event);
+  const result = await addressService.deleteAddress(user.id, addressId);
+  return jsonResponse(200, result, {}, event);
+}
+
+// ---- delete account ----
+export async function deleteAccount(body, event) {
+  const user = await requireAuth(event);
+  validate(deleteAccountSchema)(body);
+  await profileService.deleteAccount(user.id);
+  await auditLog({ action: "user.delete", userId: user.id, resource: "users", resourceId: user.id });
+  // Sign this browser out (the account no longer exists, so any other
+  // session's token is rejected by requireAuth's user lookup).
+  const headers = { "Set-Cookie": [authService.getLogoutCookieHeader(), authService.getLogoutCsrfCookieHeader()] };
+  return jsonResponse(200, { success: true }, headers, event);
+}

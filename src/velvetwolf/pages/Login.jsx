@@ -37,19 +37,6 @@ function InfoIcon() {
   );
 }
 
-function EyeIcon({ visible }) {
-  return visible ? (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-    </svg>
-  ) : (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
-}
-
 export function Login() {
   const { user, setPage, setUser, showToast } = useContext(AppContext);
   const { engine } = useGallery();
@@ -64,7 +51,9 @@ export function Login() {
   const redirect = query.get("redirect");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const step = searchParams.get("step") || "identifier";
+  // Sign-in is code-only now: an old "?step=password" link starts over.
+  const rawStep = searchParams.get("step") || "identifier";
+  const step = rawStep === "password" ? "identifier" : rawStep;
   const setStep = (newStep) => {
     setSearchParams(
       (prev) => {
@@ -76,10 +65,8 @@ export function Login() {
   };
 
   const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,26 +135,6 @@ export function Login() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // Password strength helper
-  const checks = {
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
-    length: password.length >= 8,
-  };
-  const strengthScore = Object.values(checks).filter(Boolean).length;
-  const getStrength = () => {
-    if (strengthScore <= 2) return "Weak";
-    if (strengthScore <= 4) return "Medium";
-    return "Strong";
-  };
-  const getStrengthColor = () => {
-    if (strengthScore <= 2) return "#c0504d";
-    if (strengthScore <= 4) return "#c87941";
-    return "#5db87a";
-  };
-
   const startResendTimer = () => {
     setResendTimer(60);
     const timer = setInterval(() => {
@@ -224,15 +191,6 @@ export function Login() {
     } catch (err) {
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
         setError("Sign-in cancelled.");
-      } else if (err.message && err.message.includes("email and password")) {
-        setInfoMessage("You signed up with email and password. Redirecting to password sign-in...");
-        const googleEmail = result?.user?.email;
-        if (googleEmail) {
-          setResolvedEmail(googleEmail);
-        }
-        setTimeout(() => {
-          setStep("password");
-        }, 1500);
       } else {
         setError(err.message || "Google sign in failed.");
       }
@@ -327,9 +285,9 @@ export function Login() {
         startResendTimer();
         showToast("OTP code has been sent!");
       } else {
-        // Email Flow - proceed to password if account exists, otherwise register
+        // Email Flow - existing accounts get a sign-in code, new ones register
         if (data.exists) {
-          setStep("password");
+          await sendLoginCode(emailQuery);
         } else {
           setStep("register_email");
         }
@@ -349,82 +307,35 @@ export function Login() {
     }
   };
 
-  // Password login (existing email user)
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    if (!password) {
-      setError("Please enter your password.");
-      return;
+  // Email sign-in: send a one-time code to an existing account. Errors are
+  // shown by the caller.
+  const sendLoginCode = async (email) => {
+    const token = await executeRecaptcha("login");
+    const res = await fetch(apiUrl("/auth/login"), {
+      method: "POST",
+      credentials: 'include',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, recaptchaToken: token }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data.error || "Could not send the sign-in code. Please try again.";
+      throw new Error(msg.toLowerCase().includes("not registered") ? "User not registered. Please complete registration." : msg);
     }
 
-    setLoading(true);
-    try {
-      const token = await executeRecaptcha("login");
-      const res = await fetch(apiUrl("/auth/login"), {
-        method: "POST",
-        credentials: 'include',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: resolvedEmail,
-          password: password,
-          recaptchaToken: token,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Incorrect password. Please try again.");
-      }
-
-      // Email password login signs in directly (No OTP); the session cookie
-      // was set by this response.
-      if (isSignedInResponse(data)) {
-        const nextUser = {
-          ...data.user,
-          email: data.user.email || resolvedEmail,
-          name: data.user.name || resolvedEmail.split("@")[0],
-          full_name: data.user.full_name || data.user.name,
-          role: data.user.role || "customer",
-          isAdmin: data.user.role === "admin",
-          authSource: "backend",
-        };
-        localStorage.setItem("user", JSON.stringify(nextUser));
-        setUser(nextUser);
-        showToast(`Successfully logged in, welcome back ${nextUser.name}!`);
-        const target = redirect
-          ? (redirect.startsWith("/") ? redirect : `/${redirect}`)
-          : (nextUser.isAdmin ? "/admin" : "/account");
-        navigate(target, { replace: true });
-      }
-    } catch (err) {
-      const msg = err.message || "Login failed. Please try again.";
-      if (msg.includes("signed up with Google") || msg.includes("using Google")) {
-        setInfoMessage("You signed up with Google. Redirecting to Google sign-in...");
-        setTimeout(() => {
-          handleGoogle();
-        }, 1500);
-      } else if (msg.toLowerCase().includes("not registered")) {
-        showToast("Account not found — please sign up first.");
-        setError("User not registered. Please complete registration.");
-      } else {
-        setError(msg);
-      }
-    } finally {
-      setLoading(false);
-    }
+    setStep("otp");
+    setOtp(["", "", "", "", "", ""]);
+    startResendTimer();
+    showToast("Sign-in code sent to your email!");
   };
 
-  // Create password and trigger signup OTP (new email user)
+  // Register and send the verification code (new email user)
   const handleEmailRegisterSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!fullName.trim()) {
       setError("Please enter your full name.");
-      return;
-    }
-    if (!password || password.length < 8) {
-      setError("Password must be at least 8 characters.");
       return;
     }
     if (!agree) {
@@ -442,7 +353,6 @@ export function Login() {
         body: JSON.stringify({
           name: fullName.trim(),
           email: resolvedEmail,
-          password: password,
           recaptchaToken: token,
         }),
       });
@@ -719,77 +629,6 @@ export function Login() {
               </>
             )}
 
-            {/* STEP 2: PASSWORD */}
-            {step === "password" && (
-              <>
-                <div style={{ marginBottom: 26 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 5, color: "var(--gold)", marginBottom: 8 }}>
-                    <div style={{ width: 16, height: 1, background: "var(--gold)" }} />WELCOME BACK<div style={{ width: 16, height: 1, background: "var(--gold)" }} />
-                  </div>
-                  <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, letterSpacing: 3, color: "var(--ivory)", margin: 0 }}>SIGN IN</h1>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", marginTop: 6 }}>Enter password for: {resolvedEmail}</p>
-                </div>
-
-                <form onSubmit={handlePasswordSubmit}>
-                  <div style={{ marginBottom: 20 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        className="input-dark"
-                        type={showPw ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={e => {
-                          setPassword(e.target.value);
-                          setError("");
-                          setInfoMessage("");
-                        }}
-                        autoComplete="current-password"
-                        disabled={loading}
-                        style={{ paddingRight: 44 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
-                      >
-                        <EyeIcon visible={showPw} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: "right", marginBottom: 24 }}>
-                    <button
-                      type="button"
-                      onClick={() => setPage("forgetpassword")}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)" }}
-                    >
-                      FORGOT PASSWORD?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn-gold"
-                    disabled={loading}
-                    style={{ width: "100%", padding: "14px", fontSize: 14, letterSpacing: 4 }}
-                  >
-                    {loading ? "SIGNING IN..." : "SIGN IN →"}
-                  </button>
-                </form>
-
-                <div style={{ textAlign: "center", marginTop: 20 }}>
-                  <button
-                    type="button"
-                    onClick={() => setStep("identifier")}
-                    style={{ all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}
-                  >
-                    ← BACK
-                  </button>
-                </div>
-              </>
-            )}
-
             {/* STEP 3: REGISTER EMAIL */}
             {step === "register_email" && (
               <>
@@ -814,37 +653,9 @@ export function Login() {
                     />
                   </div>
 
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 7 }}>PASSWORD</label>
-                    <div style={{ position: "relative" }}>
-                      <input
-                        className="input-dark"
-                        type={showPw ? "text" : "password"}
-                        placeholder="Min. 8 characters"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        disabled={loading}
-                        style={{ paddingRight: 44 }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPw(prev => !prev)}
-                        style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--silver)", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 40, minHeight: 40 }}
-                      >
-                        <EyeIcon visible={showPw} />
-                      </button>
-                    </div>
-                    {password && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ display: "flex", gap: 3, height: 3, background: "var(--smoke)", borderRadius: 2, overflow: "hidden" }}>
-                          {[1, 2, 3, 4].map(n => (
-                            <div key={n} style={{ flex: 1, height: "100%", background: n <= strengthScore ? getStrengthColor() : "transparent" }} />
-                          ))}
-                        </div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: getStrengthColor(), marginTop: 4, display: "block" }}>STRENGTH: {getStrength()}</span>
-                      </div>
-                    )}
-                  </div>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", margin: "0 0 18px", lineHeight: 1.6 }}>
+                    No password needed — we'll email you a 6-digit code to sign in.
+                  </p>
 
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 20 }}>
                     <div onClick={() => setAgree(!agree)} style={{ width: 16, height: 16, flexShrink: 0, marginTop: 2, cursor: "pointer", border: `1px solid ${agree ? "var(--gold)" : "var(--smoke)"}`, background: agree ? "var(--gold)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
