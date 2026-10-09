@@ -1,851 +1,633 @@
-import { useContext, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useContext, useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
-import Icon from "../components/Icon";
-import { HeroHeader } from "../styles/shared";
-import { useBreakpoint } from "../utils/breakpoints";
+import { useGallery } from "../gallery/galleryContext";
+import { COLORWAYS, COLOR_ORDER, SIZES, STUDIO_PRICE, STUDIO_BOTH_SIDES } from "../gallery/data";
+import { money } from "../gallery/galleryProducts";
+import { bindDrag } from "../gallery/drag";
+import {
+  createCustomPrint,
+  drawCustom,
+  imageFit,
+  DESIGNS,
+} from "../gallery/three/prints";
 
-const FONT_OPTIONS = [
-  { value: "Montserrat", label: "Montserrat (Clean Modern)" },
-  { value: "Playfair Display", label: "Playfair (Classic Serif)" },
-  { value: "Space Mono", label: "Space Mono (Tech / Geek)" },
-  { value: "Impact", label: "Impact (Bold / Streetwear)" },
-  { value: "Cinzel", label: "Cinzel (Luxury Roman)" }
-];
-
-const FABRICS = [
-  { id: "240gsm", name: "240 GSM Egyptian Long-Staple Cotton", surcharge: 0 },
-  { id: "240gsm-fleece", name: "240 GSM Ultra Heavyweight Fleece", surcharge: 200 },
-  { id: "180gsm", name: "180 GSM Everyday Jersey Cotton", surcharge: 0 },
-  { id: "bamboo", name: "Bamboo Organic Luxury Blend", surcharge: 400 }
-];
-
-const COLORS = [
-  { hex: "#0a0a0a", name: "Obsidian Black" },
-  { hex: "#faf9f7", name: "Ivory White" },
-  { hex: "#1e3725", name: "Forest Green" },
-  { hex: "#8B2635", name: "Crimson Ember" },
-  { hex: "#4a1515", name: "Crimson Red" },
-  { hex: "#1c2e4a", name: "Navy Blue" },
-  { hex: "#d5bda9", name: "Desert Sand" }
-];
+const INKS = ["bone", "noir", "sand", "forest", "crimson"];
+const MARKS = ["wordmark", "monogram", "horizon", "contour", "nocturne"];
+const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 
 export default function CustomDesignPage() {
-  const { addToCart, showToast, setPage } = useContext(AppContext);
-  const { isMobileOrTablet, isMobile } = useBreakpoint();
-  // A line typed on the home page teaser arrives as ?text= and opens the text tab.
   const [searchParams] = useSearchParams();
-  const initialText = (searchParams.get("text") || "").slice(0, 40);
+  const navigate = useNavigate();
+  const { addToCart, showToast } = useContext(AppContext);
+  const { engine } = useGallery();
 
-  // Layout states
-  const [activeTab, setActiveTab] = useState(initialText ? "text" : "base"); // base, graphics, text, embroidery
-  const [activeView, setActiveView] = useState("front"); // front, back, left-sleeve, right-sleeve
+  const dragRef = useRef(null);
+  const printsRef = useRef({
+    front: createCustomPrint("front"),
+    back: createCustomPrint("back"),
+  });
 
-  // Customization choices
-  const [baseColor, setBaseColor] = useState("#0a0a0a");
-  const [fabric, setFabric] = useState("240gsm");
-  const [size, setSize] = useState("M");
-  const [qty, setQty] = useState(1);
-  const [specialNote, setSpecialNote] = useState("");
+  const initialText = (searchParams.get("text") || "").slice(0, 60);
 
-  // Print Uploads & Scale Controls
-  const [logoFile, setLogoFile] = useState(null);       // small front left chest
-  const [logoScale, setLogoScale] = useState(100);
-  const [frontImage, setFrontImage] = useState(null);   // large center front
-  const [frontScale, setFrontScale] = useState(100);
-  const [backImage, setBackImage] = useState(null);     // large center back
-  const [backScale, setBackScale] = useState(100);
-  const [sleeveImage, setSleeveImage] = useState(null); // sleeve graphic
-  const [sleeveScale, setSleeveScale] = useState(100);
+  const [color, setColor] = useState("noir");
+  const [side, setSide] = useState("front");
+  const [ink, setInk] = useState("bone");
+  const [size, setSize] = useState("");
+  const [guide, setGuide] = useState(true);
 
-  // Custom Typography
-  const [text, setText] = useState(initialText);
-  const [textFont, setTextFont] = useState("Montserrat");
-  const [textColor, setTextColor] = useState("#faf9f7");
-  const [textScale, setTextScale] = useState(20);
-  const [textPosition, setTextPosition] = useState("front-chest"); // front-chest, back-upper, left-sleeve, right-sleeve
+  const [sides, setSides] = useState({
+    front: {
+      mode: "text",
+      text: initialText || "Say less.",
+      font: "display",
+      scale: 1,
+      offset: 0,
+      image: null,
+      imageName: "",
+      imageType: "",
+      oneInk: true,
+      mark: "monogram",
+    },
+    back: {
+      mode: "text",
+      text: "",
+      font: "display",
+      scale: 1,
+      offset: 0,
+      image: null,
+      imageName: "",
+      imageType: "",
+      oneInk: true,
+      mark: "monogram",
+    },
+  });
 
-  // Embroidery
-  const [isEmbroidery, setIsEmbroidery] = useState(false);
-  const [embroideryText, setEmbroideryText] = useState("");
-  const [embroideryColor, setEmbroideryColor] = useState("#c9a84c");
-  const [embroideryStyle, setEmbroideryStyle] = useState("Standard Satin Stitch");
+  const activeSideState = sides[side];
 
-  // Handle image upload conversions to Base64 preview
-  const handleUpload = (e, target) => {
-    const file = e.target.files?.[0];
+  // Update a single property on the active side
+  const updateActiveSide = (patch) => {
+    setSides((prev) => ({
+      ...prev,
+      [side]: { ...prev[side], ...patch },
+    }));
+  };
+
+  // Bind 3D engine studio view
+  useEffect(() => {
+    if (!engine) return;
+    engine.setView("studio", "studio");
+    engine.face("studio", side);
+    if (engine.studio) {
+      engine.studio.setColor(COLORWAYS[color]?.hex || "#141416");
+      engine.studio.setInk(COLORWAYS[ink]?.hex || "#E8E4DA");
+    }
+  }, [engine, side, color, ink]);
+
+  // Bind drag-to-turn
+  useEffect(() => {
+    if (!dragRef.current || !engine) return;
+    return bindDrag(dragRef.current, engine, "studio");
+  }, [engine]);
+
+  // Redraw prints whenever sides, color, ink, or guide changes
+  useEffect(() => {
+    if (!engine?.studio) return;
+    const { front: pFront, back: pBack } = printsRef.current;
+
+    // Front
+    drawCustom(pFront, { ...sides.front, guide: guide && side === "front" });
+    const fullFront = sides.front.mode === "image" && sides.front.image && !sides.front.oneInk;
+    engine.studio.setPrint("front", pFront.texture, { fullColor: fullFront });
+
+    // Back
+    drawCustom(pBack, { ...sides.back, guide: guide && side === "back" });
+    const fullBack = sides.back.mode === "image" && sides.back.image && !sides.back.oneInk;
+    engine.studio.setPrint("back", pBack.texture, { fullColor: fullBack });
+
+    engine.studio.setColor(COLORWAYS[color]?.hex || "#141416");
+    engine.studio.setInk(COLORWAYS[ink]?.hex || "#E8E4DA");
+  }, [engine, sides, color, ink, guide, side]);
+
+  // Switch camera face on side toggle
+  const handleSideChange = (newSide) => {
+    setSide(newSide);
+    if (engine) engine.face("studio", newSide);
+  };
+
+  const handleColorChange = (newColor) => {
+    setColor(newColor);
+    if (engine?.studio) engine.studio.setColor(COLORWAYS[newColor]?.hex || "#141416");
+  };
+
+  const handleInkChange = (newInk) => {
+    setInk(newInk);
+    if (engine?.studio) engine.studio.setInk(COLORWAYS[newInk]?.hex || "#E8E4DA");
+  };
+
+  // File loading helper
+  const handleFile = (file) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("File size exceeds 5MB limit.", "error");
+    if (!ACCEPT.includes(file.type)) {
+      showToast("Only PNG, JPG, WebP or SVG files are supported", "error");
       return;
     }
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("File must be smaller than 8 MB", "error");
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => {
-      if (target === "logo") setLogoFile(reader.result);
-      if (target === "front") setFrontImage(reader.result);
-      if (target === "back") setBackImage(reader.result);
-      if (target === "sleeve") setSleeveImage(reader.result);
-      showToast("Uploaded successfully! ✓");
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        updateActiveSide({
+          image: img,
+          imageName: file.name,
+          imageType: file.type,
+        });
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
 
-  const getPrice = () => {
-    const basePrice = 1499;
-    const selectedFabricObj = FABRICS.find(f => f.id === fabric);
-    const fabricSurcharge = selectedFabricObj ? selectedFabricObj.surcharge : 0;
-    const embroiderySurcharge = isEmbroidery ? 250 : 0;
-    return (basePrice + fabricSurcharge + embroiderySurcharge) * Number(qty);
+  const isUsed = (sKey) => {
+    const s = sides[sKey];
+    return (
+      (s.mode === "text" && s.text.trim().length > 0) ||
+      (s.mode === "image" && Boolean(s.image)) ||
+      s.mode === "mark"
+    );
   };
 
-  const handleAddToCart = () => {
-    const itemPrice = getPrice() / Number(qty);
-    const customProductId = `custom-tee-${Date.now()}`;
+  const bothSidesUsed = isUsed("front") && isUsed("back");
+  const price = STUDIO_PRICE + (bothSidesUsed ? STUDIO_BOTH_SIDES : 0);
+
+  // Quality check for upload
+  let qualityText = "";
+  let qualityLevel = "good";
+  if (activeSideState.mode === "image" && activeSideState.image) {
+    const fit = imageFit(side, activeSideState.image, activeSideState.scale);
+    const isSvg = /svg/i.test(activeSideState.imageType || "");
+    if (isSvg) {
+      qualityText = "Vector artwork, prints ultra sharp.";
+      qualityLevel = "good";
+    } else if (fit.dpi >= 200) {
+      qualityText = `~${Math.round(fit.cmW)} × ${Math.round(fit.cmH)} cm (${Math.round(fit.dpi)} DPI). Prints sharp.`;
+      qualityLevel = "good";
+    } else if (fit.dpi >= 150) {
+      qualityText = `~${Math.round(fit.cmW)} × ${Math.round(fit.cmH)} cm (${Math.round(fit.dpi)} DPI). Prints fine.`;
+      qualityLevel = "ok";
+    } else {
+      qualityText = `~${Math.round(fit.cmW)} × ${Math.round(fit.cmH)} cm (${Math.round(fit.dpi)} DPI). May print soft.`;
+      qualityLevel = "low";
+    }
+  }
+
+  const handleAddToCart = (e) => {
+    e?.preventDefault();
+    if (!size) {
+      showToast("Please select a size", "info");
+      return;
+    }
+
+    const pSide = printsRef.current.front;
+    let thumb = "";
+    try {
+      thumb = pSide.canvas.toDataURL("image/png");
+    } catch {
+      thumb = "/mockup_silent.webp";
+    }
+
     const customItem = {
-      id: customProductId,
-      name: `Customized Streetwear Tee (${fabric.toUpperCase()})`,
-      collection: "custom",
-      price: itemPrice,
-      originalPrice: itemPrice + 500,
-      image: frontImage || logoFile || "/mockup_silent.webp",
-      sizes: [size],
-      colors: [baseColor],
-      description: `Custom heavy garment with tailored specs. Fabric: ${fabric}, Color: ${baseColor}, Size: ${size}. Note: ${specialNote || "None"}`,
-      stock: 99,
+      id: `custom-${Date.now()}`,
+      name: `Custom Wolf Studio Tee (${COLORWAYS[color]?.name})`,
+      collection: "studio",
+      price,
+      originalPrice: price + 700,
+      image: thumb,
       isCustom: true,
-      customMeta: {
-        fabric,
-        baseColor,
-        size,
-        logoFile,
-        frontImage,
-        backImage,
-        sleeveImage,
-        text,
-        textFont,
-        textColor,
-        textScale,
-        textPosition,
-        isEmbroidery,
-        embroideryText,
-        embroideryColor,
-        embroideryStyle,
-        specialNote
-      }
+      color: COLORWAYS[color]?.site || COLORWAYS[color]?.name,
+      size,
+      customization: {
+        front: { mode: sides.front.mode, text: sides.front.text, mark: sides.front.mark },
+        back: { mode: sides.back.mode, text: sides.back.text, mark: sides.back.mark },
+        color,
+        ink,
+      },
     };
 
-    addToCart(customItem, size, baseColor, Number(qty));
-    showToast("Added customized piece to your cart! ✓");
+    addToCart(customItem, size, customItem.color, 1);
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e) => {
+    e?.preventDefault();
     handleAddToCart();
-    // Redirect to checkout
-    setTimeout(() => {
-      setPage("checkout");
-    }, 100);
+    setTimeout(() => navigate("/checkout"), 100);
   };
 
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--obsidian)", color: "var(--ivory)" }}>
-      <HeroHeader
-        eyebrow="AI-POWERED VISUAL DESIGN LAB"
-        title="PRODUCT CUSTOMIZER"
-        sub="Forge your design. Upload graphics, apply text, select embroidery, and inspect the live preview."
-      />
+    <main className="vwg vwg-view-pdp" style={{ minHeight: "100vh", position: "relative" }}>
+      {/* 3D Stage Area */}
+      <div className="vwg-stage-area">
+        <div
+          ref={dragRef}
+          className="vwg-drag-surface"
+          tabIndex={0}
+          aria-label="Turn the tee. Use the left and right arrow keys or drag."
+        />
+        <p className="vwg-drag-hint">Drag to turn</p>
+      </div>
 
-      <div className="page-content-pad" style={{ maxWidth: 1400, margin: "40px auto", padding: isMobile ? "0 16px" : "0 40px" }}>
+      {/* Studio Vitrine Panel */}
+      <aside className="vwg-panel" aria-label="Studio customization tools">
+        <nav className="vwg-crumbs" aria-label="Breadcrumb">
+          <span>Studio</span>
+          <span aria-hidden="true">/</span>
+          <span>Custom Piece</span>
+        </nav>
 
-        {/* Customizer Layout Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobileOrTablet ? "1fr" : "1.2fr 1fr", gap: isMobile ? 28 : 50, alignItems: "start" }}>
-
-          {/* LEFT: Live Preview Studio Canvas */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: isMobileOrTablet ? "static" : "sticky", top: 100 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", letterSpacing: 2 }}>
-                LIVE PREVIEW: <span style={{ color: "var(--ivory)" }}>{activeView.toUpperCase()} VIEW</span>
-              </div>
-
-              {/* View Selector Controls */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {["front", "back", "left-sleeve", "right-sleeve"].map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setActiveView(v)}
-                    style={{
-                      padding: "6px 12px",
-                      background: activeView === v ? "var(--gold)" : "rgba(255,255,255,0.03)",
-                      color: activeView === v ? "var(--obsidian)" : "var(--silver)",
-                      border: "1px solid var(--smoke)",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                      letterSpacing: 1
-                    }}
-                  >
-                    {v.replace("-", " ").toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Interactive Vector Canvas */}
-            <div style={{
-              background: "var(--graphite)",
-              border: "1px solid var(--smoke)",
-              height: isMobile ? 380 : 520,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-              overflow: "hidden"
-            }}>
-              {/* SVG vector outlines of the t-shirt model */}
-              <svg viewBox="0 0 400 450" width="100%" height="100%" style={{ overflow: "visible" }}>
-                <defs>
-                  <linearGradient id="shadingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.15" />
-                    <stop offset="35%" stopColor="#000000" stopOpacity="0.25" />
-                    <stop offset="70%" stopColor="#ffffff" stopOpacity="0.05" />
-                    <stop offset="100%" stopColor="#000000" stopOpacity="0.4" />
-                  </linearGradient>
-                </defs>
-
-                {(activeView === "front" || activeView === "back") ? (
-                  <>
-                    {/* T-Shirt Body path */}
-                    <path 
-                      d="M 120 40 L 80 80 L 110 130 L 145 105 L 145 420 L 255 420 L 255 105 L 290 130 L 320 80 L 280 40 Z" 
-                      fill={baseColor} 
-                      stroke="rgba(255,255,255,0.12)" 
-                      strokeWidth="2" 
-                    />
-                    
-                    {/* Collar curve */}
-                    {activeView === "front" ? (
-                      <path d="M 150 40 C 150 70, 250 70, 250 40" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="3" />
-                    ) : (
-                      <path d="M 150 40 C 150 48, 250 48, 250 40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="3" />
-                    )}
-
-                    {/* Stitch overlay texture */}
-                    <path 
-                      d="M 120 40 L 80 80 L 110 130 L 145 105 L 145 420 L 255 420 L 255 105 L 290 130 L 320 80 L 280 40 Z" 
-                      fill="url(#shadingGrad)" 
-                      opacity="0.25" 
-                      pointerEvents="none" 
-                    />
-
-                    {/* FRONT VIEW OVERLAYS */}
-                    {activeView === "front" && (
-                      <>
-                        {/* Logo Left Chest */}
-                        {logoFile && (
-                          <image href={logoFile} x="155" y="105" width="28" height="28" style={{ objectFit: "contain" }} />
-                        )}
-
-                        {/* Front Graphic Center */}
-                        {frontImage && (
-                          <image href={frontImage} x="140" y="160" width="120" height="140" style={{ objectFit: "contain" }} />
-                        )}
-
-                        {/* Custom Text Front Chest */}
-                        {text && textPosition === "front-chest" && (
-                          <text 
-                            x="200" 
-                            y="145" 
-                            textAnchor="middle" 
-                            fill={textColor} 
-                            fontFamily={textFont} 
-                            fontSize={textScale * 0.7} 
-                            style={{ fontWeight: "bold", letterSpacing: 1 }}
-                          >
-                            {text}
-                          </text>
-                        )}
-
-                        {/* Front Embroidery Text */}
-                        {isEmbroidery && embroideryText && (
-                          <text
-                            x="200"
-                            y="330"
-                            textAnchor="middle"
-                            fill={embroideryColor}
-                            fontFamily="var(--font-mono)"
-                            fontSize="13"
-                            stroke={embroideryColor}
-                            strokeWidth="0.4"
-                            strokeDasharray="2,1"
-                            style={{ fontWeight: "bold" }}
-                          >
-                            🧵 {embroideryText.toUpperCase()}
-                          </text>
-                        )}
-                      </>
-                    )}
-
-                    {/* BACK VIEW OVERLAYS */}
-                    {activeView === "back" && (
-                      <>
-                        {/* Back Graphic */}
-                        {backImage && (
-                          <image href={backImage} x="130" y="130" width="140" height="170" style={{ objectFit: "contain" }} />
-                        )}
-
-                        {/* Custom Text Back Upper */}
-                        {text && textPosition === "back-upper" && (
-                          <text 
-                            x="200" 
-                            y="90" 
-                            textAnchor="middle" 
-                            fill={textColor} 
-                            fontFamily={textFont} 
-                            fontSize={textScale * 0.8} 
-                            style={{ fontWeight: "bold", letterSpacing: 2 }}
-                          >
-                            {text}
-                          </text>
-                        )}
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* Sleeve Close-up path */}
-                    <path 
-                      d="M 80 120 L 320 120 L 270 340 L 130 340 Z" 
-                      fill={baseColor} 
-                      stroke="rgba(255,255,255,0.15)" 
-                      strokeWidth="2" 
-                    />
-                    
-                    {/* Seam line */}
-                    <line x1="130" y1="320" x2="270" y2="320" stroke="rgba(255,255,255,0.25)" strokeWidth="2" />
-                    
-                    {/* Texture shader */}
-                    <path 
-                      d="M 80 120 L 320 120 L 270 340 L 130 340 Z" 
-                      fill="url(#shadingGrad)" 
-                      opacity="0.25" 
-                      pointerEvents="none" 
-                    />
-
-                    {/* Left Sleeve Overlays */}
-                    {activeView === "left-sleeve" && (
-                      <>
-                        {sleeveImage && (
-                          <image href={sleeveImage} x="140" y="160" width="120" height="120" style={{ objectFit: "contain" }} />
-                        )}
-                        {text && textPosition === "left-sleeve" && (
-                          <text 
-                            x="200" 
-                            y="220" 
-                            textAnchor="middle" 
-                            fill={textColor} 
-                            fontFamily={textFont} 
-                            fontSize={textScale} 
-                            style={{ fontWeight: "bold" }}
-                          >
-                            {text}
-                          </text>
-                        )}
-                      </>
-                    )}
-
-                    {/* Right Sleeve Overlays */}
-                    {activeView === "right-sleeve" && (
-                      <>
-                        {sleeveImage && (
-                          <image href={sleeveImage} x="140" y="160" width="120" height="120" style={{ objectFit: "contain" }} />
-                        )}
-                        {text && textPosition === "right-sleeve" && (
-                          <text 
-                            x="200" 
-                            y="220" 
-                            textAnchor="middle" 
-                            fill={textColor} 
-                            fontFamily={textFont} 
-                            fontSize={textScale} 
-                            style={{ fontWeight: "bold" }}
-                          >
-                            {text}
-                          </text>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
-              </svg>
-            </div>
-            
-            {/* Visual Specs summary */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 11, fontFamily: "var(--font-mono)" }}>
-              <div>Fabric: <span style={{ color: "var(--gold)" }}>{fabric.toUpperCase()}</span></div>
-              <div>Base Color: <span style={{ color: "var(--gold)" }}>{baseColor}</span></div>
-              <div>Text font: <span style={{ color: "var(--gold)" }}>{textFont}</span></div>
-              <div>Embroidery: <span style={{ color: "var(--gold)" }}>{isEmbroidery ? embroideryStyle : "No"}</span></div>
-            </div>
+        <header className="vwg-pdp-head">
+          <h1 className="vwg-pdp-title">Make Your Own</h1>
+          <div className="vwg-pdp-price-row">
+            <span className="vwg-pdp-price">{money(price)}</span>
+            <span className="vwg-status">
+              <i></i>
+              Made to order
+            </span>
           </div>
+          <p className="vwg-pdp-blurb">
+            Your words or uploaded artwork, screen-printed or direct-to-garment on the same heavyweight combed cotton blank.
+          </p>
+        </header>
 
-          {/* RIGHT: Lab Controls Panel */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: isMobile ? 20 : 36 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 32 }}>DESIGN CENTER</h2>
-            
-            {/* Config Category Tabs */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 32, borderBottom: "1px solid var(--smoke)", paddingBottom: 10, flexWrap: "wrap" }}>
-              {[
-                { id: "base", label: "BASE" },
-                { id: "graphics", label: "GRAPHICS" },
-                { id: "text", label: "TYPOGRAPHY" },
-                { id: "embroidery", label: "EMBROIDERY" }
-              ].map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: activeTab === t.id ? "var(--gold)" : "var(--silver)",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: 2,
-                    cursor: "pointer",
-                    paddingBottom: 6,
-                    borderBottom: `2px solid ${activeTab === t.id ? "var(--gold)" : "transparent"}`
-                  }}
-                >
-                  {t.label}
-                </button>
+        <form className="vwg-pdp-form" onSubmit={handleAddToCart} novalidate>
+          {/* Tee Colorway */}
+          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
+            <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+              <span>Tee Color</span>
+              <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "rgba(232, 228, 218, 0.6)" }}>
+                {COLORWAYS[color]?.name} {COLORWAYS[color]?.hex}
+              </span>
+            </legend>
+            <div className="vwg-swatches">
+              {COLOR_ORDER.map((id) => (
+                <label key={id} className="vwg-swatch" title={COLORWAYS[id]?.name}>
+                  <input
+                    type="radio"
+                    name="studio-color"
+                    value={id}
+                    checked={color === id}
+                    onChange={() => handleColorChange(id)}
+                  />
+                  <span style={{ background: COLORWAYS[id]?.hex }}></span>
+                </label>
               ))}
             </div>
+          </fieldset>
 
-            {/* TAB CONTENTS */}
-            
-            {/* 1. BASE OPTIONS */}
-            {activeTab === "base" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* Base Color Select */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 12 }}>BASE COLOR</label>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {COLORS.map(c => (
-                      <button
-                        key={c.hex}
-                        onClick={() => setBaseColor(c.hex)}
-                        title={c.name}
-                        style={{
-                          width: 38,
-                          height: 38,
-                          background: c.hex,
-                          border: baseColor === c.hex ? "3px solid var(--gold)" : "1px solid var(--smoke)",
-                          outline: baseColor === c.hex ? "2px solid #fff" : "none",
-                          cursor: "pointer"
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
+          {/* Print Side Toggle */}
+          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
+            <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+              <span>Print Side</span>
+              <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "rgba(232, 228, 218, 0.6)" }}>
+                {side === "front" ? "Editing Front" : "Editing Back"}
+              </span>
+            </legend>
+            <div className="vwg-seg">
+              <label>
+                <input
+                  type="radio"
+                  name="studio-side"
+                  value="front"
+                  checked={side === "front"}
+                  onChange={() => handleSideChange("front")}
+                />
+                <span>Front</span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="studio-side"
+                  value="back"
+                  checked={side === "back"}
+                  onChange={() => handleSideChange("back")}
+                />
+                <span>Back</span>
+              </label>
+            </div>
+          </fieldset>
 
-                {/* Fabric Selection */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 12 }}>FABRIC GRADE</label>
-                  <select 
-                    className="input-dark" 
-                    value={fabric} 
-                    onChange={e => setFabric(e.target.value)}
-                    style={{ width: "100%", padding: 12, fontSize: 13 }}
-                  >
-                    {FABRICS.map(f => (
-                      <option key={f.id} value={f.id}>
-                        {f.name} {f.surcharge > 0 ? `(+₹${f.surcharge})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          {/* Artwork Mode Switcher */}
+          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
+            <legend style={{ font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+              Artwork Type
+            </legend>
+            <div className="vwg-seg vwg-seg-3">
+              <label>
+                <input
+                  type="radio"
+                  name="studio-mode"
+                  value="text"
+                  checked={activeSideState.mode === "text"}
+                  onChange={() => updateActiveSide({ mode: "text" })}
+                />
+                <span>Text</span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="studio-mode"
+                  value="image"
+                  checked={activeSideState.mode === "image"}
+                  onChange={() => updateActiveSide({ mode: "image" })}
+                />
+                <span>Upload</span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="studio-mode"
+                  value="mark"
+                  checked={activeSideState.mode === "mark"}
+                  onChange={() => updateActiveSide({ mode: "mark" })}
+                />
+                <span>Our Marks</span>
+              </label>
+            </div>
 
-                {/* Size Selection */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 12 }}>FIT SIZE</label>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {["XS", "S", "M", "L", "XL", "XXL"].map(s => (
-                      <button
-                        key={s}
-                        onClick={() => setSize(s)}
-                        style={{
-                          padding: "10px 18px",
-                          border: size === s ? "2px solid var(--gold)" : "1px solid var(--smoke)",
-                          background: size === s ? "var(--gold)" : "transparent",
-                          color: size === s ? "var(--obsidian)" : "var(--silver)",
-                          fontFamily: "var(--font-mono)",
-                          fontWeight: "bold",
-                          cursor: "pointer"
-                        }}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quantity */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 12 }}>QUANTITY</label>
-                  <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--smoke)", width: "fit-content" }}>
-                    <button type="button" onClick={() => setQty(q => Math.max(1, Number(q || 1) - 1))} style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="minus" size={14}/></button>
-                    <input
-                      type="number"
-                      className="input-dark"
-                      min="1"
-                      value={qty}
-                      onFocus={e => e.target.select()}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === "") { setQty(""); return; }
-                        setQty(Math.max(1, parseInt(val, 10) || 1));
-                      }}
-                      onBlur={() => { if (!qty || Number(qty) < 1) setQty(1); }}
-                      style={{ width: 60, padding: 8, textAlign: "center", border: "none", background: "transparent" }}
-                    />
-                    <button type="button" onClick={() => setQty(q => Number(q || 1) + 1)} style={{ background: "none", border: "none", color: "var(--silver)", cursor: "pointer", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="plus" size={14}/></button>
-                  </div>
-                </div>
+            {/* Mode: Text */}
+            {activeSideState.mode === "text" && (
+              <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
+                <label style={{ fontSize: 11, font: "600 11px/1 'Manrope', sans-serif", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(232, 228, 218, 0.7)" }}>
+                  Custom Text (Up to 3 lines)
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={60}
+                  spellCheck="false"
+                  value={activeSideState.text}
+                  onChange={(e) => updateActiveSide({ text: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: "rgba(24, 24, 27, 0.6)",
+                    border: "1px solid rgba(232, 228, 218, 0.2)",
+                    borderRadius: 2,
+                    padding: "10px 12px",
+                    color: "#E8E4DA",
+                    fontFamily: activeSideState.font === "display" ? "var(--font-display, 'Unbounded')" : "var(--font-body, 'Manrope')",
+                    fontSize: 14,
+                    resize: "vertical",
+                  }}
+                  placeholder="Type your phrase..."
+                />
+                <label style={{ fontSize: 11, font: "600 11px/1 'Manrope', sans-serif", letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(232, 228, 218, 0.7)" }}>
+                  Typeface
+                </label>
+                <select
+                  value={activeSideState.font}
+                  onChange={(e) => updateActiveSide({ font: e.target.value })}
+                  style={{
+                    background: "rgba(24, 24, 27, 0.6)",
+                    border: "1px solid rgba(232, 228, 218, 0.2)",
+                    borderRadius: 2,
+                    padding: "8px 10px",
+                    color: "#E8E4DA",
+                    fontFamily: "var(--font-body, 'Manrope')",
+                  }}
+                >
+                  <option value="display">Unbounded (Wide Display)</option>
+                  <option value="body">Manrope (Clean Body)</option>
+                </select>
               </div>
             )}
 
-            {/* 2. GRAPHICS & LOGOS */}
-            {activeTab === "graphics" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* Upload Chest Logo */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>CHEST LOGO (FRONT LEFT)</label>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      id="upload-logo" 
-                      style={{ display: "none" }} 
-                      onChange={e => handleUpload(e, "logo")} 
-                    />
-                    <label htmlFor="upload-logo" className="btn-outline" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, padding: "10px 16px" }}>
-                      <Icon name="upload" size={14} /> SELECT LOGO
-                    </label>
-                    {logoFile && (
-                      <button onClick={() => setLogoFile(null)} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-                  {logoFile && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
-                        <span>RESIZE LOGO</span>
-                        <span>{logoScale}%</span>
+            {/* Mode: Upload */}
+            {activeSideState.mode === "image" && (
+              <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
+                <div
+                  className="vwg-dropzone"
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("is-over"); }}
+                  onDragLeave={(e) => e.currentTarget.classList.remove("is-over")}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove("is-over");
+                    handleFile(e.dataTransfer.files[0]);
+                  }}
+                >
+                  {!activeSideState.image ? (
+                    <div className="vwg-drop-empty">
+                      <span style={{ font: "600 11px/1 'Manrope', sans-serif", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+                        Upload your artwork
+                      </span>
+                      <span style={{ fontSize: 12, color: "rgba(232, 228, 218, 0.6)", lineHeight: 1.4 }}>
+                        Drag a file here, or click to browse. PNG with transparent background prints cleanest. Up to 8 MB.
+                      </span>
+                      <label className="vwg-btn-primary" style={{ display: "inline-grid", placeItems: "center", minHeight: 36, padding: "0 16px", cursor: "pointer", width: "auto" }}>
+                        Choose File
+                        <input
+                          type="file"
+                          accept={ACCEPT.join(",")}
+                          style={{ display: "none" }}
+                          onChange={(e) => handleFile(e.target.files[0])}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="vwg-drop-file">
+                      <div className="vwg-drop-thumb">
+                        <img src={activeSideState.image.src} alt="Upload proof" />
                       </div>
-                      <input 
-                        type="range" min="50" max="150" value={logoScale} 
-                        onChange={e => setLogoScale(Number(e.target.value))} 
-                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
-                      />
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <span style={{ fontSize: 13, color: "#E8E4DA", overflowWrap: "anywhere" }}>
+                          {activeSideState.imageName}
+                        </span>
+                        <span style={{ fontSize: 12, color: qualityLevel === "good" ? "#8FA88F" : qualityLevel === "ok" ? "#C9B99B" : "#C26A4A" }}>
+                          ● {qualityText}
+                        </span>
+                        <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                          <label style={{ fontSize: 11, textDecoration: "underline", cursor: "pointer", color: "#E8E4DA" }}>
+                            Replace
+                            <input
+                              type="file"
+                              accept={ACCEPT.join(",")}
+                              style={{ display: "none" }}
+                              onChange={(e) => handleFile(e.target.files[0])}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => updateActiveSide({ image: null, imageName: "", imageType: "" })}
+                            style={{ background: "none", border: 0, padding: 0, fontSize: 11, textDecoration: "underline", color: "rgba(232, 228, 218, 0.6)", cursor: "pointer" }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Upload Front Chest Image */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>FRONT CANVAS GRAPHIC (CENTER)</label>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      id="upload-front" 
-                      style={{ display: "none" }} 
-                      onChange={e => handleUpload(e, "front")} 
-                    />
-                    <label htmlFor="upload-front" className="btn-outline" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, padding: "10px 16px" }}>
-                      <Icon name="upload" size={14} /> SELECT GRAPHIC
-                    </label>
-                    {frontImage && (
-                      <button onClick={() => setFrontImage(null)} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-                  {frontImage && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
-                        <span>RESIZE GRAPHIC</span>
-                        <span>{frontScale}%</span>
-                      </div>
-                      <input 
-                        type="range" min="50" max="150" value={frontScale} 
-                        onChange={e => setFrontScale(Number(e.target.value))} 
-                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Upload Back Image */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>BACK CANVAS GRAPHIC (CENTER)</label>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      id="upload-back" 
-                      style={{ display: "none" }} 
-                      onChange={e => handleUpload(e, "back")} 
-                    />
-                    <label htmlFor="upload-back" className="btn-outline" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, padding: "10px 16px" }}>
-                      <Icon name="upload" size={14} /> SELECT BACK ART
-                    </label>
-                    {backImage && (
-                      <button onClick={() => setBackImage(null)} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-                  {backImage && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
-                        <span>RESIZE BACK ART</span>
-                        <span>{backScale}%</span>
-                      </div>
-                      <input 
-                        type="range" min="50" max="150" value={backScale} 
-                        onChange={e => setBackScale(Number(e.target.value))} 
-                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Sleeve Graphic */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>SLEEVE GRAPHIC (PRINT)</label>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      id="upload-sleeve" 
-                      style={{ display: "none" }} 
-                      onChange={e => handleUpload(e, "sleeve")} 
-                    />
-                    <label htmlFor="upload-sleeve" className="btn-outline" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, padding: "10px 16px" }}>
-                      <Icon name="upload" size={14} /> SELECT SLEEVE ART
-                    </label>
-                    {sleeveImage && (
-                      <button onClick={() => setSleeveImage(null)} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer" }}>
-                        REMOVE
-                      </button>
-                    )}
-                  </div>
-                  {sleeveImage && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)" }}>
-                        <span>RESIZE SLEEVE ART</span>
-                        <span>{sleeveScale}%</span>
-                      </div>
-                      <input 
-                        type="range" min="50" max="150" value={sleeveScale} 
-                        onChange={e => setSleeveScale(Number(e.target.value))} 
-                        style={{ width: "100%", accentColor: "var(--gold)", cursor: "pointer" }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 3. TYPOGRAPHY */}
-            {activeTab === "text" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {/* Text Content */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>CUSTOM INSCRIPTION</label>
-                  <input
-                    type="text"
-                    className="input-dark"
-                    placeholder="Enter text style"
-                    value={text}
-                    onChange={e => setText(e.target.value)}
-                    style={{ width: "100%", padding: 12 }}
-                  />
-                </div>
-
-                {/* Font Selector */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>FONT FAMILY</label>
-                  <select 
-                    className="input-dark" 
-                    value={textFont} 
-                    onChange={e => setTextFont(e.target.value)}
-                    style={{ width: "100%", padding: 12 }}
-                  >
-                    {FONT_OPTIONS.map(f => (
-                      <option key={f.value} value={f.value}>{f.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Placement Selector */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>TEXT PLACEMENT</label>
-                  <select 
-                    className="input-dark" 
-                    value={textPosition} 
-                    onChange={e => { setTextPosition(e.target.value); if(e.target.value.includes("sleeve")) setActiveView("left-sleeve"); else if (e.target.value.includes("back")) setActiveView("back"); else setActiveView("front"); }}
-                    style={{ width: "100%", padding: 12 }}
-                  >
-                    <option value="front-chest">Front Chest (Upper)</option>
-                    <option value="back-upper">Back Panel (Upper)</option>
-                    <option value="left-sleeve">Left Sleeve</option>
-                    <option value="right-sleeve">Right Sleeve</option>
-                  </select>
-                </div>
-
-                {/* Text Color Picker */}
-                <div>
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>TEXT COLOR</label>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <input 
-                      type="color" 
-                      value={textColor} 
-                      onChange={e => setTextColor(e.target.value)}
-                      style={{ border: "1px solid var(--smoke)", background: "none", cursor: "pointer", width: 50, height: 40 }}
-                    />
-                    <span style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>{textColor.toUpperCase()}</span>
-                  </div>
-                </div>
-
-                {/* Text size scale */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11, fontFamily: "var(--font-mono)" }}>
-                    <span>FONT SIZE</span>
-                    <span>{textScale}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="12"
-                    max="52"
-                    value={textScale}
-                    onChange={e => setTextScale(Number(e.target.value))}
-                    style={{ width: "100%", accentColor: "var(--gold)" }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 4. EMBROIDERY */}
-            {activeTab === "embroidery" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* Enable Embroidery Checkbox */}
-                <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: "rgba(232, 228, 218, 0.8)", cursor: "pointer" }}>
                   <input
                     type="checkbox"
-                    checked={isEmbroidery}
-                    onChange={e => setIsEmbroidery(e.target.checked)}
-                    style={{ width: 18, height: 18, accentColor: "var(--gold)" }}
+                    checked={activeSideState.oneInk}
+                    onChange={(e) => updateActiveSide({ oneInk: e.target.checked })}
                   />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 1 }}>
-                    UPGRADE TO PREMIUM EMBROIDERY (+₹250)
-                  </span>
+                  <span>Print in single ink (monochrome). Untick for full color.</span>
                 </label>
-
-                {isEmbroidery && (
-                  <>
-                    {/* Embroidery Text */}
-                    <div>
-                      <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>EMBROIDERY TEXT</label>
-                      <input
-                        type="text"
-                        className="input-dark"
-                        placeholder="e.g. WOLF PACK"
-                        value={embroideryText}
-                        onChange={e => setEmbroideryText(e.target.value)}
-                        style={{ width: "100%", padding: 12 }}
-                      />
-                    </div>
-
-                    {/* Stitch Style Select */}
-                    <div>
-                      <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>STITCH STYLE</label>
-                      <select 
-                        className="input-dark" 
-                        value={embroideryStyle} 
-                        onChange={e => setEmbroideryStyle(e.target.value)}
-                        style={{ width: "100%", padding: 12 }}
-                      >
-                        <option value="Standard Satin Stitch">Standard Satin Stitch</option>
-                        <option value="Chainstitch (Vintage)">Chainstitch (Vintage)</option>
-                        <option value="3D Puff Embroidery">3D Puff Embroidery</option>
-                        <option value="Towel Loop Chenille">Towel Loop Chenille</option>
-                      </select>
-                    </div>
-
-                    {/* Embroidery Thread color */}
-                    <div>
-                      <label style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 10 }}>THREAD COLOR</label>
-                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <input 
-                          type="color" 
-                          value={embroideryColor} 
-                          onChange={e => setEmbroideryColor(e.target.value)}
-                          style={{ border: "1px solid var(--smoke)", background: "none", cursor: "pointer", width: 50, height: 40 }}
-                        />
-                        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>{embroideryColor.toUpperCase()}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             )}
 
-            {/* Special notes */}
-            <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--smoke)" }}>
-              <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 8 }}>SPECIAL DESIGN LAB NOTES</label>
-              <textarea
-                className="input-dark"
-                rows="2"
-                placeholder="Mention print placements, specific sizes, collar tags or instructions..."
-                value={specialNote}
-                onChange={e => setSpecialNote(e.target.value)}
-                style={{ width: "100%", padding: 12, fontSize: 12, height: "auto" }}
+            {/* Mode: Marks */}
+            {activeSideState.mode === "mark" && (
+              <div className="vwg-marks" style={{ marginTop: 4 }}>
+                {MARKS.map((m) => (
+                  <label key={m} className="vwg-mark">
+                    <input
+                      type="radio"
+                      name="studio-mark"
+                      value={m}
+                      checked={activeSideState.mark === m}
+                      onChange={() => updateActiveSide({ mark: m })}
+                    />
+                    <span>{DESIGNS[m]?.label || m}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
+
+          {/* Ink color picker (when not full color) */}
+          {!(activeSideState.mode === "image" && activeSideState.image && !activeSideState.oneInk) && (
+            <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
+              <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+                <span>Ink Color</span>
+                <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "rgba(232, 228, 218, 0.6)" }}>
+                  {COLORWAYS[ink]?.name}
+                </span>
+              </legend>
+              <div className="vwg-swatches">
+                {INKS.map((id) => (
+                  <label key={id} className="vwg-swatch" title={`${COLORWAYS[id]?.name} ink`}>
+                    <input
+                      type="radio"
+                      name="studio-ink"
+                      value={id}
+                      checked={ink === id}
+                      onChange={() => handleInkChange(id)}
+                    />
+                    <span style={{ background: COLORWAYS[id]?.hex }}></span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {/* Placement: Scale and Offset */}
+          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 12 }}>
+            <legend style={{ font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+              Placement
+            </legend>
+            <div style={{ display: "grid", gridTemplateColumns: "4.5em 1fr 3.5em", alignItems: "center", gap: 12, fontSize: 13 }}>
+              <label>Scale</label>
+              <input
+                type="range"
+                min="50"
+                max="150"
+                value={Math.round(activeSideState.scale * 100)}
+                onChange={(e) => updateActiveSide({ scale: Number(e.target.value) / 100 })}
               />
+              <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                {Math.round(activeSideState.scale * 100)}%
+              </span>
             </div>
-
-            {/* Pricing and Action buttons */}
-            <div style={{ marginTop: 32, background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--silver)", letterSpacing: 1 }}>ESTIMATED TOTAL (INC. TAXES)</div>
-                  <div style={{ fontSize: 36, fontFamily: "var(--font-display)", color: "var(--gold)", marginTop: 4 }}>
-                    ₹{getPrice().toLocaleString()}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right", fontSize: 11, color: "var(--silver)" }}>
-                  <div>Qty: {qty}</div>
-                  <div>Delivery in 7-10 days</div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 24 }}>
-                <button className="btn-outline" onClick={handleAddToCart} style={{ padding: "14px 0", fontSize: 11 }}>
-                  ADD TO CART
-                </button>
-                <button className="btn-gold" onClick={handleBuyNow} style={{ padding: "14px 0", fontSize: 11 }}>
-                  BUY NOW
-                </button>
-              </div>
+            <div style={{ display: "grid", gridTemplateColumns: "4.5em 1fr 3.5em", alignItems: "center", gap: 12, fontSize: 13 }}>
+              <label>Height</label>
+              <input
+                type="range"
+                min="-100"
+                max="100"
+                value={Math.round(activeSideState.offset * 100)}
+                onChange={(e) => updateActiveSide({ offset: Number(e.target.value) / 100 })}
+              />
+              <span style={{ textAlign: "right", fontSize: 12 }}>
+                {activeSideState.offset > 0.35 ? "High" : activeSideState.offset < -0.35 ? "Low" : "Chest"}
+              </span>
             </div>
-            
+            <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: "rgba(232, 228, 218, 0.7)", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={guide}
+                onChange={(e) => setGuide(e.target.checked)}
+              />
+              <span>Show print area boundaries</span>
+            </label>
+          </fieldset>
+
+          {/* Size Selection */}
+          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
+            <legend style={{ font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
+              Tee Size
+            </legend>
+            <div className="vwg-sizes">
+              {SIZES.map((s) => (
+                <label key={s.id} className="vwg-size">
+                  <input
+                    type="radio"
+                    name="studio-size"
+                    value={s.id}
+                    checked={size === s.id}
+                    onChange={(e) => setSize(e.target.value)}
+                  />
+                  <span>
+                    <b>{s.id}</b>
+                    <small>{s.chest} cm</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {/* CTAs */}
+          <div style={{ display: "grid", gap: 10 }}>
+            <button
+              className="vwg-btn-primary"
+              type="submit"
+              disabled={!size || (!isUsed("front") && !isUsed("back"))}
+            >
+              {!isUsed("front") && !isUsed("back")
+                ? "Design a side first"
+                : !size
+                ? "Select a size"
+                : `Add to Cart — ${money(price)}`}
+            </button>
+            <button
+              type="button"
+              className="vwg-btn-primary"
+              style={{ background: "transparent", border: "1px solid rgba(232, 228, 218, 0.3)", color: "#E8E4DA" }}
+              disabled={!size || (!isUsed("front") && !isUsed("back"))}
+              onClick={handleBuyNow}
+            >
+              Buy Now with Cashfree
+            </button>
           </div>
-          
-        </div>
-        
-      </div>
-    </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "rgba(232, 228, 218, 0.5)" }}>
+            <button
+              type="button"
+              onClick={() => updateActiveSide({ text: "", image: null, imageName: "", imageType: "" })}
+              style={{ background: "none", border: 0, padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer" }}
+            >
+              Clear this side
+            </button>
+            {bothSidesUsed && (
+              <span>Front + Back print (+{money(STUDIO_BOTH_SIDES)})</span>
+            )}
+          </div>
+        </form>
+      </aside>
+    </main>
   );
 }

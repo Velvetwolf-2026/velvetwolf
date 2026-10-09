@@ -43,3 +43,38 @@ export const fromPrice = (products) => {
   const prices = (products || []).map((p) => Number(p.price)).filter((n) => n > 0);
   return prices.length ? Math.min(...prices) : null;
 };
+
+// All on-body photos for a product, prioritizing photos for the active colorway.
+export function allPhotos(product, currentColorId = null) {
+  const images = Array.isArray(product?.images) ? product.images : [];
+  const rawList = images.length ? images : (product?.image ? [product.image] : []);
+  const activeSiteName = currentColorId ? COLORWAYS[currentColorId]?.site?.toLowerCase() : null;
+
+  const result = [];
+  for (const item of rawList) {
+    if (typeof item !== "string" || !item.trim() || item.trim().startsWith("[")) continue;
+    let colorName = "Original";
+    let url = item;
+    if (item.includes("::")) {
+      const parts = item.split("::");
+      colorName = parts[0];
+      url = parts.slice(1).join("::");
+    }
+    result.push({
+      src: url,
+      color: colorName,
+      alt: `${product?.name || "Product"} in ${colorName}`,
+    });
+  }
+
+  if (activeSiteName) {
+    result.sort((a, b) => {
+      const aMatch = a.color.toLowerCase() === activeSiteName;
+      const bMatch = b.color.toLowerCase() === activeSiteName;
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return 0;
+    });
+  }
+  return result;
+}

@@ -223,8 +223,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
 
     stages.renderCopies(dt, t, W, H, reducedMotion);
     renderer.setViewport(0, 0, W, H);
-    // in the shop the hall recedes as the grid scrolls over it
-    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : 1;
+    // in the shop the hall recedes as the grid scrolls over it; in auth it softens
+    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : view === 'auth' ? 0.7 : 1;
     dim = reducedMotion ? dimGoal : damp(dim, dimGoal, 6, dt);
     renderer.toneMappingExposure = dim;
     if (!occluded) renderer.render(scene, camera);
@@ -286,9 +286,20 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     },
     stages,
     prints,
-    dressPdp(productId, colorId, immediate) {
-      dress(B.pdp.garment, productId, colorId, immediate);
-      world.setPdpWall(productById(productId).name);
+    dressPdp(productOrId, colorId = 'noir', immediate = true) {
+      let p = typeof productOrId === 'object' && productOrId !== null ? productOrId : productById(productOrId);
+      if (!p) {
+        p = { name: String(productOrId || 'Velvetwolf'), color: colorId || 'noir' };
+      }
+      const colorKey = colorId || p.color || 'noir';
+      const cw = COLORWAYS[colorKey] || Object.values(COLORWAYS).find((c) => c.site?.toLowerCase() === colorKey?.toLowerCase()) || COLORWAYS.noir;
+      B.pdp.garment.setColor(cw.hex, immediate);
+      B.pdp.garment.setInk(cw.ink, immediate);
+      if (p.front) B.pdp.garment.setPrint('front', prints.get(p.front));
+      else B.pdp.garment.setPrint('front', null);
+      if (p.back) B.pdp.garment.setPrint('back', prints.get(p.back));
+      else B.pdp.garment.setPrint('back', null);
+      if (p.name) world.setPdpWall(p.name);
     },
     dressTeaser(texture, colorId = 'noir') {
       const cw = COLORWAYS[colorId];

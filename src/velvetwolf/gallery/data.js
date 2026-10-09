@@ -23,4 +23,15 @@ const HOUSE_PIECES = [
   { id: 'monogram', color: 'forest', front: 'monogram', back: null },
 ];
 
+export const SIZES = [
+  { id: 'S',   chest: 108, length: 70, sleeve: 22 },
+  { id: 'M',   chest: 114, length: 72, sleeve: 23 },
+  { id: 'L',   chest: 120, length: 74, sleeve: 24 },
+  { id: 'XL',  chest: 126, length: 76, sleeve: 25 },
+  { id: 'XXL', chest: 132, length: 78, sleeve: 26 },
+];
+
+export const STUDIO_PRICE = 2290;
+export const STUDIO_BOTH_SIDES = 300;
+
 export const productById = (id) => HOUSE_PIECES.find((p) => p.id === id);

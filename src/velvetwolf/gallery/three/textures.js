@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { rng } from './util.js';
 
 export function makeCanvas(w, h) {
+  if (typeof document === 'undefined') {
+    return { width: w, height: h, getContext: () => null };
+  }
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   return c;

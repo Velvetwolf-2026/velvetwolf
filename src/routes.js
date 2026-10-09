@@ -1,13 +1,13 @@
 import { index, layout, route } from "@react-router/dev/routes";
 
 export default [
-  route("login", "./velvetwolf/pages/Login.jsx", { id: "login" }),
-  route("signup", "./velvetwolf/pages/Login.jsx", { id: "signup" }),
   route("forget-password", "./velvetwolf/pages/ForgetPassword.jsx"),
   route("admin/*", "./velvetwolf/components/AdminGate.jsx"),
 
   layout("./velvetwolf/components/PublicLayout.jsx", [
     index("./velvetwolf/pages/HomePage.jsx"),
+    route("login", "./velvetwolf/pages/Login.jsx", { id: "login" }),
+    route("signup", "./velvetwolf/pages/Login.jsx", { id: "signup" }),
     route("quiz", "./velvetwolf/pages/QuizPage.jsx"),
     route("shop", "./velvetwolf/pages/ShopPage.jsx", { id: "shop" }),
     route("shop/:collection", "./velvetwolf/pages/ShopPage.jsx", { id: "shop-collection" }),

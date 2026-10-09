@@ -4,7 +4,13 @@ import { createContext, useContext } from "react";
 
 // Routes drawn over the 3D gallery hall.
 export const isGalleryPath = (pathname = "") =>
-  pathname === "/" || pathname === "/shop" || pathname.startsWith("/shop/");
+  pathname === "/" ||
+  pathname === "/shop" ||
+  pathname.startsWith("/shop/") ||
+  pathname.startsWith("/product/") ||
+  pathname === "/custom" ||
+  pathname === "/login" ||
+  pathname === "/signup";
 
 // { engine, status }: status is off | loading | ready | none (no WebGL)
 export const GalleryContext = createContext({ engine: null, status: "off" });

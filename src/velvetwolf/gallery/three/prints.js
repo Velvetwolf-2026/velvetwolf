@@ -158,11 +158,20 @@ export function createCustomPrint(side, aniso = 8) {
   return { side, canvas, texture };
 }
 
-const scratch = makeCanvas(8, 8);
+let scratch = null;
+function getScratch() {
+  if (!scratch && typeof document !== 'undefined') {
+    scratch = makeCanvas(8, 8);
+  }
+  return scratch;
+}
 
 function monoFromLuminance(img, w, h) {
-  scratch.width = w; scratch.height = h;
-  const ctx = scratch.getContext('2d');
+  const sc = getScratch();
+  if (!sc) return null;
+  sc.width = w; sc.height = h;
+  const ctx = sc.getContext('2d');
+  if (!ctx) return null;
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
   const data = ctx.getImageData(0, 0, w, h);

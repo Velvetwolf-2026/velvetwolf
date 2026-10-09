@@ -2,13 +2,12 @@ import { useState, useContext, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import { AuthOtpStep } from "../components/AuthOtpStep";
-import Navbar from "../components/Navbar";
 import { apiUrl } from "../utils/api";
 import { auth, isFirebaseAvailable } from "../utils/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { executeRecaptcha } from "../utils/recaptcha";
 import { updateProfile } from "../utils/profile";
-import { getSupabaseLogoUrl } from "../utils/supabase";
+import { useGallery } from "../gallery/galleryContext";
 
 // True when the response created a session (the HttpOnly cookie is set).
 // `user` alone is not enough: the mobile-login "OTP sent" response includes
@@ -53,8 +52,13 @@ function EyeIcon({ visible }) {
 
 export function Login() {
   const { user, setPage, setUser, showToast } = useContext(AppContext);
+  const { engine } = useGallery();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (engine) engine.setView("auth", "auth");
+  }, [engine]);
 
   const query = new URLSearchParams(location.search);
   const redirect = query.get("redirect");
@@ -645,45 +649,9 @@ export function Login() {
   };
 
   return (
-    <>
-      <Navbar activePage="" onNavigate={setPage} />
-      <div style={{
-        minHeight: "100vh",
-        background: "var(--obsidian)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "110px 20px 60px",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute",
-          top: "20%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 500,
-          height: 300,
-          borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-
-        <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <div onClick={() => setPage("home")} style={{ display: "inline-flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <img src={getSupabaseLogoUrl("/vw-logo.png")} alt="VelvetWolf logo" crossOrigin="anonymous" style={{ width: 30, height: 30, objectFit: "contain" }} />
-              </div>
-              <div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 6, color: "var(--ivory)", lineHeight: 1 }}>VELVETWOLF</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 4, color: "var(--gold)", opacity: 0.7 }}>LUXURY STREETWEAR</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="auth-box" style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "36px 32px" }}>
-            {error && (
+    <main className="vwg vwg-view-auth">
+      <div className="vwg-auth-card">
+        {error && (
               <div style={{ background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.3)", color: "#e07070", padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 11, marginBottom: 18, letterSpacing: 0.5 }}>
                 ✕ {error}
               </div>
@@ -969,10 +937,8 @@ export function Login() {
               </>
             )}
             <div id="recaptcha-container"></div>
-          </div>
-        </div>
       </div>
-    </>
+    </main>
   );
 }
 

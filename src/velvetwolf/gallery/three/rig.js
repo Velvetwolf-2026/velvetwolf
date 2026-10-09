@@ -34,6 +34,8 @@ export const STATIONS = {
   shop:      { target: [12, 1.1, 0],     dir: [-0.62, 0.5, 1],  frame: [15, 5.5],  focus: [12, 1.5, 0],   spot: 0.7,  area: area([0, 0.06, 1, 0.6], [0, 0.04, 1, 0.42]) },
   pdp:       { target: [60, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [60, 1.62, 0],  spot: 0.42, area: area('panel', [0.0, 0.08, 1.0, 0.56], [0.1, 0.07, 0.9, 0.6]) },
   pdpDetail: { target: [60, 2.05, 0.38], dir: [0.28, 0.08, 1],  frame: [0.8, 0.8], focus: [60, 1.8, 0],   spot: 0.42, area: area('panel', [0.0, 0.06, 1.0, 0.56], [0.0, 0.06, 1.0, 0.6]) },
+  // sign in: the hero tee turns on the left while the form sits on the right (small, above it when stacked)
+  auth:      { target: [0, 1.42, 0],     dir: [-0.2, 0.1, 1],   frame: [2.5, 3.0], focus: [0, 1.62, 0],   spot: 0.42, area: area([0.04, 0.12, 0.5, 0.94], [0.28, 0.075, 0.72, 0.3], [0.32, 0.07, 0.68, 0.3]) },
   // stacked Studio pins the preview to the top of the screen while the tools scroll under it
   studio:    { target: [72, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [72, 1.62, 0],  spot: 0.42, area: area('panel', [0.04, 0.075, 0.96, 0.43], [0.1, 0.07, 0.9, 0.48]) },
 };

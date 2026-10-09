@@ -14,6 +14,7 @@ describe("api-proxy", () => {
   let fetchMock;
 
   beforeEach(() => {
+    vi.stubEnv("VITE_API_BASE_URL", UPSTREAM);
     process.env.API_UPSTREAM_URL = UPSTREAM;
     process.env.PROXY_SHARED_SECRET = "s3cret";
     fetchMock = vi.fn().mockResolvedValue(upstreamResponse());
@@ -23,6 +24,7 @@ describe("api-proxy", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     delete process.env.API_UPSTREAM_URL;
     delete process.env.PROXY_SHARED_SECRET;
   });
