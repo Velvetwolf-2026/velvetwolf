@@ -734,9 +734,6 @@ export default function ProductDetailPage() {
                         <div style={{ color: "var(--silver)", fontSize: 12 }}>
                           Estimated Delivery: <span style={{ color: "var(--gold)", fontWeight: 600 }}>{deliveryInfo.date}</span>
                         </div>
-                        <div style={{ color: "var(--silver)", fontSize: 12 }}>
-                          COD: <span style={{ color: "var(--ivory)" }}>{deliveryInfo.codAvailable ? "Available" : "Not Available"}</span>
-                        </div>
                       </div>
                     ) : (
                       <div style={{ color: "#e07070", fontWeight: 600 }}>✕ {deliveryInfo.message}</div>

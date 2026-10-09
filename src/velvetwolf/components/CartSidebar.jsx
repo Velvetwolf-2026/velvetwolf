@@ -52,28 +52,9 @@ export default function CartSidebar() {
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", letterSpacing: 2 }}>SUBTOTAL</span>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)" }}>{"\u20b9"}{cartTotal.toLocaleString()}</span>
             </div>
-            {/* Free Shipping Progress Bar */}
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 1 }}>
-                {cartTotal >= 1999 ? (
-                  <span style={{ color: "#81c784" }}>✓ FREE SHIPPING UNLOCKED</span>
-                ) : (
-                  <span style={{ color: "var(--silver)" }}>
-                    {"\u20b9"}{(1999 - cartTotal).toLocaleString()} AWAY FROM FREE SHIPPING
-                  </span>
-                )}
-                <span style={{ color: "var(--silver)" }}>
-                  {Math.min(100, Math.round((cartTotal / 1999) * 100))}%
-                </span>
-              </div>
-              <div style={{ width: "100%", height: 4, background: "var(--smoke)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{
-                  width: `${Math.min(100, (cartTotal / 1999) * 100)}%`,
-                  height: "100%",
-                  background: cartTotal >= 1999 ? "#81c784" : "var(--gold)",
-                  transition: "width 0.3s ease"
-                }} />
-              </div>
+            {/* Standard delivery is free on every order; Express is chosen at checkout. */}
+            <div style={{ marginBottom: 18, fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 1, color: "#81c784" }}>
+              ✓ FREE STANDARD SHIPPING · EXPRESS {"\u20b9"}149 AT CHECKOUT
             </div>
             <button className="btn-gold" style={{ width: "100%", marginBottom: 10 }} onClick={() => { setCartOpen(false); setPage("checkout"); }}>PROCEED TO CHECKOUT</button>
             <button className="btn-ghost" style={{ width: "100%" }} onClick={() => setCartOpen(false)}>CONTINUE SHOPPING</button>

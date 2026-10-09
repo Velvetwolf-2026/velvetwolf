@@ -286,7 +286,7 @@ export default function HomePage() {
           {[
             { icon: "tshirt", title: "Premium Cotton", subtitle: "240 GSM Combed Cotton" },
             { icon: "factory", title: "Made in India", subtitle: "Crafted in Tirupur" },
-            { icon: "truck", title: "Free Shipping", subtitle: "On orders above \u20b91999" },
+            { icon: "truck", title: "Free Shipping", subtitle: "Standard delivery on every order" },
             { icon: "undo", title: "Easy Returns", subtitle: "10 Day Return Policy" },
           ].map((item, i) => (
             <div key={item.title} style={{

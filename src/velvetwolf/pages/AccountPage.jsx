@@ -4,6 +4,7 @@ import { getUserOrders } from "../utils/order";
 import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
 import { apiUrl } from "../utils/api";
 import Icon from "../components/Icon";
+import AccountAddresses from "../components/AccountAddresses";
 
 export function AccountPage() {
   const { 
@@ -165,6 +166,30 @@ export function AccountPage() {
     await signOutUser();
   };
 
+  // Delete account: the customer types DELETE to confirm. Past orders stay on
+  // record (unlinked from the account) so deliveries and refunds still work.
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== "DELETE") return;
+    setDeletingAccount(true);
+    try {
+      const res = await fetch(apiUrl("/profile/delete"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not delete your account.");
+      await signOutUser();
+      showToast("Your account has been deleted.", "info");
+    } catch (err) {
+      showToast(err.message, "error");
+      setDeletingAccount(false);
+    }
+  };
+
   let displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
   if (displayName === "Mobile" || displayName.startsWith("Mobile ")) {
     displayName = user?.phone || "User";
@@ -252,7 +277,8 @@ export function AccountPage() {
           <div style={{ display: "flex", gap: 0, flexWrap: "wrap", overflowX: "auto", scrollbarWidth: "none" }} className="vw-mobile-swipe-shelf">
             {[
               ["overview", "OVERVIEW"], 
-              ["orders", "ORDERS"], 
+              ["orders", "ORDERS"],
+              ["addresses", "ADDRESSES"], 
               ["wishlist", "SAVED"], 
               ["notifications", "ALERTS"],
               ["preferences", "FIT DNA"],
@@ -494,6 +520,8 @@ export function AccountPage() {
           </div>
         )}
 
+        {tab === "addresses" && <AccountAddresses showToast={showToast} />}
+
         {tab === "settings" && (
           <div className="vw-account-settings-panel" style={{ maxWidth: 500 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 32 }}>ACCOUNT SETTINGS</h2>
@@ -664,6 +692,33 @@ export function AccountPage() {
                 SIGN OUT
               </button>
             </div>
+            {!user.isAdmin && (
+              <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 24, marginTop: 32 }}>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 2, color: "var(--wolf-red)", marginBottom: 10 }}>DELETE ACCOUNT</h3>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--silver)", lineHeight: 1.6, marginBottom: 14 }}>
+                  This permanently removes your profile, saved addresses, wishlist and style profile. Orders you've already placed are still delivered, and their records are kept for tax and refunds. This can't be undone.
+                </p>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 6 }}>TYPE DELETE TO CONFIRM</label>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <input
+                    className="input-dark"
+                    value={deleteConfirm}
+                    onChange={(e) => setDeleteConfirm(e.target.value.toUpperCase())}
+                    placeholder="DELETE"
+                    disabled={deletingAccount}
+                    style={{ flex: "1 1 160px", fontFamily: "var(--font-mono)", letterSpacing: 4 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirm !== "DELETE" || deletingAccount}
+                    style={{ background: "transparent", border: "1px solid var(--wolf-red)", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, padding: "10px 20px", cursor: deleteConfirm === "DELETE" && !deletingAccount ? "pointer" : "not-allowed", opacity: deleteConfirm === "DELETE" ? 1 : 0.5 }}
+                  >
+                    {deletingAccount ? "DELETING..." : "DELETE MY ACCOUNT"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

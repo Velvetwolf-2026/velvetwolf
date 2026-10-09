@@ -1,9 +1,8 @@
 import { useState, useContext, useEffect, useRef } from "react";
-import { useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
-import { trackBeginCheckout, trackPurchase } from "../utils/analytics";
+import { trackBeginCheckout } from "../utils/analytics";
 import { getSupabaseLogoUrl } from "../utils/supabase";
 import { getMetaTrackingData } from "../utils/metaPixel";
 
@@ -25,9 +24,17 @@ function loadCashfreeScript() {
   });
 }
 
+// Must match DELIVERY_OPTIONS in the backend checkout service, which is what
+// actually charges the customer.
+const DELIVERY_OPTIONS = [
+  { id: "standard", label: "STANDARD", eta: "4 to 7 working days", fee: 0 },
+  { id: "express", label: "EXPRESS", eta: "2 to 4 working days", fee: 149 },
+];
+
+const ADDRESS_FIELDS = ["name", "phone", "address", "city", "district", "state", "pincode"];
+
 export default function CheckoutPage() {
-  const navigate = useNavigate();
-  const { cart, cartTotal, user, showToast, clearCart } = useContext(AppContext);
+  const { cart, cartTotal, user, showToast } = useContext(AppContext);
   const { t } = useLanguage();
   const [step] = useState(1);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -41,7 +48,13 @@ export default function CheckoutPage() {
     email: user?.email || "",
     address: "", city: "", district: "", state: "", pincode: ""
   });
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  // Prepaid only: every order goes through Cashfree (UPI, card, netbanking
+  // or wallet). Cash on Delivery is no longer offered.
+  const paymentMethod = "card";
+  const [delivery, setDelivery] = useState("standard");
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [whatsappUpdates, setWhatsappUpdates] = useState(true);
 
   const [processing, setProcessing] = useState(false);
@@ -52,7 +65,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-  const shipping = cartTotal >= 1999 ? 0 : 149;
+  const shipping = DELIVERY_OPTIONS.find(o => o.id === delivery)?.fee ?? 0;
   const tax = Math.round(cartTotal * 0.18);
 
   let discount = 0;
@@ -73,6 +86,42 @@ export default function CheckoutPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const applySavedAddress = (saved) => {
+    setSelectedAddressId(saved.id);
+    setSaveAddress(false);
+    setPincodeLocations([]);
+    setFieldErrors({});
+    setAddress(a => ({
+      ...a,
+      ...Object.fromEntries(ADDRESS_FIELDS.map(f => [f, saved[f] || ""])),
+    }));
+  };
+
+  // Typing into the form after picking a saved address makes it a new one.
+  const editAddress = (patch) => {
+    setAddress(a => ({ ...a, ...patch }));
+    setSelectedAddressId(null);
+  };
+
+  // Signed-in customers: load saved addresses and prefill the default one.
+  const signedInId = user?.id || null;
+  useEffect(() => {
+    if (!signedInId) return;
+    let cancelled = false;
+    fetch(apiUrl("/profile/addresses"), { credentials: "include" })
+      .then(res => (res.ok ? res.json() : { addresses: [] }))
+      .then(data => {
+        if (cancelled) return;
+        const list = data.addresses || [];
+        setSavedAddresses(list);
+        const preferred = list.find(a => a.is_default) || list[0];
+        if (preferred) applySavedAddress(preferred);
+        else setSaveAddress(true); // first checkout: offer to remember it
+      })
+      .catch(() => {}); // saved addresses are a convenience; the form still works
+    return () => { cancelled = true; };
+  }, [signedInId]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -99,7 +148,7 @@ export default function CheckoutPage() {
 
   const handlePincodeChange = async (e) => {
     const pin = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setAddress(a => ({ ...a, pincode: pin }));
+    editAddress({ pincode: pin });
 
     if (pin.length === 6) {
       setLoadingPincode(true);
@@ -172,6 +221,7 @@ export default function CheckoutPage() {
           shipping_amount: shipping,
           tax_amount: tax,
           payment_method: paymentMethod,
+          delivery,
           user_id: user?.id,
           couponCode: appliedCoupon?.code || null,
           whatsappUpdates,
@@ -185,24 +235,18 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to initiate checkout");
 
-      if (paymentMethod === "cod") {
-        // Track purchase
-        const lastCartVal = sessionStorage.getItem("vw_last_checkout_cart");
-        const lastTotalVal = sessionStorage.getItem("vw_last_checkout_total");
-        if (lastCartVal) {
-          const lastCart = JSON.parse(lastCartVal);
-          const lastTotal = Number(lastTotalVal || 0);
-          trackPurchase(data.orderId, lastCart, lastTotal, "cod");
-          sessionStorage.removeItem("vw_last_checkout_cart");
-          sessionStorage.removeItem("vw_last_checkout_total");
+      // Remember the address for next time (opt-in). Never blocks payment.
+      if (user && saveAddress && !selectedAddressId) {
+        try {
+          await fetch(apiUrl("/profile/addresses"), {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.fromEntries(ADDRESS_FIELDS.map(f => [f, address[f]]))),
+          });
+        } catch (saveErr) {
+          console.error("Could not save address", saveErr);
         }
-
-        setTimeout(() => {
-          clearCart();
-          showToast(`🎉 Order placed successfully!`);
-          navigate(`/payment-status?order_id=${data.orderId}&method=cod`);
-        }, 1300);
-        return;
       }
 
       // Handle Cashfree Payment
@@ -336,11 +380,38 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            {savedAddresses.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 10 }}>SAVED ADDRESSES</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
+                  {savedAddresses.map(saved => {
+                    const active = selectedAddressId === saved.id;
+                    return (
+                      <button
+                        key={saved.id}
+                        type="button"
+                        onClick={() => applySavedAddress(saved)}
+                        aria-pressed={active}
+                        style={{ textAlign: "left", padding: "12px 14px", cursor: "pointer", background: active ? "rgba(201,168,76,0.08)" : "transparent", border: `1px solid ${active ? "var(--gold)" : "var(--smoke)"}`, color: "var(--ivory)" }}
+                      >
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: active ? "var(--gold)" : "var(--ash)", marginBottom: 4 }}>
+                          {(saved.label || saved.name).toUpperCase()}{saved.is_default ? " · DEFAULT" : ""}
+                        </div>
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", lineHeight: 1.5 }}>
+                          {saved.address}, {saved.city} {saved.pincode}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <input ref={el => fieldRefs.current.name = el} className="input-dark" placeholder={`${t("fullName")} *`} value={address.name} onChange={e => { setAddress(a => ({ ...a, name: e.target.value })); setFieldErrors(f => ({ ...f, name: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.name ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.name = el} className="input-dark" placeholder={`${t("fullName")} *`} value={address.name} onChange={e => { editAddress({ name: e.target.value }); setFieldErrors(f => ({ ...f, name: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.name ? "var(--wolf-red)" : undefined }} />
               <input ref={el => fieldRefs.current.email = el} className="input-dark" placeholder={`${t("emailAddress")} *`} value={address.email} onChange={e => { setAddress(a => ({ ...a, email: e.target.value })); setFieldErrors(f => ({ ...f, email: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.email ? "var(--wolf-red)" : undefined }} />
-              <input ref={el => fieldRefs.current.phone = el} className="input-dark" placeholder={`${t("mobileNumber")} *`} value={address.phone} onChange={e => { setAddress(a => ({ ...a, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })); setFieldErrors(f => ({ ...f, phone: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.phone ? "var(--wolf-red)" : undefined }} maxLength={10} />
-              <input ref={el => fieldRefs.current.address = el} className="input-dark" placeholder={`${t("addressLine1")} *`} value={address.address} onChange={e => { setAddress(a => ({ ...a, address: e.target.value })); setFieldErrors(f => ({ ...f, address: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.address ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.phone = el} className="input-dark" placeholder={`${t("mobileNumber")} *`} value={address.phone} onChange={e => { editAddress({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) }); setFieldErrors(f => ({ ...f, phone: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.phone ? "var(--wolf-red)" : undefined }} maxLength={10} />
+              <input ref={el => fieldRefs.current.address = el} className="input-dark" placeholder={`${t("addressLine1")} *`} value={address.address} onChange={e => { editAddress({ address: e.target.value }); setFieldErrors(f => ({ ...f, address: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.address ? "var(--wolf-red)" : undefined }} />
 
               <div style={{ position: "relative" }}>
                 <input ref={el => fieldRefs.current.pincode = el} className="input-dark" placeholder={`${t("pincode")} *`} value={address.pincode} onChange={e => { handlePincodeChange(e); setFieldErrors(f => ({ ...f, pincode: false })); }} maxLength={6} style={{ width: "100%", borderColor: fieldErrors.pincode ? "var(--wolf-red)" : undefined }} />
@@ -354,7 +425,7 @@ export default function CheckoutPage() {
                   value={address.city}
                   onChange={e => {
                     const loc = pincodeLocations.find(l => l.city === e.target.value);
-                    if (loc) setAddress(a => ({ ...a, city: loc.city, district: loc.district, state: loc.state }));
+                    if (loc) editAddress({ city: loc.city, district: loc.district, state: loc.state });
                     setFieldErrors(f => ({ ...f, city: false, district: false, state: false }));
                   }}
                   style={{ appearance: "auto", WebkitAppearance: "auto", MozAppearance: "auto", borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }}
@@ -365,25 +436,52 @@ export default function CheckoutPage() {
                   ))}
                 </select>
               ) : (
-                <input ref={el => fieldRefs.current.city = el} className="input-dark" placeholder={`${t("city")} *`} value={address.city} onChange={e => { setAddress(a => ({ ...a, city: e.target.value })); setFieldErrors(f => ({ ...f, city: false })); }} style={{ borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }} />
+                <input ref={el => fieldRefs.current.city = el} className="input-dark" placeholder={`${t("city")} *`} value={address.city} onChange={e => { editAddress({ city: e.target.value }); setFieldErrors(f => ({ ...f, city: false })); }} style={{ borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }} />
               )}
 
-              <input ref={el => fieldRefs.current.district = el} className="input-dark" placeholder={`${t("district")} *`} value={address.district} onChange={e => { setAddress(a => ({ ...a, district: e.target.value })); setFieldErrors(f => ({ ...f, district: false })); }} style={{ borderColor: fieldErrors.district ? "var(--wolf-red)" : undefined }} />
-              <input ref={el => fieldRefs.current.state = el} className="input-dark" placeholder={`${t("state")} *`} value={address.state} onChange={e => { setAddress(a => ({ ...a, state: e.target.value })); setFieldErrors(f => ({ ...f, state: false })); }} style={{ borderColor: fieldErrors.state ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.district = el} className="input-dark" placeholder={`${t("district")} *`} value={address.district} onChange={e => { editAddress({ district: e.target.value }); setFieldErrors(f => ({ ...f, district: false })); }} style={{ borderColor: fieldErrors.district ? "var(--wolf-red)" : undefined }} />
+              <input ref={el => fieldRefs.current.state = el} className="input-dark" placeholder={`${t("state")} *`} value={address.state} onChange={e => { editAddress({ state: e.target.value }); setFieldErrors(f => ({ ...f, state: false })); }} style={{ borderColor: fieldErrors.state ? "var(--wolf-red)" : undefined }} />
+            </div>
+
+            {user && !selectedAddressId && (
+              <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: "var(--silver)" }}>
+                <input type="checkbox" checked={saveAddress} onChange={e => setSaveAddress(e.target.checked)} style={{ accentColor: "var(--gold)" }} />
+                SAVE THIS ADDRESS TO MY ACCOUNT
+              </label>
+            )}
+          </div>
+
+          {/* 3. DELIVERY SPEED */}
+          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28, marginBottom: 32 }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 24 }}>DELIVERY</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {DELIVERY_OPTIONS.map(opt => (
+                <label key={opt.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "16px 20px", border: `1px solid ${delivery === opt.id ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: delivery === opt.id ? "rgba(201,168,76,0.05)" : "transparent" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <input type="radio" name="delivery" value={opt.id} checked={delivery === opt.id} onChange={() => setDelivery(opt.id)} style={{ accentColor: "var(--gold)" }} />
+                    <div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{opt.label}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 3 }}>{opt.eta}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: opt.fee === 0 ? "#81c784" : "var(--ash)" }}>
+                    {opt.fee === 0 ? "FREE" : `₹${opt.fee}`}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* 3. PAYMENT METHOD */}
+          {/* 4. PAYMENT METHOD */}
           <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28 }}>
             <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { val: "card", label: "ONLINE CARD / UPI / NETBANKING", icon: "/card.png" },
-                { val: "cod", label: "CASH ON DELIVERY (COD)", icon: "/cash.png" }
               ].map(({ val, label, icon }) => (
                 <label key={val} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <input type="radio" name="payment" value={val} checked={paymentMethod === val} onChange={() => setPaymentMethod(val)} style={{ accentColor: "var(--gold)" }} />
+                    <input type="radio" name="payment" value={val} checked={paymentMethod === val} readOnly style={{ accentColor: "var(--gold)" }} />
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <img src={getSupabaseLogoUrl(icon)} alt={label} style={{ width: 20, height: 20, objectFit: "contain" }} />
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
@@ -417,6 +515,9 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: "var(--silver)", margin: "16px 0 0", lineHeight: 1.6 }}>
+              Prepaid orders only — Cash on Delivery isn't available. Pay securely by UPI, card, netbanking or wallet.
+            </p>
           </div>
         </div>
 
@@ -476,7 +577,7 @@ export default function CheckoutPage() {
               {[
                 ["Subtotal", `₹${cartTotal.toLocaleString()}`],
                 ...(discount > 0 ? [["Discount", `-₹${discount.toLocaleString()}`]] : []),
-                ["Shipping", shipping === 0 ? "FREE" : `₹${shipping}`],
+                [delivery === "express" ? "Express shipping" : "Shipping", shipping === 0 ? "FREE" : `₹${shipping}`],
                 ["GST (18%)", `₹${tax.toLocaleString()}`]
               ].map(([label, val]) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>

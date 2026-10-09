@@ -1,7 +1,7 @@
 import * as authService from "../services/auth.service.js";
 import {
   signupSchema, loginSchema, verifyOtpSchema,
-  resendOtpSchema, forgotPasswordSchema, resetPasswordSchema,
+  resendOtpSchema,
   firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
@@ -48,18 +48,6 @@ export async function verifyOtp(body, event) {
 export async function resendOtp(body, event) {
   const data = validate(resendOtpSchema)(body);
   const result = await authService.resendOtp(data, getClientIp(event));
-  return jsonResponse(200, result, {}, event);
-}
-
-export async function forgotPassword(body, event) {
-  const data = validate(forgotPasswordSchema)(body);
-  const result = await authService.forgotPassword(data, getClientIp(event));
-  return jsonResponse(200, result, {}, event);
-}
-
-export async function resetPassword(body, event) {
-  const data = validate(resetPasswordSchema)(body);
-  const result = await authService.resetPassword(data);
   return jsonResponse(200, result, {}, event);
 }
 
