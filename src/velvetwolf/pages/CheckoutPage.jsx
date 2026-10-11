@@ -8,7 +8,7 @@ import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout } from "../utils/analytics";
 import { getMetaTrackingData } from "../utils/metaPixel";
-import { money, allPhotos } from "../gallery/galleryProducts";
+import { money, cartThumb } from "../gallery/galleryProducts";
 
 // Must match DELIVERY_OPTIONS in the backend checkout service, which is what
 // actually charges the customer.
@@ -49,14 +49,6 @@ function loadCashfreeScript() {
   });
 }
 
-// Photo for a cart line: the colour's own photo when there is one.
-function thumbOf(item) {
-  const images = Array.isArray(item.images) ? item.images : [];
-  const tagged = images.find((x) => typeof x === "string" && x.toLowerCase().startsWith(`${String(item.color || "").toLowerCase()}::`));
-  if (tagged) return tagged.split("::").slice(1).join("::");
-  return allPhotos(item)[0]?.src || "";
-}
-
 const addrLines = (a) => (
   <>
     <b>{a.name}</b><br />
@@ -66,14 +58,14 @@ const addrLines = (a) => (
   </>
 );
 
-function Field({ id, label, value, onChange, error, hint, prefix, required = true, ...rest }) {
+function Field({ id, label, value, onChange, error, hint, prefix, required = true, type = "text", ...rest }) {
   const describedBy = [hint ? `${id}-hint` : "", error ? `${id}-err` : ""].filter(Boolean).join(" ") || undefined;
   return (
     <div className="form-row">
       <label htmlFor={id}>{label}{!required && <span className="opt">optional</span>}</label>
       <div className={`input-wrap${prefix ? " has-prefix" : ""}`}>
         {prefix && <span className="input-prefix" aria-hidden="true">{prefix}</span>}
-        <input id={id} name={id} value={value} onChange={onChange} required={required}
+        <input id={id} name={id} type={type} value={value} onChange={onChange} required={required}
           aria-invalid={error ? "true" : undefined} aria-describedby={describedBy} {...rest} />
       </div>
       {hint && <p className="field-hint" id={`${id}-hint`}>{hint}</p>}
@@ -303,7 +295,7 @@ export default function CheckoutPage() {
     <>
       <ul className="sum-items">
         {cart.map((i, idx) => {
-          const src = thumbOf(i);
+          const src = cartThumb(i);
           return (
             <li className="sum-item" key={`${i.id}-${i.size}-${i.color}-${idx}`}>
               <span className="sum-thumb">

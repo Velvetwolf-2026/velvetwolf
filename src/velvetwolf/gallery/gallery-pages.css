@@ -16,7 +16,8 @@
 .vwg address b { color: var(--bone); font-weight: 600; }
 
 /* ---------- forms ---------- */
-.vwg input[type="text"], .vwg input[type="email"], .vwg input[type="tel"], .vwg textarea, .vwg select {
+.vwg { color-scheme: dark; }
+.vwg input:not([type]), .vwg input[type="text"], .vwg input[type="email"], .vwg input[type="tel"], .vwg input[type="search"], .vwg input[type="number"], .vwg textarea, .vwg select {
   min-height: 48px; padding: 0 14px; border-radius: 2px; border: 1px solid var(--line-2);
   background: rgba(232, 228, 218, 0.04); color: var(--bone); font: 400 16px/1.2 var(--g-body);
 }
@@ -24,6 +25,13 @@
 .vwg select { width: 100%; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--bone-2) 50%), linear-gradient(135deg, var(--bone-2) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
 .vwg select option { background: var(--panel); color: var(--bone); }
 .vwg input:focus-visible, .vwg textarea:focus-visible, .vwg select:focus-visible { outline: none; border-color: var(--sand); }
+.vwg input::placeholder, .vwg textarea::placeholder { color: var(--bone-3); opacity: 1; }
+/* browser autofill keeps the dark field instead of a white/yellow one */
+.vwg input:-webkit-autofill, .vwg input:-webkit-autofill:hover, .vwg input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--bone); caret-color: var(--bone);
+  -webkit-box-shadow: 0 0 0 1000px #18181B inset; box-shadow: 0 0 0 1000px #18181B inset;
+  transition: background-color 9999s ease-out 0s;
+}
 .vwg input, .vwg select, .vwg textarea, .vwg .form-banner, .vwg .form-row { scroll-margin-top: calc(var(--nav-h) + 28px); }
 .vwg input[aria-invalid="true"], .vwg select[aria-invalid="true"] { border-color: #EE9A80; }
 
@@ -144,6 +152,7 @@
 @media (max-width: 960px) {
   .vwg .checkout-grid { grid-template-columns: minmax(0, 1fr); }
   .vwg .sum-side { display: none; }
+  .vwg .sum-side.sum-keep { display: grid; position: static; }
   .vwg .sum-mobile { display: block; border: 1px solid var(--line); background: var(--panel); }
   .vwg .sum-mobile > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.18em; text-transform: uppercase; }
   .vwg .sum-mobile > summary::-webkit-details-marker { display: none; }
@@ -161,4 +170,48 @@
 @media (max-width: 520px) {
   .vwg .choice-grid { grid-template-columns: minmax(0, 1fr); }
   .vwg .form-pair { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- cart drawer (prototype .drawer) ---------- */
+.vwg.vwg-cart-layer { position: fixed; inset: 0; z-index: 900; overflow: visible; }
+.vwg .vwg-scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); opacity: 0; transition: opacity 0.3s; }
+.vwg .vwg-scrim.open { opacity: 1; }
+.vwg .vwg-drawer {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--panel); border-left: 1px solid var(--line);
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateX(100%); transition: transform 0.3s var(--ease);
+}
+.vwg .vwg-drawer.open { transform: none; }
+.vwg .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line); }
+.vwg .drawer-head h2 { margin: 0; font: 300 22px/1 var(--g-display); letter-spacing: -0.01em; }
+.vwg .drawer-count { font: 600 13px/1 var(--g-body); color: var(--sand); margin-left: 6px; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.vwg .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line-2); background: none; color: var(--bone); cursor: pointer; font-size: 22px; line-height: 1; border-radius: 2px; }
+.vwg .drawer-body { overflow-y: auto; padding: 8px 24px; }
+.vwg .cart-empty { display: grid; gap: 18px; justify-items: start; padding-top: 24px; color: var(--bone-2); }
+.vwg .cart-empty p { margin: 0; }
+.vwg .cart-list { list-style: none; margin: 0; padding: 0; }
+.vwg .cart-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.vwg .cart-thumb { width: 64px; height: 80px; display: grid; place-items: center; background: var(--raise); border: 1px solid var(--line); overflow: hidden; }
+.vwg .cart-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.vwg .cart-thumb img.is-art { object-fit: contain; padding: 8px; }
+.vwg .cart-info { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.vwg .cart-name { font: 400 12.5px/1.3 var(--g-display); letter-spacing: 0.14em; text-transform: uppercase; overflow-wrap: anywhere; }
+.vwg .cart-meta { font-size: 12.5px; color: var(--bone-3); overflow-wrap: anywhere; }
+.vwg .qty { display: inline-flex; align-items: center; border: 1px solid var(--line-2); width: max-content; margin-top: 6px; }
+.vwg .qty button { width: 32px; height: 32px; background: none; border: 0; cursor: pointer; color: var(--bone); font-size: 16px; }
+.vwg .qty span { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; font-size: 13px; }
+.vwg .cart-side { display: grid; justify-items: end; align-content: space-between; gap: 8px; }
+.vwg .cart-price { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
+.vwg .drawer-foot { display: grid; gap: 12px; padding: 18px 24px 24px; border-top: 1px solid var(--line); }
+.vwg .sub-row { display: flex; justify-content: space-between; align-items: baseline; }
+.vwg .sub-row span:first-child { font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bone-2); }
+.vwg .sub-row span:last-child { font: 600 18px/1 var(--g-body); font-variant-numeric: tabular-nums; }
+@media (hover: hover) {
+  .vwg .btn-primary:hover:not(:disabled) { background: #fff; border-color: #fff; }
+  .vwg .btn:not(.btn-primary):hover:not(:disabled) { border-color: var(--bone-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vwg .vwg-drawer, .vwg .vwg-scrim { transition: none; }
 }

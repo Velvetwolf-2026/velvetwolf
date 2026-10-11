@@ -184,16 +184,46 @@ p { color: var(--ivory); }
 .vw-price--sale   { color: var(--ivory); }
 .vw-price--strike { text-decoration: line-through; color: var(--vw-faint); }
 
+/* Scrollbars in the gallery palette: a quiet bone thumb on the hall colour. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 228, 218, 0.28) #0A0A0B;
+}
+
 ::-webkit-scrollbar {
-  width: 3px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--obsidian);
+  background: #0A0A0B;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gold);
+  background: rgba(232, 228, 218, 0.24);
+  border: 2px solid #0A0A0B;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 228, 218, 0.45);
+}
+
+/* AI stylist in the gallery palette. Its inline styles use the site tokens,
+   so remapping them here re-themes the whole widget. */
+.vw-ai {
+  --gold: #E8E4DA;
+  --gold-light: #E8E4DA;
+  --obsidian: #141416;
+  --graphite: #111113;
+  --smoke: rgba(232, 228, 218, 0.18);
+  --ivory: #E8E4DA;
+  --ash: rgba(232, 228, 218, 0.7);
+  --silver: rgba(232, 228, 218, 0.55);
+  --font-mono: "Manrope", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-serif: "Manrope", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-display: "Unbounded", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Manrope", "Helvetica Neue", Arial, system-ui, sans-serif;
 }
 
 /* Animations */

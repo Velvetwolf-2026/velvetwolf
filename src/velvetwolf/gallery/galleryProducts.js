@@ -78,3 +78,12 @@ export function allPhotos(product, currentColorId = null) {
   }
   return result;
 }
+
+// Photo for a cart line: the chosen colour's own photo when there is one.
+export function cartThumb(item) {
+  const images = Array.isArray(item?.images) ? item.images : [];
+  const color = String(item?.color || "").toLowerCase();
+  const tagged = images.find((x) => typeof x === "string" && x.toLowerCase().startsWith(`${color}::`));
+  if (tagged) return tagged.split("::").slice(1).join("::");
+  return allPhotos(item)[0]?.src || "";
+}

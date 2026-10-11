@@ -620,7 +620,7 @@
 .vwg-size-table thead th { font: 600 10px/1 'Manrope', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(232, 228, 218, 0.46); }
 
 /* Buttons */
-.vwg-btn-primary {
+.vwg-btn-primary, .vwg .vwg-btn-primary {
   width: 100%;
   min-height: 48px;
   background: #E8E4DA;
@@ -633,10 +633,10 @@
   transition: all 0.2s;
   border-radius: 2px;
 }
-.vwg-btn-primary:hover:not(:disabled) {
+.vwg-btn-primary:hover:not(:disabled), .vwg .vwg-btn-primary:hover:not(:disabled) {
   background: #fff;
 }
-.vwg-btn-primary:disabled {
+.vwg-btn-primary:disabled, .vwg .vwg-btn-primary:disabled {
   background: #18181B;
   border: 1px solid rgba(232, 228, 218, 0.15);
   color: rgba(232, 228, 218, 0.4);
