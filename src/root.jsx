@@ -279,9 +279,13 @@ export default function VelvetWolfRoot() {
 
   const isValidUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
+  // Custom (Studio) tees have no product row, so they live in this browser's
+  // cart even when signed in; keep them next to the account's saved cart.
+  const withLocalCustom = (items) => [...items.filter((i) => !i.isCustom), ...getGuestCart().filter((i) => i.isCustom)];
+
   const syncCartFromDB = async (userId) => {
     try {
-      const items = await loadCartFromDB(userId);
+      const items = withLocalCustom(await loadCartFromDB(userId));
       setCart(items);
       try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
@@ -324,7 +328,15 @@ export default function VelvetWolfRoot() {
         const idx = guest.findIndex(i => i.id === product.id && i.size === size && i.color === color);
         if (idx > -1) guest[idx].qty += qty;
         else guest.push({ ...product, size, color, qty });
-        saveGuestCart(guest);
+        if (backendUserId) {
+          // Signed in: keep the account's items on screen and add these.
+          localStorage.setItem("vw_guest_cart", JSON.stringify(guest));
+          const key = (i) => `${i.id}|${i.size}|${i.color}`;
+          const keys = new Set(guest.map(key));
+          setCart((prev) => [...prev.filter((i) => !keys.has(key(i))), ...guest]);
+        } else {
+          saveGuestCart(guest);
+        }
       }
       showToast("Added to cart ✓");
     } catch (err) {

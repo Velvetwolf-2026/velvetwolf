@@ -82,7 +82,22 @@ export default function AdminOrders() {
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 2 }}>{o.customerEmail}</div>
                   </td>
                   <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--silver)", padding: "14px 16px" }}>{new Date(o.created_at).toLocaleDateString("en-IN")}</td>
-                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ash)", padding: "14px 16px" }}>{(o.order_items || []).length}</td>
+                  <td style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ash)", padding: "14px 16px" }}>
+                    {(o.order_items || []).length}
+                    {o.delivery === "express" && <div style={{ fontSize: 9, letterSpacing: 1, color: "var(--gold)", marginTop: 4 }}>EXPRESS</div>}
+                    {(o.customDesigns || []).map((d, i) => (
+                      <div key={i} style={{ fontSize: 10, color: "var(--silver)", marginTop: 6, lineHeight: 1.5 }}>
+                        STUDIO · {d.size} · {String(d.design?.color || "").toUpperCase()} / {String(d.design?.ink || "").toUpperCase()} INK
+                        {Object.entries(d.design?.sides || {}).map(([side, sd]) => (
+                          <div key={side}>
+                            {side.toUpperCase()}: {sd.mode === "text" ? `"${sd.text}"` : sd.mode === "mark" ? sd.mark : sd.artworkName || "upload"}
+                            {d.files?.[side]?.proofUrl && <> · <a href={d.files[side].proofUrl} target="_blank" rel="noreferrer" style={{ color: "var(--gold)" }}>proof</a></>}
+                            {d.files?.[side]?.artworkUrl && <> · <a href={d.files[side].artworkUrl} target="_blank" rel="noreferrer" style={{ color: "var(--gold)" }}>artwork</a></>}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </td>
                   <td style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ivory)", padding: "14px 16px" }}>₹{Number(o.total_amount || 0).toLocaleString()}</td>
                   <td style={{ padding: "14px 16px" }}><StatusBadge status={o.status} /></td>
                   <td style={{ padding: "14px 16px" }}>

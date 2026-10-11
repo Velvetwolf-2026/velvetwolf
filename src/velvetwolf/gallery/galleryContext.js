@@ -2,12 +2,12 @@
 // component file so React fast refresh keeps working there).
 import { createContext, useContext } from "react";
 
-// Routes drawn over the 3D gallery hall.
+// Routes drawn over the 3D gallery hall. Product pages show the product's
+// own photos instead (no 3D).
 export const isGalleryPath = (pathname = "") =>
   pathname === "/" ||
   pathname === "/shop" ||
   pathname.startsWith("/shop/") ||
-  pathname.startsWith("/product/") ||
   pathname === "/custom" ||
   pathname === "/login" ||
   pathname === "/signup";

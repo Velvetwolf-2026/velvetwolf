@@ -4,6 +4,7 @@ import { AppContext } from "./AppContext";
 import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER, SIZES, STUDIO_PRICE, STUDIO_BOTH_SIDES } from "../gallery/data";
 import { money } from "../gallery/galleryProducts";
+import { uploadStudioFile, canvasToBlob, thumbnailOf } from "../utils/studioUpload";
 import { bindDrag } from "../gallery/drag";
 import {
   createCustomPrint,
@@ -15,6 +16,7 @@ import {
 const INKS = ["bone", "noir", "sand", "forest", "crimson"];
 const MARKS = ["wordmark", "monogram", "horizon", "contour", "nocturne"];
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+const MAX_MB = 8;
 
 export default function CustomDesignPage() {
   const [searchParams] = useSearchParams();
@@ -35,6 +37,7 @@ export default function CustomDesignPage() {
   const [ink, setInk] = useState("bone");
   const [size, setSize] = useState("");
   const [guide, setGuide] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const [sides, setSides] = useState({
     front: {
@@ -46,6 +49,8 @@ export default function CustomDesignPage() {
       image: null,
       imageName: "",
       imageType: "",
+      imageFile: null,
+      artworkPath: "",
       oneInk: true,
       mark: "monogram",
     },
@@ -58,6 +63,8 @@ export default function CustomDesignPage() {
       image: null,
       imageName: "",
       imageType: "",
+      imageFile: null,
+      artworkPath: "",
       oneInk: true,
       mark: "monogram",
     },
@@ -125,32 +132,42 @@ export default function CustomDesignPage() {
     if (engine?.studio) engine.studio.setInk(COLORWAYS[newInk]?.hex || "#E8E4DA");
   };
 
-  // File loading helper
+  // File loading: keeps the original file (uploaded with the order) and shows it on the tee.
   const handleFile = (file) => {
     if (!file) return;
     if (!ACCEPT.includes(file.type)) {
-      showToast("Only PNG, JPG, WebP or SVG files are supported", "error");
+      showToast("That file type can't be printed here. Use PNG, JPG, WebP or SVG.", "error");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      showToast("File must be smaller than 8 MB", "error");
+    if (file.size > MAX_MB * 1024 * 1024) {
+      showToast(`That image is over ${MAX_MB} MB. Try a smaller file.`, "error");
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        updateActiveSide({
-          image: img,
-          imageName: file.name,
-          imageType: file.type,
-        });
+        updateActiveSide({ mode: "image", image: img, imageName: file.name || "Pasted image", imageType: file.type, imageFile: file, artworkPath: "" });
+        showToast(`${file.name || "Your image"} is on the ${side} of the tee`);
       };
+      img.onerror = () => showToast("That file couldn't be read as an image. Try a PNG or JPG.", "error");
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
+
+  // Paste an image while the Studio is open.
+  useEffect(() => {
+    const onPaste = (e) => {
+      if (e.target?.closest?.("textarea, input[type='text']")) return;
+      const item = [...(e.clipboardData?.items || [])].find((it) => it.kind === "file" && it.type.startsWith("image/"));
+      if (!item) return;
+      e.preventDefault();
+      handleFile(item.getAsFile());
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  });
 
   const isUsed = (sKey) => {
     const s = sides[sKey];
@@ -185,46 +202,91 @@ export default function CustomDesignPage() {
     }
   }
 
-  const handleAddToCart = (e) => {
+  // Uploads the artwork and a print proof of each used side, then adds the tee
+  // to the cart. The server re-checks the design and sets the price.
+  const handleAddToCart = async (e) => {
     e?.preventDefault();
+    if (busy) return false;
     if (!size) {
-      showToast("Please select a size", "info");
-      return;
+      showToast("Select a size", "info");
+      return false;
+    }
+    const used = ["front", "back"].filter(isUsed);
+    if (!used.length) {
+      showToast("Add some artwork first", "info");
+      return false;
     }
 
-    const pSide = printsRef.current.front;
-    let thumb = "";
+    setBusy(true);
     try {
-      thumb = pSide.canvas.toDataURL("image/png");
-    } catch {
-      thumb = "/mockup_silent.webp";
+      const metaSides = {};
+      let thumb = "";
+      for (const name of used) {
+        const sd = sides[name];
+        let artwork = null;
+        if (sd.mode === "image") {
+          artwork = sd.artworkPath || (sd.imageFile ? await uploadStudioFile(sd.imageFile, "artwork") : null);
+          if (!artwork) throw new Error("Upload your artwork again: the file is no longer available.");
+          if (!sd.artworkPath) setSides((prev) => ({ ...prev, [name]: { ...prev[name], artworkPath: artwork } }));
+        }
+        // The proof is the print area exactly as designed, without the guide lines.
+        const print = printsRef.current[name];
+        drawCustom(print, { ...sd, guide: false });
+        let proof = null;
+        try {
+          proof = await uploadStudioFile(await canvasToBlob(print.canvas), "proof");
+        } catch (err) {
+          console.warn("[studio] proof upload failed", err);
+        }
+        if (!thumb) thumb = thumbnailOf(print.canvas);
+        drawCustom(print, { ...sd, guide: guide && name === side });
+        metaSides[name] = {
+          mode: sd.mode,
+          text: sd.mode === "text" ? sd.text.trim() : "",
+          font: sd.font,
+          mark: sd.mode === "mark" ? sd.mark : null,
+          artwork,
+          artworkName: sd.mode === "image" ? sd.imageName : "",
+          oneInk: sd.oneInk,
+          scale: sd.scale,
+          offset: sd.offset,
+          proof,
+        };
+      }
+
+      const summary = used.map((name) => {
+        const sd = sides[name];
+        const what = sd.mode === "text" ? `"${sd.text.trim().split("\n")[0].slice(0, 18)}"` : sd.mode === "image" ? "your artwork" : (DESIGNS[sd.mark]?.label || sd.mark).toLowerCase();
+        return `${name} ${what}`;
+      }).join(", ");
+
+      const teeColor = COLORWAYS[color]?.site || "Black";
+      const customItem = {
+        id: `custom-studio-${Date.now()}`,
+        name: `Custom tee (${summary})`.slice(0, 120),
+        collection: "studio",
+        price,
+        originalPrice: price,
+        image: thumb || "/mockup_silent.webp",
+        sizes: [size],
+        colors: [teeColor],
+        stock: 99,
+        isCustom: true,
+        customMeta: { kind: "studio", color, ink, sides: metaSides },
+      };
+      await addToCart(customItem, size, teeColor, 1);
+      return true;
+    } catch (err) {
+      showToast(err.message || "Something went wrong. Try again.", "error");
+      return false;
+    } finally {
+      setBusy(false);
     }
-
-    const customItem = {
-      id: `custom-${Date.now()}`,
-      name: `Custom Wolf Studio Tee (${COLORWAYS[color]?.name})`,
-      collection: "studio",
-      price,
-      originalPrice: price + 700,
-      image: thumb,
-      isCustom: true,
-      color: COLORWAYS[color]?.site || COLORWAYS[color]?.name,
-      size,
-      customization: {
-        front: { mode: sides.front.mode, text: sides.front.text, mark: sides.front.mark },
-        back: { mode: sides.back.mode, text: sides.back.text, mark: sides.back.mark },
-        color,
-        ink,
-      },
-    };
-
-    addToCart(customItem, size, customItem.color, 1);
   };
 
-  const handleBuyNow = (e) => {
+  const handleBuyNow = async (e) => {
     e?.preventDefault();
-    handleAddToCart();
-    setTimeout(() => navigate("/checkout"), 100);
+    if (await handleAddToCart()) navigate("/checkout");
   };
 
   return (
@@ -262,7 +324,7 @@ export default function CustomDesignPage() {
           </p>
         </header>
 
-        <form className="vwg-pdp-form" onSubmit={handleAddToCart} novalidate>
+        <form className="vwg-pdp-form" onSubmit={handleAddToCart} noValidate>
           {/* Tee Colorway */}
           <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 10 }}>
             <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
@@ -422,7 +484,7 @@ export default function CustomDesignPage() {
                         Upload your artwork
                       </span>
                       <span style={{ fontSize: 12, color: "rgba(232, 228, 218, 0.6)", lineHeight: 1.4 }}>
-                        Drag a file here, or click to browse. PNG with transparent background prints cleanest. Up to 8 MB.
+                        Drag a file here, paste it, or choose one. PNG, JPG, WebP or SVG, up to 8 MB. A PNG with a transparent background prints cleanest.
                       </span>
                       <label className="vwg-btn-primary" style={{ display: "inline-grid", placeItems: "center", minHeight: 36, padding: "0 16px", cursor: "pointer", width: "auto" }}>
                         Choose File
@@ -458,7 +520,7 @@ export default function CustomDesignPage() {
                           </label>
                           <button
                             type="button"
-                            onClick={() => updateActiveSide({ image: null, imageName: "", imageType: "" })}
+                            onClick={() => updateActiveSide({ image: null, imageName: "", imageType: "", imageFile: null, artworkPath: "" })}
                             style={{ background: "none", border: 0, padding: 0, fontSize: 11, textDecoration: "underline", color: "rgba(232, 228, 218, 0.6)", cursor: "pointer" }}
                           >
                             Remove
@@ -595,29 +657,31 @@ export default function CustomDesignPage() {
             <button
               className="vwg-btn-primary"
               type="submit"
-              disabled={!size || (!isUsed("front") && !isUsed("back"))}
+              disabled={busy || !size || (!isUsed("front") && !isUsed("back"))}
             >
-              {!isUsed("front") && !isUsed("back")
-                ? "Design a side first"
+              {busy
+                ? "Uploading your design…"
+                : !isUsed("front") && !isUsed("back")
+                ? "Add some artwork first"
                 : !size
                 ? "Select a size"
-                : `Add to Cart — ${money(price)}`}
+                : `Add to cart · ${money(price)}`}
             </button>
             <button
               type="button"
               className="vwg-btn-primary"
               style={{ background: "transparent", border: "1px solid rgba(232, 228, 218, 0.3)", color: "#E8E4DA" }}
-              disabled={!size || (!isUsed("front") && !isUsed("back"))}
+              disabled={busy || !size || (!isUsed("front") && !isUsed("back"))}
               onClick={handleBuyNow}
             >
-              Buy Now with Cashfree
+              Buy now
             </button>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "rgba(232, 228, 218, 0.5)" }}>
             <button
               type="button"
-              onClick={() => updateActiveSide({ text: "", image: null, imageName: "", imageType: "" })}
+              onClick={() => updateActiveSide({ text: "", image: null, imageName: "", imageType: "", imageFile: null, artworkPath: "" })}
               style={{ background: "none", border: 0, padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer" }}
             >
               Clear this side

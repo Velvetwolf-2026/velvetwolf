@@ -287,6 +287,77 @@ describe("checkout.service", () => {
         expect(insertedOrder()).toMatchObject({ subtotal: 4298 });
       });
 
+      describe("Studio tees", () => {
+        const ART = "uploads/0b6f8b2e-6c1e-4d0b-9a4e-2f7d1c3b5a99.png";
+        const PROOF = "proofs/7d3e2a10-1b2c-4d5e-8f90-a1b2c3d4e5f6.png";
+        const studioItem = (sides, extra = {}) => ({
+          id: "custom-studio-1", name: "Custom tee", isCustom: true, price: 1, qty: 1, size: "L", color: "Black",
+          customMeta: { kind: "studio", color: "noir", ink: "bone", sides }, ...extra,
+        });
+        const fresh = () => {
+          resetSupabaseMock({ orders: [{ data: null, error: null }], order_items: [{ data: null, error: null }] });
+          createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+        };
+
+        it("charges ₹2,290 for one printed side and keeps the design with the order", async () => {
+          fresh();
+          await initiateCheckout({
+            cart: [studioItem({ front: { mode: "text", text: "Say less.", font: "display", proof: PROOF }, back: { mode: "text", text: "  " } })],
+            address: {}, payment_method: "upi",
+          });
+          expect(insertedOrder()).toMatchObject({ subtotal: 2290 });
+          const [d] = insertedOrder().meta.custom_designs;
+          expect(d).toMatchObject({ line: 0, size: "L", quantity: 1, design: { kind: "studio", color: "noir", ink: "bone" } });
+          expect(d.design.sides.front).toMatchObject({ mode: "text", text: "Say less.", proof: PROOF });
+          expect(d.design.sides.back).toBeUndefined(); // an empty side isn't printed or charged
+        });
+
+        it("adds ₹300 when both sides are printed, whatever the client says", async () => {
+          fresh();
+          await initiateCheckout({
+            cart: [studioItem({ front: { mode: "image", artwork: ART, artworkName: "wolf.png" }, back: { mode: "mark", mark: "monogram" } }, { price: 1, qty: 2 })],
+            address: {}, payment_method: "card",
+          });
+          expect(insertedOrder()).toMatchObject({ subtotal: (2290 + 300) * 2 });
+          expect(insertedOrder().meta.custom_designs[0].design.sides.front).toMatchObject({ mode: "image", artwork: ART });
+        });
+
+        it("refuses a design with no artwork on either side", async () => {
+          resetSupabaseMock({});
+          await expect(initiateCheckout({ cart: [studioItem({ front: { mode: "text", text: "" } })], address: {}, payment_method: "upi" }))
+            .rejects.toMatchObject({ statusCode: 400 });
+        });
+
+        it("refuses artwork paths outside the studio upload folder", async () => {
+          resetSupabaseMock({});
+          await expect(initiateCheckout({ cart: [studioItem({ front: { mode: "image", artwork: "../products/secret.png" } })], address: {}, payment_method: "upi" }))
+            .rejects.toMatchObject({ statusCode: 400 });
+          expect(calls.some((c) => c.method === "insert")).toBe(false);
+        });
+
+        it("drops unknown proof paths and clamps placement values", async () => {
+          fresh();
+          await initiateCheckout({
+            cart: [studioItem({ front: { mode: "text", text: "Hi", proof: "proofs/../x.png", scale: 9, offset: -9 } })],
+            address: {}, payment_method: "upi",
+          });
+          expect(insertedOrder().meta.custom_designs[0].design.sides.front).toMatchObject({ proof: null, scale: 1.5, offset: -1 });
+        });
+      });
+
+      it("limits Cashfree to the chosen payment method, and shows all methods otherwise", async () => {
+        resetSupabaseMock({ product_variants: [{ data: [VARIANT], error: null }], products: [DB_PRODUCT], orders: [{ data: null, error: null }], order_items: [{ data: null, error: null }] });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+        await initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "upi", pay_with: "upi" });
+        expect(createPaymentOrder).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethods: "upi" }));
+        expect(insertedOrder().meta).toMatchObject({ pay_with: "upi" });
+
+        resetSupabaseMock({ product_variants: [{ data: [VARIANT], error: null }], products: [DB_PRODUCT], orders: [{ data: null, error: null }], order_items: [{ data: null, error: null }] });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_2" });
+        await initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "card", pay_with: "bitcoin" });
+        expect(createPaymentOrder).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethods: undefined }));
+      });
+
       it("rejects a custom tee with no options and a price the customiser can't produce", async () => {
         resetSupabaseMock({});
         await expect(
