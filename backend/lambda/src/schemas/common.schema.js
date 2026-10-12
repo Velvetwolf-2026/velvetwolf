@@ -81,3 +81,29 @@ export const bulkOrderSchema = z.object({
     .trim(),
   images: z.array(z.string()).optional(),
 });
+
+// Saved delivery address. Same field names as the checkout address form, so a
+// saved address fills the form directly.
+export const addressSchema = z.object({
+  label: z.string().trim().max(40, "Label must be 40 characters or fewer").optional().default(""),
+  name: z.string({ required_error: "Name is required" }).trim().min(1, "Name is required").max(100),
+  phone: z
+    .string({ required_error: "Phone is required" })
+    .transform((v) => v.replace(/\D/g, "").slice(-10))
+    .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a valid 10-digit Indian mobile number"),
+  address: z.string({ required_error: "Address is required" }).trim().min(5, "Address is too short").max(300),
+  city: z.string({ required_error: "City is required" }).trim().min(1, "City is required").max(100),
+  district: z.string().trim().max(100).optional().default(""),
+  state: z.string({ required_error: "State is required" }).trim().min(1, "State is required").max(100),
+  pincode: z
+    .string({ required_error: "PIN code is required" })
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => /^\d{6}$/.test(v), "Enter a valid 6-digit PIN code"),
+  isDefault: z.boolean().optional().default(false),
+});
+
+// Deleting an account must be typed out, so a mis-click (or a forged
+// request) can't do it.
+export const deleteAccountSchema = z.object({
+  confirm: z.literal("DELETE", { errorMap: () => ({ message: "Type DELETE to confirm." }) }),
+});

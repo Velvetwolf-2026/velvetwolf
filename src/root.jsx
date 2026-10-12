@@ -23,6 +23,7 @@ import Toast from "./velvetwolf/components/Toast";
 import { trackAddToCart } from "./velvetwolf/utils/analytics";
 import AiFashionAssistant from "./velvetwolf/components/AiFashionAssistant";
 import SilkBackground from "./velvetwolf/components/SilkBackground";
+import { isGalleryPath } from "./velvetwolf/gallery/galleryContext";
 import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 import MetaPixel from "./velvetwolf/components/MetaPixel";
 
@@ -231,7 +232,7 @@ export default function VelvetWolfRoot() {
       trackorder: "/track-order",
       login: "/login",
       signup: "/signup",
-      forgetpassword: "/forget-password",
+      forgetpassword: "/login",
       admin: "/admin"
     };
     const path = paths[nextPage] || "/";
@@ -552,7 +553,8 @@ export default function VelvetWolfRoot() {
         navigate("/account");
       });
     } else if (resetToken) {
-      navigate(`/forget-password?reset_token=${resetToken}`);
+      // Password resets are gone (sign-in is code-only): old links just sign in.
+      navigate("/login");
     } else if (authError) {
       showToast(decodeURIComponent(authError), "info");
       navigate(authMode === "signup" ? "/signup" : "/login");
@@ -643,8 +645,9 @@ export default function VelvetWolfRoot() {
     <LanguageProvider>
       <AppContext.Provider value={ctx}>
         <MetaPixel />
-        {/* Ambient silk cloth behind the whole site + eased momentum scroll */}
-        <SilkBackground />
+        {/* Ambient silk cloth behind the whole site + eased momentum scroll.
+            The gallery routes (home, shop) draw their own 3D hall instead. */}
+        {!isGalleryPath(location.pathname) && <SilkBackground />}
         <SmoothScroll />
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

@@ -83,71 +83,60 @@ describe("checkout.service", () => {
         product_variants: [{ data: [{ ...VARIANT, stock_qty: 0 }], error: null }],
       });
       await expect(
-        initiateCheckout({ cart: [CART_ITEM], address: {}, total_amount: 1299, subtotal: 1299, shipping_amount: 0, tax_amount: 0, payment_method: "cod" })
+        initiateCheckout({ cart: [CART_ITEM], address: {}, total_amount: 1299, subtotal: 1299, payment_method: "card" })
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    it("confirms a COD order immediately: creates it, decrements stock, emails, and pushes to Shiprocket — without touching the payment gateway", async () => {
-      const createdOrder = { id: "order-1", user_id: "user-1", payment_method: "cod", shipping_address: { email: "a@b.com", name: "Alex Guest" } };
-      resetSupabaseMock({
-        product_variants: [
-          { data: [VARIANT], error: null }, // stock check in initiateCheckout
-          { data: [VARIANT], error: null }, // stock decrement lookup in confirmOrder
-        ],
-        products: [DB_PRODUCT],
-        orders: [
-          { data: null, error: null }, // insert
-          { data: createdOrder, error: null }, // select in confirmOrder
-        ],
-        order_items: [
-          { data: null, error: null }, // insert
-          { data: [{ product_id: CART_ITEM.id, size: "M", color: "Black", quantity: 1, products: {} }], error: null }, // select in confirmOrder
-        ],
-        cart_items: [{ data: null, error: null }],
-      });
-
-      const result = await initiateCheckout({
-        user_id: "user-1", cart: [CART_ITEM], address: { email: "a@b.com" },
-        total_amount: 1299, subtotal: 1299, shipping_amount: 0, tax_amount: 0, payment_method: "cod",
-      });
-
-      expect(result).toMatchObject({ success: true, method: "cod" });
+    it.each(["cod", "COD"])("rejects Cash on Delivery (%s) for new orders before creating anything", async (method) => {
+      resetSupabaseMock({});
+      await expect(
+        initiateCheckout({ cart: [CART_ITEM], address: { email: "a@b.com" }, payment_method: method })
+      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringMatching(/Cash on delivery is no longer available/) });
+      expect(calls.length).toBe(0);
       expect(createPaymentOrder).not.toHaveBeenCalled();
-      expect(sendEmail).toHaveBeenCalledTimes(1);
-      expect(createShiprocketOrder).toHaveBeenCalledWith(expect.any(String));
-      // Stock is taken atomically in the DB, not via read-then-write
-      expect(supabaseAdmin.rpc).toHaveBeenCalledWith("decrement_variant_stock", { p_variant_id: VARIANT.id, p_qty: CART_ITEM.qty });
-      expect(calls.some((c) => c.table === "product_variants" && c.method === "update")).toBe(false);
     });
 
+    // Paid orders are confirmed through verifyCheckout (return page or webhook):
+    // that decrements stock, emails and pushes to Shiprocket.
     describe("stock decrement on confirmation", () => {
-      const confirmCod = async (rpcResult, { variant = VARIANT } = {}) => {
+      const confirmPaid = async (rpcResult) => {
         resetSupabaseMock({
-          product_variants: [{ data: [variant], error: null }, { data: [variant], error: null }],
-          products: [DB_PRODUCT],
-          orders: [{ data: null, error: null }, { data: { id: "order-1", user_id: null, shipping_address: { email: "a@b.com", name: "Alex Guest" } }, error: null }],
-          order_items: [{ data: null, error: null }, { data: [{ product_id: CART_ITEM.id, product_name: "Tee", size: "M", color: "Black", quantity: 1, products: {} }], error: null }],
+          orders: [
+            { data: [{ id: "order-1" }], error: null }, // pending -> confirmed claimed
+            { data: { id: "order-1", user_id: null, shipping_address: { email: "a@b.com", name: "Alex Guest" } }, error: null },
+          ],
+          order_items: [{ data: [{ product_id: CART_ITEM.id, product_name: "Tee", size: "M", color: "Black", quantity: 1, products: {} }], error: null }],
+          product_variants: [{ data: [VARIANT], error: null }],
         });
         supabaseAdmin.rpc.mockImplementation((fn) =>
           Promise.resolve(fn === "decrement_variant_stock" ? rpcResult : { data: null, error: null }));
-        await initiateCheckout({ cart: [CART_ITEM], address: { email: "a@b.com" }, payment_method: "cod" });
+        verifyPayment.mockResolvedValueOnce([{ payment_status: "SUCCESS" }]);
+        await verifyCheckout("order-1");
       };
 
+      it("takes stock atomically, emails and pushes to Shiprocket", async () => {
+        await confirmPaid({ data: true, error: null });
+        expect(supabaseAdmin.rpc).toHaveBeenCalledWith("decrement_variant_stock", { p_variant_id: VARIANT.id, p_qty: CART_ITEM.qty });
+        expect(calls.some((c) => c.table === "product_variants" && c.method === "update")).toBe(false);
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        expect(createShiprocketOrder).toHaveBeenCalledWith("order-1");
+      });
+
       it("flags the order in the audit log when stock ran out before confirmation (oversold)", async () => {
-        await confirmCod({ data: false, error: null });
+        await confirmPaid({ data: false, error: null });
         const audit = calls.find((c) => c.table === "audit_logs" && c.method === "insert");
         expect(audit.payload).toMatchObject({ action: "order.oversold", resource: "orders", resource_id: "order-1" });
         expect(sendEmail).toHaveBeenCalledTimes(1); // the paid order is still confirmed
       });
 
       it("falls back to the previous update when the migration hasn't run yet", async () => {
-        await confirmCod({ data: null, error: { code: "PGRST202", message: "function not found" } });
+        await confirmPaid({ data: null, error: { code: "PGRST202", message: "function not found" } });
         const update = calls.find((c) => c.table === "product_variants" && c.method === "update");
         expect(update.payload.stock_qty).toBe(VARIANT.stock_qty - CART_ITEM.qty);
       });
 
       it("does not flag anything for a normal decrement", async () => {
-        await confirmCod({ data: true, error: null });
+        await confirmPaid({ data: true, error: null });
         expect(calls.some((c) => c.table === "audit_logs")).toBe(false);
       });
     });
@@ -206,12 +195,42 @@ describe("checkout.service", () => {
           total_amount: 1, subtotal: 1, shipping_amount: 0, tax_amount: 0, payment_method: "card",
         });
 
-        // 1299 subtotal (< 1999) -> 149 shipping, round(1299 * 0.18) = 234 tax
-        expect(insertedOrder()).toMatchObject({ subtotal: 1299, shipping_amount: 149, tax_amount: 234, total_amount: 1682 });
-        expect(createPaymentOrder).toHaveBeenCalledWith(expect.objectContaining({ amount: 1682 }));
+        // Standard delivery is free; round(1299 * 0.18) = 234 tax
+        expect(insertedOrder()).toMatchObject({ subtotal: 1299, shipping_amount: 0, tax_amount: 234, total_amount: 1533, status: "pending" });
+        expect(insertedOrder().meta).toMatchObject({ delivery: "standard" });
+        expect(createPaymentOrder).toHaveBeenCalledWith(expect.objectContaining({ amount: 1533 }));
       });
 
-      it("gives free shipping at or above the threshold", async () => {
+      it("charges ₹149 for Express delivery and records the choice", async () => {
+        resetSupabaseMock({
+          product_variants: [{ data: [VARIANT], error: null }],
+          products: [DB_PRODUCT],
+          orders: [{ data: null, error: null }],
+          order_items: [{ data: null, error: null }],
+        });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+
+        await initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "upi", delivery: "express" });
+
+        expect(insertedOrder()).toMatchObject({ subtotal: 1299, shipping_amount: 149, tax_amount: 234, total_amount: 1682 });
+        expect(insertedOrder().meta).toMatchObject({ delivery: "express" });
+      });
+
+      it.each([undefined, "overnight", "", 0])("treats an unknown delivery value (%s) as free Standard", async (delivery) => {
+        resetSupabaseMock({
+          product_variants: [{ data: [VARIANT], error: null }],
+          products: [DB_PRODUCT],
+          orders: [{ data: null, error: null }],
+          order_items: [{ data: null, error: null }],
+        });
+        createPaymentOrder.mockResolvedValueOnce({ payment_session_id: "sess_1" });
+
+        await initiateCheckout({ cart: [CART_ITEM], address: {}, payment_method: "card", delivery, shipping_amount: 999 });
+
+        expect(insertedOrder()).toMatchObject({ shipping_amount: 0, total_amount: 1533 });
+      });
+
+      it("keeps Standard delivery free on larger orders", async () => {
         resetSupabaseMock({
           product_variants: [{ data: [VARIANT], error: null }],
           products: [{ data: { price: 1999 }, error: null }],

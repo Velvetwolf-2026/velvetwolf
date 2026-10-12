@@ -20,7 +20,7 @@ export default function TermsPage() {
         </Sec>
 
         <Sec title="3. PRICING & PAYMENT">
-          <Ul items={["All prices are in Indian Rupees (₹) inclusive of GST unless stated otherwise.","Prices are subject to change without notice. Orders are charged at checkout price.","We accept UPI, credit/debit cards, net banking, and EMI via Razorpay.","In case of pricing errors, we may cancel orders and issue a full refund.","COD available at select pin codes with an additional ₹50 handling fee."]} />
+          <Ul items={["All prices are in Indian Rupees (₹) inclusive of GST unless stated otherwise.","Prices are subject to change without notice. Orders are charged at checkout price.","We accept UPI, credit/debit cards, net banking, and EMI via Razorpay.","In case of pricing errors, we may cancel orders and issue a full refund.","All orders are prepaid. Cash on Delivery is not available."]} />
         </Sec>
 
         <Sec title="4. ORDER CONFIRMATION">
