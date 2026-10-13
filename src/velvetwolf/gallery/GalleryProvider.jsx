@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GalleryContext } from "./galleryContext";
 import "./gallery.css";
+import "./gallery-pages.css";
 
 // Silhouette shown while the 3D hall loads (and instead of it without WebGL).
 // Same outline as the 3D tee, from garment.outlineSvgPath(), pre-rendered here so

@@ -99,12 +99,15 @@ export async function mergeGuestCart(userId) {
       },
       body: JSON.stringify({
         userId,
-        items: guestCart
+        // Custom (Studio) tees have no product row; they stay in this browser.
+        items: guestCart.filter((i) => !i.isCustom)
       }),
     });
 
     if (response.ok) {
-      localStorage.removeItem('vw_guest_cart');
+      const custom = guestCart.filter((i) => i.isCustom);
+      if (custom.length) localStorage.setItem('vw_guest_cart', JSON.stringify(custom));
+      else localStorage.removeItem('vw_guest_cart');
     }
   } catch (err) {
     console.error('[mergeGuestCart]', err.message);

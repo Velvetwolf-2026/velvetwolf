@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { createPaymentOrder, verifyPayment, getCashfreeCheckoutMode } from "./cashfree.js";
+import { checkStudioDesign } from "./studio.service.js";
 import { ApiError, logError } from "../utils/http.js";
 import { sendEmail } from "../config/smtp.js";
 import { buildOrderEmail } from "../config/order-template.js";
@@ -50,6 +51,13 @@ export function calculateShipping(delivery) {
 export function calculateTax(subtotal) {
   return Math.round(subtotal * TAX_RATE);
 }
+
+// The method chosen at checkout limits what Cashfree's page offers. Anything
+// else (older clients) shows every method.
+const PAY_WITH = { upi: "upi", card: "cc,dc,ccc,ppc", netbanking: "nb", wallet: "app" };
+export const normalizePayWith = (v) => (Object.prototype.hasOwnProperty.call(PAY_WITH, v) ? v : null);
+
+const isStudioItem = (item) => item?.customMeta?.kind === "studio";
 
 const isCustomItem = (item) => item?.isCustom === true || String(item?.id || "").startsWith("custom-");
 
@@ -313,7 +321,7 @@ async function confirmOrder(orderId) {
   }
 }
 
-export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery }) {
+export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with }) {
   if (!Array.isArray(cart) || cart.length === 0) throw new ApiError(400, "Cart is empty");
   if (!address || typeof address !== "object") throw new ApiError(400, "Shipping address is required");
   // Prepaid only. COD orders placed before this change are unaffected: they
@@ -322,10 +330,12 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     throw new ApiError(400, "Cash on delivery is no longer available. Please pay online (UPI, card, netbanking or wallet).");
   }
   const deliverySpeed = normalizeDelivery(delivery);
+  const payWith = normalizePayWith(pay_with);
 
   // 1. Validate stock and verify prices for all items directly from the database
   let verifiedSubtotal = 0;
   const verifiedOrderItems = [];
+  const customDesigns = []; // studio designs, kept with the order for printing
 
   for (const item of cart) {
     const qty = Number(item?.qty);
@@ -365,6 +375,10 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
         throw new ApiError(400, `Item ${item.name} is no longer available. Please remove it from your cart.`);
       }
       unitPrice = Number(dbProduct.price);
+    } else if (isStudioItem(item)) {
+      const { design, price } = checkStudioDesign(item.customMeta);
+      unitPrice = price;
+      customDesigns.push({ line: verifiedOrderItems.length, size: item.size, color: item.color, quantity: qty, design });
     } else {
       unitPrice = getCustomItemUnitPrice(item);
     }
@@ -374,7 +388,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
 
     verifiedOrderItems.push({
       product_id: isValidUuid(item.id) ? item.id : null,
-      product_name: item.name,
+      product_name: String(item.name || "Item").slice(0, 200),
       size: item.size,
       color: item.color,
       quantity: qty,
@@ -426,7 +440,12 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     coupon_code: couponCode || null,
     discount_amount: Number(discountAmount.toFixed(2)),
     // delivery speed kept with the order (no separate column needed)
-    meta: { ...(meta || {}), delivery: deliverySpeed },
+    meta: {
+      ...(meta || {}),
+      delivery: deliverySpeed,
+      ...(payWith ? { pay_with: payWith } : {}),
+      ...(customDesigns.length ? { custom_designs: customDesigns } : {}),
+    },
   });
 
   if (orderError) {
@@ -463,7 +482,8 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
       customerId: customerId,
       customerPhone: phone,
       customerEmail: email,
-      customerName: name
+      customerName: name,
+      paymentMethods: payWith ? PAY_WITH[payWith] : undefined,
     });
 
     return { 

@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { buildKit } from './garment.js';
 import { knitTexture } from './textures.js';
-import { createPrintLibrary } from './prints.js';
+import { createPrintLibrary, DESIGNS } from './prints.js';
 import { buildWorld, TEE_Y } from './world.js';
 import { Rig, resolve, lerpPose, dwellEase, layoutOf } from './rig.js';
 import { createStages } from './stages.js';
@@ -77,10 +77,12 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     const cw = COLORWAYS[colorId || p.color];
     garment.setColor(cw.hex, immediate);
     garment.setInk(cw.ink, immediate);
-    garment.setPrint('front', prints.get(p.front));
-    garment.setPrint('back', prints.get(p.back));
+    const frontD = DESIGNS[p?.front];
+    const backD = DESIGNS[p?.back];
+    garment.setPrint('front', prints.get(p?.front), { fullColor: Boolean(frontD?.fullColor) });
+    garment.setPrint('back', prints.get(p?.back), { fullColor: Boolean(backD?.fullColor) });
   }
-  dress(B.hero.garment, 'nocturne', 'noir');
+  dress(B.hero.garment, 'nocturne', 'bone');
   dress(B.color.garment, 'essential', 'noir');
   dress(B.craft.garment, 'silence', 'bone');
   // Quiet Hours: framed photographs hang where the drop tees used to float.

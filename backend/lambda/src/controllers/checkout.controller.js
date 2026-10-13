@@ -3,12 +3,13 @@ import { jsonResponse, getClientIp, logInfo, logWarn } from "../utils/http.js";
 import { verifyWebhookSignature } from "../services/cashfree.js";
 import { getOptionalAuth } from "../middleware/auth.js";
 import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
+import * as studioService from "../services/studio.service.js";
 
 export async function createSession(body, event) {
   // Can be called by guest or logged in user. The order owner comes from the
   // verified session token only — never from the request body, otherwise
   // anyone could attach an order to another customer's account.
-  const { cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery } = body;
+  const { cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with } = body;
   const authUser = await getOptionalAuth(event);
 
   // Meta CAPI matching data. The IP comes from getClientIp (API Gateway's
@@ -28,6 +29,7 @@ export async function createSession(body, event) {
     payment_method,
     couponCode,
     delivery,
+    pay_with,
     meta: {
       ...(meta || {}),
       ip,
@@ -120,3 +122,16 @@ export async function validateCoupon(body, event) {
 
 // 20 failed coupon attempts per 15 minutes, then a 15-minute block.
 const COUPON_RATE_LIMIT = { max: 20, windowSecs: 15 * 60, blockSecs: 15 * 60 };
+
+// One-time upload link for Studio artwork (guests too). Limited per visitor IP
+// so the bucket can't be filled by a script.
+export async function studioUploadUrl(body, event) {
+  const rateKey = `studio-upload:${getClientIp(event) || "unknown"}`;
+  await assertNotRateLimited(rateKey, STUDIO_UPLOAD_RATE_LIMIT);
+  await recordRateLimitedAttempt(rateKey);
+  const result = await studioService.createUploadUrl({ kind: body?.kind, contentType: body?.contentType });
+  return jsonResponse(200, result, {}, event);
+}
+
+// 60 uploads (artwork + proofs) per hour, then a 30-minute block.
+const STUDIO_UPLOAD_RATE_LIMIT = { max: 60, windowSecs: 60 * 60, blockSecs: 30 * 60 };

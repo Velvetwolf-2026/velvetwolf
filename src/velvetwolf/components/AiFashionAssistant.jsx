@@ -99,7 +99,7 @@ export default function AiFashionAssistant() {
   };
 
   return (
-    <div style={{ position: "fixed", bottom: isMobile ? 76 : 24, right: isMobile ? 16 : 24, zIndex: 900 }}>
+    <div className="vw-ai" style={{ position: "fixed", bottom: isMobile ? 76 : 24, right: isMobile ? 16 : 24, zIndex: 900 }}>
       {/* Chat bubble button */}
       {!isOpen && (
         <button
@@ -108,14 +108,14 @@ export default function AiFashionAssistant() {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, var(--gold), var(--gold-light))",
+            background: "var(--gold)",
             color: "var(--obsidian)",
             border: "none",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 20px rgba(201,168,76,0.35), 0 0 10px rgba(201,168,76,0.2)",
+            boxShadow: "0 6px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(232,228,218,0.18)",
             transition: "all 0.3s ease"
           }}
           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.06)"}
@@ -133,9 +133,9 @@ export default function AiFashionAssistant() {
             height: isMobile ? "min(500px, 70vh)" : 500,
             background: "rgba(10, 10, 10, 0.98)",
             backdropFilter: "blur(20px)",
-            border: "1px solid var(--gold)",
-            borderRadius: 4,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.8), 0 0 25px rgba(201,168,76,0.15)",
+            border: "1px solid var(--smoke)",
+            borderRadius: 2,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",

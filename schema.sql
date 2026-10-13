@@ -532,3 +532,17 @@ CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON public.addresses(user_id);
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow service role all addresses" ON public.addresses;
 CREATE POLICY "Allow service role all addresses" ON public.addresses FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- MIGRATION: STUDIO ARTWORK STORAGE
+-- ==========================================
+-- Private bucket for Studio (custom tee) uploads and print proofs. The browser
+-- uploads with one-time signed URLs from POST /checkout/studio-upload; only the
+-- backend (service role) can read the files, and admins get short-lived links.
+-- The size cap and file types are enforced by storage itself.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('studio-artwork', 'studio-artwork', false, 10485760, ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
+ON CONFLICT (id) DO UPDATE
+  SET public = false,
+      file_size_limit = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;

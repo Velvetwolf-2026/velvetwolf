@@ -10,6 +10,9 @@ export async function handleCheckoutRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/checkout/webhook")
     return checkoutController.paymentWebhook(event);
 
+  if (method === "POST" && route === "/checkout/studio-upload")
+    return checkoutController.studioUploadUrl(body, event);
+
   if (method === "POST" && route === "/checkout/coupon/validate")
     return checkoutController.validateCoupon(body, event);
 

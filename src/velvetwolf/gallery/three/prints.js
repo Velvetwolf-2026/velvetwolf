@@ -75,21 +75,27 @@ export const DESIGNS = {
       ctx.closePath(); ctx.stroke();
     }
   } },
-  nocturne: { side: 'back', label: 'Crescent', draw(ctx, u) {
-    const cx = u.x(0), cy = u.y(0.3), r = u.s(0.22);
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath(); ctx.arc(cx + u.s(0.085), cy - u.s(0.055), r * 0.93, 0, Math.PI * 2); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-    line(ctx, 'NOCTURNE', 300, DISPLAY, cx, u.y(-0.04), u.s(0.46), 0.42);
-    line(ctx, 'VELVETWOLF  ·  DROP 01', 600, BODY, cx, u.y(-0.12), u.s(0.26), 0.34);
-  } },
+  nocturne: {
+    side: 'back',
+    label: 'Spider-Man',
+    fullColor: true,
+    draw(ctx, u, onUpdate) {
+      const img = getSp1Img(onUpdate);
+      if (img && img.complete && img.naturalWidth > 0) {
+        const cx = u.x(0);
+        const cy = u.y(0.16);
+        const h = u.s(0.96);
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const w = h * aspect;
+        ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+      }
+    },
+  },
   statement: { side: 'back', label: 'Statement', draw(ctx, u) {
     const size = fitText(ctx, 'STATEMENTS', 300, DISPLAY, u.s(0.62), 0.12);
     ctx.textBaseline = 'middle';
     drawTracked(ctx, 'STATEMENTS', u.x(0), u.y(0.56), 0.12 * size);
     drawTracked(ctx, 'IN SILENCE', u.x(0), u.y(0.56) + size * 1.12, 0.12 * size);
-    line(ctx, 'VELVETWOLF', 600, BODY, u.x(0), u.y(0.56) + size * 2.3, u.s(0.14), 0.34);
   } },
   note: { side: 'front', label: 'Note', draw(ctx, u) {
     line(ctx, 'NOTE', 400, DISPLAY, u.x(0), u.y(0.54), u.s(0.12), 0.3);
@@ -97,6 +103,27 @@ export const DESIGNS = {
     line(ctx, 'DROP 02', 600, BODY, u.x(0), u.y(0.475), u.s(0.07), 0.34);
   } },
 };
+
+let sp1Img = null;
+function getSp1Img(onLoad) {
+  if (typeof Image === 'undefined') return null;
+  if (!sp1Img) {
+    sp1Img = new Image();
+    sp1Img.crossOrigin = 'anonymous';
+    // Use transparent cutout for crisp, seamless print on the fabric, with sp1.webp as fallback
+    sp1Img.src = '/sp1_nobg.png';
+    sp1Img.onerror = () => {
+      if (sp1Img.src.endsWith('/sp1_nobg.png')) {
+        sp1Img.src = '/sp1.webp';
+      }
+    };
+  }
+  if (sp1Img.complete && sp1Img.naturalWidth > 0) return sp1Img;
+  if (onLoad) {
+    sp1Img.addEventListener('load', onLoad, { once: true });
+  }
+  return sp1Img;
+}
 
 function canvasTexture(canvas, aniso) {
   const t = new THREE.CanvasTexture(canvas);
@@ -114,7 +141,12 @@ export function createPrintLibrary(aniso = 8) {
     const ctx = entry.canvas.getContext('2d');
     ctx.clearRect(0, 0, entry.canvas.width, entry.canvas.height);
     ctx.fillStyle = ctx.strokeStyle = '#fff';
-    d.draw(ctx, U(d.side));
+    d.draw(ctx, U(d.side), () => {
+      ctx.clearRect(0, 0, entry.canvas.width, entry.canvas.height);
+      ctx.fillStyle = ctx.strokeStyle = '#fff';
+      d.draw(ctx, U(d.side));
+      entry.texture.needsUpdate = true;
+    });
     entry.texture.needsUpdate = true;
   }
   return {

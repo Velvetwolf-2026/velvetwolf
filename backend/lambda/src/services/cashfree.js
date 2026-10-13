@@ -67,6 +67,7 @@ function getCashfree() {
  * @param {string} orderData.customerEmail - Customer email address
  * @param {string} orderData.customerName - Customer name
  * @param {string} [orderData.currency="INR"] - Currency (defaults to INR)
+ * @param {string} [orderData.paymentMethods] - Cashfree payment_methods filter, e.g. "upi"
  * @returns {Promise<Object>} Cashfree order response
  */
 export const createPaymentOrder = async (orderData) => {
@@ -90,6 +91,8 @@ export const createPaymentOrder = async (orderData) => {
     // customer closes the tab before returning to the site.
     const notifyUrl = getWebhookNotifyUrl();
     if (notifyUrl) request.order_meta.notify_url = notifyUrl;
+    // Limit Cashfree's page to the method chosen at checkout (e.g. "upi").
+    if (orderData.paymentMethods) request.order_meta.payment_methods = orderData.paymentMethods;
 
     const cashfree = getCashfree();
     // PGCreateOrder is an instance method in v5 SDK

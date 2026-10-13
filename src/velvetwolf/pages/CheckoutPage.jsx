@@ -1,833 +1,470 @@
-import { useState, useContext, useEffect, useRef } from "react";
+// Checkout in the gallery style (prototype ui/checkout.js), on the real
+// backend: POST /checkout/create re-prices the cart and opens a Cashfree
+// session; Cashfree returns to /payment-status, which confirms the payment.
+// Guest checkout by default; signing in only fills in saved addresses.
+import { useState, useContext, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation } from "react-router";
 import { AppContext } from "./AppContext";
-import { useLanguage } from "./LanguageContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout } from "../utils/analytics";
-import { getSupabaseLogoUrl } from "../utils/supabase";
 import { getMetaTrackingData } from "../utils/metaPixel";
+import { money, cartThumb } from "../gallery/galleryProducts";
+
+// Must match DELIVERY_OPTIONS in the backend checkout service, which is what
+// actually charges the customer.
+const DELIVERY = [
+  { id: "standard", label: "Standard", fee: 0, eta: "4 to 7 working days" },
+  { id: "express", label: "Express", fee: 149, eta: "2 to 4 working days" },
+];
+// Cashfree shows only the chosen method (backend PAY_WITH).
+const METHODS = [
+  { id: "upi", label: "UPI", hint: "Any UPI app, or scan a QR code" },
+  { id: "card", label: "Card", hint: "Debit or credit card" },
+  { id: "netbanking", label: "Netbanking", hint: "All major Indian banks" },
+  { id: "wallet", label: "Wallet", hint: "Paytm, PhonePe, Amazon Pay and others" },
+];
+const TAX_RATE = 0.18; // backend calculateTax
+
+const STATES = ["Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand",
+  "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
+
+const valid = {
+  email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v).trim()),
+  phone: (v) => /^[6-9]\d{9}$/.test(cleanPhone(v)),
+  pin: (v) => /^[1-9]\d{5}$/.test(String(v).trim()),
+};
+const cleanPhone = (v) => String(v || "").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
 
 function loadCashfreeScript() {
   return new Promise((resolve, reject) => {
-    if (window.Cashfree) {
-      resolve(window.Cashfree);
-      return;
-    }
+    if (window.Cashfree) return resolve(window.Cashfree);
     const script = document.createElement("script");
     script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
     script.async = true;
-    script.onload = () => {
-      if (window.Cashfree) resolve(window.Cashfree);
-      else reject(new Error("Cashfree SDK failed to initialize"));
-    };
-    script.onerror = () => reject(new Error("Failed to load Cashfree SDK script"));
+    script.onload = () => (window.Cashfree ? resolve(window.Cashfree) : reject(new Error("Cashfree didn't load. Try again.")));
+    script.onerror = () => reject(new Error("Cashfree didn't load. Check your connection and try again."));
     document.body.appendChild(script);
   });
 }
 
-// Must match DELIVERY_OPTIONS in the backend checkout service, which is what
-// actually charges the customer.
-const DELIVERY_OPTIONS = [
-  { id: "standard", label: "STANDARD", eta: "4 to 7 working days", fee: 0 },
-  { id: "express", label: "EXPRESS", eta: "2 to 4 working days", fee: 149 },
-];
+const addrLines = (a) => (
+  <>
+    <b>{a.name}</b><br />
+    {a.address}<br />
+    {a.city}{a.district && a.district !== a.city ? `, ${a.district}` : ""}, {a.state} {a.pincode}
+    {a.phone ? <><br />+91 {a.phone}</> : null}
+  </>
+);
 
-const ADDRESS_FIELDS = ["name", "phone", "address", "city", "district", "state", "pincode"];
+function Field({ id, label, value, onChange, error, hint, prefix, required = true, type = "text", ...rest }) {
+  const describedBy = [hint ? `${id}-hint` : "", error ? `${id}-err` : ""].filter(Boolean).join(" ") || undefined;
+  return (
+    <div className="form-row">
+      <label htmlFor={id}>{label}{!required && <span className="opt">optional</span>}</label>
+      <div className={`input-wrap${prefix ? " has-prefix" : ""}`}>
+        {prefix && <span className="input-prefix" aria-hidden="true">{prefix}</span>}
+        <input id={id} name={id} type={type} value={value} onChange={onChange} required={required}
+          aria-invalid={error ? "true" : undefined} aria-describedby={describedBy} {...rest} />
+      </div>
+      {hint && <p className="field-hint" id={`${id}-hint`}>{hint}</p>}
+      {error && <p className="field-error" id={`${id}-err`}>{error}</p>}
+    </div>
+  );
+}
+
+const blankForm = () => ({
+  email: "", phone: "", whatsapp: true,
+  name: "", pincode: "", city: "", district: "", state: "", line1: "", line2: "",
+  addressId: "", save: true, delivery: "standard", method: "upi",
+});
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, user, showToast } = useContext(AppContext);
-  const { t } = useLanguage();
-  const [step] = useState(1);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const fieldRefs = useRef({});
-  const [showExpressModal, setShowExpressModal] = useState(null); // 'upi', 'gpay', 'applepay'
-  const [expressUpiId, setExpressUpiId] = useState("");
-  const [expressProcessing, setExpressProcessing] = useState(false);
-  const [address, setAddress] = useState({
-    name: user?.full_name || user?.name || "",
-    phone: user?.phone || "",
-    email: user?.email || "",
-    address: "", city: "", district: "", state: "", pincode: ""
-  });
-  // Prepaid only: every order goes through Cashfree (UPI, card, netbanking
-  // or wallet). Cash on Delivery is no longer offered.
-  const paymentMethod = "card";
-  const [delivery, setDelivery] = useState("standard");
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [saveAddress, setSaveAddress] = useState(false);
-  const [whatsappUpdates, setWhatsappUpdates] = useState(true);
-
-  const [processing, setProcessing] = useState(false);
-  const [pincodeLocations, setPincodeLocations] = useState([]);
-  const [loadingPincode, setLoadingPincode] = useState(false);
-
+  const { cart, cartTotal, user, showToast, setCartOpen } = useContext(AppContext);
+  const location = useLocation();
+  const [form, setForm] = useState(blankForm);
+  const [errors, setErrors] = useState({});
+  const [banner, setBanner] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState([]);
+  const [pinBusy, setPinBusy] = useState(false);
   const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [coupon, setCoupon] = useState(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const bannerRef = useRef(null);
 
-  const shipping = DELIVERY_OPTIONS.find(o => o.id === delivery)?.fee ?? 0;
-  const tax = Math.round(cartTotal * 0.18);
-
-  let discount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discount_type === "percentage") {
-      discount = Math.round((cartTotal * Number(appliedCoupon.discount_value)) / 100);
-    } else if (appliedCoupon.discount_type === "fixed") {
-      discount = Number(appliedCoupon.discount_value);
-    }
-    discount = Math.min(discount, cartTotal);
-  }
-
-  const total = Math.max(0, cartTotal - discount + shipping + tax);
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const clearErr = (id) => setErrors((e) => (e[id] ? { ...e, [id]: "" } : e));
 
   useEffect(() => {
-    if (cart.length > 0) {
-      trackBeginCheckout(cart, total);
-    }
+    if (cart.length > 0) trackBeginCheckout(cart, cartTotal);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const applySavedAddress = (saved) => {
-    setSelectedAddressId(saved.id);
-    setSaveAddress(false);
-    setPincodeLocations([]);
-    setFieldErrors({});
-    setAddress(a => ({
-      ...a,
-      ...Object.fromEntries(ADDRESS_FIELDS.map(f => [f, saved[f] || ""])),
-    }));
-  };
-
-  // Typing into the form after picking a saved address makes it a new one.
-  const editAddress = (patch) => {
-    setAddress(a => ({ ...a, ...patch }));
-    setSelectedAddressId(null);
-  };
-
-  // Signed-in customers: load saved addresses and prefill the default one.
+  // Signed in: email from the account, saved addresses (default first).
   const signedInId = user?.id || null;
   useEffect(() => {
-    if (!signedInId) return;
+    if (!signedInId) { setSaved([]); setForm((f) => ({ ...f, addressId: "" })); return; }
     let cancelled = false;
+    setForm((f) => ({ ...f, email: f.email || (user?.email?.endsWith("@mobile.velvetwolf.in") ? "" : user?.email || ""), phone: f.phone || cleanPhone(user?.phone) }));
     fetch(apiUrl("/profile/addresses"), { credentials: "include" })
-      .then(res => (res.ok ? res.json() : { addresses: [] }))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : { addresses: [] }))
+      .then((data) => {
         if (cancelled) return;
         const list = data.addresses || [];
-        setSavedAddresses(list);
-        const preferred = list.find(a => a.is_default) || list[0];
-        if (preferred) applySavedAddress(preferred);
-        else setSaveAddress(true); // first checkout: offer to remember it
+        setSaved(list);
+        const first = list.find((a) => a.is_default) || list[0];
+        if (first) setForm((f) => ({ ...f, addressId: f.addressId || first.id, phone: f.phone || first.phone }));
       })
       .catch(() => {}); // saved addresses are a convenience; the form still works
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signedInId]);
 
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) return;
-    setValidatingCoupon(true);
+  const accountEmail = user?.email && !user.email.endsWith("@mobile.velvetwolf.in") ? user.email : "";
+  const useNew = !saved.length || form.addressId === "new" || !saved.some((a) => a.id === form.addressId);
+  const chosenSaved = useNew ? null : saved.find((a) => a.id === form.addressId);
+
+  const totals = useMemo(() => {
+    const subtotal = cartTotal;
+    let discount = 0;
+    if (coupon) {
+      discount = coupon.discount_type === "percentage"
+        ? Math.round((subtotal * Number(coupon.discount_value)) / 100)
+        : Number(coupon.discount_value) || 0;
+      discount = Math.min(discount, subtotal);
+    }
+    const ship = DELIVERY.find((d) => d.id === form.delivery) || DELIVERY[0];
+    const tax = Math.round(subtotal * TAX_RATE);
+    return { subtotal, discount, ship, shipping: ship.fee, tax, total: Math.max(0, subtotal - discount + ship.fee + tax) };
+  }, [cartTotal, coupon, form.delivery]);
+
+  // PIN code: fill city, district and state from India Post.
+  const onPin = async (value) => {
+    const pin = value.replace(/\D/g, "").slice(0, 6);
+    set({ pincode: pin });
+    clearErr("co-pin");
+    if (pin.length !== 6) return;
+    setPinBusy(true);
     try {
-      const res = await fetch(apiUrl('/checkout/coupon/validate'), {
-        method: "POST",
-        credentials: 'include',
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponInput, subtotal: cartTotal })
-      });
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Invalid coupon");
-
-      setAppliedCoupon(data);
-      showToast(`Discount applied: ${data.code} ✓`);
-    } catch (err) {
-      showToast(err.message, "error");
-      setAppliedCoupon(null);
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
-
-  const handlePincodeChange = async (e) => {
-    const pin = e.target.value.replace(/\D/g, '').slice(0, 6);
-    editAddress({ pincode: pin });
-
-    if (pin.length === 6) {
-      setLoadingPincode(true);
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-        const data = await res.json();
-        if (data && data[0] && data[0].Status === "Success") {
-          const postOffices = data[0].PostOffice;
-
-          const uniqueLocations = [];
-          const seen = new Set();
-
-          postOffices.forEach(po => {
-            const city = po.Name || "";
-            const district = po.District || "";
-            const state = po.State || "";
-            const key = `${city}-${district}-${state}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              uniqueLocations.push({ city, district, state });
-            }
-          });
-
-          setPincodeLocations(uniqueLocations);
-
-          if (uniqueLocations.length > 0) {
-            setAddress(a => ({
-              ...a,
-              city: uniqueLocations[0].city,
-              district: uniqueLocations[0].district,
-              state: uniqueLocations[0].state
-            }));
-          }
-        } else {
-          setPincodeLocations([]);
-          showToast("Invalid Pincode", "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showToast("Error verifying pincode", "error");
-      } finally {
-        setLoadingPincode(false);
+      const po = data?.[0]?.Status === "Success" ? data[0].PostOffice?.[0] : null;
+      if (po) {
+        setForm((f) => ({ ...f, city: f.city || po.District || po.Name || "", district: po.District || "", state: f.state || po.State || "" }));
+        setErrors((e) => ({ ...e, "co-city": "", "co-state": "" }));
+      } else {
+        setErrors((e) => ({ ...e, "co-pin": "We don't recognise that PIN code. Check it, or fill in the city and state yourself." }));
       }
-    } else {
-      setPincodeLocations([]);
+    } catch {
+      // the lookup is a convenience; the fields can be typed by hand
+    } finally {
+      setPinBusy(false);
     }
   };
 
-  const handleOrder = async () => {
-    setProcessing(true);
-    // Save to session storage for analytics tracking on success
-    sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
-    sessionStorage.setItem("vw_last_checkout_total", String(total));
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponBusy(true);
     try {
-      const metaCookies = getMetaTrackingData();
-      // The backend identifies the customer from the session cookie (not from
-      // the body), so signed-in orders show up under their account.
-      const res = await fetch(apiUrl('/checkout/create'), {
+      const res = await fetch(apiUrl("/checkout/coupon/validate"), {
         method: "POST",
-        credentials: 'include',
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, subtotal: cartTotal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "That code isn't valid.");
+      setCoupon(data);
+      showToast(`${data.code} applied`);
+    } catch (err) {
+      setCoupon(null);
+      showToast(err.message, "error");
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
+  const validate = () => {
+    const e = {};
+    if (!accountEmail && !valid.email(form.email)) e["co-email"] = "Enter an email address like name@example.com.";
+    if (!valid.phone(form.phone)) e["co-phone"] = "Enter a 10-digit Indian mobile number.";
+    if (useNew) {
+      if (form.name.trim().length < 2) e["co-name"] = "Enter the name for the delivery label.";
+      if (!valid.pin(form.pincode)) e["co-pin"] = "Enter a 6-digit PIN code.";
+      if (!form.city.trim()) e["co-city"] = "Enter your city or town.";
+      if (!form.state) e["co-state"] = "Choose a state.";
+      if (form.line1.trim().length < 4) e["co-line1"] = "Enter your house number and street.";
+    }
+    return e;
+  };
+
+  const currentAddress = () => {
+    const phone = cleanPhone(form.phone);
+    const email = accountEmail || form.email.trim();
+    if (!useNew && chosenSaved) {
+      return { name: chosenSaved.name, phone: phone || chosenSaved.phone, email, address: chosenSaved.address, city: chosenSaved.city, district: chosenSaved.district || chosenSaved.city, state: chosenSaved.state, pincode: chosenSaved.pincode };
+    }
+    const line = [form.line1.trim(), form.line2.trim()].filter(Boolean).join(", ");
+    return { name: form.name.trim(), phone, email, address: line, city: form.city.trim(), district: form.district.trim() || form.city.trim(), state: form.state, pincode: form.pincode };
+  };
+
+  const onSubmit = async (ev) => {
+    ev.preventDefault();
+    if (busy) return;
+    const e = validate();
+    setErrors(e);
+    const ids = Object.keys(e);
+    if (ids.length) {
+      setBanner(`Check ${ids.length === 1 ? "the field" : `the ${ids.length} fields`} marked below.`);
+      setTimeout(() => document.getElementById(ids[0])?.focus(), 30);
+      return;
+    }
+    setBanner("");
+    setBusy(true);
+    const address = currentAddress();
+    try {
+      // Remember a new address (opt-in). Never blocks payment.
+      if (user && useNew && form.save) {
+        fetch(apiUrl("/profile/addresses"), {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: address.name, phone: address.phone, address: address.address, city: address.city, district: address.district, state: address.state, pincode: address.pincode }),
+        }).catch(() => {});
+      }
+
+      sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
+      sessionStorage.setItem("vw_last_checkout_total", String(totals.total));
+      const metaCookies = getMetaTrackingData();
+      const res = await fetch(apiUrl("/checkout/create"), {
+        method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
           address,
-          total_amount: total,
-          subtotal: cartTotal,
-          // Ignored by the current backend (it recomputes shipping/tax and reads
-          // the user from the token); kept so an older backend still works
-          // while frontend and Lambda deploys roll out independently.
-          shipping_amount: shipping,
-          tax_amount: tax,
-          payment_method: paymentMethod,
-          delivery,
-          user_id: user?.id,
-          couponCode: appliedCoupon?.code || null,
-          whatsappUpdates,
-          meta: {
-            fbp: metaCookies.fbp,
-            fbc: metaCookies.fbc,
-          }
-        })
+          total_amount: totals.total,
+          subtotal: totals.subtotal,
+          // Ignored by the current backend (it recomputes these); kept so an
+          // older backend still works while deploys roll out.
+          shipping_amount: totals.shipping,
+          tax_amount: totals.tax,
+          payment_method: form.method,
+          pay_with: form.method,
+          delivery: form.delivery,
+          couponCode: coupon?.code || null,
+          whatsappUpdates: form.whatsapp,
+          meta: { fbp: metaCookies.fbp, fbc: metaCookies.fbc },
+        }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "We couldn't start the payment. Nothing was charged. Try again.");
+      if (!data.paymentSessionId) throw new Error("We couldn't start the payment. Nothing was charged. Try again.");
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to initiate checkout");
-
-      // Remember the address for next time (opt-in). Never blocks payment.
-      if (user && saveAddress && !selectedAddressId) {
-        try {
-          await fetch(apiUrl("/profile/addresses"), {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(Object.fromEntries(ADDRESS_FIELDS.map(f => [f, address[f]]))),
-          });
-        } catch (saveErr) {
-          console.error("Could not save address", saveErr);
-        }
-      }
-
-      // Handle Cashfree Payment
-      if (data.paymentSessionId) {
-        // Initialize Cashfree sdk dynamically
-        const Cashfree = await loadCashfreeScript();
-        // The backend reports which Cashfree environment created this
-        // session; the SDK mode must match it.
-        const cashfree = Cashfree({
-          mode: data.cashfreeMode === "production" ? "production" : "sandbox",
-        });
-
-        const checkoutOptions = {
-          paymentSessionId: data.paymentSessionId,
-          redirectTarget: "_self", // Cashfree will redirect back to frontend return_url
-        };
-
-        setTimeout(() => {
-          cashfree.checkout(checkoutOptions);
-        }, 1300);
-      } else {
-        throw new Error("Payment session not received");
-      }
-
+      const Cashfree = await loadCashfreeScript();
+      // The backend says which Cashfree environment created this session.
+      const cashfree = Cashfree({ mode: data.cashfreeMode === "production" ? "production" : "sandbox" });
+      // Cashfree returns to /?order_id=…, which opens /payment-status to confirm.
+      cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: "_self" });
     } catch (err) {
-      showToast(err.message, 'error');
-      setProcessing(false);
+      setBanner(err.message || "Something went wrong. Nothing was charged. Try again.");
+      setBusy(false);
+      setTimeout(() => bannerRef.current?.focus(), 30);
     }
   };
 
-  if (!user && step === 1 && !address.email) {
-    // Optional: prompt guest to enter email first, or just show the address form. We'll show the form.
+  if (!cart.length) {
+    return (
+      <main className="vwg view-page">
+        <div className="page-wrap">
+          <header className="page-head">
+            <p className="eyebrow">Checkout</p>
+            <h1 className="page-title">Your cart is empty</h1>
+            <p className="page-sub">Add a tee and come back here to pay.</p>
+          </header>
+          <div><Link className="btn btn-primary" to="/shop">Browse the shop</Link></div>
+        </div>
+      </main>
+    );
   }
 
-  return (
-    <div style={{ paddingTop: 70, minHeight: "100vh", background: "var(--obsidian)", color: "var(--ivory)" }}>
-
-      {/* ONE-PAGE CHECKOUT GRID */}
-      <div className="vw-checkout-grid" style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 40px" }}>
-
-        {/* LEFT COLUMN: Billing & Details */}
-        <div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, letterSpacing: 3, marginBottom: 40 }}>CHECKOUT</div>
-
-          {/* 1. EXPRESS PAYMENTS */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28, marginBottom: 32 }}>
-            <h3 style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: 2,
-              color: "var(--gold)",
-              marginBottom: 20,
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}>
-              <img src={getSupabaseLogoUrl("/express.png")} alt="Express" style={{ width: 34, height: 34, objectFit: "contain" }} />
-              EXPRESS CHECKOUT
-            </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
-              {/* UPI Express */}
-              <button
-                onClick={() => setShowExpressModal('upi')}
-                style={{
-                  background: "#f5f5f7", // mild white
-                  border: "1px solid rgba(0,0,0,0.05)",
-                  padding: "10px 14px",
-                  height: "44px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "opacity 0.2s"
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
-                onMouseLeave={e => e.currentTarget.style.opacity = 1}
-              >
-                <img src={getSupabaseLogoUrl("/bhimupi.png")} alt="BHIM UPI" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
-              </button>
-
-              {/* Google Pay */}
-              <button
-                onClick={() => setShowExpressModal('gpay')}
-                style={{
-                  background: "#f5f5f7", // mild white
-                  border: "1px solid rgba(0,0,0,0.05)",
-                  padding: "10px 14px",
-                  height: "44px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "opacity 0.2s"
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
-                onMouseLeave={e => e.currentTarget.style.opacity = 1}
-              >
-                <img src={getSupabaseLogoUrl("/gpay.png")} alt="Google Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
-              </button>
-
-              {/* Apple Pay */}
-              <button
-                onClick={() => setShowExpressModal('applepay')}
-                style={{
-                  background: "#f5f5f7", // mild white
-                  border: "1px solid rgba(0,0,0,0.05)",
-                  padding: "10px 14px",
-                  height: "44px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "opacity 0.2s"
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
-                onMouseLeave={e => e.currentTarget.style.opacity = 1}
-              >
-                <img src={getSupabaseLogoUrl("/applepay.png")} alt="Apple Pay" style={{ height: "54px", maxWidth: "100%", objectFit: "contain" }} />
-              </button>
-            </div>
-          </div>
-
-          {/* 2. DELIVERY ADDRESS */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28, marginBottom: 32 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, margin: 0 }}>{t("deliveryAddress")}</h3>
-              {!user && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", background: "rgba(201,168,76,0.1)", padding: "2px 8px" }}>
-                  ✦ GUEST CHECKOUT MODE
-                </span>
-              )}
-            </div>
-
-            {savedAddresses.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", marginBottom: 10 }}>SAVED ADDRESSES</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
-                  {savedAddresses.map(saved => {
-                    const active = selectedAddressId === saved.id;
-                    return (
-                      <button
-                        key={saved.id}
-                        type="button"
-                        onClick={() => applySavedAddress(saved)}
-                        aria-pressed={active}
-                        style={{ textAlign: "left", padding: "12px 14px", cursor: "pointer", background: active ? "rgba(201,168,76,0.08)" : "transparent", border: `1px solid ${active ? "var(--gold)" : "var(--smoke)"}`, color: "var(--ivory)" }}
-                      >
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: active ? "var(--gold)" : "var(--ash)", marginBottom: 4 }}>
-                          {(saved.label || saved.name).toUpperCase()}{saved.is_default ? " · DEFAULT" : ""}
-                        </div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", lineHeight: 1.5 }}>
-                          {saved.address}, {saved.city} {saved.pincode}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <input ref={el => fieldRefs.current.name = el} className="input-dark" placeholder={`${t("fullName")} *`} value={address.name} onChange={e => { editAddress({ name: e.target.value }); setFieldErrors(f => ({ ...f, name: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.name ? "var(--wolf-red)" : undefined }} />
-              <input ref={el => fieldRefs.current.email = el} className="input-dark" placeholder={`${t("emailAddress")} *`} value={address.email} onChange={e => { setAddress(a => ({ ...a, email: e.target.value })); setFieldErrors(f => ({ ...f, email: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.email ? "var(--wolf-red)" : undefined }} />
-              <input ref={el => fieldRefs.current.phone = el} className="input-dark" placeholder={`${t("mobileNumber")} *`} value={address.phone} onChange={e => { editAddress({ phone: e.target.value.replace(/\D/g, '').slice(0, 10) }); setFieldErrors(f => ({ ...f, phone: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.phone ? "var(--wolf-red)" : undefined }} maxLength={10} />
-              <input ref={el => fieldRefs.current.address = el} className="input-dark" placeholder={`${t("addressLine1")} *`} value={address.address} onChange={e => { editAddress({ address: e.target.value }); setFieldErrors(f => ({ ...f, address: false })); }} style={{ gridColumn: "1/-1", borderColor: fieldErrors.address ? "var(--wolf-red)" : undefined }} />
-
-              <div style={{ position: "relative" }}>
-                <input ref={el => fieldRefs.current.pincode = el} className="input-dark" placeholder={`${t("pincode")} *`} value={address.pincode} onChange={e => { handlePincodeChange(e); setFieldErrors(f => ({ ...f, pincode: false })); }} maxLength={6} style={{ width: "100%", borderColor: fieldErrors.pincode ? "var(--wolf-red)" : undefined }} />
-                {loadingPincode && <span style={{ position: "absolute", right: 10, top: 12, fontSize: 12, color: "var(--gold)", fontFamily: "var(--font-mono)" }}>...</span>}
-              </div>
-
-              {pincodeLocations.length >= 1 ? (
-                <select
-                  ref={el => fieldRefs.current.city = el}
-                  className="input-dark"
-                  value={address.city}
-                  onChange={e => {
-                    const loc = pincodeLocations.find(l => l.city === e.target.value);
-                    if (loc) editAddress({ city: loc.city, district: loc.district, state: loc.state });
-                    setFieldErrors(f => ({ ...f, city: false, district: false, state: false }));
-                  }}
-                  style={{ appearance: "auto", WebkitAppearance: "auto", MozAppearance: "auto", borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }}
-                >
-                  <option value="" disabled>SELECT CITY</option>
-                  {pincodeLocations.map((loc, i) => (
-                    <option key={i} value={loc.city}>{loc.city}</option>
-                  ))}
-                </select>
-              ) : (
-                <input ref={el => fieldRefs.current.city = el} className="input-dark" placeholder={`${t("city")} *`} value={address.city} onChange={e => { editAddress({ city: e.target.value }); setFieldErrors(f => ({ ...f, city: false })); }} style={{ borderColor: fieldErrors.city ? "var(--wolf-red)" : undefined }} />
-              )}
-
-              <input ref={el => fieldRefs.current.district = el} className="input-dark" placeholder={`${t("district")} *`} value={address.district} onChange={e => { editAddress({ district: e.target.value }); setFieldErrors(f => ({ ...f, district: false })); }} style={{ borderColor: fieldErrors.district ? "var(--wolf-red)" : undefined }} />
-              <input ref={el => fieldRefs.current.state = el} className="input-dark" placeholder={`${t("state")} *`} value={address.state} onChange={e => { editAddress({ state: e.target.value }); setFieldErrors(f => ({ ...f, state: false })); }} style={{ borderColor: fieldErrors.state ? "var(--wolf-red)" : undefined }} />
-            </div>
-
-            {user && !selectedAddressId && (
-              <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: "var(--silver)" }}>
-                <input type="checkbox" checked={saveAddress} onChange={e => setSaveAddress(e.target.checked)} style={{ accentColor: "var(--gold)" }} />
-                SAVE THIS ADDRESS TO MY ACCOUNT
-              </label>
-            )}
-          </div>
-
-          {/* 3. DELIVERY SPEED */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28, marginBottom: 32 }}>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 24 }}>DELIVERY</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {DELIVERY_OPTIONS.map(opt => (
-                <label key={opt.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "16px 20px", border: `1px solid ${delivery === opt.id ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: delivery === opt.id ? "rgba(201,168,76,0.05)" : "transparent" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <input type="radio" name="delivery" value={opt.id} checked={delivery === opt.id} onChange={() => setDelivery(opt.id)} style={{ accentColor: "var(--gold)" }} />
-                    <div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{opt.label}</div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginTop: 3 }}>{opt.eta}</div>
-                    </div>
-                  </div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: opt.fee === 0 ? "#81c784" : "var(--ash)" }}>
-                    {opt.fee === 0 ? "FREE" : `₹${opt.fee}`}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* 4. PAYMENT METHOD */}
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28 }}>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, letterSpacing: 2, marginBottom: 24 }}>PAYMENT METHOD</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                { val: "card", label: "ONLINE CARD / UPI / NETBANKING", icon: "/card.png" },
-              ].map(({ val, label, icon }) => (
-                <label key={val} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "16px 20px", border: `1px solid ${paymentMethod === val ? "var(--gold)" : "var(--smoke)"}`, cursor: "pointer", background: paymentMethod === val ? "rgba(201,168,76,0.05)" : "transparent" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <input type="radio" name="payment" value={val} checked={paymentMethod === val} readOnly style={{ accentColor: "var(--gold)" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <img src={getSupabaseLogoUrl(icon)} alt={label} style={{ width: 20, height: 20, objectFit: "contain" }} />
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1 }}>{label}</span>
-                    </div>
-                  </div>
-                  {val === "card" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: 28, flexWrap: "wrap", marginTop: 8 }}>
-                      {/* Visa */}
-                      <img src={getSupabaseLogoUrl("/visa.png")} alt="Visa" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
-
-                      {/* Mastercard */}
-                      <div style={{
-                        width: 50,
-                        height: 30,
-                        borderRadius: 3,
-                        background: "#f5f5f7", // mild white
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: 3,
-                        boxSizing: "border-box",
-                        border: "1px solid rgba(0,0,0,0.05)"
-                      }}>
-                        <img src={getSupabaseLogoUrl("/mastercard.webp")} alt="Mastercard" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                      </div>
-
-                      {/* RuPay */}
-                      <img src={getSupabaseLogoUrl("/rupay.png")} alt="RuPay" style={{ height: "50px", objectFit: "contain", borderRadius: 4 }} />
-                    </div>
-                  )}
-                </label>
-              ))}
-            </div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1, color: "var(--silver)", margin: "16px 0 0", lineHeight: 1.6 }}>
-              Prepaid orders only — Cash on Delivery isn't available. Pay securely by UPI, card, netbanking or wallet.
-            </p>
-          </div>
+  const summary = (
+    <>
+      <ul className="sum-items">
+        {cart.map((i, idx) => {
+          const src = cartThumb(i);
+          return (
+            <li className="sum-item" key={`${i.id}-${i.size}-${i.color}-${idx}`}>
+              <span className="sum-thumb">
+                {src ? <img src={src} alt="" loading="lazy" decoding="async" className={i.isCustom ? "is-art" : undefined} /> : null}
+                <span className="sum-qty" aria-label={`Quantity ${i.qty}`}>{i.qty}</span>
+              </span>
+              <span className="sum-info">
+                <span className="sum-name">{i.name}</span>
+                <span className="sum-meta">{[i.color, i.size].filter(Boolean).join(" / ")}</span>
+              </span>
+              <span className="sum-price">{money(i.price * i.qty)}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {coupon ? (
+        <div className="promo-applied">
+          <span>Code <b>{coupon.code}</b> applied</span>
+          <button className="text-btn" type="button" onClick={() => { setCoupon(null); setCouponInput(""); }}>Remove</button>
         </div>
-
-        {/* RIGHT COLUMN: Order Summary */}
-        <div>
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "28px", position: "sticky", top: 90 }}>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 2, marginBottom: 20, borderBottom: "1px solid var(--smoke)", paddingBottom: 16 }}>ORDER SUMMARY</h3>
-            {cart.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, padding: "8px 0", borderBottom: "1px solid var(--smoke)" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ivory)", letterSpacing: 1 }}>{item.name}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--silver)" }}>Sz: {item.size} · Qty: {item.qty}</div>
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ash)" }}>₹{(item.price * item.qty).toLocaleString()}</div>
-              </div>
-            ))}
-
-            {/* Coupon Code Input */}
-            <div style={{ padding: "16px 0", borderBottom: "1px solid var(--smoke)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--gold)", letterSpacing: 1, marginBottom: 8 }}>PROMO CODE</div>
-              {appliedCoupon ? (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(201,168,76,0.1)", padding: "8px 12px", border: "1px solid var(--gold)" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", fontWeight: "bold" }}>{appliedCoupon.code} APPLIED</span>
-                  <button onClick={() => { setAppliedCoupon(null); setCouponInput(""); }} style={{ background: "none", border: "none", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>REMOVE</button>
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    type="text"
-                    className="input-dark"
-                    placeholder="ENTER CODE"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    style={{ flex: 1, padding: "8px 12px", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase" }}
-                  />
-                  <button
-                    onClick={handleApplyCoupon}
-                    disabled={validatingCoupon}
-                    style={{
-                      background: "var(--gold)",
-                      border: "none",
-                      color: "var(--obsidian)",
-                      padding: "0 16px",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {validatingCoupon ? "..." : "APPLY"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              {[
-                ["Subtotal", `₹${cartTotal.toLocaleString()}`],
-                ...(discount > 0 ? [["Discount", `-₹${discount.toLocaleString()}`]] : []),
-                [delivery === "express" ? "Express shipping" : "Shipping", shipping === 0 ? "FREE" : `₹${shipping}`],
-                ["GST (18%)", `₹${tax.toLocaleString()}`]
-              ].map(([label, val]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--silver)", marginBottom: 8, letterSpacing: 1 }}>
-                  <span>{label}</span><span style={{ color: val === "FREE" ? "#81c784" : val.startsWith("-") ? "#ff6b6b" : "var(--ash)" }}>{val}</span>
-                </div>
-              ))}
-              <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--gold)" }}>
-                <span>TOTAL</span><span style={{ color: "var(--gold)" }}>₹{total.toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* WhatsApp Updates Toggle */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                background: "rgba(37, 211, 102, 0.04)",
-                border: "1px solid rgba(37, 211, 102, 0.15)",
-                borderRadius: "4px",
-                padding: "12px 16px",
-                marginTop: 16,
-                userSelect: "none"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <img src={getSupabaseLogoUrl("/whatsapp.gif")} alt="WhatsApp" style={{ width: 22, height: 22, objectFit: "contain" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 0.5, color: "var(--silver)" }}>
-                  GET ORDER UPDATES ON WHATSAPP
-                </span>
-              </div>
-
-              {/* Toggle Switch */}
-              <div
-                onClick={() => setWhatsappUpdates(prev => !prev)}
-                style={{
-                  width: 38,
-                  height: 20,
-                  borderRadius: 10,
-                  background: whatsappUpdates ? "#25d366" : "var(--smoke)",
-                  position: "relative",
-                  cursor: "pointer",
-                  transition: "background-color 0.2s ease"
-                }}
-              >
-                <div
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    background: "#fff",
-                    position: "absolute",
-                    top: 3,
-                    left: whatsappUpdates ? 21 : 3,
-                    transition: "left 0.2s ease",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Place Order & WhatsApp Buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
-              <button
-                className="btn-gold"
-                style={{
-                  width: "100%",
-                  height: "48px",
-                  opacity: processing ? 0.8 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                  overflow: "hidden"
-                }}
-                onClick={() => {
-                  const { name, email, phone, address: addr, city, district, state, pincode } = address;
-                  const checks = [
-                    ["name", !name.trim(), "Please enter your full name."],
-                    ["email", !email.trim() || !email.includes("@"), "Please enter a valid email."],
-                    ["phone", !/^[6-9]\d{9}$/.test(phone), "Enter a valid 10-digit mobile number."],
-                    ["address", !addr.trim(), "Please enter your address."],
-                    ["pincode", !/^\d{6}$/.test(pincode), "Enter a valid 6-digit pincode."],
-                    ["city", !city.trim(), "Please enter your city."],
-                    ["district", !district.trim(), "Please enter your district."],
-                    ["state", !state.trim(), "Please enter your state."],
-                  ];
-                  const firstError = checks.find(([, invalid]) => invalid);
-                  if (firstError) {
-                    const [field, , message] = firstError;
-                    setFieldErrors(Object.fromEntries(checks.filter(([, invalid]) => invalid).map(([f]) => [f, true])));
-                    showToast(message, "error");
-                    fieldRefs.current[field]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    fieldRefs.current[field]?.focus();
-                    return;
-                  }
-                  setFieldErrors({});
-                  handleOrder();
-                }}
-                disabled={processing || cart.length === 0}
-              >
-                {processing ? (
-                  <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                    <style>{`
-                      @keyframes slideCart {
-                        0% { left: -50px; }
-                        100% { left: 100%; }
-                      }
-                    `}</style>
-                    <lottie-player
-                      src="/shopping-cart.json"
-                      background="transparent"
-                      speed="1"
-                      style={{
-                        width: 48,
-                        height: 48,
-                        position: "absolute",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        animation: "slideCart 1.3s linear forwards"
-                      }}
-                      loop={false}
-                      autoplay
-                    ></lottie-player>
-                  </div>
-                ) : (
-                  `PLACE ORDER · ₹${total.toLocaleString()}`
-                )}
-              </button>
-
-              {/* ORDER VIA WHATSAPP - COMMENTED OUT
-              <button
-                onClick={() => {
-                  const { name, phone, address: addr, city, pincode } = address;
-                  const itemsText = cart.map(i => `- ${i.name} (Size: ${i.size}, Qty: ${i.qty})`).join("\n");
-                  const msg = `Hello VelvetWolf, I would like to place an order:\n\n*Items:*\n${itemsText}\n\n*Total Amount:* ₹${total.toLocaleString()}\n\n*Delivery Address:*\nName: ${name || 'N/A'}\nPhone: ${phone || 'N/A'}\nAddress: ${addr || 'N/A'}, ${city || 'N/A'} - ${pincode || 'N/A'}`;
-                  const url = `https://wa.me/919999999999?text=${encodeURIComponent(msg)}`;
-                  window.open(url, "_blank");
-                }}
-                style={{
-                  background: "#25d366",
-                  color: "#fff",
-                  border: "none",
-                  padding: "14px 0",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  fontWeight: "bold",
-                  letterSpacing: 1,
-                  cursor: "pointer",
-                  textAlign: "center",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8
-                }}
-              >
-                ORDER VIA WHATSAPP
-              </button>
-              */}
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-      {/* EXPRESS CHECKOUT POPUP DIALOGS */}
-      {showExpressModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
-          <div style={{ background: "var(--graphite)", border: "1px solid var(--gold)", padding: 36, maxWidth: 450, width: "100%", margin: 20, position: "relative" }}>
-            <button
-              onClick={() => { setShowExpressModal(null); setExpressUpiId(""); }}
-              style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "var(--gold)", cursor: "pointer" }}
-            >
-              ✕
-            </button>
-
-            {showExpressModal === 'upi' && (
-              <div>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)", marginBottom: 16 }}>⚡ UPI EXPRESS PAY</h3>
-                <p style={{ fontSize: 13, color: "var(--silver)", marginBottom: 20, fontFamily: "var(--font-serif)" }}>Enter your UPI Virtual Payment Address (VPA) to pay instantly.</p>
-                <input
-                  type="text"
-                  className="input-dark"
-                  placeholder="e.g. username@okhdfcbank"
-                  value={expressUpiId}
-                  onChange={e => setExpressUpiId(e.target.value)}
-                  style={{ width: "100%", padding: 12, marginBottom: 20 }}
-                />
-                <button
-                  className="btn-gold"
-                  style={{ width: "100%", padding: 12 }}
-                  disabled={expressProcessing || !expressUpiId.includes("@")}
-                  onClick={async () => {
-                    const { name, email, phone, address: addr, city, district, state, pincode } = address;
-                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !district.trim() || !state.trim() || !pincode.trim()) {
-                      showToast("Please fill in your delivery details first.", "error");
-                      setShowExpressModal(null);
-                      return;
-                    }
-                    setExpressProcessing(true);
-                    showToast("Simulating transaction verification...");
-                    setTimeout(async () => {
-                      setExpressProcessing(false);
-                      setShowExpressModal(null);
-                      await handleOrder();
-                    }, 2000);
-                  }}
-                >
-                  {expressProcessing ? "WAITING FOR TRANSACTION..." : `PAY ₹${total.toLocaleString()}`}
-                </button>
-              </div>
-            )}
-
-            {(showExpressModal === 'gpay' || showExpressModal === 'applepay') && (
-              <div style={{ textAlign: "center" }}>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)", marginBottom: 16 }}>
-                  {showExpressModal === 'gpay' ? "GOOGLE PAY EXPRESS" : "APPLE PAY EXPRESS"}
-                </h3>
-                <p style={{ fontSize: 13, color: "var(--silver)", marginBottom: 24, fontFamily: "var(--font-serif)" }}>
-                  Confirm checkout of <span style={{ color: "var(--gold)", fontWeight: "bold" }}>₹{total.toLocaleString()}</span> using express pay metadata.
-                </p>
-                <button
-                  className="btn-gold"
-                  style={{ width: "100%", padding: 14 }}
-                  disabled={expressProcessing}
-                  onClick={async () => {
-                    const { name, email, phone, address: addr, city, district, state, pincode } = address;
-                    if (!name.trim() || !email.trim() || !phone.trim() || !addr.trim() || !city.trim() || !district.trim() || !state.trim() || !pincode.trim()) {
-                      showToast("Please fill in your delivery details first.", "error");
-                      setShowExpressModal(null);
-                      return;
-                    }
-                    setExpressProcessing(true);
-                    showToast("Authorizing express check-out...");
-                    setTimeout(async () => {
-                      setExpressProcessing(false);
-                      setShowExpressModal(null);
-                      await handleOrder();
-                    }, 2000);
-                  }}
-                >
-                  {expressProcessing ? "AUTHORIZING TRANSACTION..." : "CONFIRM EXPRESS TRANSACTION"}
-                </button>
-              </div>
-            )}
-          </div>
+      ) : (
+        <div className="promo">
+          <input type="text" aria-label="Promo code" placeholder="Promo code" value={couponInput}
+            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }} />
+          <button className="btn btn-small" type="button" onClick={applyCoupon} disabled={couponBusy || !couponInput.trim()}>{couponBusy ? "…" : "Apply"}</button>
         </div>
       )}
+      <dl className="sum-totals">
+        <div><dt>Subtotal</dt><dd>{money(totals.subtotal)}</dd></div>
+        {totals.discount > 0 && <div><dt>Discount</dt><dd>&minus;{money(totals.discount)}</dd></div>}
+        <div><dt>Delivery, {totals.ship.label.toLowerCase()}</dt><dd>{totals.shipping ? money(totals.shipping) : "Free"}</dd></div>
+        <div><dt>GST (18%)</dt><dd>{money(totals.tax)}</dd></div>
+        <div className="sum-total"><dt>Total</dt><dd>{money(totals.total)}</dd></div>
+      </dl>
+      <button className="text-btn" type="button" onClick={() => setCartOpen?.(true)}>Edit cart</button>
+    </>
+  );
 
-    </div>
+  return (
+    <main className="vwg view-page">
+      <div className="page-wrap page-wide">
+        <header className="page-head">
+          <p className="eyebrow">Checkout</p>
+          <h1 className="page-title">Checkout</h1>
+        </header>
+
+        <details className="sum-mobile">
+          <summary><span>Order summary</span><span className="sum-mobile-total">{money(totals.total)}</span></summary>
+          <div className="sum-body">{summary}</div>
+        </details>
+
+        <div className="checkout-grid">
+          <form className="checkout-form" onSubmit={onSubmit} noValidate>
+            {banner && <div className="form-banner" role="alert" tabIndex={-1} ref={bannerRef}>{banner}</div>}
+
+            <section className="co-step" aria-labelledby="co-h1">
+              <h2 className="co-h" id="co-h1"><span className="co-n">1</span>Contact</h2>
+              {accountEmail ? (
+                <p className="co-signed">Signed in as <b>{accountEmail}</b>.</p>
+              ) : (
+                <>
+                  <p className="co-signed">
+                    {user ? "Signed in. Add an email for your receipt." : <>Checking out as a guest. <Link to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>Sign in</Link> to use saved addresses.</>}
+                  </p>
+                  <Field id="co-email" label="Email" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off"
+                    value={form.email} error={errors["co-email"]} hint="For your receipt and delivery updates."
+                    onChange={(e) => { set({ email: e.target.value }); clearErr("co-email"); }} />
+                </>
+              )}
+              <Field id="co-phone" label="Mobile number" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} prefix="+91"
+                value={form.phone} error={errors["co-phone"]} hint="The courier calls this number if they can't find you."
+                onChange={(e) => { set({ phone: e.target.value.replace(/[^\d+\s-]/g, "") }); clearErr("co-phone"); }} />
+              <label className="check">
+                <input type="checkbox" checked={form.whatsapp} onChange={(e) => set({ whatsapp: e.target.checked })} />
+                <span>Send delivery updates on WhatsApp too</span>
+              </label>
+            </section>
+
+            <section className="co-step" aria-labelledby="co-h2">
+              <h2 className="co-h" id="co-h2"><span className="co-n">2</span>Delivery address</h2>
+              {saved.length > 0 && (
+                <div className="addr-choices" role="radiogroup" aria-label="Saved addresses">
+                  {saved.map((a) => (
+                    <label className="addr-choice" key={a.id}>
+                      <input type="radio" name="co-addr" value={a.id} checked={form.addressId === a.id} onChange={() => set({ addressId: a.id })} />
+                      <span><address>{addrLines(a)}</address></span>
+                    </label>
+                  ))}
+                  <label className="addr-choice">
+                    <input type="radio" name="co-addr" value="new" checked={useNew} onChange={() => set({ addressId: "new" })} />
+                    <span>A new address</span>
+                  </label>
+                </div>
+              )}
+              {useNew && (
+                <div className="addr-fields">
+                  <Field id="co-name" label="Full name" autoComplete="shipping name" value={form.name} error={errors["co-name"]}
+                    onChange={(e) => { set({ name: e.target.value }); clearErr("co-name"); }} />
+                  <div className="form-pair">
+                    <Field id="co-pin" label={pinBusy ? "PIN code (checking…)" : "PIN code"} autoComplete="shipping postal-code" inputMode="numeric" maxLength={6}
+                      value={form.pincode} error={errors["co-pin"]} onChange={(e) => onPin(e.target.value)} />
+                    <Field id="co-city" label="City or town" autoComplete="shipping address-level2" value={form.city} error={errors["co-city"]}
+                      onChange={(e) => { set({ city: e.target.value }); clearErr("co-city"); }} />
+                  </div>
+                  <div className="form-row">
+                    <label htmlFor="co-state">State</label>
+                    <select id="co-state" autoComplete="shipping address-level1" value={form.state}
+                      aria-invalid={errors["co-state"] ? "true" : undefined} aria-describedby={errors["co-state"] ? "co-state-err" : undefined}
+                      onChange={(e) => { set({ state: e.target.value }); clearErr("co-state"); }}>
+                      <option value="">Choose a state</option>
+                      {[...STATES, ...(form.state && !STATES.includes(form.state) ? [form.state] : [])].map((st) => <option key={st}>{st}</option>)}
+                    </select>
+                    {errors["co-state"] && <p className="field-error" id="co-state-err">{errors["co-state"]}</p>}
+                  </div>
+                  <Field id="co-line1" label="House, building, street" autoComplete="shipping address-line1" value={form.line1} error={errors["co-line1"]}
+                    onChange={(e) => { set({ line1: e.target.value }); clearErr("co-line1"); }} />
+                  <Field id="co-line2" label="Area, landmark" autoComplete="shipping address-line2" required={false} value={form.line2}
+                    onChange={(e) => set({ line2: e.target.value })} />
+                  {user && (
+                    <label className="check">
+                      <input type="checkbox" checked={form.save} onChange={(e) => set({ save: e.target.checked })} />
+                      <span>Save this address to my account</span>
+                    </label>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section className="co-step" aria-labelledby="co-h3">
+              <h2 className="co-h" id="co-h3"><span className="co-n">3</span>Delivery</h2>
+              <div className="choice-list" role="radiogroup" aria-label="Delivery speed">
+                {DELIVERY.map((d) => (
+                  <label className="choice" key={d.id}>
+                    <input type="radio" name="co-delivery" value={d.id} checked={form.delivery === d.id} onChange={() => set({ delivery: d.id })} />
+                    <span className="choice-main"><b>{d.label}</b><span className="muted">Estimated {d.eta} after dispatch</span></span>
+                    <span className="choice-price">{d.fee ? money(d.fee) : "Free"}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="co-step" aria-labelledby="co-h4">
+              <h2 className="co-h" id="co-h4"><span className="co-n">4</span>Payment</h2>
+              <p className="muted">Prepaid orders only: we don't offer cash on delivery. Payment is handled by Cashfree; we never see your card or UPI details.</p>
+              <div className="choice-list choice-grid" role="radiogroup" aria-label="Payment method">
+                {METHODS.map((m) => (
+                  <label className="choice" key={m.id}>
+                    <input type="radio" name="co-method" value={m.id} checked={form.method === m.id} onChange={() => set({ method: m.id })} />
+                    <span className="choice-main"><b>{m.label}</b><span className="muted">{m.hint}</span></span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <div className="co-pay">
+              <button className="btn btn-primary btn-block btn-pay" type="submit" disabled={busy}>
+                {busy ? "Opening payment…" : `Pay ${money(totals.total)}`}
+              </button>
+              <p className="fine">You'll confirm the payment in Cashfree's secure window. Your order is placed once the payment goes through.</p>
+            </div>
+          </form>
+
+          <aside className="sum-side" aria-label="Order summary">
+            <h2 className="eyebrow">Order summary</h2>
+            {summary}
+          </aside>
+        </div>
+      </div>
+    </main>
   );
 }

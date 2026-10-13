@@ -75,12 +75,12 @@ describe("newestDrops / fromPrice / productHref", () => {
 });
 
 describe("isGalleryPath", () => {
-  it("covers home, shop, product, custom, and auth pages", () => {
+  it("covers home, shop, studio and auth pages; product pages use photos, not 3D", () => {
     expect(isGalleryPath("/")).toBe(true);
     expect(isGalleryPath("/shop")).toBe(true);
     expect(isGalleryPath("/shop/anime")).toBe(true);
     expect(isGalleryPath("/shopping-policy")).toBe(false);
-    expect(isGalleryPath("/product/x")).toBe(true);
+    expect(isGalleryPath("/product/x")).toBe(false);
     expect(isGalleryPath("/custom")).toBe(true);
     expect(isGalleryPath("/login")).toBe(true);
     expect(isGalleryPath("/signup")).toBe(true);

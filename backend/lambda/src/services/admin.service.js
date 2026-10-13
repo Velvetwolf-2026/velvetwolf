@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../config/supabase.js";
+import { signDesignFiles } from "./studio.service.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 import { sanitizeFilterValue } from "../utils/postgrest.js";
 
@@ -64,7 +65,7 @@ export async function getAdminOrders({ status, page = 1, limit = 50 } = {}) {
   let query = supabaseAdmin
     .from("orders")
     .select(
-      "id, user_id, total_amount, subtotal, shipping_amount, tax_amount, payment_method, shipping_address, status, created_at, dispatched_at, delivered_at, order_items(id, product_name, size, color, quantity, unit_price, total_price)",
+      "id, user_id, total_amount, subtotal, shipping_amount, tax_amount, payment_method, shipping_address, status, created_at, dispatched_at, delivered_at, meta, order_items(id, product_name, size, color, quantity, unit_price, total_price)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -82,12 +83,18 @@ export async function getAdminOrders({ status, page = 1, limit = 50 } = {}) {
     for (const u of users || []) userMap[u.id] = { name: u.name, email: u.email };
   }
 
-  const orders = (data || []).map((o) => ({
+  const orders = await Promise.all((data || []).map(async ({ meta, ...o }) => ({
     ...o,
     customerName: userMap[o.user_id]?.name || o.shipping_address?.name || "—",
     customerEmail: userMap[o.user_id]?.email || "—",
     total_amount: Number(o.total_amount || 0),
-  }));
+    delivery: meta?.delivery || "standard",
+    // Studio tees: the design and day-long links to its proof and artwork files.
+    customDesigns: await Promise.all((meta?.custom_designs || []).map(async (d) => ({
+      ...d,
+      files: await signDesignFiles(d.design),
+    }))),
+  })));
 
   return { orders, total: count || 0, page, limit };
 }

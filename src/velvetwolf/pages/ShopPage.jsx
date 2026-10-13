@@ -9,7 +9,7 @@ import { apiUrl } from "../utils/api";
 import { loadProductsFromAPI } from "../utils/products";
 import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
-import { money, photoFor, colorwaysOf, productHref } from "../gallery/galleryProducts";
+import { money, photoFor, colorwaysOf, productHref, allPhotos } from "../gallery/galleryProducts";
 
 export async function loader({ params }) {
   try {
@@ -47,28 +47,174 @@ function collectionForQuery(q) {
 }
 
 // Photo-first card: the on-body photo covers the stage (4:5); the featured
-// product takes a double tile. Hover lifts the photo slightly (no 3D fade:
-// products have photos but no print artwork for the 3D tee).
+// product takes a double tile. Images rotate dynamically every few seconds
+// and update interactively on hover/colorway swatch interaction.
 function ProductTile({ product, colorId, feature, eager }) {
-  const colors = colorwaysOf(product);
-  const shown = colorId && colors.includes(colorId) ? colorId : colors[0];
-  const photo = photoFor(product, shown);
+  const colors = useMemo(() => colorwaysOf(product), [product]);
+  const defaultColor = colorId && colors.includes(colorId) ? colorId : colors[0];
+
+  // Gather all available photos for dynamic cycling & interactive preview
+  const tileImages = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+    const addImg = (src, colorKey = null) => {
+      if (!src || typeof src !== "string" || seen.has(src)) return;
+      seen.add(src);
+      list.push({ src, colorKey });
+    };
+
+    if (colorId && colors.includes(colorId)) {
+      // Color-filtered mode: prioritize photos for this colorway
+      const pColor = photoFor(product, colorId);
+      if (pColor) addImg(pColor, colorId);
+
+      const colorPhotos = allPhotos(product, colorId);
+      const siteName = COLORWAYS[colorId]?.site?.toLowerCase();
+      colorPhotos
+        .filter((item) => item.color?.toLowerCase() === siteName)
+        .forEach((item) => addImg(item.src, colorId));
+
+      if (product.modelImage) addImg(product.modelImage, colorId);
+    } else {
+      // Default / All colors mode: add the primary photo of each available colorway
+      colors.forEach((cId) => {
+        const cPhoto = photoFor(product, cId);
+        if (cPhoto) addImg(cPhoto, cId);
+      });
+
+      // Include model image if present
+      if (product.modelImage) addImg(product.modelImage, colors[0] || null);
+
+      // Fallback to all photos if still empty
+      if (list.length === 0) {
+        allPhotos(product).forEach((p) => addImg(p.src, null));
+      }
+    }
+
+    return list;
+  }, [product, colorId, colors]);
+
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hoverColor, setHoverColor] = useState(null);
+
+  // Reset when filter changes
+  useEffect(() => {
+    setActiveIdx(0);
+    setHoverColor(null);
+  }, [colorId]);
+
+  // Dynamic automatic rotation when not hovered
+  useEffect(() => {
+    if (tileImages.length <= 1 || isHovered) return;
+
+    // Stagger duration (3.6s - 5.0s) per product so tiles don't transition simultaneously
+    const charCode = (String(product.id || "").charCodeAt(0) || 0) % 5;
+    const duration = 3600 + charCode * 350;
+
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % tileImages.length);
+    }, duration);
+
+    return () => clearInterval(timer);
+  }, [tileImages.length, isHovered, product.id]);
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    // On hover, if there's an alternate view and user hasn't explicitly picked a color swatch,
+    // seamlessly preview the second image
+    if (tileImages.length > 1 && !hoverColor && activeIdx === 0) {
+      setActiveIdx(1);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setHoverColor(null);
+  };
+
+  const handleDotEnter = (e, cid) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setHoverColor(cid);
+    const targetIdx = tileImages.findIndex((img) => img.colorKey === cid);
+    if (targetIdx !== -1) {
+      setActiveIdx(targetIdx);
+    }
+  };
+
+  const currentImg = tileImages[activeIdx] || tileImages[0];
+  const activeColorKey = hoverColor || currentImg?.colorKey || defaultColor;
+
   const original = Number(product.originalPrice) || 0;
   const onSale = original > Number(product.price);
   const soldOut = product.stock !== undefined && product.stock !== null && Number(product.stock) <= 0;
-  const cls = ["card", photo && "has-photo", feature && "card-feature"].filter(Boolean).join(" ");
+  const cls = ["card", tileImages.length > 0 && "has-photo", feature && "card-feature"].filter(Boolean).join(" ");
+
   return (
-    <Link to={productHref(product)} className={cls} aria-label={`${product.name}, ${COLORWAYS[shown].name}, ${money(product.price)}`}>
+    <Link
+      to={productHref(product)}
+      className={cls}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      aria-label={`${product.name}, ${COLORWAYS[activeColorKey]?.name || "Original"}, ${money(product.price)}`}
+    >
       <div className="stage">
-        {photo && <img className="stage-photo" src={photo} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />}
+        {tileImages.map((img, i) => {
+          const isActive = i === (activeIdx % tileImages.length);
+          return (
+            <img
+              key={img.src}
+              className={`stage-photo ${isActive ? "is-active" : ""}`}
+              src={img.src}
+              alt={product.name}
+              loading={eager && i === 0 ? "eager" : "lazy"}
+              decoding="async"
+              style={{
+                opacity: isActive ? 1 : 0,
+                zIndex: isActive ? 1 : 0,
+              }}
+            />
+          );
+        })}
+
+        {tileImages.length > 1 && (
+          <div className="stage-indicators" aria-hidden="true">
+            {tileImages.slice(0, 5).map((_, i) => (
+              <span
+                key={i}
+                className={`stage-indicator ${i === (activeIdx % Math.min(tileImages.length, 5)) ? "is-active" : ""}`}
+              />
+            ))}
+          </div>
+        )}
+
         {soldOut && <span className="tag">Sold out</span>}
       </div>
+
       <div className="info">
         <span className="card-title">{product.name}</span>
         <span className="card-meta">{String(product.collection || "").replace(/-/g, " ")}</span>
         <span className="card-row">
           <span className="dots" aria-label={`${colors.length} colorway${colors.length > 1 ? "s" : ""}`}>
-            {colors.map((id) => <i key={id} style={{ background: COLORWAYS[id].hex }} />)}
+            {colors.map((id) => {
+              const isSelected = activeColorKey === id;
+              return (
+                <i
+                  key={id}
+                  style={{
+                    background: COLORWAYS[id].hex,
+                    transform: isSelected ? "scale(1.3)" : "scale(1)",
+                    borderColor: isSelected ? "var(--bone)" : "var(--line-2)",
+                    boxShadow: isSelected ? "0 0 6px rgba(232, 228, 218, 0.45)" : "none",
+                    cursor: "pointer",
+                  }}
+                  title={COLORWAYS[id].name}
+                  onMouseEnter={(e) => handleDotEnter(e, id)}
+                  onClick={(e) => handleDotEnter(e, id)}
+                />
+              );
+            })}
           </span>
           <span className="price">
             {onSale && <s>{money(original)}</s>}

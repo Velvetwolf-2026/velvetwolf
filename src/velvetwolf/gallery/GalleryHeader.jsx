@@ -1,11 +1,11 @@
 // Site header from the VelvetWolf Gallery (2027): the wordmark, Shop, Drop 01,
-// Studio and the cart. Used on every public page (PublicLayout).
+// Studio, sign in / account and the cart. Used on every public page (PublicLayout).
 import { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { AppContext } from "../pages/AppContext";
 
 export default function GalleryHeader() {
-  const { cartCount = 0, setCartOpen } = useContext(AppContext);
+  const { cartCount = 0, setCartOpen, user } = useContext(AppContext);
   const { pathname, hash } = useLocation();
   // Once content scrolls under it the header gets a solid backing, so links
   // stay legible over the page (the prototype did this for the shop grid).
@@ -19,6 +19,9 @@ export default function GalleryHeader() {
   }, []);
 
   const current = (on) => (on ? "page" : undefined);
+  // Signed in: the person's first name links to the account page.
+  const firstName = String(user?.full_name || user?.name || "").trim().split(/\s+/)[0];
+  const accountLabel = user ? (firstName && !/^mobile$/i.test(firstName) ? firstName : "Account") : "Sign in";
 
   return (
     <header className={`vwg-nav${scrolled ? " is-scrolled" : ""}`}>
@@ -27,6 +30,13 @@ export default function GalleryHeader() {
         <Link to="/shop" aria-current={current(pathname === "/shop" || pathname.startsWith("/shop/"))}>Shop</Link>
         <Link to="/#drop" className="hide-sm" aria-current={current(pathname === "/" && hash === "#drop")}>Drop 01</Link>
         <Link to="/custom" aria-current={current(pathname === "/custom")}>Studio</Link>
+        <Link
+          to={user ? "/account" : "/login"}
+          aria-current={current(user ? pathname === "/account" : pathname === "/login" || pathname === "/signup")}
+          title={user ? `Account: ${user.email || ""}` : "Sign in or create an account"}
+        >
+          {accountLabel}
+        </Link>
         <button className="cart-btn" type="button" aria-haspopup="dialog" onClick={() => setCartOpen?.(true)}>
           Cart<span className="cart-count">{cartCount}</span>
         </button>

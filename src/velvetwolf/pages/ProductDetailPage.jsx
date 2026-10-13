@@ -1,53 +1,82 @@
-import { useContext, useState, useEffect, useRef } from "react";
+// Product page in the gallery style, built around the product's own photos
+// from the database (no 3D stage here). Colour-tagged images ("Black::url")
+// switch with the selected colour.
+import { useContext, useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { INITIAL_COLLECTION_PRODUCTS } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
-import { useGallery } from "../gallery/galleryContext";
-import { COLORWAYS, COLOR_ORDER, SIZES } from "../gallery/data";
-import { money, colorwaysOf, allPhotos } from "../gallery/galleryProducts";
-import { bindDrag } from "../gallery/drag";
+import { COLORWAYS, SIZES } from "../gallery/data";
+import { money, allPhotos } from "../gallery/galleryProducts";
 import PhotoViewerModal from "../components/PhotoViewerModal";
+
+const findFallback = (slug) =>
+  INITIAL_COLLECTION_PRODUCTS.find((p) => p.id === slug || p.name.toLowerCase().replace(/\s+/g, "-") === slug) || null;
 
 export async function loader({ params }) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch(`${apiUrl("/products")}/${params.slug}`, {
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutId));
-
-    if (!res.ok) {
-      const fallback = INITIAL_COLLECTION_PRODUCTS.find(
-        (p) => p.id === params.slug || p.name.toLowerCase().replace(/\s+/g, "-") === params.slug
-      );
-      return { product: fallback || null };
-    }
+    const res = await fetch(`${apiUrl("/products")}/${params.slug}`, { signal: controller.signal })
+      .finally(() => clearTimeout(timeoutId));
+    if (!res.ok) return { product: findFallback(params.slug) };
     const data = await res.json();
     return { product: data.product || null };
   } catch {
-    const fallback = INITIAL_COLLECTION_PRODUCTS.find(
-      (p) => p.id === params.slug || p.name.toLowerCase().replace(/\s+/g, "-") === params.slug
-    );
-    return { product: fallback || null };
+    return { product: findFallback(params.slug) };
   }
 }
 
 export function meta({ loaderData }) {
   const product = loaderData?.product;
-  if (!product) return [{ title: "Product — VelvetWolf Gallery" }];
-  const title = `${product.name} — VelvetWolf Gallery`;
-  const description = product.description
-    ? String(product.description).slice(0, 160)
-    : "Luxury streetwear from VelvetWolf.";
+  if (!product) return [{ title: "Product — VelvetWolf" }];
+  const title = `${product.name} — VelvetWolf`;
+  const description = product.description ? String(product.description).slice(0, 160) : "Heavyweight tees from VelvetWolf.";
+  const image = allPhotos(product)[0]?.src;
   return [
     { title },
     { name: "description", content: description },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
+    ...(image ? [{ property: "og:image", content: image }] : []),
   ];
+}
+
+// Swatch colour for a colour name from the admin ("Black", "Forest Green"...)
+// or a hex value.
+const NAMED = {
+  black: "#0a0a0a", white: "#faf9f7", "beige/sand": "#d2b48c", sand: "#d2b48c", beige: "#d2b48c",
+  "forest green": "#1e4620", "crimson ember": "#8B2635", crimson: "#8B2635", navy: "#1b2440", grey: "#808080", gray: "#808080",
+};
+function swatchHex(color) {
+  const c = String(color || "").trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(c)) return c;
+  const way = Object.values(COLORWAYS).find((w) => w.site.toLowerCase() === c.toLowerCase());
+  return way?.hex || NAMED[c.toLowerCase()] || "#555";
+}
+const colorLabel = (color) => {
+  const c = String(color || "");
+  const way = Object.values(COLORWAYS).find((w) => w.site.toLowerCase() === c.toLowerCase());
+  return way ? way.name : c;
+};
+
+// Photos for the selected colour (plus untagged shots); everything if the
+// colour has none of its own.
+function photosFor(product, color) {
+  const all = allPhotos(product);
+  if (!color) return all;
+  const lc = String(color).toLowerCase();
+  const tagged = all.filter((p) => p.color.toLowerCase() === lc);
+  if (!tagged.length) return all;
+  return [...tagged, ...all.filter((p) => p.color === "Original")];
+}
+
+// Colours that have photos come first; colours without any are still offered.
+function colorsOf(product) {
+  const list = Array.isArray(product?.colors) ? product.colors.filter(Boolean) : [];
+  const tagged = new Set(allPhotos(product).map((p) => p.color.toLowerCase()));
+  return [...list].sort((a, b) => Number(tagged.has(String(b).toLowerCase())) - Number(tagged.has(String(a).toLowerCase())));
 }
 
 export default function ProductDetailPage() {
@@ -55,342 +84,243 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const { addToCart, products, showToast } = useContext(AppContext);
-  const { engine } = useGallery();
 
   const [product, setProduct] = useState(loaderData?.product || null);
-  const [loading, setLoading] = useState(!loaderData?.product);
+  const [color, setColor] = useState("");
+  const [size, setSize] = useState("");
+  const [index, setIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
 
-  const dragRef = useRef(null);
-  const panelRef = useRef(null);
+  // A new slug (client navigation) brings new loader data.
+  useEffect(() => { setProduct(loaderData?.product || null); }, [loaderData]);
 
-  // Fallback product resolution from AppContext if loader didn't find it
+  // Fall back to the catalogue already in memory when the API was unreachable.
   useEffect(() => {
-    if (!product && products.length > 0) {
-      const match = products.find(
-        (p) => p.slug === slug || p.id === slug || p.name.toLowerCase().replace(/\s+/g, "-") === slug
-      );
-      if (match) {
-        setProduct(match);
-        setLoading(false);
-      }
-    }
+    if (product || !products?.length) return;
+    const match = products.find((p) => p.slug === slug || p.id === slug || p.name.toLowerCase().replace(/\s+/g, "-") === slug);
+    if (match) setProduct(match);
   }, [product, products, slug]);
 
-  const availableColors = product ? colorwaysOf(product) : ["noir"];
-  const [color, setColor] = useState(availableColors[0] || "noir");
-  const [size, setSize] = useState("");
-  const [activeFace, setActiveFace] = useState("front");
-
-  // Photo viewer state
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState(0);
-
-  // Sync color when product changes
   useEffect(() => {
-    if (product) {
-      const cols = colorwaysOf(product);
-      setColor(cols[0] || "noir");
-      setSize(product.sizes?.[0] || "M");
-      trackViewItem(product);
-    }
+    if (!product) return;
+    setColor(colorsOf(product)[0] || "");
+    setSize("");
+    setIndex(0);
+    trackViewItem(product);
   }, [product]);
 
-  // Bind 3D engine viewing station
-  useEffect(() => {
-    if (!engine || !product) return;
-    engine.setView("product", "pdp");
-    engine.dressPdp(product, color, true);
-    engine.face("pdp", activeFace === "back" ? "back" : "front");
-  }, [engine, product, color, activeFace]);
+  const photos = useMemo(() => (product ? photosFor(product, color) : []), [product, color]);
+  useEffect(() => { setIndex(0); }, [color]);
 
-  // Bind drag-to-turn on drag surface
-  useEffect(() => {
-    if (!dragRef.current || !engine) return;
-    return bindDrag(dragRef.current, engine, "pdp");
-  }, [engine]);
-
-  if (loading) {
+  // The server couldn't load it: wait for the catalogue before saying it's gone.
+  if (!product && !products?.length) {
     return (
-      <div style={{ minHeight: "80vh", display: "grid", placeItems: "center", color: "#E8E4DA", fontFamily: "var(--font-mono, monospace)" }}>
-        LOADING PIECE...
-      </div>
+      <main className="vwg vwg-pdp-photos">
+        <p className="eyebrow" style={{ textAlign: "center", paddingTop: 120 }}>Loading…</p>
+      </main>
     );
   }
 
   if (!product) {
     return (
-      <div style={{ minHeight: "80vh", display: "grid", placeItems: "center", color: "#E8E4DA", textAlign: "center", gap: 16 }}>
-        <h2>Product not found</h2>
-        <Link to="/shop" style={{ color: "#E8E4DA", borderBottom: "1px solid #E8E4DA" }}>Return to Shop</Link>
-      </div>
+      <main className="vwg vwg-pdp-photos">
+        <div className="page-wrap" style={{ textAlign: "center", paddingTop: 80 }}>
+          <h1 className="page-title">We can't find that piece</h1>
+          <p className="page-sub" style={{ margin: "0 auto" }}>It may have sold out or moved.</p>
+          <div><Link className="btn" to="/shop">Back to the shop</Link></div>
+        </div>
+      </main>
     );
   }
 
-  const photos = allPhotos(product, color);
-  const related = (products || []).filter((p) => p.id !== product.id).slice(0, 3);
+  const colors = colorsOf(product);
+  const sizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : SIZES.map((s) => s.id);
+  const chart = SIZES.filter((s) => sizes.includes(s.id));
+  const soldOut = Number(product.stock) <= 0;
+  const current = photos[index] || photos[0];
+  const related = (products || [])
+    .filter((p) => p.id !== product.id && p.isActive !== false)
+    .sort((a, b) => Number(b.collection === product.collection) - Number(a.collection === product.collection))
+    .slice(0, 4);
 
-  const handleFaceChange = (face) => {
-    setActiveFace(face);
-    if (!engine) return;
-    if (face === "detail") {
-      engine.face("pdp", "front");
-      engine.setStation("pdpDetail");
-    } else {
-      engine.setStation("pdp");
-      engine.face("pdp", face);
+  const step = (d) => setIndex((i) => (photos.length ? (i + d + photos.length) % photos.length : 0));
+
+  const add = async () => {
+    if (!size) { showToast("Choose a size first", "info"); return false; }
+    setAdding(true);
+    try {
+      await addToCart(product, size, color || colors[0] || "Black", 1);
+      return true;
+    } finally {
+      setAdding(false);
     }
-  };
-
-  const handleColorChange = (cId) => {
-    setColor(cId);
-    if (engine) engine.dressPdp(product, cId, false);
-  };
-
-  const handleAddToCart = (e) => {
-    e?.preventDefault();
-    if (!size) {
-      showToast("Please select a size", "info");
-      return;
-    }
-    const colorName = COLORWAYS[color]?.site || COLORWAYS[color]?.name || color;
-    addToCart(product, size, colorName, 1);
-  };
-
-  const handleBuyNow = (e) => {
-    e?.preventDefault();
-    handleAddToCart();
-    setTimeout(() => navigate("/checkout"), 100);
   };
 
   return (
-    <main className="vwg vwg-view-pdp" style={{ minHeight: "100vh", position: "relative" }}>
-      {/* 3D Stage Area & Interactive Turn Surface */}
-      <div className="vwg-stage-area">
-        <div
-          ref={dragRef}
-          className="vwg-drag-surface"
-          tabIndex={0}
-          aria-label="Turn the tee. Use the left and right arrow keys or drag."
-        />
-        <div className="vwg-stage-controls" role="group" aria-label="Camera Angle">
-          <button
-            type="button"
-            aria-pressed={activeFace === "front"}
-            onClick={() => handleFaceChange("front")}
-          >
-            Front
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeFace === "back"}
-            onClick={() => handleFaceChange("back")}
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeFace === "detail"}
-            onClick={() => handleFaceChange("detail")}
-          >
-            Fabric
-          </button>
-        </div>
-        <p className="vwg-drag-hint">Drag to turn</p>
-      </div>
-
-      {/* Vitrine Details Panel */}
-      <aside ref={panelRef} className="vwg-panel" aria-label="Product details">
-        <nav className="vwg-crumbs" aria-label="Breadcrumb">
-          <Link to="/shop">Shop</Link>
-          <span aria-hidden="true">/</span>
-          <span>{product.collection || "Drop 01"}</span>
-        </nav>
-
-        <header className="vwg-pdp-head">
-          <h1 className="vwg-pdp-title">{product.name}</h1>
-          <div className="vwg-pdp-price-row">
-            <span className="vwg-pdp-price">{money(product.price)}</span>
-            <span className="vwg-status">
-              <i></i>
-              {product.stock === 0 ? "Sold out" : "In stock"}
-            </span>
-          </div>
-          <p className="vwg-pdp-blurb">
-            {product.description || "A rider’s-eye view over the bars, printed large across the back in one ink."}
-          </p>
-          <p className="vwg-pdp-label">
-            VelvetWolf, 2027. Combed cotton, 220–240 GSM.
-          </p>
-        </header>
-
-        {/* Worn On-Body Photo Strip */}
-        {photos.length > 0 && (
-          <section className="vwg-photo-strip" aria-labelledby="photos-h">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <h2 id="photos-h" style={{ font: "600 11px/1 'Manrope', sans-serif", letterSpacing: "0.18em", textTransform: "uppercase", margin: 0, color: "var(--bone, #E8E4DA)" }}>
-                Worn <span style={{ color: "rgba(232, 228, 218, 0.5)", fontWeight: 500, textTransform: "none" }}>{photos.length} photos</span>
-              </h2>
-            </div>
-            <ul className="vwg-strip">
+    <main className="vwg vwg-pdp-photos">
+      <div className="pdp-grid">
+        <section className="pdp-media" aria-label={`${product.name} photos`}>
+          {photos.length > 1 && (
+            <ul className="pdp-thumbs">
               {photos.map((ph, i) => (
-                <li key={i}>
-                  <button
-                    type="button"
-                    className="vwg-strip-btn"
-                    onClick={() => {
-                      setViewerIndex(i);
-                      setViewerOpen(true);
-                    }}
-                    aria-label={`Open photo in viewer: ${ph.alt}`}
-                  >
-                    <img src={ph.src} alt={ph.alt} loading="lazy" decoding="async" />
-                    <span className="vwg-strip-color">{ph.color}</span>
+                <li key={`${ph.src}-${i}`}>
+                  <button type="button" aria-current={i === index ? "true" : undefined} aria-label={`Photo ${i + 1} of ${photos.length}`} onClick={() => setIndex(i)}>
+                    <img src={ph.src} alt="" loading="lazy" decoding="async" />
                   </button>
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          )}
+          <figure className="pdp-main">
+            {current ? (
+              <button type="button" onClick={() => setViewerOpen(true)} aria-label="Open the photo full screen">
+                <img src={current.src} alt={current.alt} decoding="async" fetchPriority="high" />
+              </button>
+            ) : (
+              <div className="pdp-empty" aria-hidden="true">VW</div>
+            )}
+            {photos.length > 1 && (
+              <>
+                <button type="button" className="pdp-nav pdp-prev" onClick={() => step(-1)} aria-label="Previous photo">&#8249;</button>
+                <button type="button" className="pdp-nav pdp-next" onClick={() => step(1)} aria-label="Next photo">&#8250;</button>
+                <span className="pdp-count" aria-hidden="true">{index + 1} / {photos.length}</span>
+              </>
+            )}
+          </figure>
+        </section>
 
-        {/* Purchase Form */}
-        <form className="vwg-pdp-form" onSubmit={handleAddToCart} novalidate>
-          {/* Colorway Selection */}
-          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 12 }}>
-            <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
-              <span>Colorway</span>
-              <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "rgba(232, 228, 218, 0.6)" }}>
-                {COLORWAYS[color]?.name || color} <span style={{ fontVariantNumeric: "tabular-nums" }}>{COLORWAYS[color]?.hex}</span>
+        <div className="pdp-info">
+          <nav className="vwg-crumbs" aria-label="Breadcrumb">
+            <Link to="/shop">Shop</Link>
+            <span aria-hidden="true">/</span>
+            <span>{product.collection || "Drop 01"}</span>
+          </nav>
+
+          <header className="vwg-pdp-head">
+            <h1 className="vwg-pdp-title">{product.name}</h1>
+            <div className="vwg-pdp-price-row">
+              <span className="vwg-pdp-price">
+                {money(product.price)}
+                {Number(product.originalPrice) > Number(product.price) && (
+                  <s style={{ marginLeft: 10, color: "var(--bone-3)", fontWeight: 500 }}>{money(product.originalPrice)}</s>
+                )}
               </span>
-            </legend>
-            <div className="vwg-swatches">
-              {availableColors.map((id) => (
-                <label key={id} className="vwg-swatch" title={COLORWAYS[id]?.name || id}>
-                  <input
-                    type="radio"
-                    name="pdp-color"
-                    value={id}
-                    checked={color === id}
-                    onChange={() => handleColorChange(id)}
-                  />
-                  <span style={{ background: COLORWAYS[id]?.hex || "#141416" }}></span>
-                </label>
-              ))}
+              <span className={`vwg-status${soldOut ? " vwg-status-wait" : ""}`}><i></i>{soldOut ? "Sold out" : "In stock"}</span>
             </div>
-          </fieldset>
+            {product.description && <p className="vwg-pdp-blurb">{product.description}</p>}
+            <p className="vwg-pdp-label">
+              {[product.fabric || "Combed cotton", product.gsm ? `${product.gsm} GSM` : "220–240 GSM", product.fit || "Oversized"].join(" · ")}
+            </p>
+          </header>
 
-          {/* Size Selection */}
-          <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 12 }}>
-            <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 'Manrope', sans-serif", letterSpacing: "0.2em", textTransform: "uppercase", color: "#E8E4DA" }}>
-              <span>Size</span>
-              <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "rgba(232, 228, 218, 0.6)" }}>
-                Oversized fit. Take your usual size.
-              </span>
-            </legend>
-            <div className="vwg-sizes">
-              {SIZES.map((s) => (
-                <label key={s.id} className="vwg-size">
-                  <input
-                    type="radio"
-                    name="pdp-size"
-                    value={s.id}
-                    checked={size === s.id}
-                    onChange={(e) => setSize(e.target.value)}
-                  />
-                  <span>
-                    <b>{s.id}</b>
-                    <small>{s.chest} cm</small>
-                  </span>
-                </label>
-              ))}
+          <form className="vwg-pdp-form" onSubmit={(e) => { e.preventDefault(); add(); }} noValidate>
+            {colors.length > 0 && (
+              <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 12 }}>
+                <legend className="field-legend" style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 var(--g-body)", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--bone-2)", marginBottom: 12 }}>
+                  <span>Colour</span>
+                  <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none", color: "var(--bone-2)" }}>{colorLabel(color)}</span>
+                </legend>
+                <div className="vwg-swatches">
+                  {colors.map((c) => (
+                    <label key={c} className="vwg-swatch" title={colorLabel(c)}>
+                      <input type="radio" name="pdp-color" value={c} checked={color === c} onChange={() => setColor(c)} />
+                      <span style={{ background: swatchHex(c) }}></span>
+                      <span className="sr">{colorLabel(c)}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
+            <fieldset style={{ margin: 0, padding: 0, border: 0, display: "grid", gap: 12 }}>
+              <legend style={{ display: "flex", justifyContent: "space-between", width: "100%", font: "600 11px/1.3 var(--g-body)", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--bone-2)", marginBottom: 12 }}>
+                <span>Size</span>
+                <span style={{ fontWeight: 500, letterSpacing: "0.04em", textTransform: "none" }}>{product.fit || "Oversized"} fit. Take your usual size.</span>
+              </legend>
+              <div className="vwg-sizes">
+                {sizes.map((s) => {
+                  const row = SIZES.find((x) => x.id === s);
+                  return (
+                    <label key={s} className="vwg-size">
+                      <input type="radio" name="pdp-size" value={s} checked={size === s} onChange={() => setSize(s)} />
+                      <span><b>{s}</b>{row && <small>{row.chest} cm</small>}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <button className="vwg-btn-primary" type="submit" disabled={!size || soldOut || adding}>
+                {soldOut ? "Sold out" : !size ? "Select a size" : `Add to cart · ${money(product.price)}`}
+              </button>
+              <button
+                type="button" className="btn btn-block" disabled={!size || soldOut || adding}
+                onClick={async () => { if (await add()) navigate("/checkout"); }}
+              >
+                Buy now
+              </button>
             </div>
-          </fieldset>
+            <p className="fine" style={{ textAlign: "center" }}>Free standard delivery across India. Express at checkout. Prepaid only.</p>
+          </form>
 
-          {/* CTA Buttons */}
-          <div style={{ display: "grid", gap: 10 }}>
-            <button
-              className="vwg-btn-primary"
-              type="submit"
-              disabled={!size || product.stock === 0}
-            >
-              {!size ? "Select a size" : `Add to Cart — ${money(product.price)}`}
-            </button>
-            <button
-              type="button"
-              className="vwg-btn-primary"
-              style={{ background: "transparent", border: "1px solid rgba(232, 228, 218, 0.3)", color: "#E8E4DA" }}
-              disabled={!size || product.stock === 0}
-              onClick={handleBuyNow}
-            >
-              Buy Now with Cashfree
-            </button>
+          <div className="vwg-details">
+            {chart.length > 0 && (
+              <details open>
+                <summary>Size guide <span style={{ marginLeft: "auto", fontWeight: 500, textTransform: "none", color: "var(--bone-3)" }}>flat measurements, cm</span></summary>
+                <table className="vwg-size-table">
+                  <thead><tr><th>Size</th><th>Chest</th><th>Length</th><th>Sleeve</th></tr></thead>
+                  <tbody>
+                    {chart.map((s) => (
+                      <tr key={s.id}><th>{s.id}</th><td>{s.chest}</td><td>{s.length}</td><td>{s.sleeve}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            )}
+            <details>
+              <summary>Fabric and fit</summary>
+              <p>{product.fabric || "Combed cotton jersey"}{product.gsm ? ` at ${product.gsm} GSM` : " at 220–240 GSM"}. Cut {String(product.fit || "oversized").toLowerCase()} with a dropped shoulder. Knitted, cut and sewn in Tirupur, Tamil Nadu.</p>
+            </details>
+            <details>
+              <summary>Care</summary>
+              <p>Wash cold, inside out. Dry in the shade. Iron on reverse and keep heat off the print.</p>
+            </details>
+            <details>
+              <summary>Delivery and returns</summary>
+              <p>Standard delivery is free (4 to 7 working days); Express is ₹149 (2 to 4 working days). See the <Link to="/returns" style={{ color: "var(--bone)" }}>returns policy</Link>.</p>
+            </details>
           </div>
-          <p style={{ margin: 0, fontSize: 12, color: "rgba(232, 228, 218, 0.5)", textAlign: "center" }}>
-            Taxes included. Free insured shipping across India.
-          </p>
-        </form>
-
-        {/* Collapsible details */}
-        <div className="vwg-details">
-          <details open>
-            <summary>Size guide <span style={{ marginLeft: "auto", fontWeight: 500, textTransform: "none", color: "rgba(232, 228, 218, 0.5)" }}>flat measurements, cm</span></summary>
-            <table className="vwg-size-table">
-              <thead>
-                <tr><th>Size</th><th>Chest</th><th>Length</th><th>Sleeve</th></tr>
-              </thead>
-              <tbody>
-                {SIZES.map((s) => (
-                  <tr key={s.id}>
-                    <th>{s.id}</th><td>{s.chest}</td><td>{s.length}</td><td>{s.sleeve}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </details>
-          <details>
-            <summary>Fabric and fit</summary>
-            <p>Combed cotton jersey at 220–240 GSM. Cut oversized and boxy with a dropped shoulder. Knitted, cut and sewn in Tirupur, Tamil Nadu.</p>
-          </details>
-          <details>
-            <summary>Care</summary>
-            <p>Wash cold, inside out. Dry in the shade. Iron on reverse and keep heat off the print.</p>
-          </details>
         </div>
+      </div>
 
-        {/* Related pieces */}
-        {related.length > 0 && (
-          <section style={{ display: "grid", gap: 14 }}>
-            <h2 style={{ font: "600 11px/1 'Manrope', sans-serif", letterSpacing: "0.18em", textTransform: "uppercase", margin: 0, color: "rgba(232, 228, 218, 0.7)" }}>
-              More from the collection
-            </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-              {related.map((r) => {
-                const img = allPhotos(r)[0]?.src || "/mockup_silent.webp";
-                return (
-                  <Link
-                    key={r.id}
-                    to={`/product/${r.slug || r.id}`}
-                    style={{ textDecoration: "none", color: "inherit", background: "#18181B", border: "1px solid rgba(232, 228, 218, 0.12)", borderRadius: 2, overflow: "hidden" }}
-                  >
-                    <img src={img} alt={r.name} style={{ width: "100%", aspectRatio: "4/5", objectFit: "cover", display: "block" }} />
-                    <div style={{ padding: "8px 6px" }}>
-                      <div style={{ font: "400 11px/1.2 'Unbounded', sans-serif", color: "#E8E4DA", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: "rgba(232, 228, 218, 0.6)", marginTop: 4 }}>{money(r.price)}</div>
-                    </div>
+      {related.length > 0 && (
+        <section className="pdp-related" aria-labelledby="pdp-related-h">
+          <h2 className="eyebrow" id="pdp-related-h">More from the collection</h2>
+          <ul>
+            {related.map((r) => {
+              const img = allPhotos(r)[0]?.src;
+              return (
+                <li key={r.id}>
+                  <Link to={`/product/${r.slug || r.id}`}>
+                    {img ? <img src={img} alt="" loading="lazy" decoding="async" /> : <div className="pdp-empty" style={{ aspectRatio: "4 / 5", background: "var(--raise)" }}>VW</div>}
+                    <span className="r-name">{r.name}</span>
+                    <span className="r-price">{money(r.price)}</span>
                   </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-      </aside>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-      {/* Full-screen Photo Viewer */}
       <PhotoViewerModal
         photos={photos}
-        currentIndex={viewerIndex}
+        currentIndex={index}
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
-        onIndexChange={setViewerIndex}
+        onIndexChange={setIndex}
       />
     </main>
   );
