@@ -16,7 +16,7 @@ export const COLOR_ORDER = ['noir', 'bone', 'sand', 'forest', 'crimson'];
 
 // House designs (print artwork lives in three/prints.js).
 const HOUSE_PIECES = [
-  { id: 'nocturne', color: 'noir', front: 'wordmarkSmall', back: 'nocturne' },
+  { id: 'nocturne', color: 'bone', front: null, back: 'nocturne' },
   { id: 'essential', color: 'noir', front: null, back: null },
   { id: 'silence', color: 'noir', front: 'wordmark', back: null },
   { id: 'horizon', color: 'sand', front: 'horizon', back: null },

@@ -154,7 +154,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
 
   // ---- bays ----
   const bays = {
-    hero: addBay(0, 0, { rotation: 0.5 }),
+    hero: addBay(0, 0, { rotation: 0.5, color: '#E8E4DA', ink: '#141416' }),
     drop: [addFrame(9, 0, { rotation: 0.2 }), addFrame(12, 0), addFrame(15, 0, { rotation: -0.2 })],
     color: addBay(26, 0, { rotation: -0.35, color: '#141416' }),
     craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
