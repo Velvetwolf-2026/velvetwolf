@@ -23,7 +23,7 @@ export default function PublicLayout() {
     <GalleryProvider active={isGalleryPath(location.pathname)}>
       <GalleryHeader />
       <Outlet />
-      <GalleryFooter />
+      <GalleryFooter toolView={location.pathname === "/size-guide" || location.pathname === "/custom"} />
     </GalleryProvider>
   );
 }

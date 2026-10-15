@@ -14,9 +14,11 @@ const SUPPORT_LINKS = [
   ["/terms", "Terms"],
 ];
 
-export default function GalleryFooter() {
+// toolView: full-screen tools (Studio, size guide) pin their panel to the screen on desktop, so the
+// footer is left out there (as in the prototype); on phones the panel scrolls and the footer follows.
+export default function GalleryFooter({ toolView = false }) {
   return (
-    <footer className="vwg-foot">
+    <footer className={`vwg-foot${toolView ? " is-tool" : ""}`}>
       <div>
         <p className="foot-brand">Statements in silence.</p>
         <p>No countdown timers and no invented stock alerts. When a size sells out, the page says so. Drop dates are posted once they are confirmed.</p>

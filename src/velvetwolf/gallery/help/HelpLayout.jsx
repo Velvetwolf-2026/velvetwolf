@@ -51,6 +51,32 @@ export function DocBody({ sections }) {
   );
 }
 
+// The backdrop behind the header (no WebGL): a soft beam over the drawing, the page's name set
+// large and faint like the hall's wall lettering, and a scatter of gold stars that twinkle slowly.
+// Positions are fixed (seeded), so server and browser render the same markup.
+const WORDS = { contact: "CONTACT", faq: "QUESTIONS", "track-order": "ROUTE", "shipping-policy": "SHIPPING", returns: "RETURNS", "privacy-policy": "PRIVACY", terms: "TERMS" };
+const STARS = (() => {
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  return Array.from({ length: 28 }, () => ({
+    x: (40 + rnd() * 58).toFixed(1), y: (6 + rnd() * 84).toFixed(1),
+    s: (3 + rnd() * 6).toFixed(1), d: (3.2 + rnd() * 5.6).toFixed(2), delay: (-rnd() * 8).toFixed(2),
+  }));
+})();
+
+const Sky = memo(function Sky({ page }) {
+  return (
+    <div className="info-sky" aria-hidden="true">
+      <span className="info-beam" />
+      <span className="info-word">{WORDS[page] || ""}</span>
+      {STARS.map((st, i) => (
+        <i key={i} className="info-star" style={{ left: `${st.x}%`, top: `${st.y}%`, "--s": `${st.s}px`, "--d": `${st.d}s`, "--delay": `${st.delay}s` }} />
+      ))}
+      <span className="info-floor" />
+    </div>
+  );
+});
+
 // Drawn once per page: page state lives in classes the pages add, so React must not redraw it.
 const Motif = memo(function Motif({ page, motifRef }) {
   return <div className="info-motif" aria-hidden="true" ref={motifRef} dangerouslySetInnerHTML={{ __html: MOTIFS[page]() }} />;
@@ -92,6 +118,7 @@ export default function HelpLayout({ page, eyebrow, title, lede, station = "fram
     <main className="vwg view-info" ref={rootRef}>
       {doc && <div className="read-progress" ref={barRef} aria-hidden="true" />}
       <header className="info-hero" data-page={page}>
+        <Sky page={page} />
         <div className="info-hero-copy">
           <p className="eyebrow">{eyebrow}</p>
           <h1 className="info-title" tabIndex={-1}>{title}</h1>

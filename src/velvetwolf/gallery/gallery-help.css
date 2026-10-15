@@ -929,3 +929,86 @@ to {
 @media (prefers-reduced-motion: reduce) {
   .vwg *, .vwg *::before, .vwg *::after { animation: none !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* the search field's icon sits in its own padding (beats the generic field padding) */
+.vwg .faq-search input[type="search"] { padding-left: 46px; }
+.vwg .faq-search input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+
+/* payment: the tees they bought, as cards rising in one after another */
+.vwg .pay-bought { display: grid; gap: 10px; }
+.vwg .pay-tees { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 300px; overflow-y: auto; scrollbar-width: thin; }
+.vwg .pay-tees li {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center;
+  padding: 8px; border: 1px solid var(--line); background: rgba(232, 228, 218, 0.03);
+  animation: vwg-payRise 0.6s var(--ease) both; animation-delay: calc(1s + var(--i, 0) * 0.12s);
+}
+.vwg .pay-tee-photo { position: relative; width: 64px; height: 80px; background: var(--raise); overflow: hidden; display: block; }
+.vwg .pay-tee-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vwg .pay-tee-photo.is-art img { object-fit: contain; padding: 8px; }
+.vwg .pay-tee-qty { position: absolute; right: 4px; top: 4px; min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; border-radius: 10px; background: var(--bone); color: var(--noir); font: 600 11px/1 var(--g-body); }
+.vwg .pay-tee-info { display: grid; gap: 4px; min-width: 0; }
+.vwg .pay-tee-name { font: 400 12.5px/1.3 var(--g-display); letter-spacing: 0.12em; text-transform: uppercase; overflow-wrap: anywhere; }
+.vwg .pay-tee-meta { font-size: 12.5px; color: var(--bone-3); }
+.vwg .pay-tee-price { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--bone); }
+@keyframes vwg-payRise { from { opacity: 0.001; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ---------- help pages: a backdrop drawn in CSS (no 3D hall) ---------- */
+.vwg .info-hero {
+  isolation: isolate; overflow: hidden;
+  background:
+    radial-gradient(58% 72% at 74% 26%, rgba(232, 228, 218, 0.075), transparent 70%),
+    radial-gradient(34% 22% at 74% 96%, rgba(201, 185, 155, 0.08), transparent 75%),
+    linear-gradient(180deg, #0e0e10 0%, var(--hall) 78%);
+}
+.vwg .info-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+/* film grain, very faint */
+.vwg .info-sky::after {
+  content: ""; position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* a soft beam from above, onto the drawing; it breathes slowly */
+.vwg .info-beam {
+  position: absolute; left: 74%; top: -10%; width: min(52vw, 700px); height: 120%; transform: translateX(-50%);
+  background: conic-gradient(from 180deg at 50% 0%, transparent 162deg, rgba(232, 228, 218, 0.07) 180deg, transparent 198deg);
+  filter: blur(14px); animation: vwg-beam 9s ease-in-out infinite alternate;
+}
+/* the page's name, large and faint, like the lettering on the hall's walls */
+.vwg .info-word {
+  position: absolute; right: -0.06em; bottom: 54px; white-space: nowrap;
+  font: 200 clamp(84px, 14vw, 250px)/0.82 var(--g-display); letter-spacing: -0.04em;
+  color: transparent; -webkit-text-stroke: 1px rgba(232, 228, 218, 0.07);
+  animation: vwg-word 1.6s var(--ease) both;
+}
+/* gold four-point stars, twinkling at their own pace */
+.vwg .info-star {
+  position: absolute; width: var(--s); height: var(--s); background: #F0D9A2; opacity: 0.15;
+  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
+  animation: vwg-twinkle var(--d) ease-in-out infinite; animation-delay: var(--delay);
+}
+.vwg .info-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line-2) 50%, transparent); }
+/* the drawing's vitrine: no hall behind it now, so a quiet solid glass */
+.vwg .info-motif {
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.72), rgba(14, 14, 16, 0.72));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(232, 228, 218, 0.06);
+  animation: vwg-vitrine 0.9s 0.15s var(--ease) both;
+}
+.vwg .info-hero-copy { animation: vwg-heroCopy 0.8s var(--ease) both; }
+@keyframes vwg-beam { from { opacity: 0.6; } to { opacity: 1; } }
+@keyframes vwg-word { from { opacity: 0; transform: translateX(3%); } to { opacity: 1; transform: none; } }
+@keyframes vwg-twinkle { 0%, 100% { opacity: 0.1; transform: scale(0.6) rotate(0deg); } 50% { opacity: 0.85; transform: scale(1) rotate(45deg); } }
+@keyframes vwg-vitrine { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes vwg-heroCopy { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 819px) and (min-height: 500px), (max-width: 819px) and (orientation: portrait), (orientation: portrait) and (max-width: 1199px) {
+  .vwg .info-hero {
+    background:
+      radial-gradient(80% 50% at 50% 18%, rgba(232, 228, 218, 0.08), transparent 70%),
+      linear-gradient(180deg, #0e0e10 0%, var(--hall) 80%);
+  }
+  .vwg .info-beam { left: 50%; width: 90vw; height: 70%; }
+  .vwg .info-word { bottom: auto; top: calc(var(--nav-h) + 8px); right: -0.1em; font-size: 28vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vwg .info-star { opacity: 0.35; }
+}

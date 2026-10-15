@@ -177,17 +177,27 @@ export default function PaymentStatusPage() {
             <h1 className="pay-title" tabIndex={-1} ref={titleRef}>Thank you{first && !/^\d+$/.test(first) ? `, ${first}` : ""}. Your order is confirmed.</h1>
             <div className="pay-ref"><span>Order number</span><b>#{short(orderId)}</b><button className="text-btn" type="button" onClick={copy}>{copied || "Copy full number"}</button></div>
             {cart.length > 0 && (
-              <ul className="pay-items">
-                {cart.map((i, idx) => {
-                  const src = cartThumb(i);
-                  return (
-                    <li key={`${i.id}-${idx}`}>
-                      {src ? <img src={src} alt="" loading="lazy" /> : <span className="pay-chip" />}
-                      <span>{i.name} · {[i.color, i.size].filter(Boolean).join(" / ")}{i.qty > 1 ? ` × ${i.qty}` : ""}</span>
-                    </li>
-                  );
-                })}
-              </ul>
+              <section className="pay-bought" aria-labelledby="pay-bought-h">
+                <h2 className="eyebrow" id="pay-bought-h">{cart.length === 1 && cart[0].qty === 1 ? "Your tee" : "Your tees"}</h2>
+                <ul className="pay-tees">
+                  {cart.map((i, idx) => {
+                    const src = cartThumb(i);
+                    return (
+                      <li key={`${i.id}-${i.size}-${i.color}-${idx}`} style={{ "--i": idx }}>
+                        <span className={`pay-tee-photo${i.isCustom ? " is-art" : ""}`}>
+                          {src ? <img src={src} alt="" loading="lazy" decoding="async" /> : null}
+                          {i.qty > 1 && <span className="pay-tee-qty" aria-label={`Quantity ${i.qty}`}>{i.qty}</span>}
+                        </span>
+                        <span className="pay-tee-info">
+                          <span className="pay-tee-name">{i.name}</span>
+                          <span className="pay-tee-meta">{[i.color, i.size && `Size ${i.size}`].filter(Boolean).join(" · ")}{i.qty > 1 ? ` · ${i.qty} pieces` : ""}</span>
+                        </span>
+                        <span className="pay-tee-price">{money(Number(i.price) * Number(i.qty || 1))}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             )}
             <p className="pay-sub">A receipt is on its way{email ? <> to <b>{email}</b></> : ""}. We'll send the tracking link when it ships, usually within 2 to 3 business days.</p>
             <div className="acct-actions">

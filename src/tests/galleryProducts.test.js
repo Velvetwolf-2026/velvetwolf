@@ -75,7 +75,7 @@ describe("newestDrops / fromPrice / productHref", () => {
 });
 
 describe("isGalleryPath", () => {
-  it("covers home, shop, studio, auth, help and payment pages; product pages use photos, not 3D", () => {
+  it("covers home, shop, studio, auth, size guide and payment; help and product pages don't use 3D", () => {
     expect(isGalleryPath("/")).toBe(true);
     expect(isGalleryPath("/shop")).toBe(true);
     expect(isGalleryPath("/shop/anime")).toBe(true);
@@ -84,9 +84,9 @@ describe("isGalleryPath", () => {
     expect(isGalleryPath("/custom")).toBe(true);
     expect(isGalleryPath("/login")).toBe(true);
     expect(isGalleryPath("/signup")).toBe(true);
-    for (const p of ["/faq", "/contact", "/track-order", "/size-guide", "/shipping-policy", "/returns", "/privacy-policy", "/terms", "/payment-status"]) {
-      expect(isGalleryPath(p)).toBe(true);
-    }
+    for (const p of ["/size-guide", "/payment-status"]) expect(isGalleryPath(p)).toBe(true);
+    // help pages draw their own backdrop (no WebGL)
+    for (const p of ["/faq", "/contact", "/track-order", "/shipping-policy", "/returns", "/privacy-policy", "/terms"]) expect(isGalleryPath(p)).toBe(false);
     expect(isGalleryPath("/checkout")).toBe(false);
     expect(isGalleryPath("/account")).toBe(false);
   });
