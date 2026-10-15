@@ -645,7 +645,7 @@ export default function CustomDesignPage() {
                   />
                   <span>
                     <b>{s.id}</b>
-                    <small>{s.chest} cm</small>
+                    <small>{s.chest} cm flat</small>
                   </span>
                 </label>
               ))}

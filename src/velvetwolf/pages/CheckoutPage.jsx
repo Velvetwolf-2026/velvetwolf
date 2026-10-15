@@ -238,6 +238,9 @@ export default function CheckoutPage() {
 
       sessionStorage.setItem("vw_last_checkout_cart", JSON.stringify(cart));
       sessionStorage.setItem("vw_last_checkout_total", String(totals.total));
+      // for the payment page: whom to thank, and the email to track the order with
+      sessionStorage.setItem("vw_last_checkout_email", address.email || "");
+      sessionStorage.setItem("vw_last_checkout_name", address.name || "");
       const metaCookies = getMetaTrackingData();
       const res = await fetch(apiUrl("/checkout/create"), {
         method: "POST",
@@ -329,7 +332,7 @@ export default function CheckoutPage() {
         {totals.discount > 0 && <div><dt>Discount</dt><dd>&minus;{money(totals.discount)}</dd></div>}
         <div><dt>Delivery, {totals.ship.label.toLowerCase()}</dt><dd>{totals.shipping ? money(totals.shipping) : "Free"}</dd></div>
         <div><dt>GST (18%)</dt><dd>{money(totals.tax)}</dd></div>
-        <div className="sum-total"><dt>Total</dt><dd>{money(totals.total)}</dd></div>
+        <div className="sum-total"><dt>Total</dt><dd key={totals.total} className="sum-tick">{money(totals.total)}</dd></div>
       </dl>
       <button className="text-btn" type="button" onClick={() => setCartOpen?.(true)}>Edit cart</button>
     </>
@@ -344,7 +347,7 @@ export default function CheckoutPage() {
         </header>
 
         <details className="sum-mobile">
-          <summary><span>Order summary</span><span className="sum-mobile-total">{money(totals.total)}</span></summary>
+          <summary><span>Order summary</span><span className="sum-mobile-total sum-tick" key={totals.total}>{money(totals.total)}</span></summary>
           <div className="sum-body">{summary}</div>
         </details>
 
@@ -352,7 +355,7 @@ export default function CheckoutPage() {
           <form className="checkout-form" onSubmit={onSubmit} noValidate>
             {banner && <div className="form-banner" role="alert" tabIndex={-1} ref={bannerRef}>{banner}</div>}
 
-            <section className="co-step" aria-labelledby="co-h1">
+            <section className="co-step" style={{ "--i": 0 }} aria-labelledby="co-h1">
               <h2 className="co-h" id="co-h1"><span className="co-n">1</span>Contact</h2>
               {accountEmail ? (
                 <p className="co-signed">Signed in as <b>{accountEmail}</b>.</p>
@@ -375,7 +378,7 @@ export default function CheckoutPage() {
               </label>
             </section>
 
-            <section className="co-step" aria-labelledby="co-h2">
+            <section className="co-step" style={{ "--i": 1 }} aria-labelledby="co-h2">
               <h2 className="co-h" id="co-h2"><span className="co-n">2</span>Delivery address</h2>
               {saved.length > 0 && (
                 <div className="addr-choices" role="radiogroup" aria-label="Saved addresses">
@@ -425,7 +428,7 @@ export default function CheckoutPage() {
               )}
             </section>
 
-            <section className="co-step" aria-labelledby="co-h3">
+            <section className="co-step" style={{ "--i": 2 }} aria-labelledby="co-h3">
               <h2 className="co-h" id="co-h3"><span className="co-n">3</span>Delivery</h2>
               <div className="choice-list" role="radiogroup" aria-label="Delivery speed">
                 {DELIVERY.map((d) => (
@@ -438,7 +441,7 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            <section className="co-step" aria-labelledby="co-h4">
+            <section className="co-step" style={{ "--i": 3 }} aria-labelledby="co-h4">
               <h2 className="co-h" id="co-h4"><span className="co-n">4</span>Payment</h2>
               <p className="muted">Prepaid orders only: we don't offer cash on delivery. Payment is handled by Cashfree; we never see your card or UPI details.</p>
               <div className="choice-list choice-grid" role="radiogroup" aria-label="Payment method">
@@ -452,7 +455,7 @@ export default function CheckoutPage() {
             </section>
 
             <div className="co-pay">
-              <button className="btn btn-primary btn-block btn-pay" type="submit" disabled={busy}>
+              <button className={`btn btn-primary btn-block btn-pay${busy ? " is-busy" : ""}`} type="submit" disabled={busy} aria-busy={busy}>
                 {busy ? "Opening payment…" : `Pay ${money(totals.total)}`}
               </button>
               <p className="fine">You'll confirm the payment in Cashfree's secure window. Your order is placed once the payment goes through.</p>

@@ -380,7 +380,7 @@ describe("checkout.service", () => {
 
       const result = await verifyCheckout("order-1");
 
-      expect(result).toEqual({ success: true, status: "SUCCESS", orderId: "order-1" });
+      expect(result).toEqual({ success: true, status: "SUCCESS", state: "paid", orderId: "order-1" });
       const orderUpdate = calls.find((c) => c.table === "orders" && c.method === "update");
       expect(orderUpdate.payload).toMatchObject({ status: "confirmed" });
       expect(sendEmail).toHaveBeenCalledTimes(1);
@@ -407,10 +407,18 @@ describe("checkout.service", () => {
 
       const result = await verifyCheckout("order-1");
 
-      expect(result).toMatchObject({ success: true, status: "PENDING_OR_FAILED" });
+      expect(result).toMatchObject({ success: true, status: "PENDING_OR_FAILED", state: "pending" });
       expect(calls.length).toBe(0);
       expect(sendEmail).not.toHaveBeenCalled();
     });
+
+    it.each([[[{ payment_status: "FAILED" }]], [[{ payment_status: "USER_DROPPED" }]], [[]]])(
+      "reports a failed payment (not 'waiting') when Cashfree says %j", async (payments) => {
+        resetSupabaseMock({});
+        verifyPayment.mockResolvedValueOnce(payments);
+        await expect(verifyCheckout("order-1")).resolves.toMatchObject({ status: "PENDING_OR_FAILED", state: "failed" });
+        expect(calls.length).toBe(0);
+      });
 
     it("wraps a Cashfree verification failure as a 500 ApiError", async () => {
       resetSupabaseMock({});

@@ -9,6 +9,8 @@ export const isGalleryPath = (pathname = "") =>
   pathname === "/shop" ||
   pathname.startsWith("/shop/") ||
   pathname === "/custom" ||
+  // help pages: the hall is a dim backdrop behind the header; size guide and payment use it fully
+  ["/contact", "/faq", "/track-order", "/size-guide", "/shipping-policy", "/returns", "/privacy-policy", "/terms", "/payment-status"].includes(pathname) ||
   pathname === "/login" ||
   pathname === "/signup";
 

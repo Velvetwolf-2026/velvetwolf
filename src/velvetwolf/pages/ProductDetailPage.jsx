@@ -244,7 +244,7 @@ export default function ProductDetailPage() {
                   return (
                     <label key={s} className="vwg-size">
                       <input type="radio" name="pdp-size" value={s} checked={size === s} onChange={() => setSize(s)} />
-                      <span><b>{s}</b>{row && <small>{row.chest} cm</small>}</span>
+                      <span><b>{s}</b>{row && <small>{row.chest} cm flat</small>}</span>
                     </label>
                   );
                 })}
@@ -270,7 +270,7 @@ export default function ProductDetailPage() {
               <details open>
                 <summary>Size guide <span style={{ marginLeft: "auto", fontWeight: 500, textTransform: "none", color: "var(--bone-3)" }}>flat measurements, cm</span></summary>
                 <table className="vwg-size-table">
-                  <thead><tr><th>Size</th><th>Chest</th><th>Length</th><th>Sleeve</th></tr></thead>
+                  <thead><tr><th>Size</th><th>Chest, pit to pit</th><th>Length</th><th>Sleeve</th></tr></thead>
                   <tbody>
                     {chart.map((s) => (
                       <tr key={s.id}><th>{s.id}</th><td>{s.chest}</td><td>{s.length}</td><td>{s.sleeve}</td></tr>

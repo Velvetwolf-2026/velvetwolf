@@ -213,94 +213,83 @@ function formatDate(date) {
   });
 }
 
-// Generate Mock Steps
-function getMockTrackingSteps(order) {
-  const createdAt = new Date(order.created_at || Date.now());
-  const now = new Date();
-  const diffHours = Math.floor((now - createdAt) / (1000 * 60 * 60));
+// Tracking stages, in order (the Track order page draws one node per stage).
+export const TRACK_STAGES = [
+  "Order placed", "Payment confirmed", "In production", "Quality check", "Dispatched", "Out for delivery", "Delivered",
+];
 
-  const steps = [
-    { label: "Order Placed", time: formatDate(createdAt), done: true },
-    { label: "Payment Confirmed", time: formatDate(new Date(createdAt.getTime() + 5000)), done: true },
-    { label: "In Production", time: "—", done: false },
-    { label: "Quality Check", time: "—", done: false },
-    { label: "Dispatched", time: "—", done: false },
-    { label: "Out for Delivery", time: "—", done: false },
-    { label: "Delivered", time: "—", done: false },
-  ];
+// Where an order is, from its real status (never from how long ago it was placed).
+export function stageForStatus(status) {
+  switch (String(status || "").toLowerCase()) {
+    case "pending": return 0;
+    case "confirmed": return 1;
+    case "processing":
+    case "in_production": return 2;
+    case "quality_check": return 3;
+    case "dispatched":
+    case "shipped":
+    case "in_transit": return 4;
+    case "out_for_delivery": return 5;
+    case "delivered": return 6;
+    default: return 0;
+  }
+}
 
-  if (diffHours >= 1) {
-    steps[2].time = formatDate(new Date(createdAt.getTime() + 60 * 60 * 1000));
-    steps[2].done = true;
-  }
-  if (diffHours >= 3) {
-    steps[3].time = formatDate(new Date(createdAt.getTime() + 3 * 60 * 60 * 1000));
-    steps[3].done = true;
-  }
-  if (diffHours >= 6) {
-    steps[4].time = formatDate(new Date(createdAt.getTime() + 6 * 60 * 60 * 1000));
-    steps[4].done = true;
-  }
-  if (diffHours >= 12) {
-    steps[5].time = "Expected today";
-    steps[5].done = true;
-  }
-  if (diffHours >= 24) {
-    steps[6].time = formatDate(new Date(createdAt.getTime() + 24 * 60 * 60 * 1000));
-    steps[6].done = true;
-  }
+// Courier status text -> stage (Shiprocket's wording varies by courier).
+function stageForCourier(text) {
+  const t = String(text || "").toUpperCase();
+  if (t.includes("DELIVERED") && !t.includes("UNDELIVERED") && !t.includes("NOT DELIVERED")) return 6;
+  if (t.includes("OUT FOR DELIVERY")) return 5;
+  return 4;
+}
 
-  // Determine overall status based on highest completed step
-  const lastDoneIdx = steps.reduce((acc, step, idx) => (step.done ? idx : acc), 0);
-  const statusMap = [
-    "ORDER PLACED",
-    "PAYMENT CONFIRMED",
-    "IN PRODUCTION",
-    "QUALITY CHECK",
-    "DISPATCHED",
-    "OUT FOR DELIVERY",
-    "DELIVERED"
-  ];
+function stagedSteps(stage, order) {
+  return TRACK_STAGES.map((label, i) => ({
+    label,
+    done: i <= stage,
+    time: i === 0 && order.created_at ? formatDate(new Date(order.created_at)) : "",
+  }));
+}
 
+function trackingResult(order, stage, extra = {}) {
+  const cancelled = String(order.status || "").toLowerCase() === "cancelled";
   return {
     success: true,
     order_id: order.id,
-    awb_number: order.awb_number || "SRM738291023",
-    courier_name: order.courier_name || "Delhivery",
-    status: statusMap[lastDoneIdx],
-    steps: steps,
+    awb_number: order.awb_number && !order.awb_number.startsWith("SRM") ? order.awb_number : null,
+    courier_name: order.courier_name || null,
+    stage: cancelled ? -1 : stage,
+    status: cancelled ? "CANCELLED" : TRACK_STAGES[stage].toUpperCase(),
+    delivery: order.meta?.delivery === "express" ? "express" : "standard",
+    placed_at: order.created_at || null,
+    steps: stagedSteps(cancelled ? 0 : stage, order),
+    ...extra,
   };
 }
 
 // Fetch Shipment Tracking Details
-export async function getShipmentTracking(orderId) {
+// email (optional): when given, it must match the order's, so an order number
+// alone from someone else's screenshot isn't enough. The response carries no
+// address or contact details either way.
+export async function getShipmentTracking(orderId, email = "") {
   logInfo("Fetching shipment tracking status", { orderId });
+  const notFound = new ApiError(404, "We couldn't find an order with that number and email. Check both, or write to us.");
+  if (!/^[0-9a-f-]{36}$/i.test(String(orderId || ""))) throw notFound;
 
-  // Resolve short ID or full UUID
-  let query = supabaseAdmin.from("orders").select("*");
-  
-  if (orderId.startsWith("VW-")) {
-    // If it's a short human-readable id format (custom for tracking)
-    // Wait, let's allow lookup by full UUID or custom tracking code
-    query = query.eq("id", orderId);
-  } else {
-    query = query.eq("id", orderId);
-  }
+  const { data: order, error } = await supabaseAdmin
+    .from("orders").select("id, status, created_at, awb_number, courier_name, shipping_address, meta").eq("id", orderId).maybeSingle();
+  if (error || !order) throw notFound;
+  if (email && String(order.shipping_address?.email || "").trim().toLowerCase() !== String(email).trim().toLowerCase()) throw notFound;
 
-  const { data: order, error } = await query.maybeSingle();
-
-  if (error || !order) {
-    throw new ApiError(404, "Order not found. Please verify your Order ID and Email.");
-  }
-
-  // If awb is missing or mock AWB
+  const dbStage = stageForStatus(order.status);
+  // No courier yet: the order's own status says where it is.
   if (!order.awb_number || order.awb_number.startsWith("SRM")) {
-    return getMockTrackingSteps(order);
+    return trackingResult(order, dbStage);
   }
 
   const token = await getShiprocketToken();
   if (!token) {
-    return getMockTrackingSteps(order);
+    return trackingResult(order, Math.max(dbStage, 4));
   }
 
   try {
@@ -314,7 +303,7 @@ export async function getShipmentTracking(orderId) {
     const data = await res.json();
     if (!res.ok || !data.tracking_data) {
       logError("Failed to fetch tracking data from Shiprocket", { error: data });
-      return getMockTrackingSteps(order);
+      return trackingResult(order, Math.max(dbStage, 4));
     }
 
     const trackInfo = data.tracking_data;
@@ -333,18 +322,15 @@ export async function getShipmentTracking(orderId) {
       });
     }
 
-    return {
-      success: true,
-      order_id: order.id,
-      awb_number: order.awb_number,
-      courier_name: order.courier_name || "Delhivery",
-      status: trackInfo.status || "IN TRANSIT",
-      steps: trackingSteps,
-      etd: trackInfo.etd || "—",
-    };
+    const stage = Math.max(dbStage, stageForCourier(trackInfo.status || trackInfo.shipment_track?.[0]?.current_status));
+    return trackingResult(order, stage, {
+      courier_status: trackInfo.status || null,
+      activities: trackingSteps,
+      etd: trackInfo.etd || null,
+    });
   } catch (err) {
     logError("Shiprocket tracking fetch exception", { errorMessage: err.message });
-    return getMockTrackingSteps(order);
+    return trackingResult(order, Math.max(dbStage, 4));
   }
 }
 

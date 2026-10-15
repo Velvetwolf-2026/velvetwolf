@@ -64,7 +64,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   const B = world.bays;
   // lite gold stars drifting through the hall, kept clear of the tees
   const dust = createGoldDust(scene, {
-    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio].map((b) => b.x),
+    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio, B.fit].map((b) => b.x),
     count: tier === 'low' ? 600 : tier === 'mid' ? 900 : 1400,
     reduced: reducedMotion,
     pixelRatio: dpr,
@@ -85,6 +85,9 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   dress(B.hero.garment, 'nocturne', 'bone');
   dress(B.color.garment, 'essential', 'noir');
   dress(B.craft.garment, 'silence', 'bone');
+  dress(B.fit.garment, 'essential', 'bone');
+  // size guide: the fit tee grows or shrinks a little with the chosen size
+  let fitScale = 1, fitGoal = 1;
   // Quiet Hours: framed photographs hang where the drop tees used to float.
   // The page supplies them (the newest products) through setDropPhotos().
   const hungPhotos = [];
@@ -190,7 +193,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     const smooth = reducedMotion ? 0 : view === 'home' ? 0.38 : 0.85;
     rig.update(dt, smooth, W, H);
     world.aimLights(rig.focus, rig.spot);
-    dust.update(t, rig.focus);
+    dust.update(t, rig.focus, dt);
     // keep the fog relative to how far back the camera stands (narrow phones frame from further away)
     const camDist = camera.position.distanceTo(rig.focus);
     scene.fog.near = Math.max(10, camDist * 0.85);
@@ -221,12 +224,16 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       B[key].garment.pivot.rotation.y = s.rot;
     }
 
+    fitScale = reducedMotion ? fitGoal : damp(fitScale, fitGoal, 5, dt);
+    B.fit.garment.group.scale.setScalar(fitScale);
+
     for (const g of world.garments()) g.update(dt);
 
     stages.renderCopies(dt, t, W, H, reducedMotion);
     renderer.setViewport(0, 0, W, H);
-    // in the shop the hall recedes as the grid scrolls over it; in auth it softens
-    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : view === 'auth' ? 0.7 : 1;
+    // in the shop the hall recedes as the grid scrolls over it; in auth it softens; behind the
+    // help pages it is a dim backdrop
+    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : view === 'auth' ? 0.7 : view === 'info' ? 0.55 : 1;
     dim = reducedMotion ? dimGoal : damp(dim, dimGoal, 6, dt);
     renderer.toneMappingExposure = dim;
     if (!occluded) renderer.render(scene, camera);
@@ -303,6 +310,25 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       else B.pdp.garment.setPrint('back', null);
       if (p.name) world.setPdpWall(p.name);
     },
+    // payment pages: 'idle' | 'gather' (paid) | 'orbit' (waiting) | 'fall' (failed)
+    setStars(mode) { dust.setMode(mode, new THREE.Vector3(B.pdp.x, TEE_Y, 0)); },
+    // the ordered tee on the product stage behind the payment card: a plain tee in the
+    // order's colour (site colour name or colourway id), the wall says VELVETWOLF
+    dressPayment(color = 'noir', wall = 'VELVETWOLF') {
+      const cw = COLORWAYS[color] || Object.values(COLORWAYS).find((c) => c.site.toLowerCase() === String(color).toLowerCase()) || COLORWAYS.noir;
+      B.pdp.garment.setColor(cw.hex, true);
+      B.pdp.garment.setInk(cw.ink, true);
+      B.pdp.garment.setPrint('front', null);
+      B.pdp.garment.setPrint('back', null);
+      world.setPdpWall(wall);
+      spin.pdp.goal = spin.pdp.rot = 0;
+    },
+    // size guide: screen positions of points given in the fit tee's own units
+    fitProject(points) {
+      const s = fitScale, b = B.fit;
+      return points.map(([x, y, z]) => project(b.x + x * s, TEE_Y + y * s, z * s));
+    },
+    setFitSize(scale) { fitGoal = scale; },
     dressTeaser(texture, colorId = 'noir') {
       const cw = COLORWAYS[colorId];
       B.teaser.garment.setColor(cw.hex, true);
@@ -317,7 +343,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     redrawText() { prints.redrawAll(); world.redrawLettering(); },
     get mobile() { return stacked(); },
     tier,
-    debug() { return { tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },
+    debug() { return { stars: +dust.points.material.uniforms.uGather.value.toFixed(3), fall: +dust.points.material.uniforms.uFall.value.toFixed(3), tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },
     settle() {
       applyGoal(true);
       for (const k of ['pdp', 'studio']) spin[k].rot = spin[k].goal;

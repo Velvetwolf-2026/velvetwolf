@@ -160,11 +160,14 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
     teaser: addBay(46, 0, { rotation: 0.2 }),
     pdp: addBay(60, 0, { rotation: 0, beam: false, light: false }),
+    // size guide: a plain Bone tee, straight on, for the measurement lines
+    fit: addBay(84, 0, { rotation: 0, beam: false, light: false, color: '#E8E4DA', ink: '#141416' }),
     studio: addBay(72, 0, { rotation: 0, beam: false, light: false }),
   };
   const wallDrop = addLettering(12, 'QUIET HOURS', { y: 3.85, w: 11, opacity: 0.07 });
   const wallPdp = addLettering(60, 'NOCTURNE', { y: 3.55, w: 8.4, opacity: 0.055 });
   const wallStudio = addLettering(72, 'STUDIO', { y: 3.55, w: 8.4, opacity: 0.055 });
+  const wallFit = addLettering(84, 'FIT', { y: 3.55, w: 8.4, opacity: 0.05 });
 
   // ---- light ----
   scene.add(new THREE.HemisphereLight('#ffffff', '#0b0b0c', 0.32));
@@ -200,7 +203,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     lights: { key, rim, fill },
     aimLights,
     setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
-    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); },
-    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio].map((b) => b.garment),
+    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); },
+    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, bays.fit].map((b) => b.garment),
   };
 }

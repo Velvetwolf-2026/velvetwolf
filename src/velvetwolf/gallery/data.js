@@ -23,12 +23,13 @@ const HOUSE_PIECES = [
   { id: 'monogram', color: 'forest', front: 'monogram', back: null },
 ];
 
+// Garment measurements in cm, laid flat: chest is pit to pit, length is shoulder to hem.
 export const SIZES = [
-  { id: 'S',   chest: 108, length: 70, sleeve: 22 },
-  { id: 'M',   chest: 114, length: 72, sleeve: 23 },
-  { id: 'L',   chest: 120, length: 74, sleeve: 24 },
-  { id: 'XL',  chest: 126, length: 76, sleeve: 25 },
-  { id: 'XXL', chest: 132, length: 78, sleeve: 26 },
+  { id: 'S',   chest: 54, length: 70, sleeve: 22 },
+  { id: 'M',   chest: 57, length: 72, sleeve: 23 },
+  { id: 'L',   chest: 60, length: 74, sleeve: 24 },
+  { id: 'XL',  chest: 63, length: 76, sleeve: 25 },
+  { id: 'XXL', chest: 66, length: 78, sleeve: 26 },
 ];
 
 export const STUDIO_PRICE = 2290;

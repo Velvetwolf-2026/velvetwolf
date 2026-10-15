@@ -1,175 +1,87 @@
-import { useContext, useState } from "react";
-import { S, PageHeader } from "../styles/shared";
+// FAQ (gallery help page). Header: index cards that lift in turn; choosing a topic lifts its card.
+// Search highlights the term in questions and answers and opens the matches.
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
+import HelpLayout from "../gallery/help/HelpLayout";
+import { FAQ, BUSINESS } from "../gallery/help/content";
 
-import { THEME } from "../utils/constants";
-import { AppContext } from "./AppContext";
-const { gold, surface, border, muted, text } = THEME;
-
-const FAQS = [
-  { cat: "ORDERS", q: "How do I place an order?", a: "Browse collections, select size and colour, add to cart, and checkout. You'll receive a confirmation email within 15 minutes of payment." },
-  { cat: "ORDERS", q: "Can I modify or cancel my order?", a: "Orders can be modified or cancelled within 1 hour by emailing orders@velvetwolf.in. After that, the order enters production and cannot be changed." },
-  { cat: "ORDERS", q: "Is COD available?", a: "No. All orders are prepaid: pay securely by UPI, card, netbanking or wallet at checkout." },
-  { cat: "SHIPPING", q: "When will my order ship?", a: "We dispatch all orders within 2–3 business days of payment. You'll receive a tracking link via email and SMS once dispatched." },
-  { cat: "SHIPPING", q: "Do you ship internationally?", a: "International shipping is not available currently. Join our newsletter to be notified when it goes live." },
-  { cat: "SHIPPING", q: "My order hasn't updated in 48 hours.", a: "Contact us at info@velvetwolf.in with your order ID. We'll investigate and respond within 4 hours." },
-  { cat: "PRODUCTS", q: "Will sold-out items restock?", a: "Popular items are restocked periodically. Join the waitlist on the product page or follow our Instagram for announcements. Limited Edition drops typically do not restock." },
-  { cat: "PRODUCTS", q: "How do I care for my VelvetWolf tee?", a: "Machine wash cold, turn inside out, avoid bleach, and air dry for best longevity. Iron on medium heat, never directly on prints." },
-  { cat: "PRODUCTS", q: "Are your fabrics sustainable?", a: "We use 100% combed cotton and GOTS-certified organic cotton on select lines. Our Bamboo Blend series uses sustainably sourced bamboo-cotton fabric." },
-  { cat: "CUSTOM", q: "How does the custom design service work?", a: "Upload your design on our Custom Design page, choose fabric and base colour, enter quantity, and get an instant price estimate. We'll print and ship within 7–10 business days." },
-  { cat: "CUSTOM", q: "What file formats are accepted?", a: "We accept PNG, PDF, AI, and PSD files. Minimum resolution 300 DPI. For best results, send vector files. We'll send a digital proof before production." },
-  { cat: "RETURNS", q: "What is your return policy?", a: "We accept returns within 10 days of delivery for unworn, unwashed items with tags intact. Custom orders and Limited Edition drops are non-returnable." },
-  { cat: "RETURNS", q: "How long does a refund take?", a: "Refunds are processed within 48 hours of receiving the item. Bank processing adds 3–5 days. Choose Store Credit for an instant refund." },
-  { cat: "ACCOUNT", q: "Do I need an account to order?", a: "No — you can checkout as a guest. However, an account lets you track orders, save addresses, and access exclusive member offers." },
-  { cat: "ACCOUNT", q: "How do I reset my password?", a: "There's no password to reset. Enter your email on the sign-in page and we'll send a 6-digit code (check spam if you don't see it), or sign in with your mobile number or Google." },
-];
-
-function FAQAnswer({ faq, formatText }) {
-  const { setPage } = useContext(AppContext);
-
-  if (faq.type === "orders-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Orders can be modified or cancelled within{" "}
-        <span style={{ fontFamily: "'Roboto', sans-serif" }}>1</span> hour by emailing{" "}
-        <a 
-          href="mailto:orders@velvetwolf.in" 
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = "mailto:orders@velvetwolf.in";
-          }}
-          style={{ color: gold }}
-        >
-          orders@velvetwolf.in
-        </a>. If you need more help, visit the <button onClick={() => setPage("contactus")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf contact page</button>. After that, the order enters production and cannot be changed.
-      </p>
-    );
-  }
-
-  if (faq.type === "shipping-help") {
-    return (
-      <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>
-        Contact us at <a 
-          href="mailto:support@velvetwolf.in" 
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = "mailto:support@velvetwolf.in";
-          }}
-          style={{ color: gold }}
-        >
-          support@velvetwolf.in
-        </a> with your order ID, or open the <button onClick={() => setPage("trackorder")} style={{ background: "none", border: "none", color: gold, cursor: "pointer", padding: 0, font: "inherit" }}>VelvetWolf tracking page</button>. We'll investigate and respond within{" "}
-        <span style={{ fontFamily: "'Roboto', sans-serif" }}>4</span> hours.
-      </p>
-    );
-  }
-
-  return <p style={{ ...S.p, marginBottom: 0, marginTop: 14 }}>{formatText(faq.a)}</p>;
+export function meta() {
+  return [{ title: "FAQ · VelvetWolf" }, { name: "description", content: "Short answers about orders, shipping, sizes, the Studio, returns and your account." }];
 }
 
-function FAQItem({ faq, isOpen, onToggle, formatText }) {
-  return (
-    <div style={{ border: `1px solid ${isOpen ? gold + "55" : border}`, marginBottom: 8, transition: "border-color 0.3s" }}>
-      <button
-        onClick={onToggle}
-        style={{ all: "unset", width: "100%", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", boxSizing: "border-box" }}
-      >
-        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 1, color: isOpen ? gold : text }}>{faq.q}</span>
-        <span style={{ color: gold, fontSize: 20, transform: isOpen ? "rotate(45deg)" : "rotate(0)", transition: "transform 0.3s", flexShrink: 0, marginLeft: 16 }}>+</span>
-      </button>
-      {isOpen && (
-        <div style={{ padding: "0 20px 18px", borderTop: `1px solid ${border}` }}>
-          <FAQAnswer faq={faq} formatText={formatText} />
-        </div>
-      )}
-    </div>
-  );
+const CATS = [...new Set(FAQ.map((f) => f.cat))];
+const plain = (html) => html.replace(/<[^>]+>/g, "");
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Wraps the term in <mark> in text nodes only (never inside tags or links' href).
+function highlight(html, term) {
+  if (!term || term.length < 2) return html;
+  const re = new RegExp(`(${escRe(term)})`, "gi");
+  return html.split(/(<[^>]+>)/).map((part) => (part.startsWith("<") ? part : part.replace(re, "<mark>$1</mark>"))).join("");
 }
 
 export default function FAQPage() {
-  const [open, setOpen] = useState(null);
-  const categories = [...new Set(FAQS.map((f) => f.cat))];
+  const motifRef = useRef(null);
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("All");
+  const [open, setOpen] = useState({});
+  const term = q.trim().toLowerCase();
 
-  const formatText = (text) =>
-    text.split(/(₹?\d+(?:,\d+)?(?:[–-]\d+(?:,\d+)?)?\s?(?:minutes?|hours?|days?)?)/gi).map((part, i) =>
-      /\d/.test(part) ? (
-        <span key={i} style={{ fontFamily: "'Roboto', sans-serif" }}>
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
+  const items = useMemo(() => FAQ.map((f, i) => ({
+    ...f, key: i,
+    hit: (cat === "All" || f.cat === cat) && (!term || `${f.q} ${plain(f.a)}`.toLowerCase().includes(term)),
+  })), [cat, term]);
+  const shown = items.filter((f) => f.hit).length;
+
+  // lift the chosen topic's card in the header drawing (after each render, so it sticks)
+  useEffect(() => {
+    motifRef.current?.querySelectorAll(".idx-card").forEach((g) => g.classList.toggle("is-on", cat !== "All" && g.dataset.cat === cat));
+  });
+  const pick = (c) => setCat(c);
 
   return (
-    <div style={S.page}>
-      <div style={S.wrap}>
-        <PageHeader eyebrow="HELP" title="FREQUENTLY ASKED QUESTIONS" sub="Quick answers to the most common questions" />
-
-        {categories.map(cat => (
-          <div key={cat} style={{ marginBottom: 36 }}>
-            <h2 style={S.h2}>{cat}</h2>
-            {FAQS.filter((f) => f.cat === cat).map((faq, i) => {
-              const key = `${cat}-${i}`;
-              return (
-                <FAQItem
-                  key={key}
-                  faq={faq}
-                  isOpen={open === key}
-                  onToggle={() => setOpen(open === key ? null : key)}
-                  formatText={formatText}
-                />
-              );
-            })}
-          </div>
-        ))}
-
-        {/* Still need help */}
-        <div style={{ background: surface, border: `1px solid ${border}`, padding: "28px", textAlign: "center", marginTop: 20 }}>
-          <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 24, letterSpacing: 4, color: gold, marginBottom: 8 }}>STILL HAVE QUESTIONS?</div>
-          <p style={{ ...S.p, marginBottom: 20 }}>
-            Our support team is available{" "}
-            <span style={{ fontFamily: "'Roboto', sans-serif" }}>10AM</span>–
-            <span style={{ fontFamily: "'Roboto', sans-serif" }}>7PM</span> IST, Monday to Saturday.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            {[
-              { label: "EMAIL SUPPORT", val: "info@velvetwolf.in", type: "email" },
-              { label: "WHATSAPP", val: "+91 93422 45724", type: "phone" }
-            ].map((c, i) => (
-              <div key={i} style={{ border: `1px solid ${gold}55`, padding: "10px 20px", textAlign: "left" }}>
-
-                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 3, color: muted, marginBottom: 2 }}>
-                  {c.label}
-                </div>
-
-                {c.type === "email" ? (
-                  <a
-                    href={`mailto:${c.val}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = `mailto:${c.val}`;
-                    }}
-                    style={{ fontSize: 13, color: gold, textDecoration: "none" }}
-                  >
-                    {c.val}
-                  </a>
-                ) : (
-                  <a
-                    href={`https://wa.me/919342245724`}
-                    target="_blank"
-                    style={{ fontSize: 13, color: gold, textDecoration: "none" }}
-                  >
-                    <span style={{ fontFamily: "'Roboto', sans-serif" }}>
-                      {c.val}
-                    </span>
-                  </a>
-                )}
-
-              </div>
-            ))}
-          </div>
+    <HelpLayout page="faq" eyebrow="Help · FAQ" title="Questions, answered" station="frames" motifRef={motifRef}
+      lede="Short answers to what people ask most. If yours isn't here, ask us.">
+      <div className="faq-tools">
+        <div className="faq-search">
+          <label className="sr" htmlFor="faq-q">Search the questions</label>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5 5" /></svg>
+          <input id="faq-q" type="search" placeholder="Search: refund, COD, size, upload…" autoComplete="off" spellCheck="false"
+            value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="faq-cats" role="radiogroup" aria-label="Filter by topic">
+          {["All", ...CATS].map((c) => (
+            <label className="filter" key={c}>
+              <input type="radio" name="faq-cat" value={c} checked={cat === c} onChange={() => pick(c)} />
+              <span>{c}</span>
+            </label>
+          ))}
         </div>
       </div>
-    </div>
+      <p className="faq-count" role="status" aria-live="polite">{term || cat !== "All" ? `${shown} ${shown === 1 ? "answer" : "answers"}` : ""}</p>
+      <div className="faq-list">
+        {CATS.map((c) => {
+          const list = items.filter((f) => f.cat === c && f.hit);
+          if (!list.length) return null;
+          return (
+            <section className="faq-group" key={c} aria-labelledby={`faq-${c}`}>
+              <h2 className="eyebrow" id={`faq-${c}`}>{c}</h2>
+              {list.map((f) => (
+                <details className="faq-item" key={f.key} open={Boolean(term) || Boolean(open[f.key])}
+                  onToggle={(e) => { const isOpen = e.currentTarget.open; if (!term) setOpen((o) => (o[f.key] === isOpen ? o : { ...o, [f.key]: isOpen })); }}>
+                  <summary><span className="faq-q" dangerouslySetInnerHTML={{ __html: highlight(f.q.replace(/</g, "&lt;"), term) }} /></summary>
+                  <div className="faq-a"><p dangerouslySetInnerHTML={{ __html: highlight(f.a, term) }} /></div>
+                </details>
+              ))}
+            </section>
+          );
+        })}
+      </div>
+      {shown === 0 && <p className="faq-empty">Nothing matches that. <Link to="/contact">Ask us directly</Link>; we usually reply within 4 working hours.</p>}
+      <section className="info-card faq-more">
+        <h2 className="info-h">Still stuck?</h2>
+        <p className="muted">Write to <a href={`mailto:${BUSINESS.emails.info}`}>{BUSINESS.emails.info}</a> or message us on <a href={BUSINESS.whatsapp.href} target="_blank" rel="noopener noreferrer">WhatsApp</a>.</p>
+      </section>
+    </HelpLayout>
   );
 }

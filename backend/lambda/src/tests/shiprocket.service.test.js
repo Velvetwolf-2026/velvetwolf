@@ -167,11 +167,39 @@ describe("shiprocket.service", () => {
       await expect(getShipmentTracking("missing-order")).rejects.toMatchObject({ statusCode: 404 });
     });
 
-    it("returns mock tracking steps for a mock AWB", async () => {
-      resetSupabaseMock({ orders: [{ data: { ...ORDER, awb_number: "SRM123456789" }, error: null }] });
-      const result = await getShipmentTracking("order-1");
-      expect(result.success).toBe(true);
-      expect(result.steps.length).toBeGreaterThan(0);
+    const ID = "0b6f8b2e-6c1e-4d0b-9a4e-2f7d1c3b5a99";
+    const old = new Date(Date.now() - 5 * 864e5).toISOString(); // placed 5 days ago
+
+    it("follows the order's real status, not its age (no made-up 'Delivered')", async () => {
+      resetSupabaseMock({ orders: [{ data: { ...ORDER, id: ID, status: "confirmed", created_at: old, awb_number: "SRM123456789" }, error: null }] });
+      const result = await getShipmentTracking(ID);
+      expect(result).toMatchObject({ success: true, stage: 1, status: "PAYMENT CONFIRMED", awb_number: null });
+      expect(result.steps.map((s) => s.done)).toEqual([true, true, false, false, false, false, false]);
+    });
+
+    it.each([["pending", 0], ["in_production", 2], ["dispatched", 4], ["delivered", 6]])("maps status %s to stage %i", async (status, stage) => {
+      resetSupabaseMock({ orders: [{ data: { ...ORDER, id: ID, status, awb_number: null }, error: null }] });
+      await expect(getShipmentTracking(ID)).resolves.toMatchObject({ stage });
+    });
+
+    it("shows a cancelled order as cancelled", async () => {
+      resetSupabaseMock({ orders: [{ data: { ...ORDER, id: ID, status: "cancelled", awb_number: null }, error: null }] });
+      await expect(getShipmentTracking(ID)).resolves.toMatchObject({ stage: -1, status: "CANCELLED" });
+    });
+
+    it("checks the email when one is given, and never returns the address", async () => {
+      const row = { ...ORDER, id: ID, status: "confirmed", awb_number: null, shipping_address: { email: "Asha@Example.com", phone: "9876543210", address: "1 Road" } };
+      resetSupabaseMock({ orders: [{ data: row, error: null }] });
+      await expect(getShipmentTracking(ID, "someone@else.com")).rejects.toMatchObject({ statusCode: 404 });
+      resetSupabaseMock({ orders: [{ data: row, error: null }] });
+      const ok = await getShipmentTracking(ID, " asha@example.com ");
+      expect(ok.stage).toBe(1);
+      expect(JSON.stringify(ok)).not.toMatch(/9876543210|1 Road/);
+    });
+
+    it("rejects a malformed order number without a database lookup", async () => {
+      resetSupabaseMock({});
+      await expect(getShipmentTracking("VW-27-ABC'")).rejects.toMatchObject({ statusCode: 404 });
     });
   });
 });
