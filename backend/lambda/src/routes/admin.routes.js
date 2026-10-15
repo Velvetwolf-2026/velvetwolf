@@ -24,6 +24,9 @@ export async function handleAdminRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/admin/products")
     return adminController.createProduct(admin, body, event);
 
+  if (method === "POST" && route === "/admin/products/photo-upload")
+    return adminController.productPhotoUploadUrl(admin, body, event);
+
   const productMatch = route.match(/^\/admin\/products\/([^/]+)$/);
   if (method === "PUT" && productMatch)
     return adminController.updateProduct(productMatch[1], admin, body, event);

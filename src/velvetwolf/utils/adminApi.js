@@ -27,7 +27,10 @@ async function adminFetch(method, path, body) {
     if (res.status === 401) {
       window.dispatchEvent(new CustomEvent("vw-unauthorized"));
     }
-    const err = new Error(data?.error || `Request failed (${res.status})`);
+    const fallback = res.status === 413
+      ? "That's too much to send in one go. Try fewer or smaller photos."
+      : data?.message || `Request failed (${res.status})`;
+    const err = new Error(data?.error || fallback);
     err.status = res.status;
     throw err;
   }
@@ -62,12 +65,53 @@ export async function fetchAdminProducts({ collection, search, page = 1, limit =
   return adminFetch('GET', `/admin/products?${params}`);
 }
 
+// New photos go straight to storage with one-time links (POST /admin/products/photo-upload), so
+// the product request carries only their URLs. If the backend doesn't have that endpoint yet,
+// the photos are sent inline as before.
+function base64ToBlob(base64, type) {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
+
+async function uploadNewPhotos(newImages = []) {
+  const urls = [];
+  for (let i = 0; i < newImages.length; i++) {
+    const img = newImages[i];
+    const type = ['image/jpeg', 'image/png', 'image/webp'].includes(img.contentType) ? img.contentType : 'image/jpeg';
+    let link;
+    try {
+      link = await adminFetch('POST', '/admin/products/photo-upload', { contentType: type });
+    } catch (err) {
+      if (err.status === 404 && i === 0) return null; // older backend: send inline
+      throw err;
+    }
+    const put = await fetch(link.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': type, 'x-upsert': 'false' },
+      body: base64ToBlob(img.base64, type),
+    });
+    if (!put.ok) throw new Error(`Photo ${i + 1} of ${newImages.length} didn't upload. Check your connection and try again.`);
+    urls.push(img.color ? `${img.color}::${link.publicUrl}` : link.publicUrl);
+  }
+  return urls;
+}
+
+async function withUploadedPhotos(data) {
+  const pending = (data.newImages || []).filter((img) => img?.base64);
+  if (!pending.length) return data;
+  const urls = await uploadNewPhotos(pending);
+  if (!urls) return data;
+  return { ...data, images: [...(Array.isArray(data.images) ? data.images : []), ...urls], newImages: [] };
+}
+
 export async function createProduct(data) {
-  return adminFetch('POST', '/admin/products', data);
+  return adminFetch('POST', '/admin/products', await withUploadedPhotos(data));
 }
 
 export async function updateProduct(productId, data) {
-  return adminFetch('PUT', `/admin/products/${productId}`, data);
+  return adminFetch('PUT', `/admin/products/${productId}`, await withUploadedPhotos(data));
 }
 
 export async function deleteProduct(productId) {
