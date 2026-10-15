@@ -43,20 +43,20 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
 
   // floor: dark polished concrete
   const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(220, 60),
+    new THREE.PlaneGeometry(320, 60),
     new THREE.MeshStandardMaterial({ color: '#111113', roughness: 0.92, metalness: 0, roughnessMap: concreteTexture() })
   );
   floor.rotation.x = -Math.PI / 2;
-  floor.position.set(36, 0, 0);
+  floor.position.set(86, 0, 0);
   floor.receiveShadow = shadows;
   scene.add(floor);
 
   // back wall
   const wall = new THREE.Mesh(
-    new THREE.PlaneGeometry(220, 16),
+    new THREE.PlaneGeometry(320, 16),
     new THREE.MeshStandardMaterial({ color: '#141416', roughness: 0.96 })
   );
-  wall.position.set(36, 8, -6);
+  wall.position.set(86, 8, -6);
   scene.add(wall);
 
   const poolTex = radialTexture([[0, 'rgba(255,255,255,0.55)'], [0.45, 'rgba(255,255,255,0.12)'], [1, 'rgba(255,255,255,0)']]);
@@ -152,6 +152,16 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     return l;
   }
 
+  // size guide: every size side by side at true relative scale (plain Bone tees, straight on);
+  // the engine moves the chosen one forward into the light
+  const FIT_SCALES = [0.965, 1, 1.035, 1.07, 1.105]; // S, M, L, XL, XXL
+  const fitLineup = FIT_SCALES.map((scale, i) => {
+    const b = addBay(84 + (i - 2) * 1.62, -0.5, { rotation: 0, beam: false, light: lite && i !== 1, color: '#E8E4DA', ink: '#141416' });
+    b.garment.group.scale.setScalar(scale);
+    b.scale = scale;
+    return b;
+  });
+
   // ---- bays ----
   const bays = {
     hero: addBay(0, 0, { rotation: 0.5, color: '#E8E4DA', ink: '#141416' }),
@@ -160,14 +170,15 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
     teaser: addBay(46, 0, { rotation: 0.2 }),
     pdp: addBay(60, 0, { rotation: 0, beam: false, light: false }),
-    // size guide: a plain Bone tee, straight on, for the measurement lines
-    fit: addBay(84, 0, { rotation: 0, beam: false, light: false, color: '#E8E4DA', ink: '#141416' }),
     studio: addBay(72, 0, { rotation: 0, beam: false, light: false }),
+    fit: fitLineup[1],
+    fitLineup,
   };
   const wallDrop = addLettering(12, 'QUIET HOURS', { y: 3.85, w: 11, opacity: 0.07 });
   const wallPdp = addLettering(60, 'NOCTURNE', { y: 3.55, w: 8.4, opacity: 0.055 });
   const wallStudio = addLettering(72, 'STUDIO', { y: 3.55, w: 8.4, opacity: 0.055 });
   const wallFit = addLettering(84, 'FIT', { y: 3.55, w: 8.4, opacity: 0.05 });
+  const wallBack = addLettering(150, 'BACK OF HOUSE', { y: 4.2, w: 16, opacity: 0.045 });
 
   // ---- light ----
   scene.add(new THREE.HemisphereLight('#ffffff', '#0b0b0c', 0.32));
@@ -203,7 +214,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     lights: { key, rim, fill },
     aimLights,
     setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
-    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); },
-    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, bays.fit].map((b) => b.garment),
+    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); wallBack.redraw(); },
+    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, ...fitLineup].map((b) => b.garment),
   };
 }

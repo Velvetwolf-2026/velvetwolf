@@ -1,8 +1,10 @@
-// FAQ (gallery help page). Header: index cards that lift in turn; choosing a topic lifts its card.
-// Search highlights the term in questions and answers and opens the matches.
+// FAQ (gallery help page). In the hall: a card catalogue; choosing a topic slides its drawer out
+// and fans the cards, and a search lifts the matching cards. Search also highlights the term in
+// questions and answers and opens the matches.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import HelpLayout from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
 import { FAQ, BUSINESS } from "../gallery/help/content";
 
 export function meta() {
@@ -33,14 +35,17 @@ export default function FAQPage() {
   })), [cat, term]);
   const shown = items.filter((f) => f.hit).length;
 
-  // lift the chosen topic's card in the header drawing (after each render, so it sticks)
+  // the catalogue: a topic slides its drawer out and fans the cards; a search lifts the
+  // matching cards out of their drawers and leaves the rest in place
+  const { engine } = useGallery();
+  const matchKey = term ? items.filter((f) => f.hit).map((f) => `${f.cat}:${FAQ.filter((x) => x.cat === f.cat).indexOf(FAQ[f.key])}`).join(",") : "";
   useEffect(() => {
-    motifRef.current?.querySelectorAll(".idx-card").forEach((g) => g.classList.toggle("is-on", cat !== "All" && g.dataset.cat === cat));
-  });
+    engine?.help.faq.set({ cat, match: matchKey ? matchKey.split(",") : null });
+  }, [engine, cat, matchKey]);
   const pick = (c) => setCat(c);
 
   return (
-    <HelpLayout page="faq" eyebrow="Help · FAQ" title="Questions, answered" station="frames" motifRef={motifRef}
+    <HelpLayout page="faq" eyebrow="Help · FAQ" title="Questions, answered" motifRef={motifRef}
       lede="Short answers to what people ask most. If yours isn't here, ask us.">
       <div className="faq-tools">
         <div className="faq-search">

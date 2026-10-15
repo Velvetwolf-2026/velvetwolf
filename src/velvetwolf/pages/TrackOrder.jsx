@@ -1,9 +1,11 @@
-// Track order (gallery help page). Header: a route from the studio to you. Until an order is
-// looked up the parcel loops along it; with a real order the loop stops and the parcel moves to
-// the order's actual stage (from GET /shipping/track/:id, which reads the order's status).
+// Track order (gallery help page). In the hall: a lit route with seven plinths ending at a door.
+// Until an order is looked up a parcel loops along it; with a real order it stops at the order's
+// actual stage (GET /shipping/track/:id reads the order's status), the plinths behind it light up,
+// and the door glows only once it's delivered.
 import { useContext, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import HelpLayout from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
 import { TRACK_STAGES, SHIPPING, BUSINESS } from "../gallery/help/content";
 import { addWorkingDays, fmtDay } from "../gallery/help/motifs";
 import { AppContext } from "./AppContext";
@@ -50,22 +52,11 @@ export default function TrackOrder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signedIn]);
 
-  // draw the order's stage on the route: the loop stops, the parcel moves to its node
-  const showStage = (stage) => {
-    const motif = motifRef.current?.querySelector(".motif-route");
-    if (!motif) return;
-    const s = Math.max(0, stage);
-    motif.classList.add("has-stage");
-    motif.querySelectorAll(".route-node").forEach((n) => n.classList.toggle("is-done", Number(n.dataset.i) <= s && stage >= 0));
-    const node = motif.querySelector(`.route-node[data-i="${s}"]`);
-    const parcel = motif.querySelector(".route-parcel");
-    if (node && parcel) parcel.style.transform = `translate(${node.getAttribute("cx")}px, ${node.getAttribute("cy")}px)`;
-    const done = motif.querySelector(".route-done");
-    if (done) done.style.strokeDashoffset = String(stage < 0 ? 100 : 100 - (s / (TRACK_STAGES.length - 1)) * 100);
-  };
-
-  // re-applied after each render, so the route keeps the order's stage
-  useEffect(() => { if (result) showStage(result.stage); });
+  // the route: no order, the parcel loops; an order, it stops at the real stage
+  const { engine } = useGallery();
+  useEffect(() => {
+    engine?.help.track.set({ stage: result ? result.stage : null });
+  }, [engine, result]);
 
   const track = async (orderId, mail, own = false) => {
     setLoading(true);
@@ -106,7 +97,7 @@ export default function TrackOrder() {
   const cancelled = stage === -1;
 
   return (
-    <HelpLayout page="track-order" eyebrow="Help" title="Track your order" station="route" motifRef={motifRef}
+    <HelpLayout page="track-order" eyebrow="Help" title="Track your order" motifRef={motifRef}
       lede="Enter your order number and the email you used. No account needed.">
       <div className="info-grid">
         <section className="info-card" aria-labelledby="tr-h">

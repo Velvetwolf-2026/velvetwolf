@@ -52,7 +52,8 @@ export default function SizeGuide() {
 
   // a new size: the tee scales and the numbers count to the new values
   useEffect(() => {
-    engine?.setFitSize(SCALE[size]);
+    // the chosen size steps forward out of the line-up, into the light
+    engine?.setFitSelected(SIZE_GUIDE.findIndex((s) => s.id === size));
     const target = SIZE_GUIDE.find((s) => s.id === size).garment;
     const from = { ...shown.current };
     const t0 = performance.now();

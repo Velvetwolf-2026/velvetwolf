@@ -1,7 +1,9 @@
-// Returns policy (gallery help page). Header: a sand segment running round the return loop;
-// picking a step lights its stop. "Can I return this?" answers from three quick questions.
+// Returns policy (gallery help page). In the hall: a loop on the floor with five markers; the box
+// moves to the step you pick, and outside the return window the loop shows a calm gap.
+// "Can I return this?" answers from three quick questions.
 import { useEffect, useRef, useState } from "react";
 import HelpLayout, { DocSections } from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
 import { RETURNS, BUSINESS } from "../gallery/help/content";
 
 export function meta() {
@@ -48,18 +50,16 @@ export default function ReturnsPage() {
   const set = (k) => (v) => setA((x) => ({ ...x, [k]: v }));
   const [ok, head, msg] = verdict(a);
 
-  const [picked, setPicked] = useState(false);
-  const pickStep = (i) => { setStep(i); setPicked(true); };
-  // the loop in the header lights the step you pick (after each render, so it sticks)
+  const pickStep = (i) => setStep(i);
+  // the loop: the box moves to the step; outside the window it shows a calm gap
+  const { engine } = useGallery();
+  const closed = a.why === "fit" && a.days === "out";
   useEffect(() => {
-    const motif = motifRef.current?.querySelector(".motif-loop");
-    if (!motif || !picked) return;
-    motif.classList.add("is-picked");
-    motif.querySelectorAll(".loop-stop").forEach((s) => s.classList.toggle("is-on", Number(s.dataset.i) === step));
-  });
+    engine?.help.returns.set({ step, eligible: ok !== "no", closed });
+  }, [engine, step, ok, closed]);
 
   return (
-    <HelpLayout page="returns" eyebrow="Policy" title="Returns and exchanges" station="frames" motifRef={motifRef} updated
+    <HelpLayout page="returns" eyebrow="Policy" title="Returns and exchanges" motifRef={motifRef} updated
       lede={`${W} days to change your mind. Damaged or faulty is always on us.`}>
       <div className="facts">
         <div className="fact"><b>{W} days</b><span>from delivery to ask for a return</span></div>

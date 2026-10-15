@@ -1,7 +1,9 @@
-// Shipping policy (gallery help page). Header: a parcel moving along a day ruler. The estimator
-// draws packing and transit as bars and gives a delivery date range from today.
-import { useState } from "react";
+// Shipping policy (gallery help page). In the hall: a dispatch runway in business days where
+// Express pulls ahead of Standard. The estimator draws packing and transit as bars and gives a
+// delivery date range from today.
+import { useEffect, useState } from "react";
 import HelpLayout, { DocSections } from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
 import { SHIPPING, BUSINESS } from "../gallery/help/content";
 import { nowIST, addWorkingDays, fmtDay } from "../gallery/help/motifs";
 import { money } from "../gallery/galleryProducts";
@@ -42,8 +44,17 @@ export default function ShoppingPolicy() {
   const minT = d[0] + m.days[0] + extra[0], maxT = d[1] + m.days[1] + extra[1];
   const today = nowIST();
 
+  // the runway: both parcels leave together; Express pulls ahead. Days are the middle of each
+  // method's window (packing + transit, plus the remote-area extra).
+  const { engine } = useGallery();
+  const mid = (x) => (d[0] + d[1]) / 2 + (x.days[0] + x.days[1]) / 2 + (extra[0] + extra[1]) / 2;
+  const daysStd = mid(SHIPPING.methods[0]), daysExp = mid(SHIPPING.methods[1]);
+  useEffect(() => {
+    engine?.help.shipping.set({ days: { standard: daysStd, express: daysExp }, method });
+  }, [engine, daysStd, daysExp, method]);
+
   return (
-    <HelpLayout page="shipping-policy" eyebrow="Policy" title="Shipping" station="route" updated
+    <HelpLayout page="shipping-policy" eyebrow="Policy" title="Shipping" updated
       lede={`Free standard delivery across India. Dispatched in ${d[0]} to ${d[1]} business days.`}>
       <section className="info-card ship-est" aria-labelledby="se-h">
         <h2 className="info-h" id="se-h">When will it arrive?</h2>

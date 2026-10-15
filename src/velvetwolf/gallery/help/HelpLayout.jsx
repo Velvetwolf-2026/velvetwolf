@@ -1,7 +1,8 @@
-// One layout for the help and policy pages (prototype ui/info.js): a header band where the dim
-// gallery hall shows through, with a drawing animated for what the page is for, the help
-// sub-navigation, then the page. Long documents get a reading-progress line and an
-// "On this page" list that follows the scroll.
+// One layout for the help and policy pages. The header is a window onto the hall's "back of
+// house" wing, where each page has one object under the white light that reacts to the page
+// (three/backstage.js); the text renders first and the scene arrives after. Without WebGL the
+// page's 2D drawing stands in, still. Long documents get a reading-progress line and an
+// "On this page" list; on wide screens their object stays in view beside the text while you read.
 import { memo, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { useGallery } from "../galleryContext";
@@ -51,49 +52,29 @@ export function DocBody({ sections }) {
   );
 }
 
-// The backdrop behind the header (no WebGL): a soft beam over the drawing, the page's name set
-// large and faint like the hall's wall lettering, and a scatter of gold stars that twinkle slowly.
-// Positions are fixed (seeded), so server and browser render the same markup.
-const WORDS = { contact: "CONTACT", faq: "QUESTIONS", "track-order": "ROUTE", "shipping-policy": "SHIPPING", returns: "RETURNS", "privacy-policy": "PRIVACY", terms: "TERMS" };
-const STARS = (() => {
-  let seed = 7;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  return Array.from({ length: 28 }, () => ({
-    x: (40 + rnd() * 58).toFixed(1), y: (6 + rnd() * 84).toFixed(1),
-    s: (3 + rnd() * 6).toFixed(1), d: (3.2 + rnd() * 5.6).toFixed(2), delay: (-rnd() * 8).toFixed(2),
-  }));
-})();
+// back-of-house object for each page (engine.help.<scene>)
+const SCENE_OF = { contact: "contact", faq: "faq", "track-order": "track", "shipping-policy": "shipping", returns: "returns", "privacy-policy": "privacy", terms: "terms" };
 
-const Sky = memo(function Sky({ page }) {
-  return (
-    <div className="info-sky" aria-hidden="true">
-      <span className="info-beam" />
-      <span className="info-word">{WORDS[page] || ""}</span>
-      {STARS.map((st, i) => (
-        <i key={i} className="info-star" style={{ left: `${st.x}%`, top: `${st.y}%`, "--s": `${st.s}px`, "--d": `${st.d}s`, "--delay": `${st.delay}s` }} />
-      ))}
-      <span className="info-floor" />
-    </div>
-  );
-});
-
-// Drawn once per page: page state lives in classes the pages add, so React must not redraw it.
+// Without WebGL: the page's drawing, held still (drawn once per page so React leaves it alone).
 const Motif = memo(function Motif({ page, motifRef }) {
-  return <div className="info-motif" aria-hidden="true" ref={motifRef} dangerouslySetInnerHTML={{ __html: MOTIFS[page]() }} />;
+  return <div className="info-motif is-still" aria-hidden="true" ref={motifRef} dangerouslySetInnerHTML={{ __html: MOTIFS[page]() }} />;
 });
 
-export default function HelpLayout({ page, eyebrow, title, lede, station = "frames", motifRef, doc = false, updated = false, children }) {
-  const { engine } = useGallery();
+export default function HelpLayout({ page, eyebrow, title, lede, motifRef, doc = false, updated = false, onReadProgress, children }) {
+  const { engine, status } = useGallery();
+  const scene = SCENE_OF[page];
   const rootRef = useRef(null);
   const barRef = useRef(null);
+  const reading = useRef(false);
   useInAppLinks(rootRef);
 
-  // the hall behind the header: a dim backdrop at the station for this page
+  // walk to this page's object in the back of house
   useEffect(() => {
-    if (engine) engine.setView("info", station);
-  }, [engine, station]);
+    if (engine) engine.setView("info", scene);
+  }, [engine, scene]);
 
-  // reading progress and the current section, on long pages
+  // long documents: reading progress, the current section, and (wide screens) the object kept in
+  // view beside the text while you read
   useEffect(() => {
     if (!doc) return undefined;
     const root = rootRef.current;
@@ -103,28 +84,47 @@ export default function HelpLayout({ page, eyebrow, title, lede, station = "fram
       for (const s of secs) if (s.getBoundingClientRect().top < innerHeight * 0.3) cur = s.id;
       root.querySelectorAll(".doc-toc a").forEach((a) => a.toggleAttribute("aria-current", `sec-${a.dataset.goto}` === cur));
       const body = root.querySelector(".info-body");
-      if (barRef.current && body) {
+      if (body) {
         const r = body.getBoundingClientRect();
         const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
-        barRef.current.style.transform = `scaleX(${p.toFixed(4)})`;
+        if (barRef.current) barRef.current.style.transform = `scaleX(${p.toFixed(4)})`;
+        onReadProgress?.(p);
+      }
+      if (!engine) return;
+      // the window: the strip to the right of the text column (lines are kept to a readable
+      // length, so wide screens have room there); too narrow and the object stays in the header
+      const hero = root.querySelector(".info-hero").getBoundingClientRect();
+      const para = root.querySelector(".doc-sec p")?.getBoundingClientRect();
+      const x0 = para ? (para.right + 40) / innerWidth : 1;
+      const fits = innerWidth >= 1100 && (0.985 - x0) * innerWidth >= 210;
+      const nowReading = fits && hero.bottom < innerHeight * 0.35;
+      if (nowReading !== reading.current) {
+        reading.current = nowReading;
+        root.classList.toggle("is-reading", nowReading);
+        if (nowReading) {
+          engine.setReadArea(scene, [x0, 0.16, 0.985, 0.94]);
+          engine.setStation(`${scene}Read`);
+        } else engine.setStation(scene);
       }
     };
     addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", onScroll);
     onScroll();
-    return () => removeEventListener("scroll", onScroll);
-  }, [doc]);
+    return () => { removeEventListener("scroll", onScroll); removeEventListener("resize", onScroll); };
+  }, [doc, engine, scene, onReadProgress]);
+
+  const noGl = status === "none";
 
   return (
-    <main className="vwg view-info" ref={rootRef}>
+    <main className={`vwg view-info${doc ? " is-doc" : ""}`} ref={rootRef}>
       {doc && <div className="read-progress" ref={barRef} aria-hidden="true" />}
       <header className="info-hero" data-page={page}>
-        <Sky page={page} />
         <div className="info-hero-copy">
           <p className="eyebrow">{eyebrow}</p>
           <h1 className="info-title" tabIndex={-1}>{title}</h1>
           <p className="info-lede">{lede}</p>
         </div>
-        <Motif page={page} motifRef={motifRef} />
+        {noGl ? <Motif page={page} motifRef={motifRef} /> : <div className="info-stage" aria-hidden="true" />}
         <HelpNav current={`/${page}`} />
       </header>
       <div className="info-body">

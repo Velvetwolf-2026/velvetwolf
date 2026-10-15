@@ -1,7 +1,9 @@
-// Contact (gallery help page). Header: a signal that pulses only while support is open (Mon to
-// Sat, 10 to 7 IST), so the motion tells the truth. The form posts to /contact/send.
+// Contact (gallery help page). In the hall: a desk lamp, lit with ripples on the floor while
+// support is open (Mon to Sat, 10 to 7 IST) and an ember when closed, so the scene tells the truth;
+// a sent message rises from it as a point of light. The form posts to /contact/send.
 import { useContext, useEffect, useRef, useState } from "react";
 import HelpLayout from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
 import { BUSINESS, CONTACT_TOPICS } from "../gallery/help/content";
 import { nowIST } from "../gallery/help/motifs";
 import { AppContext } from "./AppContext";
@@ -74,9 +76,9 @@ export default function ContactPage() {
     const tick = setInterval(() => setStatus(openStatus()), 60000);
     return () => clearInterval(tick);
   }, []);
-  useEffect(() => {
-    motifRef.current?.querySelector(".motif-signal")?.classList.toggle("is-open", status.open);
-  });
+  // the lamp is lit (with ripples) during open hours and an ember when closed
+  const { engine } = useGallery();
+  useEffect(() => { engine?.help.contact.set({ open: status.open }); }, [engine, status.open]);
 
   const topic = CONTACT_TOPICS.find((t) => t.id === form.topic);
   const set = (k) => (e) => { setForm((f) => ({ ...f, [k]: e.target.value })); setErrors((x) => ({ ...x, [k]: "" })); };
@@ -105,6 +107,7 @@ export default function ContactPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "We couldn't send that just now. Try again, or email us.");
       setSent({ first: form.name.trim().split(/\s+/)[0], email: form.email.trim() });
+      engine?.help.contact.send(); // a point of light rises from the lamp
       setTimeout(() => sentRef.current?.focus(), 30);
     } catch (err) {
       setFailure(err.message);
@@ -114,7 +117,7 @@ export default function ContactPage() {
   };
 
   return (
-    <HelpLayout page="contact" eyebrow="Help" title="Contact" station="frames" motifRef={motifRef}
+    <HelpLayout page="contact" eyebrow="Help" title="Contact" motifRef={motifRef}
       lede="Real people in Chennai, Monday to Saturday. Write here, or pick the channel that suits you.">
       <div className="info-grid">
         <section className="info-card" aria-labelledby="ct-form-h">

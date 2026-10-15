@@ -2,7 +2,7 @@ import { useLocation, Outlet } from "react-router";
 import GalleryHeader from "../gallery/GalleryHeader";
 import GalleryFooter from "../gallery/GalleryFooter";
 import { GalleryProvider } from "../gallery/GalleryProvider";
-import { isGalleryPath } from "../gallery/galleryContext";
+import { isGalleryPath, isHelpPath } from "../gallery/galleryContext";
 
 // Gallery fonts (Unbounded + Manrope), used by the header and footer on every
 // public page and by the home/shop gallery.
@@ -20,7 +20,7 @@ export default function PublicLayout() {
 
   return (
     // Home and shop share one persistent 3D gallery canvas.
-    <GalleryProvider active={isGalleryPath(location.pathname)}>
+    <GalleryProvider active={isGalleryPath(location.pathname)} poster={!isHelpPath(location.pathname)}>
       <GalleryHeader />
       <Outlet />
       <GalleryFooter toolView={location.pathname === "/size-guide" || location.pathname === "/custom"} />
