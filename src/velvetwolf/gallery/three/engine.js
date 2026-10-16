@@ -89,7 +89,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   B.fitLineup.forEach((b) => dress(b.garment, 'essential', 'bone'));
   // size guide: the chosen size steps forward into the light; the rest wait behind
   let fitSel = 1;
-  const FIT_FRONT = 0.9, FIT_BACK = -0.5;
+  const FIT_FRONT = 0.1, FIT_BACK = -0.5; // off the rail and forward, into the light
   // back of house: one object per help page
   const backstage = buildBackstage(scene, { shadows: tier !== 'low' });
   let helpPage = null; // which back-of-house object is on screen
@@ -366,6 +366,10 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       return points.map(([x, y, z]) => project(b.x + x * s, TEE_Y + y * s, z0 + z * s));
     },
     // size guide: index 0..4 (S..XXL) steps forward; the camera walks along the line-up to it
+    // size guide: where each size's letter sits on screen (just above the rail)
+    fitLabels() {
+      return B.fitLineup.map((b) => project(b.x, TEE_Y + 1.48, b.group.position.z));
+    },
     setFitSelected(i) {
       fitSel = Math.max(0, Math.min(B.fitLineup.length - 1, i));
       const x = B.fitLineup[fitSel].x;
@@ -389,7 +393,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     dragStart(key) { const s = spin[key]; s.dragging = true; s.vel = 0; },
     dragMove(key, dx, dt) { const s = spin[key]; const d = dx * 0.0085; s.rot += d; s.goal = s.rot; s.vel = dt > 0 ? d / dt : 0; },
     dragEnd(key) { const s = spin[key]; s.dragging = false; s.vel = Math.max(-6, Math.min(6, s.vel)); },
-    redrawText() { prints.redrawAll(); world.redrawLettering(); },
+    redrawText() { prints.redrawAll(); world.redrawLettering(); backstage.redrawText(); },
     get mobile() { return stacked(); },
     tier,
     debug() { return { stars: +dust.points.material.uniforms.uGather.value.toFixed(3), fall: +dust.points.material.uniforms.uFall.value.toFixed(3), tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },

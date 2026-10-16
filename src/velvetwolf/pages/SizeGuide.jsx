@@ -102,6 +102,13 @@ export default function SizeGuide() {
       dim(svg.querySelector(".fit-chest"), cL, cR, `Chest ${f(s.chest)}`, [(cL[0] + cR[0]) / 2, cL[1] - 12]);
       dim(svg.querySelector(".fit-len"), lT, lB, `Length ${f(s.length)}`, [lT[0] - 10, (lT[1] + lB[1]) / 2], "middle", [[hps, lT], [hem, lB]], -90);
       dim(svg.querySelector(".fit-slv"), sA2, sB2, `Sleeve ${f(s.sleeve)}`, [(sA2[0] + sB2[0]) / 2 + 14, (sA2[1] + sB2[1]) / 2], "start", [[sA, sA2], [sB, sB2]]);
+      // the size letters above the rail
+      const tags = svg.querySelectorAll(".fit-size");
+      engine.fitLabels?.().forEach((p, i) => {
+        if (!tags[i]) return;
+        tags[i].setAttribute("x", p[0].toFixed(1));
+        tags[i].setAttribute("y", p[1].toFixed(1));
+      });
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
@@ -136,6 +143,7 @@ export default function SizeGuide() {
       {!noGl && <svg className="fit-overlay" ref={svgRef} aria-hidden="true">
         <g className="fit-dim fit-chest"><line className="fl" pathLength="1" /><line className="tick a" /><line className="tick b" /><text className="fit-label" /></g>
         <g className="fit-dim fit-len"><line className="lead a" /><line className="lead b" /><line className="fl" pathLength="1" /><line className="tick a" /><line className="tick b" /><text className="fit-label" /></g>
+        {SIZE_GUIDE.map((s) => <text key={s.id} className={`fit-size${s.id === size ? " is-on" : ""}`} textAnchor="middle">{s.id}</text>)}
         <g className="fit-dim fit-slv"><line className="lead a" /><line className="lead b" /><line className="fl" pathLength="1" /><line className="tick a" /><line className="tick b" /><text className="fit-label" /></g>
       </svg>}
       <div className="vwg-stage-area stage-area" aria-hidden="true">

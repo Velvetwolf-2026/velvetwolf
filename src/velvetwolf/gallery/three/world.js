@@ -155,12 +155,45 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
   // size guide: every size side by side at true relative scale (plain Bone tees, straight on);
   // the engine moves the chosen one forward into the light
   const FIT_SCALES = [0.965, 1, 1.035, 1.07, 1.105]; // S, M, L, XL, XXL
+  const RAIL_Y = TEE_Y + 1.3;
+  const railMat = new THREE.MeshStandardMaterial({ color: '#6a6a66', roughness: 0.32, metalness: 0.55 });
   const fitLineup = FIT_SCALES.map((scale, i) => {
     const b = addBay(84 + (i - 2) * 1.62, -0.5, { rotation: 0, beam: false, light: lite && i !== 1, color: '#E8E4DA', ink: '#141416' });
     b.garment.group.scale.setScalar(scale);
     b.scale = scale;
+    // a wire hanger from the shoulders up to the rail (it moves with the tee)
+    const top = TEE_Y + 0.978 * scale, half = 0.36 * scale;
+    const wire = (len) => new THREE.CylinderGeometry(0.006, 0.006, len, 6);
+    const arm = Math.hypot(half, 0.12);
+    for (const sx of [-1, 1]) {
+      const m = new THREE.Mesh(wire(arm), railMat);
+      m.position.set((sx * half) / 2, top + 0.06, 0.02);
+      m.rotation.z = sx * (Math.PI / 2 - Math.atan2(0.12, half));
+      b.group.add(m);
+    }
+    const bar = new THREE.Mesh(wire(half * 2), railMat); bar.rotation.z = Math.PI / 2; bar.position.set(0, top, 0.02);
+    const stem = new THREE.Mesh(wire(RAIL_Y - top - 0.18), railMat); stem.position.set(0, (RAIL_Y + top + 0.12) / 2 - 0.03, 0.02);
+    const hook = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.006, 6, 24, Math.PI * 1.3), railMat);
+    hook.position.set(0, RAIL_Y - 0.03, 0.02); hook.rotation.z = -0.2;
+    b.group.add(bar, stem, hook);
     return b;
   });
+  // the clothes rail: a dark pipe on two posts with T-feet
+  {
+    const RX = 4.3, RZ = -0.5;
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, RX * 2, 16), railMat);
+    pipe.rotation.z = Math.PI / 2; pipe.position.set(84, RAIL_Y, RZ);
+    scene.add(pipe);
+    for (const sx of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, RAIL_Y, 16), railMat);
+      post.position.set(84 + sx * RX, RAIL_Y / 2, RZ); post.castShadow = shadows;
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 16), railMat);
+      foot.rotation.x = Math.PI / 2; foot.position.set(84 + sx * RX, 0.03, RZ); foot.castShadow = shadows;
+      const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), railMat);
+      elbow.position.set(84 + sx * RX, RAIL_Y, RZ);
+      scene.add(post, foot, elbow);
+    }
+  }
 
   // ---- bays ----
   const bays = {

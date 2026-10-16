@@ -2,7 +2,15 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import * as THREE from "three";
 
 // canvas textures need a real 2D canvas; the scene logic doesn't
-vi.mock("../velvetwolf/gallery/three/textures.js", () => ({ radialTexture: () => new THREE.Texture() }));
+vi.mock("../velvetwolf/gallery/three/textures.js", () => {
+  const tex = () => new THREE.Texture();
+  return {
+    radialTexture: tex,
+    paperEdgeTexture: tex,
+    dayRuler: () => ({ texture: tex(), draw() {}, pad: 0.02 }),
+    exhibitTag: () => ({ texture: tex(), aspect: 3.2, draw: vi.fn(), redraw() {} }),
+  };
+});
 
 const { buildBackstage, BACKSTAGE_X } = await import("../velvetwolf/gallery/three/backstage.js");
 
@@ -10,7 +18,16 @@ let bs;
 const run = (name, frames = 240, dt = 1 / 60, motion = true) => {
   for (let i = 0; i < frames; i++) bs.update(i * dt, dt, motion, name);
 };
-const worldPos = (o) => o.getWorldPosition(new THREE.Vector3());
+const find = (group, role) => {
+  let hit = null;
+  group.traverse((o) => { if (!hit && o.userData?.role === role) hit = o; });
+  return hit;
+};
+const findAll = (group, role) => {
+  const out = [];
+  group.traverse((o) => { if (o.userData?.role === role) out.push(o); });
+  return out;
+};
 
 beforeAll(() => { bs = buildBackstage(new THREE.Scene(), { shadows: false }); });
 
@@ -20,65 +37,72 @@ describe("back of house", () => {
   });
 
   it("track: the parcel loops without an order, then stops at the order's real stage", () => {
+    const parcel = find(bs.track.group, "parcel");
     bs.track.set({ stage: null });
     run("track", 30);
-    const parcel = bs.track.group.children.at(-1);
-    const looping = worldPos(parcel).x;
+    const looping = parcel.position.z;
     bs.track.set({ stage: 4 });
     run("track", 600);
-    const atFour = worldPos(parcel).x;
+    const atFour = parcel.position.z;
     run("track", 120);
-    expect(worldPos(parcel).x).toBeCloseTo(atFour, 3); // it has stopped
+    expect(parcel.position.z).toBeCloseTo(atFour, 3); // it has stopped
     expect(atFour).not.toBeCloseTo(looping, 1);
-    // stage 4 of 0..6 along a route from -4.6 to +4.6
-    expect(atFour - BACKSTAGE_X.track).toBeCloseTo(-4.6 + 9.2 * (4 / 6), 0);
+    // stage 4 of 0..6 on a route from z = 3.0 towards the door
+    expect(atFour).toBeCloseTo(3.0 - 7 * (4 / 6), 1);
+    // the slabs it has passed are lit, the rest are not; the door stays dark
+    expect(find(bs.track.group, "slab:4")).toBeTruthy();
+    expect(find(bs.track.group, "doorLight").material.opacity).toBeLessThan(0.05);
   });
 
-  it("track: still frames (low-end phones) jump straight to the final state", () => {
+  it("track: the door glows only at Delivered, and still frames jump straight there", () => {
     bs.track.set({ stage: 6 });
     run("track", 1, 1 / 60, false);
-    const parcel = bs.track.group.children.at(-1);
-    expect(worldPos(parcel).x - BACKSTAGE_X.track).toBeCloseTo(4.6, 1);
+    const parcel = find(bs.track.group, "parcel");
+    expect(parcel.position.z).toBeCloseTo(-4.0, 1);
+    expect(find(bs.track.group, "doorLight").material.opacity).toBeGreaterThan(0.5);
   });
 
-  it("returns: shows the loop closed into a gap when the window has passed", () => {
-    const ringFull = bs.returns.group.children.find((c) => c.geometry?.parameters?.arc === Math.PI * 2);
-    const ringGap = bs.returns.group.children.find((c) => c.geometry?.parameters?.arc && c.geometry.parameters.arc < Math.PI * 2);
+  it("returns: shows the loop with a calm gap when the window has passed", () => {
+    const full = find(bs.returns.group, "ringFull");
+    const gap = find(bs.returns.group, "ringGap");
     bs.returns.set({ step: 2, eligible: true, closed: false });
     run("returns", 60);
-    expect(ringFull.visible).toBe(true);
-    expect(ringGap.visible).toBe(false);
+    expect(full.visible).toBe(true);
+    expect(gap.visible).toBe(false);
     bs.returns.set({ step: 0, eligible: false, closed: true });
     run("returns", 60);
-    expect(ringFull.visible).toBe(false);
-    expect(ringGap.visible).toBe(true);
+    expect(full.visible).toBe(false);
+    expect(gap.visible).toBe(true);
   });
 
-  it("shipping: both parcels leave together and Express pulls ahead", () => {
-    bs.shipping.set({ days: { standard: 8, express: 5.5 }, method: "express" });
-    run("shipping", 90); // 1.5 s = 3 business days
-    const parcels = bs.shipping.group.children.filter((c) => c.userData?.box);
-    const [std, exp] = parcels.sort((a, b) => a.position.z - b.position.z);
+  it("shipping: Express leaves after Standard, passes it, and arrives first", () => {
+    bs.shipping.set({ days: { standard: 8.5, express: 5.5 }, method: "express" });
+    const std = find(bs.shipping.group, "parcel:standard");
+    const exp = find(bs.shipping.group, "parcel:express");
+    run("shipping", 30); // 0.5 s: Standard has a head start
+    expect(std.position.x).toBeGreaterThan(exp.position.x);
+    run("shipping", 60); // 1.5 s: Express has passed it
     expect(exp.position.x).toBeGreaterThan(std.position.x);
+    run("shipping", 150); // both have stopped at their own delivery day
+    expect(std.position.x).toBeGreaterThan(exp.position.x);
   });
 
   it("faq: a topic slides its drawer out; a search lifts only the matching cards", () => {
+    const returnsDrawer = find(bs.faq.group, "drawer:Returns");
+    const ordersDrawer = find(bs.faq.group, "drawer:Orders");
     bs.faq.set({ cat: "Returns" });
     run("faq", 240);
-    const cab = bs.faq.group.children.find((c) => c.type === "Group");
-    const drawers = cab.children.filter((c) => c.type === "Group");
-    const returnsDrawer = drawers[4]; // Orders, Shipping, Products, Custom, Returns, Account
-    const ordersDrawer = drawers[0];
     expect(returnsDrawer.position.z).toBeGreaterThan(ordersDrawer.position.z + 0.3);
 
     bs.faq.set({ cat: "All", match: ["Orders:1"] });
     run("faq", 300);
-    const cards = ordersDrawer.children.filter((c) => c.geometry?.parameters?.height === 0.34);
-    expect(cards[1].position.y).toBeGreaterThan(cards[0].position.y + 0.3);
+    const cards = findAll(ordersDrawer, "card");
+    expect(cards[1].position.y).toBeGreaterThan(cards[0].position.y + 0.15);
+    expect(cards[2].position.y).toBeCloseTo(cards[0].position.y, 2);
   });
 
   it("terms: sheets settle in step with reading progress", () => {
-    const sheets = () => bs.terms.group.children.filter((c) => c.geometry?.parameters?.depth === 0.86);
+    const sheets = () => findAll(bs.terms.group, "sheet");
     bs.terms.set({ progress: 0 });
     run("terms", 600);
     expect(sheets().filter((s) => s.visible).length).toBe(1);
@@ -88,7 +112,7 @@ describe("back of house", () => {
   });
 
   it("contact: the lamp dims to an ember when closed and lights when open", () => {
-    const light = bs.contact.group.children.find((c) => c.isPointLight);
+    const light = find(bs.contact.group, "lamp");
     bs.contact.set({ open: false });
     run("contact", 400);
     const closed = light.intensity;
@@ -97,11 +121,11 @@ describe("back of house", () => {
     expect(light.intensity).toBeGreaterThan(closed * 5);
   });
 
-  it("privacy: pointing at a row lifts its object, and only that one", () => {
+  it("privacy: pointing at a row lifts and lights its object, and only that one", () => {
     bs.privacy.set({ focus: "address" });
     run("privacy", 300);
-    const sprites = bs.privacy.group.children.filter((c) => c.isSprite);
-    const lit = sprites.filter((s) => s.material.opacity > 0.3);
-    expect(lit).toHaveLength(1);
+    expect(find(bs.privacy.group, "glow:address").material.opacity).toBeGreaterThan(0.3);
+    for (const other of ["contact", "order", "payment"]) expect(find(bs.privacy.group, `glow:${other}`).material.opacity).toBeLessThan(0.05);
+    expect(find(bs.privacy.group, "thing:address").position.y).toBeGreaterThan(find(bs.privacy.group, "thing:order").position.y + 0.03);
   });
 });
