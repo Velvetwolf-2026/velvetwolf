@@ -10,6 +10,7 @@ import { buildBackstage, BACKSTAGE_X } from './backstage.js';
 import { createStages } from './stages.js';
 import { createGoldDust } from './dust.js';
 import { createOrderCards } from './orderCards.js';
+import { buildDen, DEN_X, FORM_X } from './den.js';
 import { damp, nearestAngle } from './util.js';
 import { COLORWAYS, productById } from '../data.js';
 
@@ -66,7 +67,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   const B = world.bays;
   // lite gold stars drifting through the hall, kept clear of the tees
   const dust = createGoldDust(scene, {
-    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio, ...B.fitLineup, ...Object.values(BACKSTAGE_X).map((x) => ({ x }))].map((b) => b.x),
+    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio, ...B.fitLineup, ...Object.values(BACKSTAGE_X).map((x) => ({ x })), { x: DEN_X - 1.5 }, { x: DEN_X + 1.5 }, { x: FORM_X }].map((b) => b.x),
     count: tier === 'low' ? 600 : tier === 'mid' ? 900 : 1400,
     reduced: reducedMotion,
     pixelRatio: dpr,
@@ -94,6 +95,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   // back of house: one object per help page
   const backstage = buildBackstage(scene, { shadows: tier !== 'low' });
   let helpPage = null; // which back-of-house object is on screen
+  // the account page's room (den.js)
+  const den = buildDen(scene, kit, { shadows: tier !== 'low', aniso, lite: lowPower });
   // Quiet Hours: framed photographs hang where the drop tees used to float.
   // The page supplies them (the newest products) through setDropPhotos().
   const hungPhotos = [];
@@ -203,7 +206,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     }
 
     // low-end phones on task pages: draw until the camera and scene settle, then hold that frame
-    const still = tier === 'low' && (view === 'info' || view === 'size' || view === 'payment');
+    const still = tier === 'low' && (view === 'info' || view === 'size' || view === 'payment' || view === 'den');
     if (still && wakeFrames <= 0) { last = now; return; }
     if (still) wakeFrames--;
 
@@ -256,6 +259,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     }
     backstage.update(t, dt, !(reducedMotion || still), helpPage);
     if (view === 'payment') orderCards.update(t, dt, !(reducedMotion || still));
+    if (view === 'den') den.update(t, dt, !(reducedMotion || still));
 
     for (const g of world.garments()) g.update(dt);
 
@@ -376,6 +380,11 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       B.pdp.garment.group.visible = list.length === 0;
       if (view === 'payment') { station = list.length > 1 ? 'paymentMany' : 'payment'; wake(); applyGoal(); }
     },
+    // the account page's room: den.set({ owned, saved, card }); den.setFit({ height, chest, size } | null)
+    den: {
+      set: (data) => { den.set(data); wake(); },
+      setFit: (f) => { den.setFit(f); wake(); },
+    },
     // bring one ordered tee to the front (the customer points at it in the list); null lets the hand turn again
     focusOrder(i) { orderCards.focus(i); wake(); },
     // size guide: screen positions of points given in the fit tee's own units
@@ -411,7 +420,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     dragStart(key) { const s = spin[key]; s.dragging = true; s.vel = 0; },
     dragMove(key, dx, dt) { const s = spin[key]; const d = dx * 0.0085; s.rot += d; s.goal = s.rot; s.vel = dt > 0 ? d / dt : 0; },
     dragEnd(key) { const s = spin[key]; s.dragging = false; s.vel = Math.max(-6, Math.min(6, s.vel)); },
-    redrawText() { prints.redrawAll(); world.redrawLettering(); backstage.redrawText(); },
+    redrawText() { prints.redrawAll(); world.redrawLettering(); backstage.redrawText(); den.redrawText(); },
     get mobile() { return stacked(); },
     tier,
     debug() { return { stars: +dust.points.material.uniforms.uGather.value.toFixed(3), fall: +dust.points.material.uniforms.uFall.value.toFixed(3), tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },

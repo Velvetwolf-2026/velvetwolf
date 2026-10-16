@@ -16,6 +16,7 @@ export default [
     route("cart", "./velvetwolf/pages/CartPage.jsx"),
     route("wishlist", "./velvetwolf/pages/WishlistPage.jsx"),
     route("account", "./velvetwolf/pages/AccountPage.jsx"),
+    route("saved/:token", "./velvetwolf/pages/SharedListPage.jsx"),
     route("checkout", "./velvetwolf/pages/CheckoutPage.jsx"),
     route("payment-status", "./velvetwolf/pages/PaymentStatusPage.jsx"),
     route("custom", "./velvetwolf/pages/CustomDesignPage.jsx"),

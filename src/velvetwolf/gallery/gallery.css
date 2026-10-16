@@ -240,6 +240,7 @@
 }
 .vwg-nav .nav-links a[aria-current] { color: var(--bone); text-decoration: underline; text-underline-offset: 7px; text-decoration-thickness: 1px; }
 .vwg-nav .cart-count { color: var(--sand); font-variant-numeric: tabular-nums; margin-left: 4px; }
+.vwg-nav .nav-icon { display: none; width: 21px; height: 21px; }
 .vwg-nav :focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
 
 /* ---------- site footer (every public page) ---------- */
@@ -292,7 +293,14 @@
 @media (max-width: 599px) and (min-height: 500px), (max-width: 599px) and (orientation: portrait) {
   .vwg, .vwg-stage, .vwg-nav, .vwg-foot { --nav-h: 56px; }
   .vwg-nav .hide-sm { display: none !important; }
-  .vwg-nav .brand { font-size: 12px; letter-spacing: 0.28em; }
+  .vwg-nav .brand { font-size: 11px; letter-spacing: 0.22em; }
+  /* Account and Cart become icons so the bar fits a 360px phone (the words stay for screen readers) */
+  .vwg-nav { gap: 10px; }
+  .vwg-nav .nav-links { gap: 12px; }
+  .vwg-nav .nav-links a, .vwg-nav .cart-btn { letter-spacing: 0.12em; }
+  .vwg-nav .nav-label:not(:only-child) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .vwg-nav .nav-icon { display: block; }
+  .vwg-nav .cart-count { margin-left: 2px; }
   .vwg-foot { grid-template-columns: 1fr; gap: 32px; padding-block: 56px 40px; }
   .vwg .hide-sm { display: none !important; }
   .vwg .copy-top p { font-size: 14px; }
@@ -375,7 +383,8 @@
 
 /* the smallest phones */
 @media (max-width: 380px) {
-  .vwg-nav .nav-links { gap: 12px; }
+  .vwg-nav .nav-links { gap: 10px; }
+  .vwg-nav .brand { letter-spacing: 0.17em; }
 }
 
 /* ---------- PDP & Studio: 3D stage + vitrine panel ---------- */

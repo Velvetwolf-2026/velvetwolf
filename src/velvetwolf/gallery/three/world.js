@@ -212,6 +212,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
   const wallStudio = addLettering(72, 'STUDIO', { y: 3.55, w: 8.4, opacity: 0.055 });
   const wallFit = addLettering(84, 'FIT', { y: 3.55, w: 8.4, opacity: 0.05 });
   const wallBack = addLettering(150, 'BACK OF HOUSE', { y: 4.2, w: 16, opacity: 0.045 });
+  const wallDen = addLettering(225, 'THE DEN', { y: 4.3, w: 11, opacity: 0.05 });
 
   // ---- light ----
   scene.add(new THREE.HemisphereLight('#ffffff', '#0b0b0c', 0.32));
@@ -247,7 +248,7 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     lights: { key, rim, fill },
     aimLights,
     setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
-    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); wallBack.redraw(); },
+    redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); wallBack.redraw(); wallDen.redraw(); },
     garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, ...fitLineup].map((b) => b.garment),
   };
 }

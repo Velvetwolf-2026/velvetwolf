@@ -40,6 +40,9 @@ export const STATIONS = {
   studio:    { target: [72, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [72, 1.62, 0],  spot: 0.42, area: area('panel', [0.04, 0.075, 0.96, 0.43], [0.1, 0.07, 0.9, 0.48]) },
   // payment status: the ordered tee on the product stage, the status card beside it
   payment:   { target: [60, 1.5, 0],     dir: [0.18, 0.1, 1],   frame: [3.6, 3.6], focus: [60, 1.62, 0],  spot: 0.48, area: area([0.04, 0.1, 0.52, 0.94], [0.2, 0.075, 0.8, 0.34], [0.28, 0.07, 0.72, 0.36]) },
+  // the account page: the room in the top band (rail, framed wall, card on its plinth), and the fit twin's form
+  den:       { target: [223.9, 1.55, 0],  dir: [0.12, 0.2, 1],   frame: [6.6, 3.4], focus: [224.6, 1.5, -0.3], spot: 0.75, area: area([0.02, 0.085, 0.98, 0.44], [0.0, 0.07, 1.0, 0.255], [0.02, 0.08, 0.98, 0.4]) },
+  denFit:    { target: [228.8, 1.66, 0],  dir: [0.22, 0.06, 1],  frame: [2.4, 2.35], focus: [228.8, 1.7, 0],   spot: 0.42, area: area([0.02, 0.085, 0.98, 0.44], [0.0, 0.07, 1.0, 0.255], [0.02, 0.08, 0.98, 0.4]) },
   // several tees ordered: the cards fan out, so the frame is wider
   paymentMany: { target: [60, 1.55, 0],  dir: [0.1, 0.08, 1],   frame: [4.3, 2.7], focus: [60, 1.62, 0],  spot: 0.7,  area: area([0.02, 0.1, 0.56, 0.94], [0.0, 0.075, 1.0, 0.34], [0.1, 0.07, 0.9, 0.36]) },
   // size guide: the line-up of sizes; the camera centres on the chosen tee (the engine moves

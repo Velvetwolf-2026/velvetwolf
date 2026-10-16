@@ -664,11 +664,12 @@ textarea.input-dark {
     position: static !important;
   }
 
-  .nav-links {
+  /* the old navbar's links; the gallery header (.vwg-nav) sizes its own */
+  :not(.vwg-nav) > .nav-links {
     gap: 20px !important;
   }
 
-  .nav-links button {
+  :not(.vwg-nav) > .nav-links button {
     font-size: 15px !important;
     letter-spacing: 2px !important;
   }

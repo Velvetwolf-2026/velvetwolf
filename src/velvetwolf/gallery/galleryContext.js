@@ -16,7 +16,9 @@ export const isGalleryPath = (pathname = "") =>
   pathname === "/size-guide" || pathname === "/payment-status" ||
   isHelpPath(pathname) ||
   pathname === "/login" ||
-  pathname === "/signup";
+  pathname === "/signup" ||
+  pathname === "/account" ||
+  pathname.startsWith("/saved/");
 
 // { engine, status }: status is off | loading | ready | none (no WebGL)
 export const GalleryContext = createContext({ engine: null, status: "off" });

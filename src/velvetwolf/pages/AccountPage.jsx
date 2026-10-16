@@ -1,844 +1,150 @@
-import { useState, useEffect, useContext } from "react";
+// The account page, "The Den": your private room in the Gallery hall. The band at the top is the
+// room in 3D (the tees you own on a short rail, saved pieces framed on the wall, your member card
+// on a plinth; bare hangers in a pool of light until you collect). Every task happens in plain
+// panels below it, in five tabs: Den, Orders, Saved, Fit & style, Settings. On phones the tabs
+// sit in a bar at the bottom, within reach of a thumb.
+import { useContext, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
-import { getUserOrders } from "../utils/order";
-import { updateProfile, sendEmailUpdateOtp, verifyEmailUpdateOtp } from "../utils/profile";
-import { apiUrl } from "../utils/api";
-import Icon from "../components/Icon";
-import AccountAddresses from "../components/AccountAddresses";
+import { useGallery } from "../gallery/galleryContext";
+import { cartThumb, photoFor } from "../gallery/galleryProducts";
+import { useAccountStore, resetAccount, loadOrders, loadExtras, isDelivered, stageOf } from "../account/store";
+import DenTab from "../account/DenTab";
+import OrdersTab from "../account/OrdersTab";
+import SavedTab from "../account/SavedTab";
+import FitTab from "../account/FitTab";
+import SettingsTab from "../account/SettingsTab";
+import { TabIcon } from "../account/icons";
+import "../gallery/gallery-help.css";
+import "../account/account.css";
 
-export function AccountPage() {
-  const { 
-    user, setUser, setPage, wishlist, cart, signOutUser, showToast,
-    notifications, markAllNotificationsRead, userPreferences, saveUserPreferences
-  } = useContext(AppContext);
+export function meta() {
+  return [{ title: "Your account · VelvetWolf" }, { name: "robots", content: "noindex" }];
+}
 
-  const [tab, setTab] = useState("overview");
-  const [userOrders, setUserOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [settings, setSettings] = useState({ fullName: "", email: "", phone: "" });
-  const [savingSettings, setSavingSettings] = useState(false);
-  const databaseUserId = user?.id || null;
+const TABS = [
+  ["den", "Den"],
+  ["orders", "Orders"],
+  ["saved", "Saved"],
+  ["fit", "Fit & style"],
+  ["settings", "Settings"],
+];
+// the old account page's tab names still land in the right place
+const OLD = { overview: "den", wishlist: "saved", preferences: "fit", style: "fit", addresses: "settings", notifications: "den" };
 
-  // Style Profile and Personalization States
-  const [styleProfile, setStyleProfile] = useState(null);
-  const [styleProfileLoading, setStyleProfileLoading] = useState(false);
-  const [privacySettings, setPrivacySettings] = useState({
-    useRecommendations: true,
-    personalizedHomepage: true,
-    personalizedEmails: true
-  });
+function nameOf(user) {
+  const n = String(user?.full_name || user?.name || "").trim();
+  if (n && !/^mobile( |$)/i.test(n)) return n;
+  return user?.phone ? `+91 ${user.phone}` : "Member";
+}
 
-  useEffect(() => {
-    const rec = localStorage.getItem("vw_privacy_recommendations") !== "false";
-    const hp = localStorage.getItem("vw_privacy_homepage") !== "false";
-    const em = localStorage.getItem("vw_privacy_emails") !== "false";
-    setPrivacySettings({
-      useRecommendations: rec,
-      personalizedHomepage: hp,
-      personalizedEmails: em
-    });
-  }, []);
-
-  const updatePrivacySetting = (key, val) => {
-    setPrivacySettings(prev => ({ ...prev, [key]: val }));
-    const storageKeys = {
-      useRecommendations: "vw_privacy_recommendations",
-      personalizedHomepage: "vw_privacy_homepage",
-      personalizedEmails: "vw_privacy_emails"
-    };
-    localStorage.setItem(storageKeys[key], String(val));
-    showToast("Privacy settings updated.");
-  };
-
-  useEffect(() => {
-    if (tab === "style" && user?.personality_type && !styleProfile) {
-      setStyleProfileLoading(true);
-      fetch(apiUrl("/user/style-profile"), {
-        credentials: 'include',
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.profile) {
-          setStyleProfile(data.profile);
-        }
-      })
-      .catch(err => console.error("Failed to load style profile in account page", err))
-      .finally(() => setStyleProfileLoading(false));
-    }
-  }, [tab, user?.personality_type, styleProfile]);
-
-  const handleClearStyleProfile = async () => {
-    if (!window.confirm("Are you sure you want to clear your style profile? This will reset all personalized views.")) return;
-    
-    try {
-      const res = await fetch(apiUrl("/user/style-profile"), {
-        method: "DELETE",
-        credentials: 'include',
-      });
-      
-      if (res.ok) {
-        showToast("Style profile cleared successfully.");
-        setUser(prev => ({ ...prev, personality_type: null }));
-        setStyleProfile(null);
-        localStorage.removeItem("vw_guest_style_profile");
-      } else {
-        showToast("Failed to clear style profile.", "error");
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Error clearing style profile.", "error");
-    }
-  };
-
-  const [showEmailUpdate, setShowEmailUpdate] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
-  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
-  const [emailError, setEmailError] = useState("");
-
-  const handleSendEmailOtp = async () => {
-    if (!newEmail.trim()) {
-      setEmailError("Email address is required.");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(newEmail.trim())) {
-      setEmailError("Please enter a valid email address (e.g. name@gmail.com).");
-      return;
-    }
-    
-    setSendingEmailOtp(true);
-    setEmailError("");
-    try {
-      await sendEmailUpdateOtp(newEmail.trim());
-      setEmailOtpSent(true);
-      showToast("Verification code sent to your email.");
-    } catch (err) {
-      setEmailError(err.message || "Failed to send verification code.");
-    } finally {
-      setSendingEmailOtp(false);
-    }
-  };
-
-  const handleVerifyEmailOtp = async () => {
-    if (emailOtp.length !== 6) {
-      setEmailError("Verification code must be 6 digits.");
-      return;
-    }
-
-    setVerifyingEmailOtp(true);
-    setEmailError("");
-    try {
-      const result = await verifyEmailUpdateOtp(newEmail.trim(), emailOtp);
-      
-      const nextUser = {
-        ...user,
-        ...result.user,
-      };
-
-      setUser(nextUser);
-      localStorage.setItem("user", JSON.stringify(nextUser));
-      
-      showToast("Email address updated successfully!");
-      setShowEmailUpdate(false);
-      setEmailOtpSent(false);
-      setNewEmail("");
-      setEmailOtp("");
-    } catch (err) {
-      setEmailError(err.message || "Invalid or expired verification code.");
-    } finally {
-      setVerifyingEmailOtp(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!databaseUserId || tab !== "orders") return;
-    setOrdersLoading(true);
-    getUserOrders(databaseUserId)
-      .then(data => setUserOrders(data || []))
-      .catch(err => console.error('[getUserOrders]', err.message))
-      .finally(() => setOrdersLoading(false));
-  }, [databaseUserId, tab]);
-
-  const handleSignOut = async () => {
-    await signOutUser();
-  };
-
-  // Delete account: the customer types DELETE to confirm. Past orders stay on
-  // record (unlinked from the account) so deliveries and refunds still work.
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "DELETE") return;
-    setDeletingAccount(true);
-    try {
-      const res = await fetch(apiUrl("/profile/delete"), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE" }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not delete your account.");
-      await signOutUser();
-      showToast("Your account has been deleted.", "info");
-    } catch (err) {
-      showToast(err.message, "error");
-      setDeletingAccount(false);
-    }
-  };
-
-  let displayName = user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
-  if (displayName === "Mobile" || displayName.startsWith("Mobile ")) {
-    displayName = user?.phone || "User";
-  }
-  const displayInitial = displayName[0].toUpperCase();
-  const profileUserId = user?.id || null;
-
-  useEffect(() => {
-    setSettings({
-      fullName: displayName,
-      email: user?.email || "",
-      phone: user?.phone || "",
-    });
-  }, [displayName, user?.email, user?.phone]);
-
-  const handleSaveSettings = async () => {
-    if (!profileUserId) {
-      showToast("Could not find your profile.", "error");
-      return;
-    }
-
-    const nameTrimmed = settings.fullName.trim();
-    if (!nameTrimmed) {
-      showToast("Full name cannot be empty.", "error");
-      return;
-    }
-
-    if (!/^[a-zA-Z\s]+$/.test(nameTrimmed)) {
-      showToast("Name must contain only alphabetic characters.", "error");
-      return;
-    }
-
-    setSavingSettings(true);
-    try {
-      const profile = await updateProfile(profileUserId, {
-        fullName: nameTrimmed,
-        phone: settings.phone.trim(),
-        gender: user?.gender ?? null,
-        dob: user?.date_of_birth ?? null,
-      });
-
-      const nextUser = {
-        ...user,
-        ...profile,
-        full_name: profile?.full_name || nameTrimmed,
-        name: profile?.full_name || nameTrimmed,
-        phone: profile?.phone || settings.phone.trim(),
-      };
-
-      setUser(nextUser);
-      localStorage.setItem("user", JSON.stringify(nextUser));
-      showToast("Profile updated successfully.");
-    } catch (err) {
-      showToast(err.message || "Could not save changes.", "error");
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  if (!user) {
-    return (
-      <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, marginBottom: 20 }}>SIGN IN REQUIRED</h2>
-          <button className="btn-gold" onClick={() => setPage("login")}>SIGN IN</button>
-        </div>
-      </div>
-    );
-  }
-
+function SignedOut({ checking }) {
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <div className="page-hero-pad" style={{ background: "var(--graphite)", padding: "60px 40px 0", borderBottom: "1px solid var(--smoke)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40, flexWrap: "wrap" }}>
-            <div style={{ width: 72, height: 72, background: "linear-gradient(135deg, var(--gold), var(--gold-light))", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontSize: 28, color: "var(--obsidian)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>
-              {displayInitial}
-            </div>
-            <div className="vw-account-profile-copy">
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 6 }}>{user.isAdmin ? "ADMIN WOLF" : "WOLF PACK MEMBER"}</div>
-              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2 }}>{displayName.toUpperCase()}</h1>
-              <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 14, color: "#cac7c7", marginTop: 4 }}>{user.email}</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 0, flexWrap: "wrap", overflowX: "auto", scrollbarWidth: "none" }} className="vw-mobile-swipe-shelf">
-            {[
-              ["overview", "OVERVIEW"], 
-              ["orders", "ORDERS"],
-              ["addresses", "ADDRESSES"], 
-              ["wishlist", "SAVED"], 
-              ["notifications", "ALERTS"],
-              ["preferences", "FIT DNA"],
-              ["settings", "SETTINGS"], 
-              ["style", "STYLE PROFILE"]
-            ].map(([t, label]) => (
-              <button key={t} onClick={() => setTab(t)} style={{ background: "none", border: "none", borderBottom: `2px solid ${tab === t ? "var(--gold)" : "transparent"}`, color: tab === t ? "var(--gold)" : "var(--silver)", fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, padding: "12px 20px", cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>
-            ))}
-          </div>
+    <main className="vwg view-den is-out">
+      <div className="den-band" aria-hidden="true" />
+      <section className="den-body">
+        <div className="den-wrap den-out">
+          {checking ? (
+            <p className="den-loading" role="status">Opening your account…</p>
+          ) : (
+            <>
+              <p className="eyebrow">Account</p>
+              <h1 className="den-title">Your room in the hall</h1>
+              <p className="muted">Sign in to see your orders, the tees you've saved and your size. No password: we send you a code.</p>
+              <div className="acct-actions">
+                <Link className="btn btn-primary" to="/login">Sign in</Link>
+                <Link className="btn" to="/signup">Create an account</Link>
+              </div>
+            </>
+          )}
         </div>
-      </div>
-
-      <div className="page-content-pad" style={{ maxWidth: 1200, margin: "40px auto", padding: "0 40px" }}>
-        {tab === "overview" && (
-          <div>
-            <div className="account-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginBottom: 40 }}>
-              {[
-                ["ORDERS", userOrders.length, "orders"], 
-                ["WISHLIST", wishlist.length, "wishlist"], 
-                ["CART ITEMS", cart.length, "cart"],
-                ["NOTIFICATIONS", notifications.filter(n => n.unread).length, "notifications"],
-                ["FIT DNA SETTINGS", "", "preferences"]
-              ].map(([label, val, targetTab]) => (
-                <div 
-                  className="vw-account-stat-card" 
-                  key={label} 
-                  onClick={() => targetTab === "cart" ? setPage("cart") : setTab(targetTab)}
-                  style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "32px 28px", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = "var(--gold)"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = "var(--smoke)"}
-                >
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 3, color: "var(--silver)", marginBottom: 12 }}>{label}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 44, color: "var(--gold)" }}>{val !== "" ? val : "➔"}</div>
-                </div>
-              ))}
-            </div>
-            {user.isAdmin && (
-              <div className="vw-account-admin-card" style={{ background: "linear-gradient(135deg, var(--graphite), rgba(201,168,76,0.1))", border: "1px solid var(--gold)", padding: "28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 8 }}>ADMIN ACCESS</div>
-                  <p style={{ fontFamily: "'Roboto', sans-serif", color: "var(--silver)" }}>Manage products, orders, and customer analytics</p>
-                </div>
-                <button className="btn-gold" onClick={() => setPage("admin")}>ADMIN DASHBOARD</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "orders" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>ORDER HISTORY</h2>
-            {ordersLoading ? (
-              <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>
-                LOADING ORDERS...
-              </div>
-            ) : userOrders.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "var(--silver)", fontFamily: "'Roboto', sans-serif", fontStyle: "italic", fontSize: 18 }}>
-                No orders yet — start shopping!
-              </div>
-            ) : userOrders.map(order => (
-              <div className="vw-account-order-card" key={order.id} style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "24px 28px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)", letterSpacing: 2, marginBottom: 6 }}>{order.order_number}</div>
-                  <div style={{ fontFamily: "var(--font-serif)", color: "var(--silver)", fontSize: 13 }}>
-                    {new Date(order.created_at).toLocaleDateString('en-IN')} · {order.order_items?.length || 0} items
-                  </div>
-                </div>
-                <div className="vw-account-order-total" style={{ textAlign: "right" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "var(--ivory)", marginBottom: 6 }}>₹{order.total_amount?.toLocaleString()}</div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: 2, padding: "3px 10px",
-                    background: order.status === "delivered" ? "rgba(129,199,132,0.2)" : order.status === "dispatched" ? "rgba(79,195,247,0.2)" : "rgba(201,168,76,0.2)",
-                    color: order.status === "delivered" ? "#81c784" : order.status === "dispatched" ? "#4fc3f7" : "var(--gold)" }}>
-                    {order.status?.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab === "wishlist" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>SAVED PIECES</h2>
-            <div className="vw-account-wishlist-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
-              {wishlist.map(p => (
-                <div key={p.id} style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: "20px", textAlign: "center" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 18, marginBottom: 8 }}>{p.name}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--gold)" }}>₹{p.price}</div>
-                </div>
-              ))}
-            </div>
-            {wishlist.length === 0 && <div style={{ textAlign: "center", padding: 60, color: "var(--silver)", fontFamily: "'Roboto', sans-serif", fontStyle: "italic", fontSize: 18 }}>Your wishlist is empty</div>}
-          </div>
-        )}
-
-        {tab === "notifications" && (
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, margin: 0 }}>NOTIFICATIONS</h2>
-              <button 
-                className="btn-outline" 
-                onClick={() => {
-                  markAllNotificationsRead();
-                  showToast("All notifications marked as read.");
-                }}
-                style={{ padding: "8px 16px", fontSize: 10 }}
-              >
-                MARK ALL AS READ
-              </button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {notifications.map(n => (
-                <div key={n.id} style={{ background: "var(--graphite)", border: "1px solid " + (n.unread ? "var(--gold)" : "var(--smoke)"), padding: 24, display: "flex", gap: 16, alignItems: "flex-start" }}>
-                  <div style={{ fontSize: 20 }}>
-                    {n.category === "restock" ? "📦" : n.category === "price-drop" ? "🏷️" : "🐺"}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                      <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--ivory)", margin: "0 0 6px 0" }}>{n.title}</h4>
-                      <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ash)" }}>{n.time}</span>
-                    </div>
-                    <p style={{ fontFamily: "var(--font-serif)", fontSize: 14, color: "var(--silver)", margin: 0, lineHeight: 1.5 }}>{n.message}</p>
-                  </div>
-                  {n.unread && (
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)", alignSelf: "center" }} />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === "preferences" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>FIT DNA PREFERENCES</h2>
-            <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, maxWidth: 600 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                {/* Fits */}
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>PREFERRED FIT STYLE</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {["Regular", "Oversized", "Ultra-Oversized"].map(f => {
-                      const isActive = userPreferences?.fits?.includes(f);
-                      return (
-                        <button
-                          key={f}
-                          onClick={() => {
-                            const nextFits = isActive
-                              ? userPreferences.fits.filter(fit => fit !== f)
-                              : [...(userPreferences.fits || []), f];
-                            saveUserPreferences({ ...userPreferences, fits: nextFits });
-                          }}
-                          style={{
-                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
-                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
-                            color: isActive ? "var(--obsidian)" : "var(--silver)",
-                            padding: "10px 20px",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10,
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          {f.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Sizes */}
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>STREETWEAR SIZES</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {["XS", "S", "M", "L", "XL", "XXL"].map(s => {
-                      const isActive = userPreferences?.sizes?.includes(s);
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => {
-                            const nextSizes = isActive
-                              ? userPreferences.sizes.filter(sz => sz !== s)
-                              : [...(userPreferences.sizes || []), s];
-                            saveUserPreferences({ ...userPreferences, sizes: nextSizes });
-                          }}
-                          style={{
-                            width: 48,
-                            height: 48,
-                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
-                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
-                            color: isActive ? "var(--obsidian)" : "var(--silver)",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10,
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          {s}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 12 }}>FAVORITE CATEGORIES</div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {["tee", "cargo", "hoodie", "jacket"].map(c => {
-                      const isActive = userPreferences?.categories?.includes(c);
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => {
-                            const nextCats = isActive
-                              ? userPreferences.categories.filter(cat => cat !== c)
-                              : [...(userPreferences.categories || []), c];
-                            saveUserPreferences({ ...userPreferences, categories: nextCats });
-                          }}
-                          style={{
-                            background: isActive ? "var(--gold)" : "rgba(255,255,255,0.02)",
-                            border: "1px solid " + (isActive ? "var(--gold)" : "var(--smoke)"),
-                            color: isActive ? "var(--obsidian)" : "var(--silver)",
-                            padding: "10px 20px",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 10,
-                            cursor: "pointer",
-                            transition: "all 0.2s"
-                          }}
-                        >
-                          {c.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === "addresses" && <AccountAddresses showToast={showToast} />}
-
-        {tab === "settings" && (
-          <div className="vw-account-settings-panel" style={{ maxWidth: 500 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 32 }}>ACCOUNT SETTINGS</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 32 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>FULL NAME</label>
-                <input
-                  className="input-dark"
-                  value={settings.fullName}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, fullName: e.target.value.replace(/[^a-zA-Z\s]/g, "") }))}
-                  placeholder="FULL NAME"
-                />
-              </div>
-
-              {(() => {
-                const isMobileEmail = settings.email?.endsWith("@mobile.velvetwolf.in");
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>EMAIL ADDRESS</label>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <div style={{ flex: 1, position: "relative" }}>
-                        <input
-                           className="input-dark"
-                           type="email"
-                           value={isMobileEmail ? "No email linked" : settings.email}
-                           readOnly
-                           placeholder="EMAIL"
-                           style={{ width: "100%", opacity: 0.75, cursor: "not-allowed", border: isMobileEmail ? "1px dashed var(--gold)" : "1px solid var(--smoke)" }}
-                        />
-                        {isMobileEmail && (
-                          <span className="badge" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(201, 168, 76, 0.15)", color: "var(--gold)", border: "1px solid var(--gold)", fontSize: 8 }}>
-                            UNLINKED
-                          </span>
-                        )}
-                      </div>
-                      <button 
-                        type="button"
-                        className="btn-ghost" 
-                        style={{ padding: "12px 20px", fontSize: 10, letterSpacing: 2, height: "100%", whiteSpace: "nowrap" }}
-                        onClick={() => {
-                          setShowEmailUpdate(!showEmailUpdate);
-                          setEmailOtpSent(false);
-                          setNewEmail("");
-                          setEmailOtp("");
-                          setEmailError("");
-                        }}
-                      >
-                        {isMobileEmail ? "LINK EMAIL" : "UPDATE"}
-                      </button>
-                    </div>
-
-                    {showEmailUpdate && (
-                      <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 24, marginTop: 16, position: "relative" }}>
-                        <h3 style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--gold)", marginBottom: 16 }}>
-                          {isMobileEmail ? "LINK PERSONAL EMAIL" : "UPDATE EMAIL ADDRESS"}
-                        </h3>
-                        
-                        {!emailOtpSent ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <p style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.5, fontFamily: "var(--font-serif)" }}>
-                              {isMobileEmail 
-                                ? "Link a secure email address to receive order confirmations, track delivery status, and log in securely." 
-                                : "Enter your new email address. We'll send a 6-digit verification code to confirm ownership."}
-                            </p>
-                            <input
-                              className="input-dark"
-                              type="email"
-                              value={newEmail}
-                              onChange={(e) => {
-                                setNewEmail(e.target.value);
-                                setEmailError("");
-                              }}
-                              placeholder="NEW EMAIL ADDRESS"
-                              disabled={sendingEmailOtp}
-                            />
-                            {emailError && (
-                              <div style={{ color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
-                                ✕ {emailError}
-                              </div>
-                            )}
-                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                              <button 
-                                type="button"
-                                className="btn-gold" 
-                                style={{ padding: "10px 20px", fontSize: 10 }}
-                                onClick={handleSendEmailOtp}
-                                disabled={sendingEmailOtp}
-                              >
-                                {sendingEmailOtp ? "SENDING CODE..." : "SEND CODE"}
-                              </button>
-                              <button 
-                                type="button"
-                                className="btn-ghost" 
-                                style={{ padding: "10px 20px", fontSize: 10 }}
-                                onClick={() => setShowEmailUpdate(false)}
-                                disabled={sendingEmailOtp}
-                              >
-                                CANCEL
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <p style={{ fontSize: 13, color: "var(--silver)", lineHeight: 1.5, fontFamily: "var(--font-serif)" }}>
-                              A 6-digit verification code has been sent to <strong style={{ color: "var(--ivory)" }}>{newEmail}</strong>. Enter the code below to complete the update.
-                            </p>
-                            <input
-                              className="input-dark"
-                              type="text"
-                              value={emailOtp}
-                              onChange={(e) => {
-                                setEmailOtp(e.target.value.replace(/[^\d]/g, "").slice(0, 6));
-                                setEmailError("");
-                              }}
-                              placeholder="6-DIGIT CODE"
-                              style={{ letterSpacing: 8, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 18 }}
-                              disabled={verifyingEmailOtp}
-                            />
-                            {emailError && (
-                              <div style={{ color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 1 }}>
-                                ✕ {emailError}
-                              </div>
-                            )}
-                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                              <button 
-                                type="button"
-                                className="btn-gold" 
-                                style={{ padding: "10px 20px", fontSize: 10 }}
-                                onClick={handleVerifyEmailOtp}
-                                disabled={verifyingEmailOtp}
-                              >
-                                {verifyingEmailOtp ? "VERIFYING..." : "VERIFY & UPDATE"}
-                              </button>
-                              <button 
-                                type="button"
-                                className="btn-ghost" 
-                                style={{ padding: "10px 20px", fontSize: 10 }}
-                                onClick={() => setEmailOtpSent(false)}
-                                disabled={verifyingEmailOtp}
-                              >
-                                BACK
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)" }}>PHONE NUMBER</label>
-                <input
-                  className="input-dark"
-                  type="tel"
-                  value={settings.phone}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, phone: e.target.value.replace(/[^\d]/g, "").slice(0, 10) }))}
-                  placeholder="PHONE NUMBER"
-                />
-              </div>
-            </div>
-            <button className="btn-gold" style={{ marginBottom: 16, opacity: savingSettings ? 0.7 : 1, cursor: savingSettings ? "not-allowed" : "pointer" }} onClick={handleSaveSettings} disabled={savingSettings}>
-              {savingSettings ? "SAVING..." : "SAVE CHANGES"}
-            </button>
-            <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 24, marginTop: 24 }}>
-              <button className="btn-ghost" onClick={handleSignOut}>
-                SIGN OUT
-              </button>
-            </div>
-            {!user.isAdmin && (
-              <div style={{ borderTop: "1px solid var(--smoke)", paddingTop: 24, marginTop: 32 }}>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 2, color: "var(--wolf-red)", marginBottom: 10 }}>DELETE ACCOUNT</h3>
-                <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, color: "var(--silver)", lineHeight: 1.6, marginBottom: 14 }}>
-                  This permanently removes your profile, saved addresses, wishlist and style profile. Orders you've already placed are still delivered, and their records are kept for tax and refunds. This can't be undone.
-                </p>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--silver)", display: "block", marginBottom: 6 }}>TYPE DELETE TO CONFIRM</label>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <input
-                    className="input-dark"
-                    value={deleteConfirm}
-                    onChange={(e) => setDeleteConfirm(e.target.value.toUpperCase())}
-                    placeholder="DELETE"
-                    disabled={deletingAccount}
-                    style={{ flex: "1 1 160px", fontFamily: "var(--font-mono)", letterSpacing: 4 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleDeleteAccount}
-                    disabled={deleteConfirm !== "DELETE" || deletingAccount}
-                    style={{ background: "transparent", border: "1px solid var(--wolf-red)", color: "var(--wolf-red)", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, padding: "10px 20px", cursor: deleteConfirm === "DELETE" && !deletingAccount ? "pointer" : "not-allowed", opacity: deleteConfirm === "DELETE" ? 1 : 0.5 }}
-                  >
-                    {deletingAccount ? "DELETING..." : "DELETE MY ACCOUNT"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === "style" && (
-          <div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: 2, marginBottom: 24 }}>YOUR STYLE DNA</h2>
-            
-            {styleProfileLoading ? (
-              <div style={{ textAlign: "center", padding: "60px 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 2 }}>
-                LOADING STYLE PROFILE...
-              </div>
-            ) : !user.personality_type ? (
-              <div style={{ textAlign: "center", padding: "60px 24px", background: "var(--graphite)", border: "1px solid var(--smoke)" }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--silver)", marginBottom: 12 }}>AESTHETIC DNA UNDISCOVERED</div>
-                <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
-                  Take our 5-question interactive quiz to discover your Wolf Type (Midnight Minimalist, Silent Hunter, Creative Maverick, Alpha Wolf, or Urban Rebel) and unlock tailored storefront panels, custom AI filters, and personalized recommendations.
-                </p>
-                <button className="btn-gold" onClick={() => setPage("quiz")}>TAKE THE QUIZ</button>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
-                <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 36, display: "flex", flexDirection: "column", justifycontent: "space-between" }}>
-                  <div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--gold)", letterSpacing: 2, marginBottom: 8, textTransform: "uppercase" }}>
-                      ACTIVE PROFILE ARCHETYPE
-                    </div>
-                    <h3 className="gold-text" style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 3, margin: "0 0 16px 0", lineHeight: 1.1 }}>
-                      {user.personality_type.toUpperCase() === "BUILDER" ? "MIDNIGHT MINIMALIST" :
-                       user.personality_type.toUpperCase() === "ALPHA" ? "ALPHA WOLF" :
-                       user.personality_type.toUpperCase() === "SHADOW" ? "SILENT HUNTER" :
-                       user.personality_type.toUpperCase() === "CREATOR" ? "CREATIVE MAVERICK" :
-                       user.personality_type.toUpperCase() === "REBEL" ? "URBAN REBEL" : user.personality_type.toUpperCase()}
-                    </h3>
-                    <p style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: "var(--ash)", lineHeight: 1.6, marginBottom: 20 }}>
-                      {user.personality_type.toUpperCase() === "BUILDER" && "Focused on clean structures, sharp tailoring, and minimal noise. Your style is monochromatic and details-driven, focusing on weight and silhouette."}
-                      {user.personality_type.toUpperCase() === "ALPHA" && "Ambitious. Powerful. Leading the pack. You represent power, persistence, and presence. Your style commands attention."}
-                      {user.personality_type.toUpperCase() === "SHADOW" && "Mysterious. Calculated. Pure luxury. You operate in the background with silent strength, raw material quality, drop shoulders, and clean draping."}
-                      {user.personality_type.toUpperCase() === "CREATOR" && "Artistic. Experimental. Boundary-pushing. You constantly redefine aesthetics, expressing yourself through illustrations, unique proportions, and techwear."}
-                      {user.personality_type.toUpperCase() === "REBEL" && "Raw. Disruptive. Unfiltered. You break the mold. You represent raw energy, utility styling, baggy cargo fits, and distressed fleece."}
-                    </p>
-                  </div>
-                  
-                  <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-                    <button className="btn-gold" style={{ fontSize: 11, letterSpacing: 2, padding: "10px 20px" }} onClick={() => setPage("quiz")}>
-                      RETAKE QUIZ
-                    </button>
-                    <button 
-                      className="btn-ghost" 
-                      style={{ fontSize: 11, letterSpacing: 2, borderColor: "var(--crimson)", color: "var(--wolf-red)", padding: "10px 20px" }} 
-                      onClick={handleClearStyleProfile}
-                    >
-                      RESET PROFILE
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {styleProfile?.quiz_score && (
-                    <div style={{ background: "var(--graphite)", border: "1px solid var(--smoke)", padding: 28 }}>
-                      <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>
-                        PROFILE MATRIX
-                      </h4>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {Object.entries(styleProfile.quiz_score).map(([key, val]) => (
-                          <div key={key}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1, color: "var(--ash)", textTransform: "uppercase", marginBottom: 4 }}>
-                              <span>{key} wolf</span>
-                              <span>{val}%</span>
-                            </div>
-                            <div style={{ height: 4, background: "var(--smoke)", width: "100%" }}>
-                              <div style={{ height: "100%", background: key.toUpperCase() === user.personality_type.toUpperCase() ? "var(--gold)" : "var(--silver)", width: `${val}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div style={{ background: "var(--onyx)", border: "1px solid var(--smoke)", padding: 28 }}>
-                    <h4 style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, color: "var(--gold)", marginBottom: 16 }}>
-                      PERSONALIZATION & PRIVACY
-                    </h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={privacySettings.useRecommendations}
-                          onChange={(e) => updatePrivacySetting("useRecommendations", e.target.checked)}
-                          style={{ accentColor: "var(--gold)" }}
-                        />
-                        Use my style profile for recommendations
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={privacySettings.personalizedHomepage}
-                          onChange={(e) => updatePrivacySetting("personalizedHomepage", e.target.checked)}
-                          style={{ accentColor: "var(--gold)" }}
-                        />
-                        Personalized homepage shelves
-                      </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={privacySettings.personalizedEmails}
-                          onChange={(e) => updatePrivacySetting("personalizedEmails", e.target.checked)}
-                          style={{ accentColor: "var(--gold)" }}
-                        />
-                        Personalized email newsletters
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
-export default AccountPage;
+export default function AccountPage() {
+  const { user, wishlist = [], products = [], userPreferences } = useContext(AppContext);
+  const { engine } = useGallery();
+  const store = useAccountStore();
+  const [params, setParams] = useSearchParams();
+  const raw = params.get("tab") || "den";
+  const tab = TABS.some(([t]) => t === raw) ? raw : OLD[raw] || "den";
+  const [hinted, setHinted] = useState(true); // a cached session: wait for it before saying "sign in"
+
+  useEffect(() => {
+    let cached = false;
+    try { cached = Boolean(localStorage.getItem("user")); } catch { /* storage unavailable */ }
+    if (!cached) { setHinted(false); return undefined; }
+    const t = setTimeout(() => setHinted(false), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // this person's data, loaded once and shared with the alerts bell
+  useEffect(() => {
+    resetAccount(user?.id || null);
+    if (user?.id) { loadOrders(); loadExtras(); }
+  }, [user?.id]);
+
+  const productsById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+
+  // the room: owned tees on the rail, saved pieces on the wall, the card on its plinth
+  useEffect(() => {
+    if (!engine) return undefined;
+    engine.setView("den", tab === "fit" ? "denFit" : "den");
+    return undefined;
+  }, [engine, tab]);
+  useEffect(() => {
+    if (!engine?.den || !user) return;
+    const owned = [];
+    for (const o of store.orders || []) {
+      if (stageOf(o.status) < 1) continue; // paid orders only
+      for (const i of o.order_items || []) {
+        const p = productsById.get(i.product_id);
+        if (owned.some((x) => x.key === `${i.product_id}|${i.color}`)) continue;
+        owned.push({ key: `${i.product_id}|${i.color}`, name: i.product_name, color: i.color, delivered: isDelivered(o), src: p ? cartThumb({ ...p, color: i.color }) : "" });
+      }
+    }
+    engine.den.set({
+      owned: owned.slice(0, 5),
+      saved: wishlist.slice(0, 3).map((p) => ({ name: p.name, src: photoFor(p) })).filter((p) => p.src),
+      card: { name: nameOf(user), no: store.membership?.memberNo || null },
+    });
+  }, [engine, user, store.orders, store.membership, wishlist, productsById]);
+
+  if (!user) return <SignedOut checking={hinted} />;
+
+  const go = (t) => setParams((p) => { const n = new URLSearchParams(p); if (t === "den") n.delete("tab"); else n.set("tab", t); return n; }, { replace: false });
+  const name = nameOf(user);
+
+  return (
+    <main className="vwg view-den">
+      <div className="den-band" aria-hidden="true" />
+      <section className="den-body">
+        <div className="den-wrap">
+          <header className="den-head">
+            <p className="eyebrow">Account</p>
+            <h1 className="den-title">The Den</h1>
+          </header>
+          <nav className="den-tabs" aria-label="Account">
+            {TABS.map(([t, label]) => (
+              <Link key={t} to={t === "den" ? "/account" : `/account?tab=${t}`} aria-current={tab === t ? "page" : undefined}
+                onClick={(e) => { e.preventDefault(); go(t); }}>
+                <TabIcon name={t} />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+          <div className="den-panel">
+            <h2 className="sr-only">{TABS.find(([t]) => t === tab)[1]}</h2>
+            {tab === "den" && <DenTab user={user} name={name} membership={store.membership} orders={store.orders} alerts={store.alerts} features={store.features} onTab={go} />}
+            {tab === "orders" && <OrdersTab orders={store.orders} ordersError={store.ordersError} productsById={productsById} features={store.features} email={String(user.email || "").endsWith("@mobile.velvetwolf.in") ? "" : user.email} />}
+            {tab === "saved" && <SavedTab wishlist={wishlist} alerts={store.alerts} features={store.features} defaultSize={userPreferences?.sizes?.[0] || "M"} />}
+            {tab === "fit" && <FitTab orders={store.orders} personality={user.personality_type} memberNo={store.membership?.memberNo} />}
+            {tab === "settings" && <SettingsTab prefs={store.prefs} features={store.features} />}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

@@ -75,7 +75,7 @@ describe("newestDrops / fromPrice / productHref", () => {
 });
 
 describe("isGalleryPath", () => {
-  it("covers home, shop, studio, auth, size guide, payment and help pages; product pages don't use 3D", () => {
+  it("covers home, shop, studio, auth, size guide, payment, help and account pages; product pages don't use 3D", () => {
     expect(isGalleryPath("/")).toBe(true);
     expect(isGalleryPath("/shop")).toBe(true);
     expect(isGalleryPath("/shop/anime")).toBe(true);
@@ -87,6 +87,9 @@ describe("isGalleryPath", () => {
     // size guide, payment and every help page (each has an object in the back-of-house wing)
     for (const p of ["/size-guide", "/payment-status", "/faq", "/contact", "/track-order", "/shipping-policy", "/returns", "/privacy-policy", "/terms"]) expect(isGalleryPath(p)).toBe(true);
     expect(isGalleryPath("/checkout")).toBe(false);
-    expect(isGalleryPath("/account")).toBe(false);
+    // the account page is the Den, a room in the hall; so is a shared saved list
+    expect(isGalleryPath("/account")).toBe(true);
+    expect(isGalleryPath("/saved/abcdefghijklmnop")).toBe(true);
+    expect(isGalleryPath("/wishlist")).toBe(false);
   });
 });

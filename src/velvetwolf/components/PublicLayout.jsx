@@ -20,7 +20,7 @@ export default function PublicLayout() {
 
   return (
     // Home and shop share one persistent 3D gallery canvas.
-    <GalleryProvider active={isGalleryPath(location.pathname)} poster={!isHelpPath(location.pathname)}>
+    <GalleryProvider active={isGalleryPath(location.pathname)} poster={!isHelpPath(location.pathname) && location.pathname !== "/account" && !location.pathname.startsWith("/saved/")}>
       <GalleryHeader />
       <Outlet />
       <GalleryFooter toolView={location.pathname === "/size-guide" || location.pathname === "/custom"} />
