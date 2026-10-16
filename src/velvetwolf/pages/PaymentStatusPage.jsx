@@ -2,7 +2,8 @@
 // (/payment-status?order_id=…). It never assumes the payment worked: it asks the server
 // (POST /checkout/verify) and only then shows paid, waiting for the bank, or failed. The gold
 // stars in the hall follow along: a halo round the tee when paid, circling while the bank
-// decides, sinking when it fails.
+// decides, sinking when it fails. The tees in the order stand on the stage as photo cards: one
+// alone, several fanned out like a hand that turns (pointing at a tee in the list brings it forward).
 import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
@@ -51,19 +52,23 @@ export default function PaymentStatusPage() {
   const [state, setState] = useState("verify");
   const [left, setLeft] = useState(POLL_S);
   const [copied, setCopied] = useState("");
-  const snap = useRef(readSnapshot());
+  const snap = useRef(null);
+  // the checkout snapshot for this order, read once per order (before any effect uses it)
+  const snapFor = useRef(undefined);
+  if (snapFor.current !== orderId) { snapFor.current = orderId; snap.current = readSnapshot(); }
   const polls = useRef(0);
   const titleRef = useRef(null);
   const done = useRef(false);
 
-  // the ordered tee on the product stage, the stars following the state
+  // the ordered tees on the product stage, the stars following the state
   useEffect(() => {
     if (!engine) return undefined;
     engine.setView("payment", "payment");
     const first = snap.current.cart.find((i) => !i.isCustom) || snap.current.cart[0];
     engine.dressPayment(first?.color || "noir", "VELVETWOLF");
+    engine.showOrder?.(snap.current.cart.map((i) => ({ src: cartThumb(i), name: i.name })));
     return () => engine.setStars("idle");
-  }, [engine]);
+  }, [engine, orderId]);
   useEffect(() => { engine?.setStars(STARS[state]); }, [engine, state]);
 
   // focus the new heading whenever the state changes, for screen readers
@@ -106,7 +111,6 @@ export default function PaymentStatusPage() {
     setState(orderId ? "verify" : "missing");
     done.current = false;
     polls.current = 0;
-    snap.current = readSnapshot();
     if (!orderId) return undefined;
     let cancelled = false;
     const minWait = matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1400;
@@ -183,7 +187,8 @@ export default function PaymentStatusPage() {
                   {cart.map((i, idx) => {
                     const src = cartThumb(i);
                     return (
-                      <li key={`${i.id}-${i.size}-${i.color}-${idx}`} style={{ "--i": idx }}>
+                      <li key={`${i.id}-${i.size}-${i.color}-${idx}`} style={{ "--i": idx }}
+                        onMouseEnter={() => engine?.focusOrder?.(idx)} onMouseLeave={() => engine?.focusOrder?.(null)}>
                         <span className={`pay-tee-photo${i.isCustom ? " is-art" : ""}`}>
                           {src ? <img src={src} alt="" loading="lazy" decoding="async" /> : null}
                           {i.qty > 1 && <span className="pay-tee-qty" aria-label={`Quantity ${i.qty}`}>{i.qty}</span>}

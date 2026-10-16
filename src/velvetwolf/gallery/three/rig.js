@@ -40,6 +40,8 @@ export const STATIONS = {
   studio:    { target: [72, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [72, 1.62, 0],  spot: 0.42, area: area('panel', [0.04, 0.075, 0.96, 0.43], [0.1, 0.07, 0.9, 0.48]) },
   // payment status: the ordered tee on the product stage, the status card beside it
   payment:   { target: [60, 1.5, 0],     dir: [0.18, 0.1, 1],   frame: [3.6, 3.6], focus: [60, 1.62, 0],  spot: 0.48, area: area([0.04, 0.1, 0.52, 0.94], [0.2, 0.075, 0.8, 0.34], [0.28, 0.07, 0.72, 0.36]) },
+  // several tees ordered: the cards fan out, so the frame is wider
+  paymentMany: { target: [60, 1.55, 0],  dir: [0.1, 0.08, 1],   frame: [4.3, 2.7], focus: [60, 1.62, 0],  spot: 0.7,  area: area([0.02, 0.1, 0.56, 0.94], [0.0, 0.075, 1.0, 0.34], [0.1, 0.07, 0.9, 0.36]) },
   // size guide: the line-up of sizes; the camera centres on the chosen tee (the engine moves
   // target/focus x) and frames its neighbours either side for comparison
   sizeGuide: { target: [84, 1.95, 0.0],  dir: [0.0, 0.06, 1],   frame: [5.4, 3.35], focus: [84, 1.62, 0.1], spot: 0.42, area: 'panel', areaStack: true },

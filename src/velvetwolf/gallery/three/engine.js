@@ -9,6 +9,7 @@ import { Rig, resolve, lerpPose, dwellEase, layoutOf, STATIONS } from './rig.js'
 import { buildBackstage, BACKSTAGE_X } from './backstage.js';
 import { createStages } from './stages.js';
 import { createGoldDust } from './dust.js';
+import { createOrderCards } from './orderCards.js';
 import { damp, nearestAngle } from './util.js';
 import { COLORWAYS, productById } from '../data.js';
 
@@ -96,6 +97,9 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   // Quiet Hours: framed photographs hang where the drop tees used to float.
   // The page supplies them (the newest products) through setDropPhotos().
   const hungPhotos = [];
+  // payment page: the ordered tees as photo cards on the product stage (see orderCards.js)
+  let wakeLater = () => {};
+  const orderCards = createOrderCards(scene, { x: B.pdp.x, y: TEE_Y, aniso, onChange: () => wakeLater() });
 
   // ---- state ----
   let W = 1, H = 1, Hs = 1;
@@ -178,6 +182,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   let wakeFrames = 180;
   let placed = false;
   const wake = (ms = 2600) => { wakeFrames = Math.max(wakeFrames, Math.round(ms / 16)); };
+  wakeLater = () => wake(1200);
   const clock0 = performance.now();
 
   function frame(now) {
@@ -250,6 +255,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       world.aimLights(new THREE.Vector3(sel.x, TEE_Y, sel.group.position.z), rig.spot);
     }
     backstage.update(t, dt, !(reducedMotion || still), helpPage);
+    if (view === 'payment') orderCards.update(t, dt, !(reducedMotion || still));
 
     for (const g of world.garments()) g.update(dt);
 
@@ -305,6 +311,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     setView(name, st) {
       view = name; station = st || name;
       helpPage = name === 'info' ? String(station).replace(/Read$/, '') : null;
+      // the order's cards only stand on the stage while the payment page is open
+      if (name !== 'payment' && orderCards.count) { orderCards.clear(); B.pdp.garment.group.visible = true; }
       // the first page after the hall loads starts in place; later page changes walk
       wake(); applyGoal(!placed); placed = true;
     },
@@ -360,6 +368,16 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       world.setPdpWall(wall);
       spin.pdp.goal = spin.pdp.rot = 0;
     },
+    // payment page: show the tees just ordered ([{ src, name }]) as photo cards in place of the
+    // plain tee; several fan out and turn, so the camera stands back a little further
+    showOrder(items = []) {
+      const list = items.filter(Boolean);
+      orderCards.set(list);
+      B.pdp.garment.group.visible = list.length === 0;
+      if (view === 'payment') { station = list.length > 1 ? 'paymentMany' : 'payment'; wake(); applyGoal(); }
+    },
+    // bring one ordered tee to the front (the customer points at it in the list); null lets the hand turn again
+    focusOrder(i) { orderCards.focus(i); wake(); },
     // size guide: screen positions of points given in the fit tee's own units
     fitProject(points) {
       const b = B.fitLineup[fitSel], s = b.scale, z0 = b.group.position.z;
