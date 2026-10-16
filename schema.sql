@@ -546,3 +546,52 @@ ON CONFLICT (id) DO UPDATE
   SET public = false,
       file_size_limit = EXCLUDED.file_size_limit,
       allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- ==========================================
+-- MIGRATION: ACCOUNT (THE DEN)
+-- ==========================================
+-- The account page's membership number, fit feedback, restock alerts, notification choices
+-- and the shareable saved list (backend/lambda/src/services/account.service.js). Safe to run
+-- more than once. Until it runs, those parts of the account page stay hidden.
+
+-- 1. Membership number: given once, in the order people joined (No. 0001 is the first account).
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS member_no INTEGER;
+WITH numbered AS (
+    SELECT id, row_number() OVER (ORDER BY created_at, id) AS n FROM public.users
+)
+UPDATE public.users u SET member_no = numbered.n
+FROM numbered WHERE u.id = numbered.id AND u.member_no IS NULL;
+CREATE SEQUENCE IF NOT EXISTS public.users_member_no_seq;
+SELECT setval('public.users_member_no_seq', GREATEST(COALESCE((SELECT max(member_no) FROM public.users), 0), 1), (SELECT count(*) > 0 FROM public.users));
+ALTER TABLE public.users ALTER COLUMN member_no SET DEFAULT nextval('public.users_member_no_seq');
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_member_no ON public.users(member_no);
+
+-- 2. "How's the fit?" on delivered tees.
+ALTER TABLE public.order_items ADD COLUMN IF NOT EXISTS fit_feedback TEXT
+    CHECK (fit_feedback IN ('tight', 'right', 'roomy'));
+
+-- 3. Restock alerts: "Tell me when L is back". One email per alert, then notified_at is set.
+CREATE TABLE IF NOT EXISTS public.restock_alerts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    size TEXT NOT NULL CHECK (size IN ('S', 'M', 'L', 'XL', 'XXL')),
+    notified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE (user_id, product_id, size)
+);
+CREATE INDEX IF NOT EXISTS idx_restock_alerts_waiting ON public.restock_alerts(product_id, size) WHERE notified_at IS NULL;
+ALTER TABLE public.restock_alerts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow service role all restock_alerts" ON public.restock_alerts;
+CREATE POLICY "Allow service role all restock_alerts" ON public.restock_alerts FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- 4. Per-account settings: which emails they want, and the saved-list share link (null = not shared).
+CREATE TABLE IF NOT EXISTS public.account_settings (
+    user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    notification_prefs JSONB NOT NULL DEFAULT '{}'::jsonb,
+    wishlist_share_token TEXT UNIQUE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.account_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow service role all account_settings" ON public.account_settings;
+CREATE POLICY "Allow service role all account_settings" ON public.account_settings FOR ALL TO service_role USING (true) WITH CHECK (true);
