@@ -274,6 +274,7 @@
   .vwg .den-grid-2 { grid-template-columns: minmax(0, 1fr); }
   .vwg .den-twin-compare { grid-template-columns: minmax(0, 1fr); }
   .vwg .den-order { padding: 18px; }
+  .vwg .den-shared-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   /* the stylist button and the footer clear the bar */
   body:has(.view-den) .vw-ai { bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
   body:has(.view-den) .vwg-foot { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
