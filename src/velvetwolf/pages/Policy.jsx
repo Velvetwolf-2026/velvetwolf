@@ -1,52 +1,49 @@
-// ─────────────────────────────────────────────
-// VelvetWolf — PrivacyPolicy Page
-// Route: /privacy
-// ─────────────────────────────────────────────
-import { S, PageHeader, Sec, Ul } from "../styles/shared";
-import { THEME } from "../utils/constants";
-const { gold } = THEME;
+// Privacy notice (gallery help page). In the hall: a glass vitrine holding one object for each
+// kind of data we keep; pointing at a row of "Everything we hold" lights its object.
+import { useEffect, useRef, useState } from "react";
+import HelpLayout, { DocBody } from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
+import { PRIVACY } from "../gallery/help/content";
+
+export function meta() {
+  return [{ title: "Privacy policy · VelvetWolf" }, { name: "description", content: "What VelvetWolf collects, why, and who sees it. We don't sell your data." }];
+}
+
+// what we keep (one object each in the vitrine)
+const HOLD = [
+  { id: "contact", label: "Email, name and phone", why: "To send your receipt and delivery updates, and to sign you in." },
+  { id: "address", label: "Delivery address", why: "So the courier can find you. Saved only if you ask." },
+  { id: "order", label: "Your orders", why: "What you bought and when, for delivery, returns and tax records." },
+  { id: "payment", label: "Payment reference", why: "Cashfree's reference for the payment, not your card or UPI details." },
+];
 
 export default function PrivacyPolicy() {
+  const motifRef = useRef(null);
+
+  // the vitrine holds one object per kind of data we keep; pointing at a row lights it
+  const { engine } = useGallery();
+  const [focus, setFocus] = useState(null);
+  useEffect(() => { engine?.help.privacy.set({ focus }); }, [engine, focus]);
+
   return (
-    <div style={S.page}>
-      <div style={S.wrap}>
-        <PageHeader eyebrow="LEGAL" title="PRIVACY POLICY" sub="Last updated: March 2026  ·  Effective immediately" />
-        <p style={S.p}>VelvetWolf is committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit velvetwolf.in or make a purchase.</p>
-
-        <Sec title="1. INFORMATION WE COLLECT">
-          <h3 style={S.h3}>Personal Information You Provide</h3>
-          <Ul items={["Full name and contact details (email, phone number)","Shipping and billing address","Payment information (processed securely via Razorpay — we never store card details)","Account credentials (if you create an account)","Communications you send us (emails, chat messages, reviews)"]} />
-          <h3 style={S.h3}>Automatically Collected Information</h3>
-          <Ul items={["IP address, browser type, and device information","Pages visited, time on site, and referral URLs","Cookies and similar tracking technologies","Order history and browsing behaviour on our site"]} />
-        </Sec>
-
-        <Sec title="2. HOW WE USE YOUR INFORMATION">
-          <Ul items={["To process and fulfil your orders and send order confirmations","To communicate about shipping, delivery, and order updates","To respond to customer service inquiries","To personalise your shopping experience","To send marketing emails and SMS (only if you opt in)","To prevent fraud and maintain site security","To comply with Indian law (IT Act 2000, GST regulations)","To send transactional OTP verification emails during login, signup, and account authentication."]} />
-        </Sec>
-
-        <Sec title="3. SHARING YOUR INFORMATION">
-          <p style={S.p}>We do not sell your personal data. We may share information with:</p>
-          <Ul items={["Shipping partners (Shiprocket, Delhivery, Blue Dart) for order delivery","Payment processors (Razorpay) for transaction processing","Analytics providers (Google Analytics) in anonymised form","Legal authorities if required by law or court order"]} />
-        </Sec>
-
-        <Sec title="4. COOKIES">
-          <p style={S.p}>We use cookies to enhance your browsing experience. Types we use:</p>
-          <Ul items={["Essential cookies — required for cart and checkout to function","Analytics cookies — help us understand how you use our site","Marketing cookies — used to show relevant ads (only with consent)"]} />
-        </Sec>
-
-        <Sec title="5. YOUR RIGHTS">
-          <Ul items={["Access: Request a copy of the personal data we hold about you","Correction: Ask us to update inaccurate information","Deletion: Request erasure of your data (subject to legal obligations)","Opt-out: Unsubscribe from marketing at any time","Portability: Receive your data in a machine-readable format"]} />
-          <p style={S.p}>To exercise these rights, email: <span style={{ color: gold }}>info@velvetwolf.in</span></p>
-        </Sec>
-
-        <Sec title="6. SECURITY">
-          <p style={S.p}>We use SSL encryption, PCI-DSS compliant payment processing via Razorpay, and regular security audits. No transmission over the internet is 100% secure.</p>
-        </Sec>
-
-        <Sec title="7. CONTACT">
-          <p style={S.p}>Privacy enquiries: <span style={{ color: gold }}>info@velvetwolf.in</span><br/>VelvetWolf, Chennai, Tamil Nadu, India</p>
-        </Sec>
-      </div>
-    </div>
+    <HelpLayout page="privacy-policy" eyebrow="Policy" title="Privacy" motifRef={motifRef} doc updated
+      lede="What we collect, why, and who sees it. We don't sell your data.">
+      <section className="info-card hold-card" aria-labelledby="hold-h">
+        <h2 className="info-h" id="hold-h">Everything we hold, on display</h2>
+        <p className="muted">This is the whole list. Point at a row to see it in the case.</p>
+        <ul className="hold-list" onMouseLeave={() => setFocus(null)}>
+          {HOLD.map((h) => (
+            <li key={h.id}>
+              <button type="button" className="hold-row" aria-pressed={focus === h.id}
+                onMouseEnter={() => setFocus(h.id)} onFocus={() => setFocus(h.id)} onBlur={() => setFocus(null)} onClick={() => setFocus(h.id)}>
+                <b>{h.label}</b><span>{h.why}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="fine">Card, UPI and bank details stay with Cashfree; we only keep the payment reference.</p>
+      </section>
+      <DocBody sections={PRIVACY} />
+    </HelpLayout>
   );
 }

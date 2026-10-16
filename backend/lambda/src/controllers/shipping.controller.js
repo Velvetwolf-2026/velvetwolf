@@ -1,13 +1,13 @@
 import * as shiprocketService from "../services/shiprocket.service.js";
 import { jsonResponse } from "../utils/http.js";
 
-export async function trackShipment(orderId, event) {
+export async function trackShipment(orderId, event, query = {}) {
   if (!orderId) {
     return jsonResponse(400, { error: "Order ID is required" }, {}, event);
   }
   
   try {
-    const result = await shiprocketService.getShipmentTracking(orderId);
+    const result = await shiprocketService.getShipmentTracking(decodeURIComponent(orderId).trim(), query?.email || "");
     return jsonResponse(200, result, {}, event);
   } catch (err) {
     return jsonResponse(err.statusCode || 500, { error: err.message || "Internal server error" }, {}, event);

@@ -38,6 +38,23 @@ export const STATIONS = {
   auth:      { target: [0, 1.42, 0],     dir: [-0.2, 0.1, 1],   frame: [2.5, 3.0], focus: [0, 1.62, 0],   spot: 0.42, area: area([0.04, 0.12, 0.5, 0.94], [0.28, 0.075, 0.72, 0.3], [0.32, 0.07, 0.68, 0.3]) },
   // stacked Studio pins the preview to the top of the screen while the tools scroll under it
   studio:    { target: [72, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [72, 1.62, 0],  spot: 0.42, area: area('panel', [0.04, 0.075, 0.96, 0.43], [0.1, 0.07, 0.9, 0.48]) },
+  // payment status: the ordered tee on the product stage, the status card beside it
+  payment:   { target: [60, 1.5, 0],     dir: [0.18, 0.1, 1],   frame: [3.6, 3.6], focus: [60, 1.62, 0],  spot: 0.48, area: area([0.04, 0.1, 0.52, 0.94], [0.2, 0.075, 0.8, 0.34], [0.28, 0.07, 0.72, 0.36]) },
+  // size guide: the line-up of sizes; the camera centres on the chosen tee (the engine moves
+  // target/focus x) and frames its neighbours either side for comparison
+  sizeGuide: { target: [84, 1.95, 0.0],  dir: [0.0, 0.06, 1],   frame: [5.4, 3.35], focus: [84, 1.62, 0.1], spot: 0.42, area: 'panel', areaStack: true },
+  // back of house: one object per help page, framed beside the page header (above it when stacked)
+  contact:   { target: [102, 0.95, 0.1], dir: [0.3, 0.34, 1],  frame: [2.7, 2.1],  focus: [102, 1.2, 0],   spot: 0.5,  area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  faq:       { target: [116, 0.95, 0.3], dir: [-0.45, 0.14, 1], frame: [1.9, 2.15], focus: [116, 1.2, 0.3], spot: 0.5,  area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  track:     { target: [131.9, 1.0, -1.4], dir: [0.6, 0.34, 1], frame: [5.2, 4.0], focus: [132, 0.4, -0.8], spot: 1.0, area: area([0.46, 0.1, 0.99, 0.66], [0.0, 0.07, 1.0, 0.36], [0.04, 0.06, 0.96, 0.4]) },
+  shipping:  { target: [152.1, 0.3, 0], dir: [-0.22, 0.75, 1], frame: [10.2, 2.6], focus: [152, 0.3, 0],   spot: 1.0, area: area([0.46, 0.1, 0.99, 0.66], [0.0, 0.07, 1.0, 0.36], [0.04, 0.06, 0.96, 0.4]) },
+  returns:   { target: [170, 0.15, 0.1], dir: [0.0, 0.8, 1],    frame: [4.0, 3.0],  focus: [170, 0.2, 0],   spot: 0.8, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  privacy:   { target: [186, 0.8, 0],    dir: [0.3, 0.2, 1],    frame: [2.0, 1.75], focus: [186, 1.1, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  terms:     { target: [200, 1.3, 0],    dir: [-0.25, 0.22, 1], frame: [1.6, 2.7],  focus: [200, 1.2, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  // help pages: the hall as a dim backdrop behind the page header
+  route:     { target: [26, 1.7, -0.5],  dir: [-0.85, 0.16, 0.5], frame: [5, 3.4], focus: [26, 1.62, 0], spot: 0.6,  area: area([0.42, 0.06, 1.0, 0.62], [0.0, 0.04, 1.0, 0.4]) },
+  frames:    { target: [12, 1.7, 0],     dir: [0.42, 0.1, 1],   frame: [10, 3.6], focus: [12, 1.6, 0],  spot: 0.66, area: area([0.42, 0.06, 1.0, 0.62], [0.0, 0.04, 1.0, 0.4]) },
+  quiet:     { target: [36, 1.8, 0],     dir: [0.3, 0.08, 1],   frame: [5, 3.4],  focus: [36, 1.8, 0],  spot: 0.42, area: area([0.46, 0.06, 1.0, 0.62], [0.0, 0.04, 1.0, 0.4]) },
 };
 
 const _v = new THREE.Vector3();
@@ -48,7 +65,9 @@ const _v = new THREE.Vector3();
 export function resolve(name, W, H, fovDeg, Hs = H) {
   const s = STATIONS[name];
   const L = layoutOf(W, Hs);
-  let a = !L.stacked ? s.area.desk : L.tablet ? s.area.tab : s.area.mob;
+  let a = s.area === 'panel' && s.areaStack
+    ? (L.stacked ? (L.tablet ? [0.08, 0.07, 0.92, 0.56] : [0.0, 0.07, 1.0, 0.52]) : 'panel')
+    : !L.stacked ? s.area.desk : L.tablet ? s.area.tab : s.area.mob;
   if (a === 'panel') a = [0.02, 0.1, Math.max(0.3, (W - L.panelW) / W) - 0.02, 0.96];
   const fr = (L.stacked && (L.tablet ? s.frameTab : s.frameMob)) || s.frame;
   const k = Hs / H;

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { signDesignFiles } from "./studio.service.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
@@ -139,6 +140,44 @@ export async function getAdminProducts({ collection, search, page = 1, limit = 1
   return { products: data || [], total: count || 0, page, limit };
 }
 
+// ---- product photos ----
+// Storage keys are chosen here, never taken from the uploaded file's name: names from people's
+// computers can contain characters storage refuses ("#", "%", accents, invisible spaces), and
+// that refusal used to surface as a bare 500 when adding a product.
+const PRODUCT_BUCKET = "product-images";
+const PHOTO_EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+const photoKey = (contentType) => `${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${PHOTO_EXT[contentType] || "jpg"}`;
+
+// One-time upload link: the admin page sends each photo straight to storage, so a product with
+// many photos never hits the API's 6 MB request limit or the 30-second timeout.
+export async function createProductPhotoUploadUrl({ contentType } = {}) {
+  if (!PHOTO_EXT[contentType]) throw new ApiError(400, "Use a JPG, PNG or WebP photo.");
+  const path = photoKey(contentType);
+  const { data, error } = await supabaseAdmin.storage.from(PRODUCT_BUCKET).createSignedUploadUrl(path);
+  if (error || !data?.signedUrl) {
+    logError("Could not create product photo upload URL", adminLogContext({ path, error }));
+    throw new ApiError(502, `Couldn't prepare the photo upload${error?.message ? `: ${error.message}` : ""}.`);
+  }
+  const { data: pub } = supabaseAdmin.storage.from(PRODUCT_BUCKET).getPublicUrl(path);
+  return { path, uploadUrl: data.signedUrl, publicUrl: pub.publicUrl };
+}
+
+// Older admin pages still send photos inline as base64; store them under a safe key too.
+async function uploadInlinePhoto(file) {
+  if (!file?.base64) return null;
+  const key = photoKey(file.contentType);
+  const { error } = await supabaseAdmin.storage.from(PRODUCT_BUCKET).upload(key, Buffer.from(file.base64, "base64"), {
+    contentType: file.contentType || "image/jpeg",
+    upsert: false,
+  });
+  if (error) {
+    logError("Failed to upload product image", adminLogContext({ originalName: file.fileName, key, error }));
+    throw new ApiError(502, `Couldn't save a product photo${error.message ? `: ${error.message}` : ""}.`);
+  }
+  const { data } = supabaseAdmin.storage.from(PRODUCT_BUCKET).getPublicUrl(key);
+  return file.color ? `${file.color}::${data.publicUrl}` : data.publicUrl;
+}
+
 export async function createAdminProduct(productData, adminId) {
   const { name, collection, price, original_price, description, tag, sizes, colors, stock, image, images = [], newImages = [], style, fit } = productData;
 
@@ -149,20 +188,7 @@ export async function createAdminProduct(productData, adminId) {
 
   // Upload all new images in parallel
   if (Array.isArray(newImages) && newImages.length > 0) {
-    const uploadPromises = newImages.map(async (file) => {
-      if (!file.base64 || !file.fileName) return null;
-      const buffer = Buffer.from(file.base64, "base64");
-      const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(file.fileName, buffer, {
-        contentType: file.contentType || "image/jpeg",
-        upsert: true
-      });
-      if (uploadError) {
-        logError("Failed to upload product image", adminLogContext({ imageFileName: file.fileName, error: uploadError }));
-        throw new ApiError(500, "Failed to upload product image.");
-      }
-      const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(file.fileName);
-      return file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
-    });
+    const uploadPromises = newImages.map(uploadInlinePhoto);
 
     const uploadedUrls = await Promise.all(uploadPromises);
     for (const url of uploadedUrls) {
@@ -198,7 +224,7 @@ export async function createAdminProduct(productData, adminId) {
     fit: fit || "Oversized",
   }).select().single();
 
-  if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, "Failed to create product."); }
+  if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, `Couldn't save the product${error.message ? `: ${error.message}` : ""}.`); }
 
   // Create variants for all size/color combinations
   if (data) {
@@ -250,20 +276,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
   if (Array.isArray(newImages) && newImages.length > 0) {
     if (!updates.images) updates.images = [];
     
-    const uploadPromises = newImages.map(async (file) => {
-      if (!file.base64 || !file.fileName) return null;
-      const buffer = Buffer.from(file.base64, "base64");
-      const { error: uploadError } = await supabaseAdmin.storage.from("product-images").upload(file.fileName, buffer, {
-        contentType: file.contentType || "image/jpeg",
-        upsert: true
-      });
-      if (uploadError) {
-        logError("Failed to upload product image", adminLogContext({ imageFileName: file.fileName, error: uploadError }));
-        throw new ApiError(500, "Failed to upload product image.");
-      }
-      const { data: publicUrlData } = supabaseAdmin.storage.from("product-images").getPublicUrl(file.fileName);
-      return file.color ? `${file.color}::${publicUrlData.publicUrl}` : publicUrlData.publicUrl;
-    });
+    const uploadPromises = newImages.map(uploadInlinePhoto);
 
     const uploadedUrls = await Promise.all(uploadPromises);
     for (const url of uploadedUrls) {
@@ -279,7 +292,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
   if (Object.keys(updates).length === 0) throw new ApiError(400, "No valid fields to update.");
 
   const { data, error } = await supabaseAdmin.from("products").update(updates).eq("id", productId).select().single();
-  if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, "Failed to update product."); }
+  if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, `Couldn't update the product${error.message ? `: ${error.message}` : ""}.`); }
   if (!data) throw new ApiError(404, "Product not found.");
 
   return { success: true, product: data };

@@ -29,7 +29,9 @@ const hasWebGL = () => {
 
 const FONT_FACES = ["200 40px Unbounded", "300 40px Unbounded", "400 40px Unbounded", "500 40px Unbounded", "600 20px Manrope", "700 20px Manrope"];
 
-export function GalleryProvider({ active, children }) {
+// poster: the tee silhouette shown while the hall loads (not on the help pages, whose objects
+// aren't tees)
+export function GalleryProvider({ active, poster = true, children }) {
   const canvasRef = useRef(null);
   const [engine, setEngine] = useState(null);
   // off: not a gallery page | loading | ready | none (no WebGL, static gallery)
@@ -70,6 +72,7 @@ export function GalleryProvider({ active, children }) {
       if (!created) { setStatus("none"); return; }
       created.onReady(() => { if (!disposed) setStatus("ready"); });
       setEngine(created);
+      if (import.meta.env.DEV) window.__vwEngine = created; // for debugging in dev only
 
       // Canvas lettering and prints need the web fonts; redraw once they land.
       Promise.all(FONT_FACES.map((f) => document.fonts?.load(f).catch(() => null)))
@@ -91,7 +94,7 @@ export function GalleryProvider({ active, children }) {
       {active && (
         <div className={`vwg-stage vwg-${status}`} aria-hidden="true">
           <canvas ref={canvasRef} className="vwg-gl" />
-          <div className="vwg-poster">{posterPath && <PosterTee path={posterPath} />}</div>
+          <div className="vwg-poster">{poster && posterPath && <PosterTee path={posterPath} />}</div>
         </div>
       )}
       {children}

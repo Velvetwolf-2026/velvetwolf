@@ -9,6 +9,7 @@ import { loadProductsFromAPI } from "../utils/products";
 import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
 import { money, photoFor, colorwaysOf, productHref, newestDrops, fromPrice } from "../gallery/galleryProducts";
+import { handOffArtwork } from "../gallery/studioHandoff";
 
 // Server-rendered on first load so the catalog is present in the HTML for
 // crawlers and link previews, not just after the client fetches it.
@@ -62,6 +63,7 @@ export default function HomePage() {
   const [activeColor, setActiveColor] = useState(0);
   const [teaserText, setTeaserText] = useState("Say less.");
   const teaserPrint = useRef(null);
+  const teaserFile = useRef(null);
 
   // Camera station for this page.
   useEffect(() => {
@@ -299,7 +301,7 @@ export default function HomePage() {
           <div className="copy">
             <p className="eyebrow">Design your own</p>
             <h2 className="h2" id="teaser-h">Your words, or your own artwork.</h2>
-            <p>Type a line and it prints on the tee as you go. Then open the designer to add your own artwork, pick the colour and order it.</p>
+            <p>Type a line and it prints on the tee as you go. Or upload your own design as a PNG, JPG, WebP or SVG, and see it on the tee in 3D before you order.</p>
             {/* action/name make it work before hydration too: /custom reads ?text= */}
             <form className="teaser-form" action="/custom" method="get" onSubmit={openDesigner}>
               <label htmlFor="teaser-text">Your line</label>
@@ -309,7 +311,23 @@ export default function HomePage() {
                   value={teaserText} onChange={(e) => setTeaserText(e.target.value)}
                   autoComplete="off" spellCheck={false}
                 />
-                <button className="btn btn-primary" type="submit">Open the designer</button>
+                <button className="btn btn-primary" type="submit">Open the Studio</button>
+              </div>
+              {/* upload straight from here: pick a file, then the Studio opens with it on the front */}
+              <div className="teaser-upload">
+                <span className="or" aria-hidden="true">or</span>
+                <button className="btn" type="button" onClick={() => teaserFile.current?.click()}>Upload your artwork</button>
+                <input
+                  ref={teaserFile} type="file" className="sr" tabIndex={-1} aria-hidden="true"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f) return;
+                    handOffArtwork(f);
+                    navigate("/custom?upload=1");
+                  }}
+                />
               </div>
             </form>
           </div>

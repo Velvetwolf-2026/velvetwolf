@@ -526,10 +526,13 @@ export async function verifyCheckout(orderId) {
 
       // Response deliberately excludes order details (address, email, phone):
       // this endpoint is unauthenticated and only needs to report the outcome.
-      return { success: true, status: "SUCCESS", orderId };
+      return { success: true, status: "SUCCESS", state: "paid", orderId };
     }
 
-    return { success: true, status: "PENDING_OR_FAILED", orderId };
+    // Not paid (yet). `state` tells the payment page whether to keep waiting
+    // for the bank or say it failed; `status` stays for older pages.
+    const pending = payments.some((p) => ["PENDING", "FLAGGED"].includes(p.payment_status));
+    return { success: true, status: "PENDING_OR_FAILED", state: pending ? "pending" : "failed", orderId };
   } catch (error) {
     logError("Cashfree verification failed", logContext({ orderId, error }));
     throw new ApiError(500, "Failed to verify payment");

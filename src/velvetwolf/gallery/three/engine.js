@@ -5,7 +5,8 @@ import { buildKit } from './garment.js';
 import { knitTexture } from './textures.js';
 import { createPrintLibrary, DESIGNS } from './prints.js';
 import { buildWorld, TEE_Y } from './world.js';
-import { Rig, resolve, lerpPose, dwellEase, layoutOf } from './rig.js';
+import { Rig, resolve, lerpPose, dwellEase, layoutOf, STATIONS } from './rig.js';
+import { buildBackstage, BACKSTAGE_X } from './backstage.js';
 import { createStages } from './stages.js';
 import { createGoldDust } from './dust.js';
 import { damp, nearestAngle } from './util.js';
@@ -64,7 +65,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   const B = world.bays;
   // lite gold stars drifting through the hall, kept clear of the tees
   const dust = createGoldDust(scene, {
-    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio].map((b) => b.x),
+    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio, ...B.fitLineup, ...Object.values(BACKSTAGE_X).map((x) => ({ x }))].map((b) => b.x),
     count: tier === 'low' ? 600 : tier === 'mid' ? 900 : 1400,
     reduced: reducedMotion,
     pixelRatio: dpr,
@@ -85,6 +86,13 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   dress(B.hero.garment, 'nocturne', 'bone');
   dress(B.color.garment, 'essential', 'noir');
   dress(B.craft.garment, 'silence', 'bone');
+  B.fitLineup.forEach((b) => dress(b.garment, 'essential', 'bone'));
+  // size guide: the chosen size steps forward into the light; the rest wait behind
+  let fitSel = 1;
+  const FIT_FRONT = 0.1, FIT_BACK = -0.5; // off the rail and forward, into the light
+  // back of house: one object per help page
+  const backstage = buildBackstage(scene, { shadows: tier !== 'low' });
+  let helpPage = null; // which back-of-house object is on screen
   // Quiet Hours: framed photographs hang where the drop tees used to float.
   // The page supplies them (the newest products) through setDropPhotos().
   const hungPhotos = [];
@@ -131,6 +139,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     camera.fov = stacked() ? 38 : 32;
     camera.updateProjectionMatrix();
     applyGoal(changed); // snap only when the frame really changed, never mid-scroll
+    if (changed) wake?.();
   }
   // rotation: some browsers report the new size a beat late
   let settleTimer = 0;
@@ -164,6 +173,11 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
 
   // ---- loop ----
   let last = performance.now(), running = true, frames = 0, slow = 0, ready = false, readyCb = null;
+  // still mode counts *rendered* frames, not clock time, so a tab that was in the background (no
+  // animation frames) still gets its settled frame when it comes back
+  let wakeFrames = 180;
+  let placed = false;
+  const wake = (ms = 2600) => { wakeFrames = Math.max(wakeFrames, Math.round(ms / 16)); };
   const clock0 = performance.now();
 
   function frame(now) {
@@ -183,6 +197,11 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       frames = 0; slow = 0;
     }
 
+    // low-end phones on task pages: draw until the camera and scene settle, then hold that frame
+    const still = tier === 'low' && (view === 'info' || view === 'size' || view === 'payment');
+    if (still && wakeFrames <= 0) { last = now; return; }
+    if (still) wakeFrames--;
+
     if (view === 'home') rig.setGoal(homePose());
     pointerSmooth[0] = damp(pointerSmooth[0], reducedMotion ? 0 : pointer[0], 2.5, dt);
     pointerSmooth[1] = damp(pointerSmooth[1], reducedMotion ? 0 : pointer[1], 2.5, dt);
@@ -190,7 +209,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     const smooth = reducedMotion ? 0 : view === 'home' ? 0.38 : 0.85;
     rig.update(dt, smooth, W, H);
     world.aimLights(rig.focus, rig.spot);
-    dust.update(t, rig.focus);
+    dust.update(t, rig.focus, dt);
     // keep the fog relative to how far back the camera stands (narrow phones frame from further away)
     const camDist = camera.position.distanceTo(rig.focus);
     scene.fog.near = Math.max(10, camDist * 0.85);
@@ -221,12 +240,24 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       B[key].garment.pivot.rotation.y = s.rot;
     }
 
+    B.fitLineup.forEach((b, i) => {
+      const goal = i === fitSel ? FIT_FRONT : FIT_BACK;
+      b.group.position.z = reducedMotion || still ? goal : damp(b.group.position.z, goal, 4, dt);
+    });
+    if (view === 'size') {
+      // the key light follows the chosen tee forward
+      const sel = B.fitLineup[fitSel];
+      world.aimLights(new THREE.Vector3(sel.x, TEE_Y, sel.group.position.z), rig.spot);
+    }
+    backstage.update(t, dt, !(reducedMotion || still), helpPage);
+
     for (const g of world.garments()) g.update(dt);
 
     stages.renderCopies(dt, t, W, H, reducedMotion);
     renderer.setViewport(0, 0, W, H);
-    // in the shop the hall recedes as the grid scrolls over it; in auth it softens
-    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : view === 'auth' ? 0.7 : 1;
+    // in the shop the hall recedes as the grid scrolls over it; in auth it softens; behind the
+    // help pages it is a dim backdrop
+    const dimGoal = view === 'shop' ? 1 - 0.6 * Math.min(1, scrollY / (H * 0.7)) : view === 'auth' ? 0.7 : view === 'info' ? 1.25 : 1;
     dim = reducedMotion ? dimGoal : damp(dim, dimGoal, 6, dt);
     renderer.toneMappingExposure = dim;
     if (!occluded) renderer.render(scene, camera);
@@ -269,9 +300,22 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
 
   return {
     onReady(cb) { if (ready) cb(); else readyCb = cb; },
+    wake,
     dispose,
-    setView(name, st) { view = name; station = st || name; applyGoal(); },
-    setStation(st) { station = st; applyGoal(); },
+    setView(name, st) {
+      view = name; station = st || name;
+      helpPage = name === 'info' ? String(station).replace(/Read$/, '') : null;
+      // the first page after the hall loads starts in place; later page changes walk
+      wake(); applyGoal(!placed); placed = true;
+    },
+    setStation(st) { station = st; if (view === 'info') helpPage = String(st).replace(/Read$/, ''); wake(); applyGoal(); },
+    // long documents (privacy, terms): while reading, frame the object in a window of the page
+    // (fractions of the viewport), e.g. under the table of contents
+    setReadArea(page, rect) {
+      const base = STATIONS[page];
+      if (!base || !rect) return;
+      STATIONS[`${page}Read`] = { ...base, area: { desk: rect, mob: base.area.mob, tab: base.area.tab } };
+    },
     setOccluded(v) { occluded = !!v; },
     setHomeProgress(s, ct) { homeS = s; colorT = ct; },
     setColorList(list) { colorList = list; },
@@ -303,6 +347,41 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       else B.pdp.garment.setPrint('back', null);
       if (p.name) world.setPdpWall(p.name);
     },
+    // payment pages: 'idle' | 'gather' (paid) | 'orbit' (waiting) | 'fall' (failed)
+    setStars(mode) { dust.setMode(mode, new THREE.Vector3(B.pdp.x, TEE_Y, 0)); },
+    // the ordered tee on the product stage behind the payment card: a plain tee in the
+    // order's colour (site colour name or colourway id), the wall says VELVETWOLF
+    dressPayment(color = 'noir', wall = 'VELVETWOLF') {
+      const cw = COLORWAYS[color] || Object.values(COLORWAYS).find((c) => c.site.toLowerCase() === String(color).toLowerCase()) || COLORWAYS.noir;
+      B.pdp.garment.setColor(cw.hex, true);
+      B.pdp.garment.setInk(cw.ink, true);
+      B.pdp.garment.setPrint('front', null);
+      B.pdp.garment.setPrint('back', null);
+      world.setPdpWall(wall);
+      spin.pdp.goal = spin.pdp.rot = 0;
+    },
+    // size guide: screen positions of points given in the fit tee's own units
+    fitProject(points) {
+      const b = B.fitLineup[fitSel], s = b.scale, z0 = b.group.position.z;
+      return points.map(([x, y, z]) => project(b.x + x * s, TEE_Y + y * s, z0 + z * s));
+    },
+    // size guide: index 0..4 (S..XXL) steps forward; the camera walks along the line-up to it
+    // size guide: where each size's letter sits on screen (just above the rail)
+    fitLabels() {
+      return B.fitLineup.map((b) => project(b.x, TEE_Y + 1.48, b.group.position.z));
+    },
+    setFitSelected(i) {
+      fitSel = Math.max(0, Math.min(B.fitLineup.length - 1, i));
+      const x = B.fitLineup[fitSel].x;
+      STATIONS.sizeGuide.target[0] = x;
+      STATIONS.sizeGuide.focus[0] = x;
+      wake(); if (view === 'size') applyGoal();
+    },
+    // help pages: each back-of-house object's controls (contact.set({open}), track.set({stage})…)
+    help: Object.fromEntries(Object.entries(backstage).filter(([, v]) => v && typeof v === 'object' && v.group).map(([k, v]) => [k, {
+      set: (state) => { v.set(state); wake(); },
+      ...(v.send ? { send: () => { v.send(); wake(3200); } } : {}),
+    }])),
     dressTeaser(texture, colorId = 'noir') {
       const cw = COLORWAYS[colorId];
       B.teaser.garment.setColor(cw.hex, true);
@@ -314,10 +393,10 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
     dragStart(key) { const s = spin[key]; s.dragging = true; s.vel = 0; },
     dragMove(key, dx, dt) { const s = spin[key]; const d = dx * 0.0085; s.rot += d; s.goal = s.rot; s.vel = dt > 0 ? d / dt : 0; },
     dragEnd(key) { const s = spin[key]; s.dragging = false; s.vel = Math.max(-6, Math.min(6, s.vel)); },
-    redrawText() { prints.redrawAll(); world.redrawLettering(); },
+    redrawText() { prints.redrawAll(); world.redrawLettering(); backstage.redrawText(); },
     get mobile() { return stacked(); },
     tier,
-    debug() { return { tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },
+    debug() { return { stars: +dust.points.material.uniforms.uGather.value.toFixed(3), fall: +dust.points.material.uniforms.uFall.value.toFixed(3), tier, dpr, W, H, Hs, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, view, station, homeS, colorT, cam: camera.position.toArray().map((v) => +v.toFixed(2)), goal: rig.goal }; },
     settle() {
       applyGoal(true);
       for (const k of ['pdp', 'studio']) spin[k].rot = spin[k].goal;

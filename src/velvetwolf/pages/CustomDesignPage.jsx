@@ -5,6 +5,7 @@ import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER, SIZES, STUDIO_PRICE, STUDIO_BOTH_SIDES } from "../gallery/data";
 import { money } from "../gallery/galleryProducts";
 import { uploadStudioFile, canvasToBlob, thumbnailOf } from "../utils/studioUpload";
+import { takeArtwork } from "../gallery/studioHandoff";
 import { bindDrag } from "../gallery/drag";
 import {
   createCustomPrint,
@@ -155,6 +156,17 @@ export default function CustomDesignPage() {
     };
     reader.readAsDataURL(file);
   };
+
+  // Arriving from the home page's "Upload your artwork": put that file on the front.
+  useEffect(() => {
+    const file = takeArtwork();
+    if (file) { handleFile(file); return; }
+    if (searchParams.get("upload")) {
+      setSide("front");
+      setSides((prev) => ({ ...prev, front: { ...prev.front, mode: "image" } }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Paste an image while the Studio is open.
   useEffect(() => {
@@ -645,7 +657,7 @@ export default function CustomDesignPage() {
                   />
                   <span>
                     <b>{s.id}</b>
-                    <small>{s.chest} cm</small>
+                    <small>{s.chest} cm flat</small>
                   </span>
                 </label>
               ))}

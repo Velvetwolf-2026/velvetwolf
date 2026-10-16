@@ -146,6 +146,8 @@
   background: rgba(232, 228, 218, 0.04); color: var(--bone); font: 300 16px/1 var(--g-display); letter-spacing: 0.04em;
 }
 .vwg .teaser-form input:focus-visible { outline: none; border-color: var(--sand); }
+.vwg .teaser-upload { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.vwg .teaser-upload .or { font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.2em; text-transform: uppercase; color: var(--bone-3); }
 .vwg .credit { position: relative; padding: 18px var(--gutter) 28px; }
 
 /* ---------- shop: All tees ---------- */
@@ -713,3 +715,6 @@
     padding-top: calc(var(--nav-h, 64px) + 32vh);
   }
 }
+
+/* full-screen tools (Studio, size guide): no footer while the panel is pinned beside the stage */
+@media (min-width: 1025px) { .vwg-foot.is-tool { display: none; } }

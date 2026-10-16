@@ -1,140 +1,110 @@
-import { S, PageHeader, Sec, Ul, DataTable } from "../styles/shared";
-import { THEME } from "../utils/constants";
-const { gold, surface, border, text } = THEME;
+// Returns policy (gallery help page). In the hall: a loop on the floor with five markers; the box
+// moves to the step you pick, and outside the return window the loop shows a calm gap.
+// "Can I return this?" answers from three quick questions.
+import { useEffect, useRef, useState } from "react";
+import HelpLayout, { DocSections } from "../gallery/help/HelpLayout";
+import { useGallery } from "../gallery/galleryContext";
+import { RETURNS, BUSINESS } from "../gallery/help/content";
 
-const STAT_CARDS = [
-  { icon: "10", label: "DAYS TO RETURN", desc: "From date of delivery" },
-  { icon: "48h", label: "REFUND TIME", desc: "To original payment method" },
-  { icon: "EX", label: "FREE EXCHANGE", desc: "Size exchanges at no extra cost" },
-  { icon: "Rs", label: "STORE CREDIT", desc: "Instant credit, no wait" },
+export function meta() {
+  return [{ title: "Returns · VelvetWolf" }, { name: "description", content: "10 days to change your mind. Damaged or faulty is always on us." }];
+}
+
+const E = BUSINESS.emails;
+const mail = (a) => `<a href="mailto:${a}">${a}</a>`;
+const W = RETURNS.windowDays;
+
+const SECTIONS = [
+  { id: "refunds", h: "Refund times", body: [
+    <table className="info-table" key="t">
+      <thead><tr><th>Refunded to</th><th>After inspection</th></tr></thead>
+      <tbody>{RETURNS.refunds.map((r) => <tr key={r.method}><th scope="row">{r.method}</th><td>{r.time}</td></tr>)}</tbody>
+    </table>,
+    "Every order is prepaid, so refunds go back to the way you paid unless you choose store credit.",
+  ] },
+  { id: "exchanges", h: "Size exchanges", body: [`Exchanging for another size is free within ${W} days, while that size is in stock. If it isn't, we refund you in full.`] },
+  { id: "not", h: "What can't be returned", body: ["Custom Studio tees, pieces marked Final Sale, and anything worn, washed or altered, or returned without its tags. None of this applies to damaged, faulty or wrong items: those we always take back."] },
+  { id: "damage", h: "Damaged or faulty", body: [`Send photos to ${mail(E.returns)}, ideally within 24 hours of delivery, and we arrange a free pickup, then a replacement or a full refund.`] },
 ];
 
-const STEPS = [
-  { step: "01", title: "EMAIL US", email: "info@velvetwolf.in", desc: "with your order ID, items to return, and reason. Attach photos if defective." },
-  { step: "02", title: "GET APPROVED", desc: "We'll review your request within 24 hours and send a return authorisation with instructions." },
-  { step: "03", title: "SHIP IT BACK", desc: "Pack the item securely. Drop at the nearest courier point or schedule a pickup (available in select cities)." },
-  { step: "04", title: "REFUND PROCESSED", desc: "Once we receive and inspect the item (2-3 days), your refund or exchange is processed within 48 hours." },
-];
+function verdict({ why, final, days, cond }) {
+  if (why === "fault" || why === "wrong") return ["always", "Yes, on us", `Yes, always. Email photos to ${mail(E.returns)} and we arrange a free pickup, then a replacement or a full refund.`];
+  if (final === "yes") return ["no", "Not this time", "Custom Studio tees and Final Sale pieces can't be returned for size or a change of mind. If it's faulty, choose that above."];
+  if (days === "out") return ["no", "Not this time", `The window is ${W} days from delivery. If it's faulty, choose that above; otherwise write to us and we'll see what we can do.`];
+  if (cond === "no") return ["no", "Not this time", "We can only take back tees that are unworn and unwashed, with the tags on."];
+  return ["yes", "Yes", `Yes. Email ${mail(E.returns)} with your order number. Swap the size for free, or get a refund.`];
+}
 
-export default function ReturnsPage() {
-  const formatText = (text) =>
-    text.split(/(\d+(-\d+)?\s?(hours|days)?)/gi).map((part, i) =>
-      /\d/.test(part) ? (
-        <span key={i} style={{ fontFamily: "'Roboto', sans-serif" }}>
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
+function Seg({ name, value, onChange, options }) {
   return (
-    <div style={S.page}>
-      <div style={S.wrap}>
-        <PageHeader eyebrow="RETURNS" title="RETURNS & EXCHANGE" sub="Hassle-free returns within 10 days of delivery" />
-
-        <div className="vw-policy-cards" style={{ marginBottom: 44 }}>
-          {STAT_CARDS.map((c, i) => (
-            <div key={i} style={{ background: surface, border: `1px solid ${border}`, padding: "20px", textAlign: "center", borderBottom: `2px solid ${gold}` }}>
-              <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 30, color: gold, marginBottom: 4 }}>{c.icon}</div>
-              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 3, color: text, marginBottom: 4 }}>{c.label}</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.38)" }}>{c.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <Sec title="ELIGIBLE ITEMS">
-          <Ul
-            items={[
-              "Items in original condition - unwashed, unworn, tags intact",
-              <>Items returned within <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days of delivery</>,
-              "Items with a manufacturing defect (full refund or replacement)",
-              "Wrong item received (full refund + free return pickup)",
-              <>Damaged in transit (share photos within <span style={{ fontFamily: "'Roboto', sans-serif" }}>24</span> hours of delivery)</>
-            ]}
-          />
-        </Sec>
-
-        <Sec title="NON-ELIGIBLE ITEMS">
-          <Ul
-            items={[
-              "Custom/personalised orders with your uploaded design",
-              "Limited Edition drops (marked as Final Sale)",
-              "Items that have been washed, worn, or altered",
-              "Items without original tags or packaging",
-              <>Items returned after <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days</>,
-              "Items purchased during Final Sale events"
-            ]}
-          />
-        </Sec>
-
-        <Sec title="HOW TO INITIATE A RETURN">
-          {STEPS.map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: 20, marginBottom: 24, alignItems: "flex-start" }}>
-
-              <div
-                style={{
-                  fontFamily: "'Bebas Neue',cursive",
-                  fontSize: 28,
-                  color: gold,
-                  opacity: 0.5,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                  width: 36
-                }}
-              >
-                {s.step}
-              </div>
-
-              <div>
-                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: 12, letterSpacing: 2, color: text, marginBottom: 4 }}>
-                  {s.title}
-                </div>
-
-                <p style={{ ...S.p, marginBottom: 0 }}>
-                  {s.email ? (
-                    <>
-                      Send an email to{" "}
-                      <a 
-                        href={`mailto:${s.email}`} 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.href = `mailto:${s.email}`;
-                        }}
-                        style={{ color: gold }}
-                      >
-                        {s.email}
-                      </a>{" "}
-                      {formatText(s.desc)}
-                    </>
-                  ) : (
-                    formatText(s.desc)
-                  )}
-                </p>
-              </div>
-            </div>
-          ))}
-        </Sec>
-
-        <Sec title="REFUND METHODS">
-          <DataTable
-            headers={["Method", "Timeline", "Notes"]}
-            rows={[
-              ["Original Payment Method", "5-7 business days", "Bank processing time may vary"],
-              ["VelvetWolf Store Credit", "Instant", "5% bonus credit added"],
-              ["UPI Refund", "1-3 business days", "Fastest refund option"],
-              ["COD Orders", "Bank transfer 5 days", "Provide bank details to support"],
-            ]}
-          />
-        </Sec>
-
-        <Sec title="SIZE EXCHANGE">
-          <p style={S.p}>
-            We offer <strong style={{ color: text }}>free size exchanges</strong> within{" "}
-            <span style={{ fontFamily: "'Roboto', sans-serif" }}>10</span> days (subject to availability). Initiate a return, select "Exchange", and specify the size you need. If unavailable, we'll issue a full refund.
-          </p>
-        </Sec>
-      </div>
+    <div className="seg">
+      {options.map(([v, l]) => <label key={v}><input type="radio" name={name} value={v} checked={value === v} onChange={() => onChange(v)} /><span>{l}</span></label>)}
     </div>
   );
 }
 
+export default function ReturnsPage() {
+  const motifRef = useRef(null);
+  const [a, setA] = useState({ why: "fit", final: "no", days: "in", cond: "yes" });
+  const [step, setStep] = useState(0);
+  const set = (k) => (v) => setA((x) => ({ ...x, [k]: v }));
+  const [ok, head, msg] = verdict(a);
+
+  const pickStep = (i) => setStep(i);
+  // the loop: the box moves to the step; outside the window it shows a calm gap
+  const { engine } = useGallery();
+  const closed = a.why === "fit" && a.days === "out";
+  useEffect(() => {
+    engine?.help.returns.set({ step, eligible: ok !== "no", closed });
+  }, [engine, step, ok, closed]);
+
+  return (
+    <HelpLayout page="returns" eyebrow="Policy" title="Returns and exchanges" motifRef={motifRef} updated
+      lede={`${W} days to change your mind. Damaged or faulty is always on us.`}>
+      <div className="facts">
+        <div className="fact"><b>{W} days</b><span>from delivery to ask for a return</span></div>
+        <div className="fact"><b>Free size exchange</b><span>while your size is in stock</span></div>
+        <div className="fact"><b>Always</b><span>for damaged, faulty or wrong items</span></div>
+      </div>
+
+      <section className="info-card ret-check" aria-labelledby="rc-h">
+        <h2 className="info-h" id="rc-h">Can I return this?</h2>
+        <form className="rc-form" onSubmit={(e) => e.preventDefault()}>
+          <fieldset className="field"><legend className="field-legend"><span>What happened?</span></legend>
+            <div className="choice-list choice-grid">
+              {[["fit", "Wrong size, or I changed my mind"], ["fault", "It arrived damaged or faulty"], ["wrong", "I got the wrong item"]].map(([v, l]) => (
+                <label className="choice" key={v}><input type="radio" name="rc-why" value={v} checked={a.why === v} onChange={() => set("why")(v)} /><span className="choice-main"><b>{l}</b></span></label>
+              ))}
+            </div>
+          </fieldset>
+          {a.why === "fit" && (
+            <div id="rc-more">
+              <fieldset className="field"><legend className="field-legend"><span>Is it a custom Studio tee, or marked Final Sale?</span></legend>
+                <Seg name="rc-final" value={a.final} onChange={set("final")} options={[["no", "No"], ["yes", "Yes"]]} /></fieldset>
+              <fieldset className="field"><legend className="field-legend"><span>When was it delivered?</span></legend>
+                <Seg name="rc-days" value={a.days} onChange={set("days")} options={[["in", `Within ${W} days`], ["out", "Longer ago"]]} /></fieldset>
+              <fieldset className="field"><legend className="field-legend"><span>Is it unworn and unwashed, with the tags on?</span></legend>
+                <Seg name="rc-cond" value={a.cond} onChange={set("cond")} options={[["yes", "Yes"], ["no", "No"]]} /></fieldset>
+            </div>
+          )}
+        </form>
+        <div className={`rc-result is-${ok}`} role="status" aria-live="polite">
+          <b>{head}</b><p dangerouslySetInnerHTML={{ __html: msg }} />
+        </div>
+      </section>
+
+      <section className="info-card" aria-labelledby="rs-h">
+        <h2 className="info-h" id="rs-h">How it works</h2>
+        <ol className="ret-steps">
+          {RETURNS.steps.map((s, i) => (
+            <li key={s.id}>
+              <button className="ret-step" type="button" aria-pressed={step === i} onClick={() => pickStep(i)}><b>{i + 1}. {s.label}</b></button>
+              <p dangerouslySetInnerHTML={{ __html: s.text }} />
+            </li>
+          ))}
+        </ol>
+      </section>
+      <DocSections sections={SECTIONS} />
+    </HelpLayout>
+  );
+}

@@ -153,3 +153,83 @@ export function drawTracked(ctx, text, cx, cy, tracking) {
   }
   ctx.textAlign = align;
 }
+
+// ---- back of house (help pages) ----
+
+// A small exhibit tag: dark plate, Bone lettering, a gold rule when it's the active one. Redraws
+// when the text or state changes; returns the plate's aspect so the sprite keeps its proportions.
+export function exhibitTag(text, { width = 512, height = 160 } = {}) {
+  const c = makeCanvas(width, height);
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  let state = null;
+  function draw(label = text, active = false) {
+    state = [label, active];
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = 'rgba(20, 20, 22, 0.86)';
+    ctx.fillRect(0, 18, width, height - 52);
+    ctx.strokeStyle = active ? '#F0D9A2' : 'rgba(232, 228, 218, 0.28)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 19.5, width - 3, height - 55);
+    // the little pointer under the plate
+    ctx.beginPath();
+    ctx.moveTo(width / 2 - 14, height - 34); ctx.lineTo(width / 2, height - 14); ctx.lineTo(width / 2 + 14, height - 34);
+    ctx.fillStyle = 'rgba(20, 20, 22, 0.86)'; ctx.fill();
+    ctx.fillStyle = active ? '#F0D9A2' : '#E8E4DA';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 52px Manrope, sans-serif';
+    ctx.fillText(label, width / 2, 19 + (height - 52) / 2);
+    tex.needsUpdate = true;
+  }
+  draw();
+  return { texture: tex, aspect: width / height, draw, redraw: () => state && draw(...state) };
+}
+
+// A floor ruler in business days: ticks, numerals and a gold centre line, on a clear ground.
+export function dayRuler(days = 14, { width = 2048, height = 256 } = {}) {
+  const c = makeCanvas(width, height);
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  function draw() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+    const pad = 40, span = width - pad * 2;
+    ctx.fillStyle = '#C9A84C';
+    ctx.fillRect(pad, height * 0.18 - 3, span, 6);
+    ctx.fillStyle = 'rgba(232, 228, 218, 0.62)';
+    for (let i = 0; i <= days * 4; i++) {
+      const x = pad + (span * i) / (days * 4);
+      const major = i % 4 === 0;
+      ctx.fillRect(x - (major ? 2 : 1), height * 0.18 + 6, major ? 4 : 2, major ? 56 : 30);
+    }
+    ctx.fillStyle = 'rgba(232, 228, 218, 0.75)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '300 92px Unbounded, sans-serif';
+    for (let d = 0; d <= days; d++) ctx.fillText(String(d), pad + (span * d) / days, height * 0.72);
+    tex.needsUpdate = true;
+  }
+  draw();
+  return { texture: tex, draw, pad: 40 / width };
+}
+
+// The side of a ream of paper: fine sheet lines.
+export function paperEdgeTexture() {
+  const c = makeCanvas(64, 256);
+  const ctx = c.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#E8E4DA';
+    ctx.fillRect(0, 0, 64, 256);
+    const r = rng(11);
+    for (let y = 0; y < 256; y += 2 + Math.floor(r() * 2)) {
+      ctx.fillStyle = `rgba(20, 20, 22, ${0.06 + r() * 0.12})`;
+      ctx.fillRect(0, y, 64, 1);
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}

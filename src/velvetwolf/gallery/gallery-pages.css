@@ -215,3 +215,43 @@
 @media (prefers-reduced-motion: reduce) {
   .vwg .vwg-drawer, .vwg .vwg-scrim { transition: none; }
 }
+
+/* ---------- motion (velvetwolf-2027-theme.md: one easing curve, calm, honest) ---------- */
+/* pages fade in; the checkout steps rise into place one after another */
+.vwg.view-page > .page-wrap { animation: vwg-viewIn 0.6s var(--ease) both; }
+.vwg .co-step { animation: vwg-rise 0.6s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 80ms); }
+.vwg .sum-side, .vwg .sum-mobile { animation: vwg-rise 0.6s 0.2s var(--ease) both; }
+/* a changed total settles in (delivery speed, promo code) */
+.vwg .sum-tick { display: inline-block; animation: vwg-tick 0.45s var(--ease) both; }
+/* errors and the banner arrive without a jolt */
+.vwg .form-banner, .vwg .form-msg, .vwg .field-error, .vwg .form-note { animation: vwg-faqIn 0.45s var(--ease) both; }
+/* the chosen option's radio settles; the new-address fields unfold */
+.vwg .choice input:checked, .vwg .addr-choice input:checked { animation: vwg-pick 0.3s var(--ease); }
+.vwg .addr-fields { animation: vwg-faqIn 0.45s var(--ease) both; }
+/* pay button: a sand arc turns while Cashfree opens */
+.vwg .btn-pay.is-busy { gap: 12px; }
+.vwg .btn-pay.is-busy::before {
+  content: ""; width: 16px; height: 16px; border-radius: 50%; flex: none;
+  border: 2px solid rgba(20, 20, 22, 0.25); border-top-color: var(--sand);
+  animation: vwg-spin360 1.1s linear infinite;
+}
+.vwg .btn-pay.is-busy:disabled::before { border-color: var(--line-2); border-top-color: var(--sand); }
+/* cart drawer lines and the cart page slide in */
+.vwg .cart-item { animation: vwg-rise 0.45s var(--ease) both; }
+.vwg .cart-item:nth-child(2) { animation-delay: 60ms; } .vwg .cart-item:nth-child(3) { animation-delay: 120ms; } .vwg .cart-item:nth-child(n+4) { animation-delay: 180ms; }
+
+@keyframes vwg-viewIn { from { opacity: 0.001; } to { opacity: 1; } }
+@keyframes vwg-rise { from { opacity: 0.001; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes vwg-tick { from { opacity: 0.2; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+@keyframes vwg-faqIn { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes vwg-pick { 0% { transform: scale(0.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes vwg-spin360 { to { transform: rotate(360deg); } }
+
+/* shared bits used by the payment and help pages */
+.vwg .acct-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.vwg .addr-block { font-size: 14px; color: var(--bone-2); }
+.vwg .muted a, .vwg .pay-sub a { color: var(--bone); text-underline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vwg *, .vwg *::before, .vwg *::after { animation: none !important; transition-duration: 0.01ms !important; }
+}

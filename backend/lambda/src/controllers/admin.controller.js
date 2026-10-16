@@ -45,6 +45,12 @@ export async function createProduct(admin, body, event) {
   return jsonResponse(201, result, {}, event);
 }
 
+// One-time link to upload a product photo straight to storage (see createProductPhotoUploadUrl).
+export async function productPhotoUploadUrl(admin, body, event) {
+  const result = await adminService.createProductPhotoUploadUrl({ contentType: body?.contentType });
+  return jsonResponse(200, result, {}, event);
+}
+
 export async function updateProduct(productId, admin, body, event) {
   const data = validate(updateProductSchema)(body);
   const result = await adminService.updateAdminProduct(productId, data, admin.id);

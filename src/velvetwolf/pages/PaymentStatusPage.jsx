@@ -1,122 +1,234 @@
-import { useEffect, useState, useContext } from "react";
+// Payment status (prototype ui/payment.js): where Cashfree sends people back to
+// (/payment-status?order_id=…). It never assumes the payment worked: it asks the server
+// (POST /checkout/verify) and only then shows paid, waiting for the bank, or failed. The gold
+// stars in the hall follow along: a halo round the tee when paid, circling while the bank
+// decides, sinking when it fails.
+import { useContext, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { trackPurchase } from "../utils/analytics";
-import { getSupabaseLogoUrl } from "../utils/supabase";
+import { useGallery } from "../gallery/galleryContext";
+import { money, cartThumb } from "../gallery/galleryProducts";
+import { BUSINESS } from "../gallery/help/content";
+import "../gallery/gallery-help.css";
+
+export function meta() {
+  return [{ title: "Payment · VelvetWolf" }, { name: "robots", content: "noindex" }];
+}
+
+const POLL_S = 5;
+const MAX_POLLS = 24; // about two minutes of "waiting for the bank"
+const STARS = { verify: "orbit", paid: "gather", pending: "orbit", failed: "fall", missing: "idle" };
+const short = (id) => String(id || "").slice(0, 8).toUpperCase();
+
+function Icon({ state }) {
+  if (state === "verify") return <svg className="pay-icon is-verify" viewBox="0 0 64 64" aria-hidden="true"><circle className="ring-bg" cx="32" cy="32" r="26" /><circle className="ring-arc" cx="32" cy="32" r="26" pathLength="100" /></svg>;
+  if (state === "paid") return <svg className="pay-icon is-paid" viewBox="0 0 64 64" aria-hidden="true"><circle className="ring-bg" cx="32" cy="32" r="26" /><circle className="ring-full" cx="32" cy="32" r="26" pathLength="100" /><path className="ring-check" d="M21 32.5l7.5 7.5L44 24.5" pathLength="100" /></svg>;
+  if (state === "pending") return <svg className="pay-icon is-pending" viewBox="0 0 64 64" aria-hidden="true"><circle className="ring-bg" cx="32" cy="32" r="26" /><circle className="ring-wait" cx="32" cy="32" r="26" pathLength="100" /><circle className="ring-dot" cx="32" cy="6" r="2.6" /></svg>;
+  return <svg className="pay-icon is-failed" viewBox="0 0 64 64" aria-hidden="true"><circle className="ring-bg" cx="32" cy="32" r="26" /><circle className="ring-broken" cx="32" cy="32" r="26" pathLength="100" /><path className="ring-x" d="M25 25l14 14M39 25L25 39" pathLength="100" /></svg>;
+}
+
+// what was in the cart when the customer left for Cashfree (saved by the checkout page)
+function readSnapshot() {
+  try {
+    return {
+      cart: JSON.parse(sessionStorage.getItem("vw_last_checkout_cart") || "[]"),
+      total: Number(sessionStorage.getItem("vw_last_checkout_total") || 0),
+      email: sessionStorage.getItem("vw_last_checkout_email") || "",
+      name: sessionStorage.getItem("vw_last_checkout_name") || "",
+    };
+  } catch {
+    return { cart: [], total: 0, email: "", name: "" };
+  }
+}
 
 export default function PaymentStatusPage() {
-  const { clearCart, setPage, showToast, user } = useContext(AppContext);
-  const [status, setStatus] = useState("loading"); // loading, success, failed
+  const { clearCart, user } = useContext(AppContext);
+  const { engine } = useGallery();
+  const [params] = useSearchParams();
+  const orderId = params.get("order_id");
+  const [state, setState] = useState("verify");
+  const [left, setLeft] = useState(POLL_S);
+  const [copied, setCopied] = useState("");
+  const snap = useRef(readSnapshot());
+  const polls = useRef(0);
+  const titleRef = useRef(null);
+  const done = useRef(false);
 
+  // the ordered tee on the product stage, the stars following the state
   useEffect(() => {
-    const checkPayment = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get("order_id");
-      const method = urlParams.get("method");
+    if (!engine) return undefined;
+    engine.setView("payment", "payment");
+    const first = snap.current.cart.find((i) => !i.isCustom) || snap.current.cart[0];
+    engine.dressPayment(first?.color || "noir", "VELVETWOLF");
+    return () => engine.setStars("idle");
+  }, [engine]);
+  useEffect(() => { engine?.setStars(STARS[state]); }, [engine, state]);
 
-      if (!orderId) {
-        setStatus("failed");
-        return;
-      }
+  // focus the new heading whenever the state changes, for screen readers
+  useEffect(() => { setTimeout(() => titleRef.current?.focus({ preventScroll: true }), 40); }, [state]);
 
-      const performTrackAndClear = (m) => {
-        const lastCartVal = sessionStorage.getItem("vw_last_checkout_cart");
-        const lastTotalVal = sessionStorage.getItem("vw_last_checkout_total");
-        if (lastCartVal) {
-          const lastCart = JSON.parse(lastCartVal);
-          const lastTotal = Number(lastTotalVal || 0);
-          trackPurchase(orderId, lastCart, lastTotal, m);
-          sessionStorage.removeItem("vw_last_checkout_cart");
-          sessionStorage.removeItem("vw_last_checkout_total");
-        }
-        clearCart();
-      };
+  const settlePaid = () => {
+    if (done.current) return;
+    done.current = true;
+    const { cart, total } = snap.current;
+    if (cart.length) trackPurchase(orderId, cart, total, "online");
+    try {
+      sessionStorage.removeItem("vw_last_checkout_cart");
+      sessionStorage.removeItem("vw_last_checkout_total");
+    } catch { /* storage unavailable */ }
+    clearCart();
+  };
 
-      if (method === "cod") {
-        setStatus("success");
-        performTrackAndClear("cod");
-        showToast("🎉 Order placed successfully!");
-        return;
-      }
+  const check = async () => {
+    try {
+      const res = await fetch(apiUrl("/checkout/verify"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "verify failed");
+      // `state` from the current backend; `status` alone from an older one
+      const next = data.state || (data.status === "SUCCESS" ? "paid" : "failed");
+      if (next === "paid") settlePaid();
+      return next;
+    } catch {
+      return "pending"; // couldn't reach the server: keep checking rather than guess
+    }
+  };
 
-      try {
-        const res = await fetch(apiUrl('/checkout/verify'), {
-          method: "POST",
-          credentials: 'include',
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId })
+  // first check: always show "Confirming" first, and never "paid" before the server says so
+  useEffect(() => {
+    // a different order: start again from "Confirming", never from the last order's result
+    setState(orderId ? "verify" : "missing");
+    done.current = false;
+    polls.current = 0;
+    snap.current = readSnapshot();
+    if (!orderId) return undefined;
+    let cancelled = false;
+    const minWait = matchMedia("(prefers-reduced-motion: reduce)").matches ? 300 : 1400;
+    Promise.all([check(), new Promise((r) => setTimeout(r, minWait))]).then(([next]) => {
+      if (!cancelled) setState(next);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId]);
+
+  // waiting for the bank: check again every few seconds, with a visible countdown
+  useEffect(() => {
+    if (state !== "pending") return undefined;
+    setLeft(POLL_S);
+    const t = setInterval(() => {
+      setLeft((n) => {
+        if (n > 1) return n - 1;
+        polls.current += 1;
+        check().then((next) => {
+          if (next !== "pending") setState(next);
+          else if (polls.current >= MAX_POLLS) setState("failed");
         });
-        
-        const data = await res.json();
-        
-        if (data.status === "SUCCESS") {
-          setStatus("success");
-          performTrackAndClear("card");
-          showToast("🎉 Payment successful! Your order has been placed.");
-        } else {
-          setStatus("failed");
-          showToast("Payment was not successful. Please try again.", "error");
-        }
-      } catch {
-        setStatus("failed");
-        showToast("Error verifying payment", "error");
-      }
-    };
+        return POLL_S;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
-    checkPayment();
-  }, [clearCart, showToast]);
+  const checkNow = async () => {
+    const next = await check();
+    if (next !== "pending") setState(next);
+    else setLeft(POLL_S);
+  };
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(orderId); setCopied("Copied"); } catch { setCopied("Select and copy"); }
+  };
+
+  const { cart, total, email, name } = snap.current;
+  const first = (name || user?.full_name || user?.name || "").trim().split(/\s+/)[0];
+  const trackHref = `/track-order?order=${encodeURIComponent(orderId || "")}${email ? `&email=${encodeURIComponent(email)}` : ""}`;
 
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ textAlign: "center", background: "var(--graphite)", border: "1px solid var(--smoke)", padding: "60px 40px", maxWidth: 500, width: "100%" }}>
-        {status === "loading" && (
+    <main className="vwg vwg-view-auth view-pay">
+      <section className="vwg-auth-card pay-card" aria-live="polite" aria-label="Payment status">
+        <Icon state={state} />
+        {state === "verify" && (
           <>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 16 }}>VERIFYING PAYMENT</div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)" }}>Please wait while we confirm your payment with the gateway...</p>
-          </>
-        )}
-        
-        {status === "success" && (
-          <>
-            <img src={getSupabaseLogoUrl("/payment-success.png")} alt="Order Successful" style={{ width: 140, height: 140, objectFit: "contain", marginBottom: 20 }} />
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 16, color: "#81c784" }}>ORDER SUCCESSFUL</div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginBottom: 32 }}>Your order is confirmed. We will dispatch it soon!</p>
-            
-            {!user ? (
-              <div style={{ border: "1px solid var(--gold)", padding: "24px", background: "rgba(201,168,76,0.02)", textAlign: "left" }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--gold)", marginBottom: 12 }}>CREATE AN ACCOUNT TO:</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ash)", display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-                  <div>✓ Track Orders</div>
-                  <div>✓ Faster Checkout</div>
-                  <div>✓ Save Addresses</div>
-                </div>
-                <button className="btn-gold" style={{ width: "100%", padding: "12px" }} onClick={() => {
-                  window.history.replaceState({}, document.title, window.location.pathname);
-                  setPage("signup");
-                }}>CREATE ACCOUNT</button>
-              </div>
-            ) : (
-              <button className="btn-gold" style={{ padding: "14px 32px" }} onClick={() => {
-                // Clean up the URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-                setPage("account");
-              }}>VIEW ORDERS</button>
-            )}
+            <p className="eyebrow">Order #{short(orderId)}</p>
+            <h1 className="pay-title" tabIndex={-1} ref={titleRef}>Confirming your payment</h1>
+            <p className="pay-sub">We're checking with {BUSINESS.processor}. This takes a few seconds; please keep this page open.</p>
           </>
         )}
 
-        {status === "failed" && (
+        {state === "missing" && (
           <>
-            <img src={getSupabaseLogoUrl("/payment-error.png")} alt="Payment Failed" style={{ width: 140, height: 140, objectFit: "contain", marginBottom: 20 }} />
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 40, letterSpacing: 2, marginBottom: 16, color: "var(--wolf-red)" }}>PAYMENT FAILED</div>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", marginBottom: 32 }}>Your payment could not be processed. Please try again.</p>
-            <button className="btn-ghost" style={{ padding: "14px 32px" }} onClick={() => {
-              window.history.replaceState({}, document.title, window.location.pathname);
-              setPage("checkout");
-            }}>TRY AGAIN</button>
+            <p className="eyebrow">Payment</p>
+            <h1 className="pay-title" tabIndex={-1} ref={titleRef}>We can't find that payment</h1>
+            <p className="pay-sub">The link may be incomplete. If you paid, your confirmation email has the order number; you can also <Link to="/track-order">track it here</Link>.</p>
+            <div className="acct-actions"><Link className="btn btn-primary" to="/shop">Back to the shop</Link><Link className="btn" to="/contact">Contact us</Link></div>
           </>
         )}
-      </div>
-    </div>
+
+        {state === "paid" && (
+          <>
+            <p className="eyebrow">Payment received{total ? ` · ${money(total)}` : ""}</p>
+            <h1 className="pay-title" tabIndex={-1} ref={titleRef}>Thank you{first && !/^\d+$/.test(first) ? `, ${first}` : ""}. Your order is confirmed.</h1>
+            <div className="pay-ref"><span>Order number</span><b>#{short(orderId)}</b><button className="text-btn" type="button" onClick={copy}>{copied || "Copy full number"}</button></div>
+            {cart.length > 0 && (
+              <section className="pay-bought" aria-labelledby="pay-bought-h">
+                <h2 className="eyebrow" id="pay-bought-h">{cart.length === 1 && cart[0].qty === 1 ? "Your tee" : "Your tees"}</h2>
+                <ul className="pay-tees">
+                  {cart.map((i, idx) => {
+                    const src = cartThumb(i);
+                    return (
+                      <li key={`${i.id}-${i.size}-${i.color}-${idx}`} style={{ "--i": idx }}>
+                        <span className={`pay-tee-photo${i.isCustom ? " is-art" : ""}`}>
+                          {src ? <img src={src} alt="" loading="lazy" decoding="async" /> : null}
+                          {i.qty > 1 && <span className="pay-tee-qty" aria-label={`Quantity ${i.qty}`}>{i.qty}</span>}
+                        </span>
+                        <span className="pay-tee-info">
+                          <span className="pay-tee-name">{i.name}</span>
+                          <span className="pay-tee-meta">{[i.color, i.size && `Size ${i.size}`].filter(Boolean).join(" · ")}{i.qty > 1 ? ` · ${i.qty} pieces` : ""}</span>
+                        </span>
+                        <span className="pay-tee-price">{money(Number(i.price) * Number(i.qty || 1))}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+            <p className="pay-sub">A receipt is on its way{email ? <> to <b>{email}</b></> : ""}. We'll send the tracking link when it ships, usually within 2 to 3 business days.</p>
+            <div className="acct-actions">
+              <Link className="btn btn-primary" to={trackHref}>Track this order</Link>
+              <Link className="btn" to="/shop">Keep browsing</Link>
+            </div>
+            {!user && <p className="muted"><Link to="/signup">Create an account</Link> to keep your addresses for next time.</p>}
+          </>
+        )}
+
+        {state === "pending" && (
+          <>
+            <p className="eyebrow">Order #{short(orderId)}{total ? ` · ${money(total)}` : ""}</p>
+            <h1 className="pay-title" tabIndex={-1} ref={titleRef}>Waiting for your bank</h1>
+            <p className="pay-sub">Your bank hasn't confirmed the payment yet. This usually takes a minute or two. <b>Please don't pay again.</b></p>
+            <p className="pay-check" role="status" aria-live="polite"><span className="pay-check-ring" aria-hidden="true"></span><span>Checking again in {left} second{left === 1 ? "" : "s"}</span></p>
+            <p className="muted">If the bank declines it, any amount taken from your account comes back automatically, usually within 5 days. Your cart is saved until then.</p>
+            <div className="acct-actions"><button className="btn" type="button" onClick={checkNow}>Check now</button><Link className="btn" to="/contact">Contact us</Link></div>
+          </>
+        )}
+
+        {state === "failed" && (
+          <>
+            <p className="eyebrow">Payment{total ? ` of ${money(total)}` : ""} · reference #{short(orderId)}</p>
+            <h1 className="pay-title" tabIndex={-1} ref={titleRef}>The payment didn't go through</h1>
+            <p className="pay-sub">No order was placed and your cart is saved. If money left your account, it isn't lost: your bank reverses failed payments automatically, usually within 5 days, as RBI rules require.</p>
+            <div className="acct-actions"><Link className="btn btn-primary" to="/checkout">Try again</Link><Link className="btn" to="/checkout">Use another method</Link></div>
+            <p className="muted">Debited but no order after 5 days? Send your bank reference to <a href={`mailto:${BUSINESS.emails.orders}`}>{BUSINESS.emails.orders}</a> and we'll chase it.</p>
+          </>
+        )}
+      </section>
+    </main>
   );
 }
