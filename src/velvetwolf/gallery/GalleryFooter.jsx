@@ -46,9 +46,6 @@ export default function GalleryFooter({ toolView = false }) {
         <nav className="foot-support" aria-label="Help and policies">
           {SUPPORT_LINKS.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}
         </nav>
-        <span className="credit-line">
-          3D tee: <a href="https://sketchfab.com/3d-models/oversized-t-shirt-3b6e78d6a1a74370a6e5af6f312d38f7" target="_blank" rel="noopener noreferrer">&ldquo;Oversized t-shirt&rdquo;</a> by kylelhb, <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>, recoloured with prints added.
-        </span>
       </div>
     </footer>
   );

@@ -6,7 +6,8 @@ vi.mock("../velvetwolf/gallery/three/textures.js", () => {
   const tex = () => new THREE.Texture();
   return {
     radialTexture: tex,
-    paperEdgeTexture: tex,
+    printedSheetTexture: tex,
+    plinthLine: () => ({ texture: tex(), aspect: 10, draw() {}, redraw() {} }),
     dayRuler: () => ({ texture: tex(), draw() {}, pad: 0.02 }),
     exhibitTag: () => ({ texture: tex(), aspect: 3.2, draw: vi.fn(), redraw() {} }),
   };
@@ -101,14 +102,21 @@ describe("back of house", () => {
     expect(cards[2].position.y).toBeCloseTo(cards[0].position.y, 2);
   });
 
-  it("terms: sheets settle in step with reading progress", () => {
-    const sheets = () => findAll(bs.terms.group, "sheet");
+  it("terms: sheets hang in the column until read, come down onto the pile, then hold still", () => {
+    const sheets = findAll(bs.terms.group, "sheet");
+    const PILE = 1.0 + 0.0085 * 28;
     bs.terms.set({ progress: 0 });
     run("terms", 600);
-    expect(sheets().filter((s) => s.visible).length).toBe(1);
+    for (const s of sheets) expect(s.position.y).toBeGreaterThan(PILE + 0.15);
+    bs.terms.set({ progress: 0.5 });
+    run("terms", 600);
+    expect(sheets.filter((s) => s.position.y < PILE + 0.13).length).toBe(7);
     bs.terms.set({ progress: 1 });
     run("terms", 900);
-    expect(sheets().filter((s) => s.visible).length).toBe(13);
+    for (const s of sheets) expect(s.position.y).toBeLessThan(PILE + 0.13);
+    const before = sheets.map((s) => [s.position.y, s.rotation.x]);
+    run("terms", 120);
+    sheets.forEach((s, i) => { expect(s.position.y).toBeCloseTo(before[i][0], 4); expect(s.rotation.x).toBeCloseTo(before[i][1], 4); });
   });
 
   it("contact: the lamp dims to an ember when closed and lights when open", () => {
@@ -127,5 +135,9 @@ describe("back of house", () => {
     expect(find(bs.privacy.group, "glow:address").material.opacity).toBeGreaterThan(0.3);
     for (const other of ["contact", "order", "payment"]) expect(find(bs.privacy.group, `glow:${other}`).material.opacity).toBeLessThan(0.05);
     expect(find(bs.privacy.group, "thing:address").position.y).toBeGreaterThan(find(bs.privacy.group, "thing:order").position.y + 0.03);
+    expect(find(bs.privacy.group, "vitrineLight").intensity).toBeGreaterThan(1);
+    bs.privacy.set({ focus: null });
+    run("privacy", 300);
+    expect(find(bs.privacy.group, "vitrineLight").intensity).toBeLessThan(0.05);
   });
 });

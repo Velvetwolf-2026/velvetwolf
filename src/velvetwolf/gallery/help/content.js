@@ -65,9 +65,9 @@ export const SHIPPING = {
 
 // ---------- returns ----------
 export const RETURNS = {
-  windowDays: 10,
+  windowDays: 7,
   steps: [
-    { id: "request", label: "Ask", text: `Email ${mail(E.returns)} within 10 days of delivery with your order number, the item and the reason. For a fault, add a photo.` },
+    { id: "request", label: "Ask", text: `Email ${mail(E.returns)} within 7 days of delivery with your order number, the item and the reason. For a fault, add a photo.` },
     { id: "approve", label: "Approval", text: "We reply within 24 hours with a return authorisation and the next step." },
     { id: "send", label: "Send it back", text: "Pack it securely. We arrange a pickup where the courier offers one, otherwise you drop it at a courier point." },
     { id: "inspect", label: "Inspection", text: "We check the item within 2 to 3 working days of receiving it." },
@@ -105,7 +105,7 @@ export const FAQ = [
   { cat: "Products", q: "What is the cloth?", a: "Combed cotton jersey at 220 to 240 GSM, knitted, cut and sewn in Tirupur, Tamil Nadu." },
   { cat: "Custom", q: "How does the Studio work?", a: "Pick a tee colour, then add text, upload your own artwork, or use one of our marks, on the front, the back or both. The tee updates in 3D as you edit. Studio tees are made to order." },
   { cat: "Custom", q: "Which files can I upload?", a: "PNG, JPG, WebP or SVG, up to 8 MB. For a sharp print, aim for at least 150 dpi at the printed size; the Studio tells you if a file is too small. A PNG with a transparent background prints cleanest." },
-  { cat: "Returns", q: "What is your return policy?", a: "You can return unworn, unwashed tees with their tags within 10 days of delivery. Custom Studio tees and pieces marked Final Sale can't be returned unless they arrive damaged or faulty. Damaged, faulty or wrong items are always taken back." },
+  { cat: "Returns", q: "What is your return policy?", a: "You can return unworn, unwashed tees with their tags within 7 days of delivery. Custom Studio tees and pieces marked Final Sale can't be returned unless they arrive damaged or faulty. Damaged, faulty or wrong items are always taken back." },
   { cat: "Returns", q: "How long does a refund take?", a: "We inspect returns within 2 to 3 working days of receiving them. After that, UPI refunds land in 1 to 3 working days, and card or netbanking refunds in 5 to 7. Store credit is immediate." },
   { cat: "Account", q: "Do I need an account?", a: "No. Guest checkout works with just an email and phone number. An account saves your addresses and keeps your orders in one place." },
   { cat: "Account", q: "How do I reset my password?", a: "There are no passwords. Sign in with a 6-digit code sent to your email or phone, or with Google." },

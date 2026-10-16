@@ -10,7 +10,7 @@ export default function AdminSettings() {
   const { showToast } = useContext(AppContext);
   const DEFAULT_SETTINGS = {
     storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
-    freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "30",
+    freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "7",
     razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
     orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",
     heroColor: "#0D0D0D", heroFrontDesign: "", heroBackDesign: "/tee_back_print.jpg"
