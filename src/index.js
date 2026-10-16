@@ -41,7 +41,6 @@ export { default as CollectionsPage } from "./velvetwolf/pages/Collections";
 export { default as CheckoutPage } from "./velvetwolf/pages/CheckoutPage";
 export { default as PaymentStatusPage } from "./velvetwolf/pages/PaymentStatusPage";
 export { default as CartPage } from "./velvetwolf/pages/CartPage";
-export { default as WishlistPage } from "./velvetwolf/pages/WishlistPage";
 
 // ── Shared Style Helpers ──
 export { S, PageHeader, HeroHeader, Sec, Ul, DataTable } from "./velvetwolf/styles/shared";

@@ -90,6 +90,7 @@ describe("isGalleryPath", () => {
     // the account page is the Den, a room in the hall; so is a shared saved list
     expect(isGalleryPath("/account")).toBe(true);
     expect(isGalleryPath("/saved/abcdefghijklmnop")).toBe(true);
+    expect(isGalleryPath("/quiz")).toBe(true);
     expect(isGalleryPath("/wishlist")).toBe(false);
   });
 });

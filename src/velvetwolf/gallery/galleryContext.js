@@ -18,6 +18,7 @@ export const isGalleryPath = (pathname = "") =>
   pathname === "/login" ||
   pathname === "/signup" ||
   pathname === "/account" ||
+  pathname === "/quiz" ||
   pathname.startsWith("/saved/");
 
 // { engine, status }: status is off | loading | ready | none (no WebGL)

@@ -186,7 +186,7 @@ export default function VelvetWolfRoot() {
       shop: "/shop",
       collection: "/collections",
       cart: "/cart",
-      wishlist: "/wishlist",
+      wishlist: "/account?tab=saved",
       account: "/account",
       checkout: "/checkout",
       "payment-status": "/payment-status",
