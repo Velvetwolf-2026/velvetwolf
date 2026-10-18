@@ -74,6 +74,14 @@ describe("checkout.service", () => {
   });
 
   describe("initiateCheckout", () => {
+    it("won't start a second payment for a checkout that is already paid (browser Back after paying)", async () => {
+      resetSupabaseMock({ orders: [{ data: [{ id: "paid-order", status: "confirmed" }], error: null }] });
+      await expect(initiateCheckout({ cart: [CART_ITEM], address: { email: "a@b.com" }, payment_method: "upi", checkout_key: "0f8fad5b-d9cb-469f-a165-70867728950e" }))
+        .rejects.toMatchObject({ statusCode: 409, extra: { alreadyPaid: true, orderId: "paid-order" } });
+      expect(createPaymentOrder).not.toHaveBeenCalled();
+      expect(calls.some((c) => c.table === "orders" && c.method === "insert")).toBe(false);
+    });
+
     it("throws 400 when the cart is empty", async () => {
       await expect(initiateCheckout({ cart: [] })).rejects.toMatchObject({ statusCode: 400 });
     });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Meta,
   Links,
@@ -12,7 +12,7 @@ import {
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
 
-import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart } from "./velvetwolf/utils/cart";
+import { addCartItemDB, updateCartQtyDB, removeCartItemDB, loadCartFromDB, mergeGuestCart, readLocalCart, writeLocalCart, forgetAccountData } from "./velvetwolf/utils/cart";
 import { toggleWishlistDB, loadWishlistFromDB } from "./velvetwolf/utils/wishlist";
 import { loadProductsFromAPI } from "./velvetwolf/utils/products";
 import { apiUrl } from "./velvetwolf/utils/api";
@@ -220,11 +220,6 @@ export default function VelvetWolfRoot() {
   };
 
   const getLocalWishlistKey = (email) => `vw_wishlist_${(email || "guest").toLowerCase()}`;
-  const getGuestCart = () => JSON.parse(localStorage.getItem("vw_guest_cart") || "[]");
-  const saveGuestCart = (items) => {
-    localStorage.setItem("vw_guest_cart", JSON.stringify(items));
-    setCart(items);
-  };
 
   const loadLocalWishlist = (email) => {
     try {
@@ -251,21 +246,24 @@ export default function VelvetWolfRoot() {
 
   const isValidUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-  // Custom (Studio) tees have no product row, so they live in this browser's
-  // cart even when signed in; keep them next to the account's saved cart.
-  const withLocalCustom = (items) => [...items.filter((i) => !i.isCustom), ...getGuestCart().filter((i) => i.isCustom)];
+  // Studio tees (no product row) and anything the server couldn't take live in
+  // this browser, under the account's own key when signed in (utils/cart.js).
+  // On screen they follow the account's saved items. Saved items carry a
+  // cart_item_id; browser-held ones don't.
+  const withLocal = (userId, items) => [...items.filter((i) => i.cart_item_id), ...readLocalCart(userId)];
+  const sameLine = (i, id, size, color) => i.id === id && i.size === size && i.color === color;
 
   const syncCartFromDB = async (userId) => {
     try {
-      const items = withLocalCustom(await loadCartFromDB(userId));
+      const items = withLocal(userId, await loadCartFromDB(userId));
       setCart(items);
       try { localStorage.setItem(`vw_cart_${userId}`, JSON.stringify(items)); } catch { /* ignore */ }
     } catch (err) {
       console.warn('[syncCartFromDB]', err.message);
-      // Fallback to local stored cart for user if network or DB sync has issues
+      // Offline or the server is busy: show this account's last known cart
       try {
-        const cached = JSON.parse(localStorage.getItem(`vw_cart_${userId}`) || localStorage.getItem('vw_guest_cart') || "[]");
-        if (cached.length > 0) setCart(cached);
+        const cached = JSON.parse(localStorage.getItem(`vw_cart_${userId}`) || "[]");
+        if (cached.length > 0) setCart(withLocal(userId, cached));
       } catch { /* ignore */ }
     }
   };
@@ -277,6 +275,12 @@ export default function VelvetWolfRoot() {
     } catch (err) {
       console.warn('[syncWishlistFromDB]', err.message);
     }
+  };
+
+  // Browser-held items: the guest cart, or a signed-in account's local items.
+  const setLocalItems = (userId, items) => {
+    writeLocalCart(userId, items);
+    setCart((prev) => (userId ? [...prev.filter((i) => i.cart_item_id), ...items] : items));
   };
 
   const addToCart = async (product, size, color, qty = 1) => {
@@ -296,19 +300,11 @@ export default function VelvetWolfRoot() {
       }
 
       if (!syncedToDb) {
-        const guest = getGuestCart();
-        const idx = guest.findIndex(i => i.id === product.id && i.size === size && i.color === color);
-        if (idx > -1) guest[idx].qty += qty;
-        else guest.push({ ...product, size, color, qty });
-        if (backendUserId) {
-          // Signed in: keep the account's items on screen and add these.
-          localStorage.setItem("vw_guest_cart", JSON.stringify(guest));
-          const key = (i) => `${i.id}|${i.size}|${i.color}`;
-          const keys = new Set(guest.map(key));
-          setCart((prev) => [...prev.filter((i) => !keys.has(key(i))), ...guest]);
-        } else {
-          saveGuestCart(guest);
-        }
+        const local = readLocalCart(backendUserId);
+        const idx = local.findIndex((i) => sameLine(i, product.id, size, color));
+        if (idx > -1) local[idx] = { ...local[idx], qty: local[idx].qty + qty };
+        else local.push({ ...product, size, color, qty });
+        setLocalItems(backendUserId, local);
       }
       showToast("Added to cart ✓");
     } catch (err) {
@@ -317,49 +313,56 @@ export default function VelvetWolfRoot() {
     }
   };
 
+  // Remove and quantity changes show at once; the account's saved cart is
+  // updated behind them (and put back from the server if that fails).
+  const qtyTimers = useRef(new Map());
+
   const removeFromCart = async (id, size, color) => {
+    const backendUserId = getBackendUserId(user);
+    const item = cart.find((i) => sameLine(i, id, size, color));
+    if (!item) return;
+    if (!item.cart_item_id) {
+      setLocalItems(backendUserId, readLocalCart(backendUserId).filter((i) => !sameLine(i, id, size, color)));
+      return;
+    }
+    clearTimeout(qtyTimers.current.get(item.cart_item_id));
+    qtyTimers.current.delete(item.cart_item_id);
+    setCart((prev) => prev.filter((i) => i.cart_item_id !== item.cart_item_id));
     try {
-      const backendUserId = getBackendUserId(user);
-      if (backendUserId) {
-        const item = cart.find(i => i.id === id && i.size === size && i.color === color);
-        if (item?.cart_item_id) await removeCartItemDB(item.cart_item_id);
-        await syncCartFromDB(backendUserId);
-      } else {
-        saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
-      }
+      await removeCartItemDB(item.cart_item_id);
     } catch (err) {
       showToast('Could not remove item.', 'error');
       console.error('[removeFromCart]', err.message);
+      if (backendUserId) await syncCartFromDB(backendUserId);
     }
   };
 
   const updateCartQty = async (id, size, color, qty) => {
-    try {
-      const backendUserId = getBackendUserId(user);
-      if (backendUserId) {
-        const item = cart.find(i => i.id === id && i.size === size && i.color === color);
-        if (item?.cart_item_id) {
-          if (qty < 1) {
-            await removeCartItemDB(item.cart_item_id);
-          } else {
-            await updateCartQtyDB(item.cart_item_id, qty);
-          }
-          await syncCartFromDB(backendUserId);
-        }
-      } else {
-        if (qty < 1) {
-          saveGuestCart(cart.filter(i => !(i.id === id && i.size === size && i.color === color)));
-        } else {
-          saveGuestCart(cart.map(i => i.id === id && i.size === size && i.color === color ? { ...i, qty } : i));
-        }
-      }
-    } catch (err) {
-      showToast('Could not update quantity.', 'error');
-      console.error('[updateCartQty]', err.message);
-      // Force sync to recover from any desync state (like deleted items)
-      const backendUserId = getBackendUserId(user);
-      if (backendUserId) await syncCartFromDB(backendUserId);
+    if (qty < 1) return removeFromCart(id, size, color);
+    const backendUserId = getBackendUserId(user);
+    const item = cart.find((i) => sameLine(i, id, size, color));
+    if (!item) return;
+    if (!item.cart_item_id) {
+      setLocalItems(backendUserId, readLocalCart(backendUserId).map((i) => (sameLine(i, id, size, color) ? { ...i, qty } : i)));
+      return;
     }
+    if (Number(item.stock) > 0 && qty > Number(item.stock)) {
+      showToast(`Only ${item.stock} left in this size.`, 'info');
+      return;
+    }
+    setCart((prev) => prev.map((i) => (i.cart_item_id === item.cart_item_id ? { ...i, qty } : i)));
+    // quick taps on + or - send one update, with the final number
+    clearTimeout(qtyTimers.current.get(item.cart_item_id));
+    qtyTimers.current.set(item.cart_item_id, setTimeout(async () => {
+      qtyTimers.current.delete(item.cart_item_id);
+      try {
+        await updateCartQtyDB(item.cart_item_id, qty);
+      } catch (err) {
+        showToast(err.message || 'Could not update quantity.', 'error');
+        console.error('[updateCartQty]', err.message);
+        if (backendUserId) await syncCartFromDB(backendUserId);
+      }
+    }, 350));
   };
 
   const clearCart = useCallback(() => {
@@ -367,6 +370,7 @@ export default function VelvetWolfRoot() {
     const backendUserId = getBackendUserId(user);
     if (backendUserId) {
       localStorage.removeItem(`vw_cart_${backendUserId}`);
+      writeLocalCart(backendUserId, []);
     }
     setCart([]);
   }, [user]);
@@ -395,8 +399,8 @@ export default function VelvetWolfRoot() {
 
   const toggleWishlist = async (product) => {
     if (!user) {
-      navigate('/login');
-      showToast('Sign in to save items', 'info');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+      showToast('Sign in to save tees to your list', 'info');
       return;
     }
     const backendUserId = getBackendUserId(user);
@@ -408,15 +412,17 @@ export default function VelvetWolfRoot() {
     try {
       const added = await toggleWishlistDB(backendUserId, product);
       await syncWishlistFromDB(backendUserId);
-      showToast(added ? "Added to wishlist ♥" : "Removed from wishlist", added ? "success" : "info");
+      showToast(added ? "Saved. Find it in Account › Saved." : "Removed from your saved list", added ? "success" : "info");
     } catch (err) {
       showToast('Could not update wishlist', 'error');
       console.error('[toggleWishlist]', err.message);
     }
   };
 
-  const signOutUser = async () => {
+  // forget: the account was deleted, so nothing of it stays in this browser
+  const signOutUser = async ({ forget = false } = {}) => {
     try {
+      if (forget) forgetAccountData(user?.id);
       if (user?.id) {
         localStorage.removeItem(`vw_cart_${user.id}`);
       }
@@ -428,7 +434,7 @@ export default function VelvetWolfRoot() {
       setWishlist([]);
       setCart([]);
       navigate("/");
-      showToast("Signed out successfully", "info");
+      if (!forget) showToast("Signed out successfully", "info");
     } catch (err) {
       console.error("[signOutUser]", err.message);
       showToast("Sign out failed", "error");
@@ -477,6 +483,22 @@ export default function VelvetWolfRoot() {
       window.removeEventListener("scroll", onScroll);
     };
   }, [location.pathname, navType]);
+
+  // Email links (contact details, FAQ answers): a computer with no mail app
+  // set up does nothing on mailto:, so also copy the address and say so.
+  useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target?.closest?.('a[href^="mailto:"]');
+      if (!a || e.defaultPrevented || e.button !== 0) return;
+      const address = decodeURIComponent(a.getAttribute("href").slice(7).split("?")[0]);
+      if (!address) return;
+      const done = () => showToast(`Opening your email app. ${address} is copied too, in case it doesn't open.`, "info");
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(address).then(done, () => showToast(`Write to us at ${address}`, "info"));
+      else showToast(`Write to us at ${address}`, "info");
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [showToast]);
 
   // Handle global unauthorized API calls
   useEffect(() => {
@@ -543,7 +565,8 @@ export default function VelvetWolfRoot() {
       navigate(authMode === "signup" ? "/signup" : "/login");
     } else if (orderId && location.pathname === "/") {
       checkSession();
-      navigate(`/payment-status?order_id=${orderId}`);
+      // replace: Back from the payment page must not land on this hop again
+      navigate(`/payment-status?order_id=${orderId}`, { replace: true });
     } else {
       checkSession();
     }
@@ -600,7 +623,7 @@ export default function VelvetWolfRoot() {
         }
       }
     } else {
-      setCart(getGuestCart());
+      setCart(readLocalCart(null));
       setWishlist([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { createSignedUploadUrl, createSignedUrls, rpc } = vi.hoisted(() => ({
+const { createSignedUploadUrl, createSignedUrls, createBucket, rpc } = vi.hoisted(() => ({
   createSignedUploadUrl: vi.fn(),
   createSignedUrls: vi.fn(),
+  createBucket: vi.fn(),
   rpc: vi.fn(),
 }));
 vi.mock("../config/supabase.js", () => ({
-  supabaseAdmin: { storage: { from: () => ({ createSignedUploadUrl, createSignedUrls }) }, rpc },
+  supabaseAdmin: { storage: { from: () => ({ createSignedUploadUrl, createSignedUrls }), createBucket }, rpc },
 }));
 
 const { createUploadUrl, signDesignFiles } = await import("../services/studio.service.js");
@@ -37,9 +38,23 @@ describe("studio uploads", () => {
     expect(proof.path).toMatch(/^proofs\/[0-9a-f-]{36}\.png$/);
   });
 
-  it("says uploads are unavailable when storage refuses (e.g. the bucket is missing)", async () => {
+  it("creates the private bucket when its migration hasn't run, then uploads", async () => {
     createSignedUploadUrl.mockResolvedValueOnce({ data: null, error: { message: "Bucket not found" } });
+    createBucket.mockResolvedValueOnce({ data: { name: "studio-artwork" }, error: null });
+    const r = await createUploadUrl({ kind: "proof", contentType: "image/png" });
+    expect(createBucket).toHaveBeenCalledWith("studio-artwork", expect.objectContaining({ public: false }));
+    expect(createSignedUploadUrl).toHaveBeenCalledTimes(2);
+    expect(r.uploadUrl).toContain("token=");
+  });
+
+  it("says uploads are unavailable when storage still refuses", async () => {
+    createSignedUploadUrl.mockResolvedValue({ data: null, error: { message: "Bucket not found" } });
+    createBucket.mockResolvedValueOnce({ data: null, error: { message: "permission denied" } });
     await expect(createUploadUrl({ kind: "artwork", contentType: "image/png" })).rejects.toMatchObject({ statusCode: 503 });
+    createSignedUploadUrl.mockResolvedValueOnce({ data: null, error: { message: "Internal error" } });
+    createBucket.mockClear();
+    await expect(createUploadUrl({ kind: "artwork", contentType: "image/png" })).rejects.toMatchObject({ statusCode: 503 });
+    expect(createBucket).not.toHaveBeenCalled();
   });
 
   it("rate-limits the endpoint per visitor IP", async () => {

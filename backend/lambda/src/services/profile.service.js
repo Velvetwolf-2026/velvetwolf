@@ -5,6 +5,9 @@ import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 import { sendOTP } from "../config/smtp.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, MOBILE_ERROR, NAME_ERROR, EMAIL_ERROR } from "../utils/validators.js";
+import { findUserByVerifiedPhone, isMobileEmail, mobileOfEmail, mobileEmail, UNDEFINED_COLUMN } from "./phone.service.js";
+import { verifyFirebaseIdToken, createJwt } from "./auth.service.js";
 
 function profileLogContext(context = {}) {
   return { service: "profile", ...context };
@@ -46,34 +49,65 @@ export async function getProfileById(userId) {
   };
 }
 
+// Name, gender and date of birth save directly. The mobile number is part of
+// how an account signs in (and how a phone sign-in finds the account), so a
+// new number has to be confirmed with an SMS code first (verifyPhoneChange);
+// here it can only be kept, removed, or set to the number the account already
+// signs in with.
 export async function updateProfile(userId, updates) {
   const normalizedUserId = String(userId || "").trim();
   if (!normalizedUserId) throw new ApiError(400, "Profile id is required.");
 
   logInfo("Updating profile", profileLogContext({ userId: normalizedUserId }));
 
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .upsert({
-      id:            normalizedUserId,
-      full_name:     updates.fullName,
-      phone:         updates.phone,
-      gender:        updates.gender,
-      date_of_birth: updates.dob,
-      updated_at:    new Date().toISOString(),
-    }, { onConflict: "id" })
-    .select()
-    .single();
+  const fullName = updates.fullName === undefined ? undefined : cleanName(updates.fullName);
+  if (fullName !== undefined && !isValidName(fullName)) throw new ApiError(400, NAME_ERROR);
+
+  const row = {
+    id:            normalizedUserId,
+    full_name:     fullName,
+    gender:        updates.gender,
+    date_of_birth: updates.dob,
+    updated_at:    new Date().toISOString(),
+  };
+
+  if (updates.phone !== undefined && updates.phone !== null) {
+    const phone = cleanMobile(updates.phone);
+    const [{ data: current }, { data: account }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("phone").eq("id", normalizedUserId).maybeSingle(),
+      supabaseAdmin.from("users").select("email").eq("id", normalizedUserId).maybeSingle(),
+    ]);
+    const ownMobile = mobileOfEmail(account?.email);
+    if (!phone) {
+      if (ownMobile) throw new ApiError(400, "This number is how you sign in, so it can't be removed. Change it to a new number instead.");
+      row.phone = null;
+      row.phone_verified_at = null;
+    } else if (!isValidMobile(phone)) {
+      throw new ApiError(400, MOBILE_ERROR);
+    } else if (phone === ownMobile) {
+      row.phone = phone;
+      row.phone_verified_at = new Date().toISOString();
+    } else if (phone !== (current?.phone || "")) {
+      throw new ApiError(400, "Confirm the new number with the code we text to it.");
+    }
+  }
+
+  let { data, error } = await supabaseAdmin.from("profiles").upsert(row, { onConflict: "id" }).select().single();
+  if (error?.code === UNDEFINED_COLUMN && "phone_verified_at" in row) {
+    // before the VERIFIED MOBILE NUMBERS migration
+    const { phone_verified_at: _skip, ...rest } = row;
+    ({ data, error } = await supabaseAdmin.from("profiles").upsert(rest, { onConflict: "id" }).select().single());
+  }
 
   if (error) {
     logError("Profile update failed", profileLogContext({ userId: normalizedUserId, error }));
     throw new ApiError(400, error.message || "Failed to update profile.");
   }
 
-  if (updates.fullName) {
+  if (fullName) {
     const { error: userError } = await supabaseAdmin
       .from("users")
-      .update({ name: updates.fullName })
+      .update({ name: fullName })
       .eq("id", normalizedUserId);
 
     if (userError) {
@@ -84,6 +118,59 @@ export async function updateProfile(userId, updates) {
   return data;
 }
 
+// A new mobile number, proved by a Firebase SMS code (the ID token carries the
+// number Firebase checked). It becomes the account's confirmed number, so
+// signing in with it opens this account. On a mobile-only account the number
+// is also the sign-in itself: the old number stops working and every other
+// session ends.
+export async function verifyPhoneChange(userId, idToken) {
+  if (!idToken) throw new ApiError(400, "The code check didn't come through. Send a new code.");
+  const payload = await verifyFirebaseIdToken(idToken);
+  const mobile = cleanMobile(payload.phone_number || "").slice(-10);
+  if (!payload.phone_number || !isValidMobile(mobile)) throw new ApiError(400, MOBILE_ERROR);
+
+  const { data: account, error: accountError } = await supabaseAdmin
+    .from("users").select("id, email, name, role").eq("id", userId).maybeSingle();
+  if (accountError || !account) throw new ApiError(404, "Account not found.");
+
+  const [{ data: mobileAccount }, linked] = await Promise.all([
+    supabaseAdmin.from("users").select("id").eq("email", mobileEmail(mobile)).neq("id", userId).maybeSingle(),
+    findUserByVerifiedPhone(mobile, { excludeId: userId }),
+  ]);
+  if (mobileAccount || linked) {
+    throw new ApiError(409, "This number is already linked to another VelvetWolf account. Use a different number, or sign in with this one.");
+  }
+
+  const now = new Date().toISOString();
+  const { error: saveError } = await supabaseAdmin.from("profiles")
+    .upsert({ id: userId, phone: mobile, phone_verified_at: now, updated_at: now }, { onConflict: "id" });
+  if (saveError) {
+    logError("Phone change save failed", profileLogContext({ userId, error: saveError }));
+    if (saveError.code === UNDEFINED_COLUMN) throw new ApiError(503, "Changing your number isn't available yet. Try again later.");
+    if (saveError.code === "23505") throw new ApiError(409, "This number is already linked to another VelvetWolf account.");
+    throw new ApiError(500, "Couldn't save your number. Try again.");
+  }
+
+  let user = account;
+  let token = null;
+  if (isMobileEmail(account.email) && account.email !== mobileEmail(mobile)) {
+    const { data: updated, error: emailError } = await supabaseAdmin.from("users")
+      .update({ email: mobileEmail(mobile) }).eq("id", userId).select("id, email, name, role").single();
+    if (emailError) {
+      logError("Mobile sign-in change failed", profileLogContext({ userId, error: emailError }));
+      throw new ApiError(500, "Couldn't move your sign-in to the new number. Try again.");
+    }
+    await supabaseAdmin.from("otps").delete().eq("email", account.email);
+    await revokeUserSessions({ id: userId });
+    user = updated;
+    token = createJwt(updated);
+  }
+
+  logInfo("Mobile number confirmed", profileLogContext({ userId, signInChanged: Boolean(token) }));
+  const profile = await getProfileById(userId);
+  return { ...(token ? { token } : {}), user: { ...user, ...(profile || {}) } };
+}
+
 export async function sendEmailUpdateOtp({ userId, newEmail }) {
   const normalizedUserId = String(userId || "").trim();
   if (!normalizedUserId) throw new ApiError(400, "Profile id is required.");
@@ -91,11 +178,7 @@ export async function sendEmailUpdateOtp({ userId, newEmail }) {
   const normalizedEmail = String(newEmail || "").toLowerCase().trim();
   if (!normalizedEmail) throw new ApiError(400, "New email is required.");
   
-  // Basic email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(normalizedEmail)) {
-    throw new ApiError(400, "Invalid email address format.");
-  }
+  if (!isValidEmail(normalizedEmail)) throw new ApiError(400, EMAIL_ERROR);
 
   logInfo("Initiating email update OTP request", profileLogContext({ userId: normalizedUserId, newEmail: normalizedEmail }));
 
@@ -177,17 +260,18 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
   // Check if it's bypass OTP in local dev environment
   const isBypassOtp = otp === "123456" && isLocalDevelopment();
 
-  if (!isBypassOtp) {
-    // Fetch current user email to look up the OTP
-    const { data: currentUser, error: currentUserError } = await supabaseAdmin
-      .from("users")
-      .select("email")
-      .eq("id", normalizedUserId)
-      .single();
+  // Current email: the OTP is stored under it
+  const { data: currentUser, error: currentUserError } = await supabaseAdmin
+    .from("users")
+    .select("email")
+    .eq("id", normalizedUserId)
+    .single();
 
-    if (currentUserError || !currentUser) {
-      throw new ApiError(404, "User not found.");
-    }
+  if (currentUserError || !currentUser) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  if (!isBypassOtp) {
 
     // Lookup OTP
     const { data: otpRecord, error: otpError } = await supabaseAdmin
@@ -226,6 +310,16 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
   }
   if (existingUser && existingUser.id !== normalizedUserId) {
     throw new ApiError(409, "This email is already linked to another account.");
+  }
+
+  // A mobile-only account linking an email keeps signing in with its number:
+  // record that number as confirmed (it was proved at sign-in) so a phone
+  // sign-in still finds this account once its email changes.
+  const ownMobile = mobileOfEmail(currentUser.email);
+  if (ownMobile) {
+    const { error: phoneError } = await supabaseAdmin.from("profiles")
+      .upsert({ id: normalizedUserId, phone: ownMobile, phone_verified_at: new Date().toISOString() }, { onConflict: "id" });
+    if (phoneError) logWarn("Could not keep the sign-in number while linking an email", profileLogContext({ userId: normalizedUserId, code: phoneError.code }));
   }
 
   // Update the user's email and set is_verified to true

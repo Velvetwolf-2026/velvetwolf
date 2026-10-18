@@ -16,6 +16,7 @@ const { createSession } = await import("../controllers/checkout.controller.js");
 const { getCorsHeaders } = await import("../utils/http.js");
 
 const USER_ID = "22222222-2222-2222-2222-222222222222";
+const ADDRESS = { name: "Asha Rao", phone: "9840012345", email: "asha@example.com", address: "12 MG Road", city: "Chennai", state: "Tamil Nadu", pincode: "600001" };
 const ATTACKER_TARGET_ID = "33333333-3333-3333-3333-333333333333";
 
 function eventWithToken(token) {
@@ -31,21 +32,28 @@ describe("checkout.controller createSession — order ownership", () => {
   it("takes the order owner from the verified token, ignoring user_id in the body", async () => {
     const token = jwt.sign({ id: USER_ID, email: "a@b.com", role: "customer" }, process.env.JWT_SECRET);
 
-    await createSession({ cart: [], user_id: ATTACKER_TARGET_ID }, eventWithToken(token));
+    await createSession({ cart: [], address: ADDRESS, user_id: ATTACKER_TARGET_ID }, eventWithToken(token));
 
     expect(initiateCheckout).toHaveBeenCalledWith(expect.objectContaining({ user_id: USER_ID }));
   });
 
   it("treats a request without a token as a guest order even if the body names a user", async () => {
-    await createSession({ cart: [], user_id: ATTACKER_TARGET_ID }, eventWithToken(null));
+    await createSession({ cart: [], address: ADDRESS, user_id: ATTACKER_TARGET_ID }, eventWithToken(null));
 
     expect(initiateCheckout).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
   });
 
   it("treats an invalid token as a guest order instead of failing checkout", async () => {
-    await createSession({ cart: [], user_id: ATTACKER_TARGET_ID }, eventWithToken("not-a-real-token"));
+    await createSession({ cart: [], address: ADDRESS, user_id: ATTACKER_TARGET_ID }, eventWithToken("not-a-real-token"));
 
     expect(initiateCheckout).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
+  });
+
+  it("refuses a delivery address with a numeric name, a test number or a bad email", async () => {
+    for (const bad of [{ name: "12345" }, { phone: "9999999999" }, { phone: "12345" }, { email: "a..b@example.com" }]) {
+      await expect(createSession({ cart: [], address: { ...ADDRESS, ...bad } }, eventWithToken(null))).rejects.toMatchObject({ statusCode: 400 });
+    }
+    expect(initiateCheckout).not.toHaveBeenCalled();
   });
 });
 

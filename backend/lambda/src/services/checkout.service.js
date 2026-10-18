@@ -76,20 +76,36 @@ function getCustomItemUnitPrice(item) {
   throw new ApiError(400, "Invalid price for custom item. Please re-create your custom design.");
 }
 
-// Helper to sanitize phone numbers for Cashfree (expects 10 digits)
-const sanitizePhone = (phone) => {
-  const digits = String(phone || "").replace(/\D/g, "");
-  if (digits.length === 10) return digits;
-  if (digits.length > 10) return digits.slice(-10);
-  return "9999999999";
-};
+// The address is checked by checkoutAddressSchema in the controller; these
+// only trim what Cashfree is sent.
+const sanitizePhone = (phone) => String(phone || "").replace(/\D/g, "").slice(-10);
+const sanitizeEmail = (email) => String(email || "").trim().toLowerCase();
 
-// Helper to validate and sanitize email
-const sanitizeEmail = (email) => {
-  const trimmed = String(email || "").trim().toLowerCase();
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return trimmed;
-  return "guest@velvetwolf.in";
-};
+// One key per checkout attempt, made by the checkout page. A key whose order
+// is already paid means the customer came back to an old checkout (browser
+// Back after paying): refuse to start a second payment for it.
+const CHECKOUT_KEY = /^[A-Za-z0-9-]{16,64}$/;
+
+async function assertNotAlreadyPaid(checkoutKey) {
+  if (!CHECKOUT_KEY.test(String(checkoutKey || ""))) return;
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("id, status")
+    .eq("meta->>checkout_key", checkoutKey)
+    .neq("status", "pending")
+    .limit(1);
+  if (error) {
+    // a lookup failure must not block a real payment
+    logError("Checkout key lookup failed", logContext({ error }));
+    return;
+  }
+  const paid = (data || [])[0];
+  if (paid) {
+    const err = new ApiError(409, "This order is already paid. You won't be charged again.");
+    err.extra = { alreadyPaid: true, orderId: paid.id };
+    throw err;
+  }
+}
 
 // Get product variant by size and color
 async function getVariantForItem(productId, size, color) {
@@ -321,9 +337,10 @@ async function confirmOrder(orderId) {
   }
 }
 
-export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with }) {
+export async function initiateCheckout({ user_id, cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with, checkout_key }) {
   if (!Array.isArray(cart) || cart.length === 0) throw new ApiError(400, "Cart is empty");
   if (!address || typeof address !== "object") throw new ApiError(400, "Shipping address is required");
+  await assertNotAlreadyPaid(checkout_key);
   // Prepaid only. COD orders placed before this change are unaffected: they
   // are confirmed already and nothing here touches them.
   if (String(payment_method || "").toLowerCase() === "cod") {
@@ -444,6 +461,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
       ...(meta || {}),
       delivery: deliverySpeed,
       ...(payWith ? { pay_with: payWith } : {}),
+      ...(CHECKOUT_KEY.test(String(checkout_key || "")) ? { checkout_key } : {}),
       ...(customDesigns.length ? { custom_designs: customDesigns } : {}),
     },
   });

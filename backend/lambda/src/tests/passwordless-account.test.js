@@ -85,12 +85,14 @@ describe("passwordless email sign-in", () => {
 });
 
 describe("saved addresses", () => {
-  const ADDR = { name: "Alex", phone: "9876543210", address: "12 MG Road", city: "Chennai", district: "Chennai", state: "Tamil Nadu", pincode: "600001" };
+  const ADDR = { name: "Alex", phone: "9840012345", address: "12 MG Road", city: "Chennai", district: "Chennai", state: "Tamil Nadu", pincode: "600001" };
 
   it("validates Indian phone numbers and 6-digit PIN codes", () => {
     expect(() => addressSchema.parse(ADDR)).not.toThrow();
     expect(() => addressSchema.parse({ ...ADDR, pincode: "6000" })).toThrow();
     expect(() => addressSchema.parse({ ...ADDR, phone: "12345" })).toThrow();
+    expect(() => addressSchema.parse({ ...ADDR, phone: "9999999999" })).toThrow();
+    expect(() => addressSchema.parse({ ...ADDR, name: "12345" })).toThrow();
   });
 
   it("makes the first saved address the default", async () => {

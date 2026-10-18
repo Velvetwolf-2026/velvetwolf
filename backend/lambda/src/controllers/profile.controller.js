@@ -29,6 +29,15 @@ export async function updateProfile(body, event) {
   return jsonResponse(200, { profile }, {}, event);
 }
 
+// A new mobile number, confirmed with a Firebase SMS code (body: { token }).
+// A mobile-only account's sign-in moves to the new number, so a new session
+// cookie is issued then.
+export async function verifyPhone(body, event) {
+  const user = await requireAuth(event);
+  const result = await profileService.verifyPhoneChange(user.id, body?.token);
+  return authService.buildSessionResponse(result, event);
+}
+
 export async function sendEmailOtp(body, event) {
   const user = await requireAuth(event);
   const { newEmail } = body;

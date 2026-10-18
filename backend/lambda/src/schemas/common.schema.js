@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { emailField, nameField, mobileField } from "./fields.js";
 
 export const cartAddSchema = z.object({
   userId: z.string({ required_error: "User ID is required" }).min(1, "User ID is required"),
@@ -33,15 +34,8 @@ export const wishlistToggleSchema = z.object({
 });
 
 export const contactSchema = z.object({
-  name: z
-    .string({ required_error: "Name is required" })
-    .min(2, "Please enter your name")
-    .max(100)
-    .trim(),
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Please enter a valid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  name: nameField(),
+  email: emailField(),
   subject: z
     .string({ required_error: "Subject is required" })
     .min(1, "Please select a subject")
@@ -61,15 +55,8 @@ export const bulkOrderSchema = z.object({
     .min(2, "Please enter organization name")
     .max(200)
     .trim(),
-  contact: z
-    .string({ required_error: "Contact person is required" })
-    .min(2, "Please enter contact person name")
-    .max(100)
-    .trim(),
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Please enter a valid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  contact: nameField({ label: "Contact person" }),
+  email: emailField(),
   qty: z.coerce
     .number({ required_error: "Quantity is required" })
     .int()
@@ -86,11 +73,8 @@ export const bulkOrderSchema = z.object({
 // saved address fills the form directly.
 export const addressSchema = z.object({
   label: z.string().trim().max(40, "Label must be 40 characters or fewer").optional().default(""),
-  name: z.string({ required_error: "Name is required" }).trim().min(1, "Name is required").max(100),
-  phone: z
-    .string({ required_error: "Phone is required" })
-    .transform((v) => v.replace(/\D/g, "").slice(-10))
-    .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a valid 10-digit Indian mobile number"),
+  name: nameField(),
+  phone: mobileField(),
   address: z.string({ required_error: "Address is required" }).trim().min(5, "Address is too short").max(300),
   city: z.string({ required_error: "City is required" }).trim().min(1, "City is required").max(100),
   district: z.string().trim().max(100).optional().default(""),
@@ -101,6 +85,23 @@ export const addressSchema = z.object({
     .refine((v) => /^\d{6}$/.test(v), "Enter a valid 6-digit PIN code"),
   isDefault: z.boolean().optional().default(false),
 });
+
+// The delivery address sent with a checkout. The courier and Cashfree both
+// need a real name, mobile number and email, so nothing is filled in for the
+// customer any more (a bad number used to be swapped for 9999999999).
+export const checkoutAddressSchema = z.object({
+  name: nameField(),
+  phone: mobileField(),
+  email: emailField(),
+  address: z.string({ required_error: "Address is required" }).trim().min(4, "Enter your house number and street.").max(300),
+  city: z.string({ required_error: "City is required" }).trim().min(1, "Enter your city or town.").max(100),
+  district: z.string().trim().max(100).optional().default(""),
+  state: z.string({ required_error: "State is required" }).trim().min(1, "Choose a state.").max(100),
+  pincode: z
+    .string({ required_error: "PIN code is required" })
+    .transform((v) => v.replace(/\D/g, ""))
+    .refine((v) => /^[1-9]\d{5}$/.test(v), "Enter a valid 6-digit PIN code"),
+}).passthrough();
 
 // Deleting an account must be typed out, so a mis-click (or a forged
 // request) can't do it.

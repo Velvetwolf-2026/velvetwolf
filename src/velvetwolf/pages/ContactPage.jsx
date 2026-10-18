@@ -8,6 +8,7 @@ import { BUSINESS, CONTACT_TOPICS } from "../gallery/help/content";
 import { nowIST } from "../gallery/help/motifs";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
+import { isValidEmail, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
 
 export function meta() {
   return [{ title: "Contact · VelvetWolf" }, { name: "description", content: "Real people in Chennai, Monday to Saturday. Write to us, or reach us on WhatsApp, email or Instagram." }];
@@ -86,8 +87,9 @@ export default function ContactPage() {
   const submit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (form.name.trim().length < 2) errs.name = "Enter your name.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) errs.email = "Enter an email address like name@example.com.";
+    if (!form.name.trim()) errs.name = "Enter your name.";
+    else if (!isValidName(form.name)) errs.name = NAME_ERROR;
+    if (!isValidEmail(form.email)) errs.email = EMAIL_ERROR;
     if (!form.topic) errs.topic = "Choose a topic so it reaches the right person.";
     if (form.msg.trim().length < 10) errs.msg = "Tell us a little more (10 characters or more).";
     setErrors(errs);
@@ -102,7 +104,7 @@ export default function ContactPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim().toLowerCase(), subject, message: form.msg.trim() }),
+        body: JSON.stringify({ name: cleanName(form.name), email: form.email.trim().toLowerCase(), subject, message: form.msg.trim() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "We couldn't send that just now. Try again, or email us.");
@@ -131,10 +133,10 @@ export default function ContactPage() {
           ) : (
             <form className="ct-form" onSubmit={submit} noValidate>
               <Field id="ct-name" label="Name" error={errors.name}>
-                <input id="ct-name" type="text" autoComplete="name" value={form.name} onChange={set("name")} aria-invalid={errors.name ? "true" : undefined} />
+                <input id="ct-name" type="text" autoComplete="name" maxLength={80} value={form.name} onChange={set("name")} aria-invalid={errors.name ? "true" : undefined} />
               </Field>
               <Field id="ct-email" label="Email" error={errors.email}>
-                <input id="ct-email" type="email" autoComplete="email" inputMode="email" spellCheck="false" autoCapitalize="off" value={form.email} onChange={set("email")} aria-invalid={errors.email ? "true" : undefined} />
+                <input id="ct-email" type="email" autoComplete="email" inputMode="email" maxLength={254} spellCheck="false" autoCapitalize="off" value={form.email} onChange={set("email")} aria-invalid={errors.email ? "true" : undefined} />
               </Field>
               <Field id="ct-topic" label="Topic" error={errors.topic}>
                 <select id="ct-topic" value={form.topic} onChange={set("topic")} aria-invalid={errors.topic ? "true" : undefined}>

@@ -82,6 +82,9 @@ export default function PaymentStatusPage() {
     try {
       sessionStorage.removeItem("vw_last_checkout_cart");
       sessionStorage.removeItem("vw_last_checkout_total");
+      // a new cart gets a new checkout key; this one is spent
+      sessionStorage.removeItem("vw_checkout_key");
+      sessionStorage.removeItem("vw_checkout_pending");
     } catch { /* storage unavailable */ }
     clearCart();
   };

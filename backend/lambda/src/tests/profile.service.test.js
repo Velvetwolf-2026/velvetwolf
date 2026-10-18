@@ -31,7 +31,7 @@ describe("profile.service", () => {
         users: [{ data: { id: "user-123", name: "John Doe" }, error: null }]
       });
 
-      const result = await updateProfile("user-123", { fullName: "John Doe", phone: "9876543210" });
+      const result = await updateProfile("user-123", { fullName: "John Doe" });
       expect(result.full_name).toBe("John Doe");
 
       // Verify that profiles upsert and users update were both called

@@ -6,6 +6,7 @@ import { normalizeOtpKind } from "../config/otp-template.js";
 import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, jsonResponse, logError, logInfo, logWarn } from "../utils/http.js";
+import { findUserByVerifiedPhone, mobileEmail } from "./phone.service.js";
 
 loadBackendEnv();
 
@@ -43,7 +44,7 @@ function getBackendPublicUrl() { return process.env.BACKEND_PUBLIC_URL || "http:
 function getGoogleCallbackUrl() { return process.env.GOOGLE_CALLBACK_URL || `${getBackendPublicUrl().replace(/\/$/, "")}/auth/google/callback`; }
 function authLogContext(context = {}) { return { service: "auth", ...context }; }
 
-function createJwt(user) {
+export function createJwt(user) {
   if (!process.env.JWT_SECRET) {
     logError("JWT secret missing while creating token", authLogContext({ userId: user?.id }));
     throw new ApiError(500, "JWT_SECRET is missing in backend environment.");
@@ -493,10 +494,15 @@ export async function discoverUser({ email }) {
     throw new ApiError(400, error.message);
   }
 
+  // A mobile number confirmed on an email or Google account signs in to that
+  // account (see firebaseLogin), so it exists too.
+  const mobile = /^\d{10}@mobile\.velvetwolf\.in$/.test(normalizedEmail) ? normalizedEmail.slice(0, 10) : "";
+  const linked = !user && mobile ? await findUserByVerifiedPhone(mobile) : null;
+
   // Only whether the account exists (the login page needs that to choose
   // password vs sign-up). Name/type would let anyone look up who is behind
   // an email address.
-  return { exists: Boolean(user) };
+  return { exists: Boolean(user || linked) };
 }
 
 export async function verifyFirebaseIdToken(idToken) {
@@ -542,6 +548,14 @@ export async function verifyFirebaseIdToken(idToken) {
   }
 }
 
+// A mobile-only account's number is proved by the SMS code it signs in with.
+// Best effort: sign-in must not fail over it (e.g. before the migration).
+async function markOwnMobileVerified(userId, mobile) {
+  const { error } = await supabaseAdmin.from("profiles")
+    .upsert({ id: userId, phone: mobile, phone_verified_at: new Date().toISOString() }, { onConflict: "id" });
+  if (error) logWarn("Could not mark the sign-in number verified", authLogContext({ userId, code: error.code }));
+}
+
 export async function firebaseLogin({ identifier, phone, token }, ip) {
   // Firebase already verifies the token's signature, so this endpoint can't
   // be brute-forced the way a password can — but it was completely
@@ -566,7 +580,7 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
     if (providedMobile && verifiedMobile !== providedMobile) {
       throw new ApiError(400, "Phone number verification mismatch.");
     }
-    finalEmail = `${verifiedMobile}@mobile.velvetwolf.in`;
+    finalEmail = mobileEmail(verifiedMobile);
     name = `Mobile ${verifiedMobile}`;
     type = "Mobile";
   } else if (isEmail) {
@@ -595,6 +609,13 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
   // same verified email (or phone).
   let user = existingUser;
 
+  // A number confirmed on an email or Google account signs in to that account,
+  // not a new mobile-only one.
+  if (!user && isPhone) {
+    user = await findUserByVerifiedPhone(finalEmail.split("@")[0]);
+    if (user) logInfo("Phone sign-in linked to its account", authLogContext({ userId: user.id }));
+  }
+
   if (!user) {
     // Sign up new user from Firebase
     const googlePasswordHash = await bcrypt.hash(crypto.randomUUID(), 10);
@@ -614,9 +635,11 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
     }
     user = insertedRows?.[0];
     if (!user) throw new ApiError(500, "Firebase user signup failed.");
+    if (isPhone) await markOwnMobileVerified(user.id, finalEmail.split("@")[0]);
   } else {
     // Login existing user: update last login (and finish verifying it)
     await supabaseAdmin.from("users").update({ is_verified: true, last_login: new Date().toISOString() }).eq("id", user.id);
+    if (isPhone && user.email === finalEmail) await markOwnMobileVerified(user.id, finalEmail.split("@")[0]);
   }
 
   // 3. Return custom JWT token

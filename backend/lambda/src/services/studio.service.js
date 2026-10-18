@@ -7,7 +7,7 @@
 // (see schema.sql).
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
-import { ApiError, logError } from "../utils/http.js";
+import { ApiError, logError, logInfo } from "../utils/http.js";
 
 export const STUDIO_BUCKET = "studio-artwork";
 
@@ -29,6 +29,22 @@ function logContext(context = {}) {
   return { service: "studio", ...context };
 }
 
+// Must match the "STUDIO ARTWORK STORAGE" migration in schema.sql.
+const BUCKET_OPTIONS = { public: false, fileSizeLimit: 10 * 1024 * 1024, allowedMimeTypes: Object.keys(UPLOAD_TYPES) };
+
+const isMissingBucket = (error) =>
+  /bucket not found/i.test(String(error?.message || "")) || String(error?.statusCode || error?.status || "") === "404";
+
+async function ensureBucket() {
+  const { error } = await supabaseAdmin.storage.createBucket(STUDIO_BUCKET, BUCKET_OPTIONS);
+  if (error && !/already exists/i.test(String(error.message || ""))) {
+    logError("Could not create the studio artwork bucket", logContext({ error }));
+    return false;
+  }
+  logInfo("Created the studio artwork bucket (its migration had not been run)", logContext());
+  return true;
+}
+
 // kind "artwork": the customer's own file. kind "proof": the print area as
 // drawn in the studio (PNG), so the printer gets exactly what was approved.
 export async function createUploadUrl({ kind, contentType }) {
@@ -38,7 +54,12 @@ export async function createUploadUrl({ kind, contentType }) {
   if (kind === "proof" && ext !== "png") throw new ApiError(400, "Proofs must be PNG.");
 
   const path = `${kind === "proof" ? "proofs" : "uploads"}/${crypto.randomUUID()}.${ext}`;
-  const { data, error } = await supabaseAdmin.storage.from(STUDIO_BUCKET).createSignedUploadUrl(path);
+  let { data, error } = await supabaseAdmin.storage.from(STUDIO_BUCKET).createSignedUploadUrl(path);
+  // The bucket comes from a migration in schema.sql. If that hasn't been run,
+  // make the bucket here (same settings) instead of failing every upload.
+  if (error && isMissingBucket(error) && await ensureBucket()) {
+    ({ data, error } = await supabaseAdmin.storage.from(STUDIO_BUCKET).createSignedUploadUrl(path));
+  }
   if (error || !data?.signedUrl) {
     logError("Could not create studio upload URL", logContext({ path, error }));
     throw new ApiError(503, "Uploads aren't available right now. Try again in a few minutes.");
