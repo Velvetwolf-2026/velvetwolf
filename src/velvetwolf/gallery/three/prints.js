@@ -110,10 +110,10 @@ function getSp1Img(onLoad) {
   if (!sp1Img) {
     sp1Img = new Image();
     sp1Img.crossOrigin = 'anonymous';
-    // Use transparent cutout for crisp, seamless print on the fabric, with sp1.webp as fallback
-    sp1Img.src = '/sp1_nobg.png';
+    // Transparent cutout (WebP with alpha, 140 KB instead of the 930 KB PNG) for a crisp print on the fabric; sp1.webp as fallback
+    sp1Img.src = '/sp1_nobg.webp';
     sp1Img.onerror = () => {
-      if (sp1Img.src.endsWith('/sp1_nobg.png')) {
+      if (sp1Img.src.endsWith('/sp1_nobg.webp')) {
         sp1Img.src = '/sp1.webp';
       }
     };

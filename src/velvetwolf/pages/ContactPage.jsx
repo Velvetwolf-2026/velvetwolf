@@ -34,6 +34,7 @@ function openStatus(at = nowIST()) {
 
 const WAYS = [
   { href: BUSINESS.whatsapp.href, b: "WhatsApp", span: BUSINESS.whatsapp.label, small: "Fastest. Usually within 2 hours, in working hours.", ext: true },
+  { href: BUSINESS.phone.href, b: "Call", span: BUSINESS.phone.label, small: "In working hours. Tap to call on a phone." },
   { href: `mailto:${E.info}`, b: "General", span: E.info, small: "Usually within 4 working hours." },
   { href: `mailto:${E.orders}`, b: "Orders", span: E.orders, small: "Changes within 1 hour of ordering, delivery questions." },
   { href: `mailto:${E.returns}`, b: "Returns", span: E.returns, small: "Returns and size exchanges, within 7 days." },

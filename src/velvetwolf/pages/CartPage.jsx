@@ -4,6 +4,14 @@ import { Link } from "react-router";
 import { AppContext } from "./AppContext";
 import { money, cartThumb } from "../gallery/galleryProducts";
 
+export function meta() {
+  return [
+    { title: "Your cart · VelvetWolf" },
+    { name: "description", content: "The tees in your VelvetWolf cart. Free standard delivery across India." },
+    { name: "robots", content: "noindex" },
+  ];
+}
+
 export default function CartPage() {
   const { cart, removeFromCart, updateCartQty, cartTotal, setPage } = useContext(AppContext);
 

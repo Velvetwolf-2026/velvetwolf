@@ -23,7 +23,7 @@ export async function loader() {
 }
 
 export function meta() {
-  const title = "VelvetWolf — Statements in silence";
+  const title = "VelvetWolf · Statements in silence";
   const description = "Heavyweight oversized tees in five colours, shown in the VelvetWolf gallery. See the newest drops from Quiet Hours.";
   return [
     { title },

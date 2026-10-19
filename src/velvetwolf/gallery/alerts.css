@@ -67,3 +67,30 @@
 @media (pointer: coarse) { .vwg-nav .vwg-acct-btn { min-height: 44px; padding-block: 0; } }
 @keyframes vwg-acct-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .vwg-acct-menu { animation: none; } }
+
+/* The phone menu (MobileMenu.jsx): a button before the wordmark, a drawer from the left. */
+.vwg-nav .nav-start { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.vwg-nav .vwg-menu-btn {
+  display: none; place-items: center; width: 44px; height: 44px; margin-left: -10px;
+  border: 0; background: none; color: inherit; cursor: pointer;
+}
+.vwg-nav .vwg-menu-btn:focus-visible { outline: 2px solid var(--sand); outline-offset: -2px; }
+@media (max-width: 599px) and (min-height: 500px), (max-width: 599px) and (orientation: portrait) {
+  .vwg-nav .vwg-menu-btn { display: inline-grid; }
+}
+.vwg-menu { justify-content: flex-start; }
+.vwg-menu .vwg-menu-panel { border-left: 0; border-right: 1px solid rgba(232, 228, 218, 0.12); animation-name: vwg-menu-in; }
+.vwg-menu-brand { color: inherit; text-decoration: none; font: 400 12px/1 "Unbounded", "Helvetica Neue", Arial, sans-serif; letter-spacing: 0.3em; padding: 12px 0; }
+.vwg-menu-body { flex: 1; overflow-y: auto; padding: 8px 0 16px; overscroll-behavior: contain; }
+.vwg-menu-body section { padding: 14px 22px 4px; }
+.vwg-menu-body h2 { margin: 0 0 4px; font: 600 11px/1.4 "Manrope", sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(232, 228, 218, 0.55); }
+.vwg-menu-body ul { list-style: none; margin: 0; padding: 0; }
+.vwg-menu-body a, .vwg-menu-body button {
+  display: flex; align-items: center; width: 100%; min-height: 46px; padding: 0; text-align: left;
+  color: inherit; text-decoration: none; background: none; border: 0; cursor: pointer; font: 400 16px/1.3 "Manrope", sans-serif;
+}
+.vwg-menu-body a[aria-current] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.vwg-menu-foot { display: grid; gap: 4px; }
+.vwg-menu-foot a { display: flex; align-items: center; min-height: 40px; letter-spacing: 0.04em; text-transform: none; font-size: 14px; }
+@keyframes vwg-menu-in { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.vwg-nav .sr-only, .vwg-menu .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

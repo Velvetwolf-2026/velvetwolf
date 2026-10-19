@@ -1,9 +1,8 @@
-const CACHE_NAME = "velvetwolf-cache-v2";
+const CACHE_NAME = "velvetwolf-cache-v3";
 const ASSETS_TO_CACHE = [
   "/",
-  "/index.html",
-  "/logo.png",
-  "/vw-logo.png",
+  "/favicon-32.png",
+  "/icon-192.png",
   "/manifest.json"
 ];
 

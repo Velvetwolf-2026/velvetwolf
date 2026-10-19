@@ -30,9 +30,9 @@ export async function loader({ params }) {
 
 export function meta({ loaderData }) {
   const product = loaderData?.product;
-  if (!product) return [{ title: "Product — VelvetWolf" }];
-  const title = `${product.name} — VelvetWolf`;
-  const description = product.description ? String(product.description).slice(0, 160) : "Heavyweight tees from VelvetWolf.";
+  if (!product) return [{ title: "Tee not found · VelvetWolf" }, { name: "robots", content: "noindex" }];
+  const title = `${product.name} · VelvetWolf`;
+  const description = product.description ? String(product.description).replace(/\s+/g, " ").trim().slice(0, 158) : `${product.name}: a heavyweight oversized tee from VelvetWolf.`;
   const image = allPhotos(product)[0]?.src;
   return [
     { title },

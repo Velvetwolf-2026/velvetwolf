@@ -17,6 +17,18 @@ import {
 const INKS = ["bone", "noir", "sand", "forest", "crimson"];
 const MARKS = ["wordmark", "monogram", "horizon", "contour", "nocturne"];
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+
+export function meta() {
+  const title = "Studio: design your own tee · VelvetWolf";
+  const description = "Put your own words, artwork or one of our marks on a heavyweight oversized tee. See it in 3D as you design.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+  ];
+}
+
 const MAX_MB = 8;
 // longest the cart waits for the print proofs (they are optional)
 const PROOF_WAIT_MS = 12000;

@@ -22,8 +22,8 @@ export async function loader({ params }) {
 
 export function meta({ params }) {
   const collection = params.collection ? getCollectionById(params.collection) : null;
-  const title = collection ? `${collection.name} — VelvetWolf` : "All tees — VelvetWolf";
-  const description = collection?.description || "Every VelvetWolf tee, in five colours. Heavyweight oversized cotton.";
+  const title = collection ? `${collection.name} · VelvetWolf` : "Shop all tees · VelvetWolf";
+  const description = collection?.description || (collection ? `${collection.name}: heavyweight oversized VelvetWolf tees in five colours.` : "Every VelvetWolf tee, in five colours. Heavyweight oversized cotton.");
   return [
     { title },
     { name: "description", content: description },

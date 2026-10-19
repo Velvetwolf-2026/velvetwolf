@@ -30,7 +30,7 @@ export default [
     route("returns", "./velvetwolf/pages/ReturnsPage.jsx"),
     route("size-guide", "./velvetwolf/pages/SizeGuide.jsx"),
     route("track-order", "./velvetwolf/pages/TrackOrder.jsx"),
-    route("*", "./velvetwolf/components/NotFoundRedirect.jsx"),
+    route("*", "./velvetwolf/pages/NotFoundPage.jsx"),
   ]),
 
   // Same-origin proxy to the Lambda backend (first-party auth cookies).

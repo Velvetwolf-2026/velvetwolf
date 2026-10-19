@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import { Link } from "react-router";
 import { AppContext } from "../pages/AppContext";
 import AdminDashboard from "./AdminDashboard";
 import AdminProducts  from "./AdminProducts";
@@ -31,7 +32,8 @@ export default function AdminLayout({ Icon, TAG_COLORS }) {
       <div className="admin-sidebar" style={{ padding: 0, position: "relative" }}>
         <div className="vw-admin-shell-header" style={{ padding: "28px 20px", borderBottom: "1px solid var(--smoke)" }}>
           <div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 4, color: "var(--gold)" }}>VELVETWOLF</div>
+            {/* the wordmark opens the shop (the store front), as on the public pages */}
+            <Link to="/" title="Open the store front" style={{ display: "inline-block", fontFamily: "var(--font-display)", fontSize: 20, letterSpacing: 4, color: "var(--gold)", textDecoration: "none" }}>VELVETWOLF</Link>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 3, color: "var(--silver)", marginTop: 4 }}>ADMIN PANEL</div>
           </div>
           <div className="vw-admin-mobile-title">

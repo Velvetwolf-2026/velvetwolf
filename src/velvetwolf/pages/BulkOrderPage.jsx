@@ -1,246 +1,208 @@
+// Bulk and corporate orders, in the gallery page style: the tiers on one side,
+// the quote form on the other (stacked on phones). The form posts to
+// /bulk/send; the backend checks the same fields (bulkOrderSchema).
 import { useContext, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
-import { isValidEmail, isValidName } from "../utils/validate";
-import Icon from "../components/Icon";
-import { HeroHeader } from "../styles/shared";
+import { BUSINESS } from "../gallery/help/content";
+import { isValidEmail, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
+
+export function meta() {
+  const title = "Bulk and corporate orders · VelvetWolf";
+  const description = "VelvetWolf tees for teams, events and companies, with your logo printed or embroidered. Ask for a quote; we reply within 24 hours.";
+  return [
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+  ];
+}
+
+const TIERS = [
+  ["10 to 49 pieces", "5% off", "Team orders"],
+  ["50 to 99 pieces", "12% off", "Department orders"],
+  ["100 to 499 pieces", "20% off", "Corporate branding"],
+  ["500 pieces or more", "30% off", "Enterprise orders, with custom options"],
+];
+const EXTRAS = ["Your logo printed or embroidered", "Pantone colour matching", "Individual names printed", "One person looking after your order", "Net-30 payment terms available"];
+const TYPES = [["corporate", "Corporate branding"], ["bulk", "Bulk order"], ["event", "Event merchandise"], ["startup", "Startup kit"]];
+const MIN_QTY = 5;
+const MAX_IMAGES = 6;
+const MAX_MB = 5;
+
+const blank = { type: "corporate", org: "", contact: "", email: "", qty: "", message: "" };
+
+function Field({ id, label, error, hint, children }) {
+  return (
+    <div className="form-row">
+      <label htmlFor={id}>{label}</label>
+      {children}
+      {hint && <p className="field-hint" id={`${id}-hint`}>{hint}</p>}
+      {error && <p className="field-error" id={`${id}-err`}>{error}</p>}
+    </div>
+  );
+}
 
 export default function BulkOrderPage() {
   const { showToast, user } = useContext(AppContext);
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "",
-  });
+  const [form, setForm] = useState(blank);
   const [images, setImages] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const errorRef = useRef(null);
+  const [errors, setErrors] = useState({});
+  const [banner, setBanner] = useState("");
+  const [sending, setSending] = useState(false);
+  const bannerRef = useRef(null);
 
-  // Pre-populate contact & email if user is logged in and fields are empty
+  // signed in: fill in who's asking (not a mobile-only placeholder email)
   useEffect(() => {
-    if (user) {
-      setForm(prev => ({
-        ...prev,
-        contact: prev.contact || user.full_name || user.name || "",
-        email: prev.email || user.email || "",
-      }));
-    }
+    if (!user) return;
+    setForm((f) => ({
+      ...f,
+      contact: f.contact || user.full_name || (/^mobile( |$)/i.test(user.name || "") ? "" : user.name) || "",
+      email: f.email || (String(user.email || "").endsWith("@mobile.velvetwolf.in") ? "" : user.email || ""),
+    }));
   }, [user]);
 
-  // shared checks (utils/validate.js), the same ones the backend runs
-  const orgRegex = /^[a-zA-Z0-9&().,\s'-]{2,}$/;
-
-  const updateField = (key, value) => {
-    let nextValue = value;
-    if (key === "contact") nextValue = value.replace(/[^a-zA-Z\s.'-]/g, "");
-    if (key === "org")     nextValue = value.replace(/[^a-zA-Z0-9&().,\s'-]/g, "");
-    setForm(prev => ({ ...prev, [key]: nextValue }));
-    setErrorMessage("");
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setErrors((x) => ({ ...x, [k]: "" }));
+    setBanner("");
   };
 
-  const handleImageChange = (e) => {
+  const addImages = (e) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      if (!file.type.startsWith("image/")) {
-        showToast("Only image files are allowed", "error");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        showToast("Image size must be less than 5MB", "error");
-        return;
-      }
+    e.target.value = "";
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) { showToast(`${file.name} isn't an image. Use PNG, JPG or WebP.`, "error"); continue; }
+      if (file.size > MAX_MB * 1024 * 1024) { showToast(`${file.name} is over ${MAX_MB} MB. Try a smaller file.`, "error"); continue; }
       const reader = new FileReader();
-      reader.onload = () => {
-        setImages(prev => [...prev, reader.result]);
-      };
+      reader.onload = () => setImages((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, { name: file.name, src: reader.result }]));
+      reader.onerror = () => showToast(`${file.name} couldn't be read. Try another file.`, "error");
       reader.readAsDataURL(file);
-    });
+    }
   };
 
-  const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+  const validate = () => {
+    const e = {};
+    if (form.org.trim().length < 2) e.org = "Enter your organisation's name.";
+    if (!form.contact.trim()) e.contact = "Enter the name of the person we should talk to.";
+    else if (!isValidName(form.contact)) e.contact = NAME_ERROR;
+    if (!isValidEmail(form.email)) e.email = EMAIL_ERROR;
+    const qty = Number(form.qty);
+    if (!form.qty) e.qty = "Enter how many pieces you need.";
+    else if (!Number.isInteger(qty) || qty < MIN_QTY) e.qty = `The minimum is ${MIN_QTY} pieces.`;
+    if (form.message.trim().length < 10) e.message = "Tell us a little more: the design, colours and when you need them (10 characters or more).";
+    return e;
   };
 
-  const validateForm = () => {
-    if (!form.org.trim())                            return "Please enter organization name.";
-    if (!orgRegex.test(form.org.trim()))             return "Please enter a valid organization name.";
-    if (!form.contact.trim())                        return "Please enter contact person name.";
-    if (!isValidName(form.contact))        return "Please enter a valid contact person name.";
-    if (!form.email.trim())                          return "Please enter email address.";
-    if (!isValidEmail(form.email))         return "Please enter a valid email address.";
-    if (form.qty === "" || form.qty === null)         return "Please enter quantity.";
-    if (Number(form.qty) < 5)                        return "Minimum quantity should be 5.";
-    if (!form.message.trim())                        return "Please enter product requirements.";
-    if (form.message.trim().length < 10)             return "Please enter more detailed product requirements.";
-    return "";
-  };
-
-  const handleSubmit = async () => {
-    const validationMessage = validateForm();
-    if (validationMessage) {
-      setErrorMessage(validationMessage);
-      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  const submit = async (ev) => {
+    ev.preventDefault();
+    if (sending) return;
+    const e = validate();
+    setErrors(e);
+    const ids = Object.keys(e);
+    if (ids.length) {
+      setBanner(`Check ${ids.length === 1 ? "the field" : `the ${ids.length} fields`} marked below.`);
+      setTimeout(() => document.getElementById(`bk-${ids[0]}`)?.focus(), 30);
       return;
     }
-
-    setSubmitting(true);
+    setSending(true);
+    setBanner("");
+    const payload = { ...form, contact: cleanName(form.contact), email: form.email.trim().toLowerCase(), qty: Number(form.qty), images: images.map((i) => i.src) };
     try {
       const res = await fetch(apiUrl("/bulk/send"), {
         method: "POST",
-        credentials: 'include',
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          images,
-        }),
+        body: JSON.stringify(payload),
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send quote request.");
-
-      // Save summary details for display on the success page
-      sessionStorage.setItem("vw_last_bulk_order", JSON.stringify(form));
-
-      showToast("Quote request sent! We'll contact you within 24hrs.");
-      setErrorMessage("");
-      setForm({ type: "corporate", qty: 5, product: "", message: "", org: "", contact: "", email: "" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "We couldn't send your request just now.");
+      try { sessionStorage.setItem("vw_last_bulk_order", JSON.stringify({ ...payload, images: images.length })); } catch { /* storage unavailable */ }
+      showToast("Quote request sent. We'll email you within 24 hours.");
+      setForm(blank);
       setImages([]);
-      
       navigate("/bulk/success");
     } catch (err) {
-      showToast(err.message, "error");
-      setErrorMessage(err.message);
+      setBanner(`${err.message || "That didn't send."} Try again, or write to ${BUSINESS.emails.bulk}.`);
+      setTimeout(() => bannerRef.current?.focus(), 30);
     } finally {
-      setSubmitting(false);
+      setSending(false);
     }
   };
 
+  const describe = (id, extra = "") => [extra, errors[id] ? `bk-${id}-err` : ""].filter(Boolean).join(" ") || undefined;
+
   return (
-    <div style={{ paddingTop: 70, minHeight: "100vh" }}>
-      <HeroHeader
-        eyebrow="For teams & organizations"
-        title="BULK & CORPORATE"
-        sub="Outfit your entire team in VelvetWolf luxury."
-      />
+    <main className="vwg view-page">
+      <div className="page-wrap page-wide">
+        <header className="page-head">
+          <p className="eyebrow">For teams and organisations</p>
+          <h1 className="page-title">Bulk and corporate orders</h1>
+          <p className="page-sub">Tees for your team, event or company, with your logo. Tell us what you need and we'll email you a quote within 24 hours.</p>
+        </header>
 
-      <div className="contact-grid page-content-pad" style={{ maxWidth: 900, margin: "60px auto", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60 }}>
-        <div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>Pricing tiers</h2>
-          {[["10–49 pcs", "5% off", "Team orders"], ["50–99 pcs", "12% off", "Department orders"], ["100–499 pcs", "20% off", "Corporate branding"], ["500+ pcs", "30% off + custom", "Enterprise bulk"]].map(([qty, disc, label]) => (
-            <div key={qty} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", borderBottom: "1px solid var(--smoke)" }}>
-              <div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: 1, color: "var(--ivory)" }}>{qty}</div>
-                <div style={{ fontFamily: "'Roboto', sans-serif", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginTop: 4 }}>{label}</div>
-              </div>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--gold)" }}>{disc}</span>
-            </div>
-          ))}
-          <div style={{ marginTop: 32 }}>
-            {["✦ Custom logo embroidery/print", "✦ Pantone color matching", "✦ Individual name printing", "✦ Dedicated account manager", "✦ Net-30 payment terms available"].map(txt => (
-              <div key={txt} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", letterSpacing: 1, marginBottom: 10 }}>{txt}</div>
-            ))}
-          </div>
-        </div>
+        <div className="bulk-grid">
+          <section className="bulk-tiers" aria-labelledby="bk-tiers-h">
+            <h2 className="co-h" id="bk-tiers-h">Pricing</h2>
+            <ul className="bulk-tier-list">
+              {TIERS.map(([qty, off, label]) => (
+                <li key={qty}><span><b>{qty}</b><small>{label}</small></span><em>{off}</em></li>
+              ))}
+            </ul>
+            <ul className="bulk-extras">
+              {EXTRAS.map((t) => <li key={t}>{t}</li>)}
+            </ul>
+            <p className="muted">Questions first? Write to <a href={`mailto:${BUSINESS.emails.bulk}`}>{BUSINESS.emails.bulk}</a> or call <a href={BUSINESS.phone.href}>{BUSINESS.phone.label}</a>.</p>
+          </section>
 
-        <div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: 2, marginBottom: 28 }}>Request a quote</h2>
-
-          {errorMessage && (
-            <div ref={errorRef} style={{ background: "#2a0f0f", border: "1px solid #7a1f1f", color: "#ff8a80", padding: "12px 14px", marginBottom: 14, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
-              ✕ {errorMessage}
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>Order type</label>
-              <select className="input-dark" value={form.type} onChange={e => updateField("type", e.target.value)}>
-                <option value="bulk">Bulk order</option>
-                <option value="corporate">Corporate branding</option>
-                <option value="event">Event merchandise</option>
-                <option value="startup">Startup kit</option>
+          <form className="bulk-form" onSubmit={submit} noValidate aria-labelledby="bk-form-h">
+            <h2 className="co-h" id="bk-form-h">Ask for a quote</h2>
+            {banner && <p className="form-banner" role="alert" tabIndex={-1} ref={bannerRef}>{banner}</p>}
+            <Field id="bk-type" label="Order type">
+              <select id="bk-type" value={form.type} onChange={set("type")}>
+                {TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
+            </Field>
+            <Field id="bk-org" label="Organisation" error={errors.org}>
+              <input id="bk-org" type="text" autoComplete="organization" maxLength={120} value={form.org} onChange={set("org")} aria-invalid={errors.org ? "true" : undefined} aria-describedby={describe("org")} />
+            </Field>
+            <div className="form-pair">
+              <Field id="bk-qty" label="Pieces" error={errors.qty}>
+                <input id="bk-qty" type="number" inputMode="numeric" min={MIN_QTY} step="1" value={form.qty} onChange={set("qty")} aria-invalid={errors.qty ? "true" : undefined} aria-describedby={describe("qty")} />
+              </Field>
+              <Field id="bk-contact" label="Your name" error={errors.contact}>
+                <input id="bk-contact" type="text" autoComplete="name" maxLength={80} value={form.contact} onChange={set("contact")} aria-invalid={errors.contact ? "true" : undefined} aria-describedby={describe("contact")} />
+              </Field>
             </div>
-            <input className="input-dark" placeholder="Organization name" value={form.org} onChange={e => updateField("org", e.target.value)}/>
-            <input className="input-dark" placeholder="Contact person" value={form.contact} onChange={e => updateField("contact", e.target.value)}/>
-            <input className="input-dark" type="email" placeholder="Email address" value={form.email} onChange={e => updateField("email", e.target.value)}/>
-            <input className="input-dark" type="number" placeholder="Quantity required" value={form.qty} onChange={e => updateField("qty", e.target.value)} min="5"/>
-            <textarea className="input-dark" placeholder="Product requirements, design ideas, deadline..." value={form.message} onChange={e => updateField("message", e.target.value)} style={{ minHeight: 120 }}/>
-            
-            {/* Multiple Image Upload Section */}
-            <div>
-              <label style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "var(--gold)", display: "block", marginBottom: 8 }}>Upload design sketches or logos</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <label htmlFor="design-images" style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "1px dashed var(--smoke)",
-                  padding: "20px",
-                  cursor: "pointer",
-                  background: "rgba(255,255,255,0.01)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  color: "var(--silver)",
-                  textAlign: "center"
-                }}>
-                  <span>✦ Select images (multiple)</span>
-                  <span style={{ fontSize: 9, color: "var(--ash)", marginTop: 4 }}>PNG, JPG, JPEG up to 5MB each</span>
-                </label>
-                <input
-                  id="design-images"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  style={{ display: "none" }}
-                />
-
-                {images.length > 0 && (
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", background: "rgba(255,255,255,0.02)", padding: 12, border: "1px solid var(--smoke)" }}>
-                    {images.map((img, idx) => (
-                      <div key={idx} style={{ position: "relative", width: 64, height: 64, border: "1px solid var(--smoke)", background: "#000" }}>
-                        <img src={img} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          style={{
-                            position: "absolute",
-                            top: -4,
-                            right: -4,
-                            background: "#c0392b",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: 16,
-                            height: 16,
-                            fontSize: 9,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            lineHeight: 1
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <Field id="bk-email" label="Email" error={errors.email} hint="We send the quote here.">
+              <input id="bk-email" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off" maxLength={254} value={form.email} onChange={set("email")} aria-invalid={errors.email ? "true" : undefined} aria-describedby={describe("email", "bk-email-hint")} />
+            </Field>
+            <Field id="bk-message" label="What you need" error={errors.message}>
+              <textarea id="bk-message" rows={5} maxLength={5000} value={form.message} onChange={set("message")} placeholder="Design, colours, sizes and when you need them" aria-invalid={errors.message ? "true" : undefined} aria-describedby={describe("message")} />
+            </Field>
+            <div className="form-row">
+              <span className="bulk-label" id="bk-files-label">Logo or sketches <span className="opt">optional</span></span>
+              <label className="bulk-drop">
+                <input className="bulk-file" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={addImages} aria-labelledby="bk-files-label" />
+                <b>Add images</b><span>PNG, JPG or WebP, up to {MAX_MB} MB each, {MAX_IMAGES} at most</span>
+              </label>
+              {images.length > 0 && (
+                <ul className="bulk-thumbs">
+                  {images.map((img, i) => (
+                    <li key={`${img.name}-${i}`}>
+                      <img src={img.src} alt={img.name} />
+                      <button type="button" aria-label={`Remove ${img.name}`} onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}>×</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-
-            <button className="btn-gold" style={{ padding: "16px" }} onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Sending request..." : "Request quote"}
-            </button>
-          </div>
+            <button className="btn btn-primary btn-block" type="submit" disabled={sending}>{sending ? "Sending…" : "Send my request"}</button>
+          </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

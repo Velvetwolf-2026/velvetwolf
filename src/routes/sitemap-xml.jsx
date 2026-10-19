@@ -5,7 +5,6 @@ const SITE_URL = "https://velvetwolf.in";
 const STATIC_PATHS = [
   "/",
   "/shop",
-  "/collections",
   "/quiz",
   "/custom",
   "/bulk",

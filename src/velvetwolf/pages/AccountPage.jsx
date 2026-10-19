@@ -19,7 +19,7 @@ import "../gallery/gallery-help.css";
 import "../account/account.css";
 
 export function meta() {
-  return [{ title: "Your account · VelvetWolf" }, { name: "robots", content: "noindex" }];
+  return [{ title: "Your account · VelvetWolf" }, { name: "description", content: "Your VelvetWolf orders, saved tees, size and settings in one place." }, { name: "robots", content: "noindex" }];
 }
 
 const TABS = [

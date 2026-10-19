@@ -9,7 +9,7 @@ import "../gallery/gallery-help.css";
 import "../account/account.css";
 
 export function meta() {
-  return [{ title: "A saved list · VelvetWolf" }, { name: "robots", content: "noindex, nofollow" }];
+  return [{ title: "A saved list · VelvetWolf" }, { name: "description", content: "Tees someone saved on VelvetWolf and shared with you." }, { name: "robots", content: "noindex, nofollow" }];
 }
 
 export default function SharedListPage() {
