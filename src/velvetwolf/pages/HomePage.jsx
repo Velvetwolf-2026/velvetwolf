@@ -10,6 +10,7 @@ import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
 import { money, photoFor, colorwaysOf, productHref, newestDrops, fromPrice } from "../gallery/galleryProducts";
 import { handOffArtwork } from "../gallery/studioHandoff";
+import { pageMeta, organizationLd, websiteLd } from "../utils/seo";
 
 // Server-rendered on first load so the catalog is present in the HTML for
 // crawlers and link previews, not just after the client fetches it.
@@ -23,16 +24,12 @@ export async function loader() {
 }
 
 export function meta() {
-  const title = "VelvetWolf · Statements in silence";
-  const description = "Heavyweight oversized tees in five colours, shown in the VelvetWolf gallery. See the newest drops from Quiet Hours.";
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ];
+  return pageMeta({
+    title: "VelvetWolf · Statements in silence",
+    description: "Heavyweight oversized tees in five colours, made in Tirupur and shown in the VelvetWolf gallery. Shop the Quiet Hours drop or design your own.",
+    path: "/",
+    schema: [organizationLd(), websiteLd()],
+  });
 }
 
 const ORDER = ["hero", "drop", "color", "craft", "teaser"];

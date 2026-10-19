@@ -3,9 +3,12 @@ import { useCallback } from "react";
 import HelpLayout, { DocBody } from "../gallery/help/HelpLayout";
 import { useGallery } from "../gallery/galleryContext";
 import { TERMS } from "../gallery/help/content";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Terms · VelvetWolf" }, { name: "description", content: "The agreement between you and VelvetWolf when you buy. Written to be read." }];
+  const title = "Terms · VelvetWolf";
+  const description = "The agreement between you and VelvetWolf when you buy: orders, prices, payment, delivery, returns and custom Studio designs. Written to be read.";
+  return pageMeta({ title, description, path: "/terms", schema: [webPageLd({ name: title, description, path: "/terms" }), breadcrumbLd([["Home", "/"], ["Terms", "/terms"]])] });
 }
 
 export default function TermsPage() {

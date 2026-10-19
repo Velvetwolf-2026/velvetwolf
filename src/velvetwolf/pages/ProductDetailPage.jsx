@@ -5,11 +5,12 @@ import { useContext, useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
-import { INITIAL_COLLECTION_PRODUCTS } from "../utils/collectionsData";
+import { INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
 import { COLORWAYS, SIZES } from "../gallery/data";
 import { money, allPhotos } from "../gallery/galleryProducts";
 import PhotoViewerModal from "../components/PhotoViewerModal";
+import { pageMeta, productLd, breadcrumbLd } from "../utils/seo";
 
 const findFallback = (slug) =>
   INITIAL_COLLECTION_PRODUCTS.find((p) => p.id === slug || p.name.toLowerCase().replace(/\s+/g, "-") === slug) || null;
@@ -28,19 +29,26 @@ export async function loader({ params }) {
   }
 }
 
-export function meta({ loaderData }) {
-  const product = loaderData?.product;
-  if (!product) return [{ title: "Tee not found · VelvetWolf" }, { name: "robots", content: "noindex" }];
+export function meta({ loaderData, data, params }) {
+  const product = (loaderData ?? data)?.product;
+  if (!product) return pageMeta({ title: "Tee not found · VelvetWolf", description: "This VelvetWolf tee isn't available any more. See every tee in the shop.", path: `/product/${params.slug}`, noindex: true });
+  const path = `/product/${product.slug || params.slug}`;
   const title = `${product.name} · VelvetWolf`;
-  const description = product.description ? String(product.description).replace(/\s+/g, " ").trim().slice(0, 158) : `${product.name}: a heavyweight oversized tee from VelvetWolf.`;
-  const image = allPhotos(product)[0]?.src;
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(image ? [{ property: "og:image", content: image }] : []),
-  ];
+  const plain = String(product.description || "").replace(/\s+/g, " ").trim();
+  const description = (plain.length >= 70 ? plain : `${product.name}: a heavyweight oversized cotton tee from VelvetWolf, 220 to 240 GSM, sizes S to XXL. ${plain}`).slice(0, 158).trim();
+  const images = allPhotos(product).map((p) => p.src).filter(Boolean);
+  const collection = product.collection ? getCollectionById(product.collection) : null;
+  return pageMeta({
+    title,
+    description,
+    path,
+    image: images[0],
+    type: "product",
+    schema: [
+      productLd(product, { path, images }),
+      breadcrumbLd([["Home", "/"], ["Shop", "/shop"], ...(collection ? [[collection.name, `/shop/${collection.id}`]] : []), [product.name, path]]),
+    ],
+  });
 }
 
 // Swatch colour for a colour name from the admin ("Black", "Forest Green"...)

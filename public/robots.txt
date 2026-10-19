@@ -1,7 +1,0 @@
-User-agent: *
-Disallow: /admin
-Disallow: /account
-Disallow: /checkout
-Disallow: /cart
-
-Sitemap: https://velvetwolf.in/sitemap.xml

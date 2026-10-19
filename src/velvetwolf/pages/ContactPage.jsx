@@ -9,9 +9,17 @@ import { nowIST } from "../gallery/help/motifs";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { isValidEmail, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
+import { pageMeta, webPageLd, breadcrumbLd, organizationLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Contact · VelvetWolf" }, { name: "description", content: "Real people in Chennai, Monday to Saturday. Write to us, or reach us on WhatsApp, email or Instagram." }];
+  const title = "Contact · VelvetWolf";
+  const description = "Real people in Chennai, Monday to Saturday, 10 AM to 7 PM IST. Write to us, call, or reach us on WhatsApp, email or Instagram.";
+  return pageMeta({
+    title,
+    description,
+    path: "/contact",
+    schema: [webPageLd({ type: "ContactPage", name: title, description, path: "/contact" }), organizationLd(), breadcrumbLd([["Home", "/"], ["Contact", "/contact"]])],
+  });
 }
 
 const E = BUSINESS.emails;
@@ -38,7 +46,7 @@ const WAYS = [
   { href: `mailto:${E.info}`, b: "General", span: E.info, small: "Usually within 4 working hours." },
   { href: `mailto:${E.orders}`, b: "Orders", span: E.orders, small: "Changes within 1 hour of ordering, delivery questions." },
   { href: `mailto:${E.returns}`, b: "Returns", span: E.returns, small: "Returns and size exchanges, within 7 days." },
-  { href: `mailto:${E.bulk}`, b: "Bulk and corporate", span: E.bulk, small: "10 pieces or more. Quotes within 24 hours." },
+  { href: `mailto:${E.bulk}`, b: "Bulk and corporate", span: E.bulk, small: "5 pieces or more. Quotes within 24 hours." },
   { href: BUSINESS.instagram.href, b: "Instagram", span: BUSINESS.instagram.label, small: "DMs answered within about 6 hours.", ext: true },
 ];
 

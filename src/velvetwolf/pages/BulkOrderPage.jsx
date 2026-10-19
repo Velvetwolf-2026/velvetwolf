@@ -7,16 +7,12 @@ import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { BUSINESS } from "../gallery/help/content";
 import { isValidEmail, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
   const title = "Bulk and corporate orders · VelvetWolf";
-  const description = "VelvetWolf tees for teams, events and companies, with your logo printed or embroidered. Ask for a quote; we reply within 24 hours.";
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-  ];
+  const description = "VelvetWolf tees for teams, events and companies, from 5 pieces, with your logo printed or embroidered. Ask for a quote; we reply within 24 hours.";
+  return pageMeta({ title, description, path: "/bulk", schema: [webPageLd({ name: title, description, path: "/bulk" }), breadcrumbLd([["Home", "/"], ["Bulk orders", "/bulk"]])] });
 }
 
 const TIERS = [
@@ -140,12 +136,13 @@ export default function BulkOrderPage() {
         <header className="page-head">
           <p className="eyebrow">For teams and organisations</p>
           <h1 className="page-title">Bulk and corporate orders</h1>
-          <p className="page-sub">Tees for your team, event or company, with your logo. Tell us what you need and we'll email you a quote within 24 hours.</p>
+          <p className="page-sub">Tees for your team, event or company, with your logo, from {MIN_QTY} pieces. Tell us what you need and we'll email you a quote within 24 hours.</p>
         </header>
 
         <div className="bulk-grid">
           <section className="bulk-tiers" aria-labelledby="bk-tiers-h">
             <h2 className="co-h" id="bk-tiers-h">Pricing</h2>
+            <p className="muted">Minimum order: {MIN_QTY} pieces. Bigger orders get more off:</p>
             <ul className="bulk-tier-list">
               {TIERS.map(([qty, off, label]) => (
                 <li key={qty}><span><b>{qty}</b><small>{label}</small></span><em>{off}</em></li>

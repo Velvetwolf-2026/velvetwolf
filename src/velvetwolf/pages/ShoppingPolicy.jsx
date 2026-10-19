@@ -7,9 +7,26 @@ import { useGallery } from "../gallery/galleryContext";
 import { SHIPPING, BUSINESS } from "../gallery/help/content";
 import { nowIST, addWorkingDays, fmtDay } from "../gallery/help/motifs";
 import { money } from "../gallery/galleryProducts";
+import { pageMeta, faqLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Shipping policy · VelvetWolf" }, { name: "description", content: "Free standard delivery across India, Express for ₹149. Dispatched in 2 to 3 business days." }];
+  const title = "Shipping policy · VelvetWolf";
+  const description = "Free standard delivery across India in 4 to 7 working days, Express for ₹149 in 2 to 4. Every order is dispatched in 2 to 3 business days.";
+  const [standard, express] = SHIPPING.methods;
+  return pageMeta({
+    title,
+    description,
+    path: "/shipping-policy",
+    schema: [
+      faqLd([
+        { q: "How much does delivery cost?", a: `Standard delivery is free across India. Express costs ₹${express.price}.` },
+        { q: "How long does delivery take?", a: `We dispatch within ${SHIPPING.dispatch[0]} to ${SHIPPING.dispatch[1]} business days. Standard delivery then takes ${standard.days[0]} to ${standard.days[1]} working days, and Express ${express.days[0]} to ${express.days[1]}. ${SHIPPING.remote.label} take ${SHIPPING.remote.extra[0]} to ${SHIPPING.remote.extra[1]} days longer.` },
+        { q: "Do you ship outside India?", a: "Not yet. VelvetWolf delivers across India only." },
+        { q: "Do you offer cash on delivery?", a: "No. Every order is prepaid, by UPI, card, netbanking or wallet." },
+      ]),
+      breadcrumbLd([["Home", "/"], ["Shipping policy", "/shipping-policy"]]),
+    ],
+  });
 }
 
 const E = BUSINESS.emails;
@@ -31,7 +48,7 @@ const SECTIONS = [
   { id: "changes", h: "Changing an order or address", body: [`Write to ${mail(E.orders)} within 1 hour of ordering. After that it may already be in production. Please check the address and phone number at checkout; the courier calls that number if they can't find you.`] },
   { id: "damage", h: "Damaged, lost or late", body: [`If a parcel arrives damaged, send photos of the parcel and the tee to ${mail(E.returns)} within 24 hours and we replace it or refund you. If tracking stops for 48 hours or a parcel is lost, we take it up with the courier and make it right.`] },
   { id: "invoice", h: "GST invoice", body: ["GST is shown at checkout, and a GST invoice is emailed when your order ships. For a business invoice, email your GSTIN to us within 48 hours of ordering."] },
-  { id: "bulk", h: "Bulk orders", body: [`For 10 or more pieces, write to ${mail(E.bulk)}. We send a quote within 24 hours.`] },
+  { id: "bulk", h: "Bulk orders", body: [`For 5 or more pieces, use the <a href="/bulk">bulk order form</a> or write to ${mail(E.bulk)}. We send a quote within 24 hours.`] },
 ];
 
 export default function ShoppingPolicy() {

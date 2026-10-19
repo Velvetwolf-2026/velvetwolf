@@ -5,9 +5,25 @@ import { useEffect, useRef, useState } from "react";
 import HelpLayout, { DocSections } from "../gallery/help/HelpLayout";
 import { useGallery } from "../gallery/galleryContext";
 import { RETURNS, BUSINESS } from "../gallery/help/content";
+import { pageMeta, faqLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Returns · VelvetWolf" }, { name: "description", content: "7 days to change your mind. Damaged or faulty is always on us." }];
+  const title = "Returns · VelvetWolf";
+  const description = "7 days to change your mind: return unworn tees or swap the size for free. Damaged, faulty or wrong items are always taken back, with a free pickup.";
+  return pageMeta({
+    title,
+    description,
+    path: "/returns",
+    schema: [
+      faqLd([
+        { q: "What is VelvetWolf's return policy?", a: `You can return unworn, unwashed tees with their tags within ${RETURNS.windowDays} days of delivery. Custom Studio tees and pieces marked Final Sale can't be returned unless they arrive damaged or faulty.` },
+        { q: "Can I exchange for another size?", a: `Yes. Exchanging for another size is free within ${RETURNS.windowDays} days, while that size is in stock. If it isn't, you get a full refund.` },
+        { q: "What if my tee arrives damaged or faulty?", a: "Email photos to returns@velvetwolf.in, ideally within 24 hours of delivery. We arrange a free pickup, then a replacement or a full refund." },
+        { q: "How long does a refund take?", a: `We inspect returns within 2 to 3 working days of receiving them. Then: ${RETURNS.refunds.map((r) => `${r.method}, ${r.time}`).join("; ")}.` },
+      ]),
+      breadcrumbLd([["Home", "/"], ["Returns", "/returns"]]),
+    ],
+  });
 }
 
 const E = BUSINESS.emails;

@@ -13,6 +13,7 @@ import {
   imageFit,
   DESIGNS,
 } from "../gallery/three/prints";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 const INKS = ["bone", "noir", "sand", "forest", "crimson"];
 const MARKS = ["wordmark", "monogram", "horizon", "contour", "nocturne"];
@@ -20,13 +21,8 @@ const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 
 export function meta() {
   const title = "Studio: design your own tee · VelvetWolf";
-  const description = "Put your own words, artwork or one of our marks on a heavyweight oversized tee. See it in 3D as you design.";
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-  ];
+  const description = "Put your own words, artwork or one of our marks on a heavyweight oversized tee, front or back. See it in 3D as you design. ₹2,290, made to order.";
+  return pageMeta({ title, description, path: "/custom", schema: [webPageLd({ name: title, description, path: "/custom" }), breadcrumbLd([["Home", "/"], ["Studio", "/custom"]])] });
 }
 
 const MAX_MB = 8;

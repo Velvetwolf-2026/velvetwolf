@@ -2,7 +2,7 @@
 // a photo card over the dimmed 3D hall (GalleryProvider). The colorway filter
 // switches every card to that colour's photo (all designs come in all five).
 import { useContext, useEffect, useMemo, useState } from "react";
-import { Link, useLoaderData, useNavigate, useParams } from "react-router";
+import { Link, useLoaderData, useNavigate, useParams, useSearchParams } from "react-router";
 import { AppContext } from "./AppContext";
 import { COLLECTIONS, getCollectionById } from "../utils/collectionsData";
 import { apiUrl } from "../utils/api";
@@ -10,6 +10,7 @@ import { loadProductsFromAPI } from "../utils/products";
 import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
 import { money, photoFor, colorwaysOf, productHref, allPhotos } from "../gallery/galleryProducts";
+import { pageMeta, breadcrumbLd, itemListLd } from "../utils/seo";
 
 export async function loader({ params }) {
   try {
@@ -20,17 +21,23 @@ export async function loader({ params }) {
   }
 }
 
-export function meta({ params }) {
+export function meta({ params, loaderData, data }) {
   const collection = params.collection ? getCollectionById(params.collection) : null;
-  const title = collection ? `${collection.name} · VelvetWolf` : "Shop all tees · VelvetWolf";
-  const description = collection?.description || (collection ? `${collection.name}: heavyweight oversized VelvetWolf tees in five colours.` : "Every VelvetWolf tee, in five colours. Heavyweight oversized cotton.");
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    { property: "og:type", content: "website" },
-  ];
+  const path = collection ? `/shop/${collection.id}` : "/shop";
+  const title = collection ? `${collection.name} tees · VelvetWolf` : "Shop all tees · VelvetWolf";
+  const description = collection
+    ? `${collection.name}: heavyweight oversized VelvetWolf tees in 220 to 240 GSM cotton, five colours, sizes S to XXL. Free delivery across India.`
+    : "Every VelvetWolf tee: heavyweight oversized cotton in five colours, sizes S to XXL, made in Tirupur. Free standard delivery across India.";
+  const products = ((loaderData ?? data)?.products || []).filter((p) => p && p.isActive !== false && (!collection || p.collection === collection.id));
+  return pageMeta({
+    title,
+    description,
+    path,
+    schema: [
+      breadcrumbLd(collection ? [["Home", "/"], ["Shop", "/shop"], [collection.name, path]] : [["Home", "/"], ["Shop", "/shop"]]),
+      itemListLd(products, { name: collection ? `${collection.name} tees` : "All VelvetWolf tees", path }),
+    ],
+  });
 }
 
 // Search words that jump straight to a collection (same rules as before).
@@ -227,7 +234,15 @@ function ProductTile({ product, colorId, feature, eager }) {
 }
 
 export default function ShopPage() {
-  const { products: ctxProducts, searchQuery } = useContext(AppContext);
+  const { products: ctxProducts, searchQuery, setSearchQuery } = useContext(AppContext);
+  const [params] = useSearchParams();
+
+  // /shop?q=... searches (search engines and AI assistants link here: see the
+  // WebSite schema in utils/seo.js)
+  const urlQuery = params.get("q");
+  useEffect(() => {
+    if (urlQuery !== null) setSearchQuery?.(urlQuery.slice(0, 80));
+  }, [urlQuery, setSearchQuery]);
   const loaderData = useLoaderData();
   const products = useMemo(
     () => (ctxProducts.length > 0 ? ctxProducts : loaderData?.products || []),
