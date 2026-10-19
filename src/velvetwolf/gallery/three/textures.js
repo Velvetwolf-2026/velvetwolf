@@ -217,19 +217,58 @@ export function dayRuler(days = 14, { width = 2048, height = 256 } = {}) {
 }
 
 // The side of a ream of paper: fine sheet lines.
-export function paperEdgeTexture() {
-  const c = makeCanvas(64, 256);
+// A printed sheet, as the terms pages: a heading, then grey lines of type in two weights, on
+// paper. Read from a distance it is only texture; there is no legible text to get wrong.
+export function printedSheetTexture(seed = 5, { width = 512, height = 704 } = {}) {
+  const c = makeCanvas(width, height);
   const ctx = c.getContext('2d');
   if (ctx) {
     ctx.fillStyle = '#E8E4DA';
-    ctx.fillRect(0, 0, 64, 256);
-    const r = rng(11);
-    for (let y = 0; y < 256; y += 2 + Math.floor(r() * 2)) {
-      ctx.fillStyle = `rgba(20, 20, 22, ${0.06 + r() * 0.12})`;
-      ctx.fillRect(0, y, 64, 1);
+    ctx.fillRect(0, 0, width, height);
+    const r = rng(seed);
+    const m = 58;
+    let y = 72;
+    ctx.fillStyle = 'rgba(20, 20, 22, 0.62)';
+    ctx.fillRect(m, y, width * (0.38 + r() * 0.2), 16);
+    y += 52;
+    while (y < height - 70) {
+      // a paragraph of lines, the last one short
+      const lines = 3 + Math.floor(r() * 5);
+      for (let k = 0; k < lines && y < height - 70; k++, y += 19) {
+        const w = (width - m * 2) * (k === lines - 1 ? 0.3 + r() * 0.45 : 0.9 + r() * 0.1);
+        ctx.fillStyle = `rgba(20, 20, 22, ${0.24 + r() * 0.1})`;
+        ctx.fillRect(m, y, w, 7);
+      }
+      y += 22;
+      if (r() < 0.3 && y < height - 120) {
+        ctx.fillStyle = 'rgba(20, 20, 22, 0.5)';
+        ctx.fillRect(m, y, width * (0.2 + r() * 0.16), 10);
+        y += 34;
+      }
     }
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
   return t;
+}
+
+// One quiet line set into the face of a plinth, in the display serif's italic.
+export function plinthLine(text, { width = 1600, height = 160 } = {}) {
+  const c = makeCanvas(width, height);
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  function draw() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#E8E4DA';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 300 64px Georgia, "Times New Roman", serif';
+    ctx.fillText(text, width / 2, height / 2);
+    tex.needsUpdate = true;
+  }
+  draw();
+  return { texture: tex, aspect: width / height, draw, redraw: draw };
 }

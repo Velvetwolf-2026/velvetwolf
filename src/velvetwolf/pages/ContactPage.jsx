@@ -35,7 +35,7 @@ const WAYS = [
   { href: BUSINESS.whatsapp.href, b: "WhatsApp", span: BUSINESS.whatsapp.label, small: "Fastest. Usually within 2 hours, in working hours.", ext: true },
   { href: `mailto:${E.info}`, b: "General", span: E.info, small: "Usually within 4 working hours." },
   { href: `mailto:${E.orders}`, b: "Orders", span: E.orders, small: "Changes within 1 hour of ordering, delivery questions." },
-  { href: `mailto:${E.returns}`, b: "Returns", span: E.returns, small: "Returns and size exchanges, within 10 days." },
+  { href: `mailto:${E.returns}`, b: "Returns", span: E.returns, small: "Returns and size exchanges, within 7 days." },
   { href: `mailto:${E.bulk}`, b: "Bulk and corporate", span: E.bulk, small: "10 pieces or more. Quotes within 24 hours." },
   { href: BUSINESS.instagram.href, b: "Instagram", span: BUSINESS.instagram.label, small: "DMs answered within about 6 hours.", ext: true },
 ];

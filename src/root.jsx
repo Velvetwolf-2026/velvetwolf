@@ -119,13 +119,9 @@ export default function VelvetWolfRoot() {
   const [user, setUser] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Phase 2: PWA, Preferences & Notification Center states
+  // PWA install prompt and saved preferences. (Alerts come from real orders and restock alerts:
+  // see account/store.js and the bell in the header.)
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [notifications, setNotifications] = useState([
-    { id: "notif-1", title: "EXCLUSIVE RESTOCK", message: "Silent Luxury Tees in all sizes are back in stock.", category: "restock", time: "2 hours ago", unread: true },
-    { id: "notif-2", title: "PRICE DROP ALERT", message: "Mind Palace Tee is now at ₹1,999 (was ₹2,499).", category: "price-drop", time: "1 day ago", unread: false },
-    { id: "notif-3", title: "NEW DROP ACCESS", message: "AI Tech wear drops are now live for Wolf Pack members.", category: "new-drop", time: "2 days ago", unread: false }
-  ]);
   const [userPreferences, setUserPreferences] = useState({
     sizes: [],
     fits: [],
@@ -135,8 +131,8 @@ export default function VelvetWolfRoot() {
 
   // Hydrate localStorage-backed preferences after mount (unavailable during SSR)
   useEffect(() => {
-    const savedNotifications = localStorage.getItem("vw_notifications");
-    if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+    // the old sample alerts (made-up restocks and price drops) were kept here; clear them out
+    localStorage.removeItem("vw_notifications");
     const savedPreferences = localStorage.getItem("vw_user_preferences");
     if (savedPreferences) setUserPreferences(JSON.parse(savedPreferences));
   }, []);
@@ -157,30 +153,6 @@ export default function VelvetWolfRoot() {
     if (outcome === "accepted") {
       setDeferredPrompt(null);
     }
-  };
-
-  const addNotification = (title, message, category) => {
-    const newNotif = {
-      id: `notif-${Date.now()}`,
-      title,
-      message,
-      category,
-      time: "Just now",
-      unread: true
-    };
-    setNotifications(prev => {
-      const next = [newNotif, ...prev];
-      localStorage.setItem("vw_notifications", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const markAllNotificationsRead = () => {
-    setNotifications(prev => {
-      const next = prev.map(n => ({ ...n, unread: false }));
-      localStorage.setItem("vw_notifications", JSON.stringify(next));
-      return next;
-    });
   };
 
   const saveUserPreferences = (prefs) => {
@@ -214,7 +186,7 @@ export default function VelvetWolfRoot() {
       shop: "/shop",
       collection: "/collections",
       cart: "/cart",
-      wishlist: "/wishlist",
+      wishlist: "/account?tab=saved",
       account: "/account",
       checkout: "/checkout",
       "payment-status": "/payment-status",
@@ -476,7 +448,6 @@ export default function VelvetWolfRoot() {
     orders, customers, cartTotal, cartCount,
     addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast, openShop, clearCart,
     deferredPrompt, triggerPwaInstall,
-    notifications, addNotification, markAllNotificationsRead,
     userPreferences, saveUserPreferences
   };
 

@@ -1,8 +1,11 @@
 // Site header from the VelvetWolf Gallery (2027): the wordmark, Shop, Drop 01,
-// Studio, sign in / account and the cart. Used on every public page (PublicLayout).
+// Studio, sign in / account, the alerts bell (signed in) and the cart. Used on every public page
+// (PublicLayout).
 import { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { AppContext } from "../pages/AppContext";
+import AlertsBell from "./AlertsBell";
+import { TabIcon } from "../account/icons";
 
 export default function GalleryHeader() {
   const { cartCount = 0, setCartOpen, user } = useContext(AppContext);
@@ -19,9 +22,9 @@ export default function GalleryHeader() {
   }, []);
 
   const current = (on) => (on ? "page" : undefined);
-  // Signed in: the person's first name links to the account page.
-  const firstName = String(user?.full_name || user?.name || "").trim().split(/\s+/)[0];
-  const accountLabel = user ? (firstName && !/^mobile$/i.test(firstName) ? firstName : "Account") : "Sign in";
+  // Signed in it just says Account: a person's name in the nav repeats the page (and some
+  // accounts are named after the brand, so the wordmark would say it twice).
+  const accountLabel = user ? "Account" : "Sign in";
 
   return (
     <header className={`vwg-nav${scrolled ? " is-scrolled" : ""}`}>
@@ -35,10 +38,15 @@ export default function GalleryHeader() {
           aria-current={current(user ? pathname === "/account" : pathname === "/login" || pathname === "/signup")}
           title={user ? `Account: ${user.email || ""}` : "Sign in or create an account"}
         >
-          {accountLabel}
+          {/* phones show the icon; the word stays for screen readers */}
+          <span className="nav-label">{accountLabel}</span>
+          <TabIcon name="person" className="nav-icon" />
         </Link>
+        <AlertsBell />
         <button className="cart-btn" type="button" aria-haspopup="dialog" onClick={() => setCartOpen?.(true)}>
-          Cart<span className="cart-count">{cartCount}</span>
+          <span className="nav-label">Cart</span>
+          <TabIcon name="bag" className="nav-icon" />
+          <span className="cart-count">{cartCount}</span>
         </button>
       </nav>
     </header>

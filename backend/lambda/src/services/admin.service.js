@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { signDesignFiles } from "./studio.service.js";
+import { notifyRestock } from "./account.service.js";
 import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
 import { sanitizeFilterValue } from "../utils/postgrest.js";
 
@@ -560,6 +561,8 @@ export async function updateAdminProductInventory(productId, inventoryData) {
     .single();
 
   if (prodError) throw new ApiError(400, `Failed to update product stock: ${prodError.message}`);
+  // back in stock: email anyone waiting on this size (never fails the update)
+  if (!varError && Number(stock) > 0) await notifyRestock(productId, size);
   return { success: true, product };
 }
 

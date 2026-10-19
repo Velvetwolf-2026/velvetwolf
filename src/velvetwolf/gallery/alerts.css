@@ -1,0 +1,36 @@
+/* The alerts bell and its drawer (GalleryHeader). Gallery tokens come from .vwg-nav. */
+.vwg-nav .vwg-bell {
+  position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; margin: 0 -6px;
+  border: 0; background: none; color: inherit; cursor: pointer; border-radius: 2px;
+}
+.vwg-nav .vwg-bell-icon { width: 20px; height: 20px; }
+.vwg-nav .vwg-bell-dot {
+  position: absolute; top: 5px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  display: grid; place-items: center; background: var(--gold); color: #141416; font: 700 9.5px/1 var(--g-body);
+}
+.vwg-nav .vwg-bell:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+
+.vwg-alerts { position: fixed; inset: 0; z-index: 1200; background: rgba(0, 0, 0, 0.55); display: flex; justify-content: flex-end; text-transform: none; letter-spacing: normal; }
+.vwg-alerts *, .vwg-alerts *::before, .vwg-alerts *::after { box-sizing: border-box; }
+.vwg-alerts-panel {
+  width: min(400px, 100vw); height: 100%; display: flex; flex-direction: column; outline: none;
+  background: #111113; border-left: 1px solid rgba(232, 228, 218, 0.12); color: #E8E4DA;
+  font: 400 15px/1.55 "Manrope", "Helvetica Neue", Arial, system-ui, sans-serif;
+  animation: vwg-alerts-in 0.32s cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.vwg-alerts-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px; border-bottom: 1px solid rgba(232, 228, 218, 0.12); }
+.vwg-alerts-head h2 { margin: 0; font: 400 18px/1.2 "Unbounded", "Helvetica Neue", Arial, sans-serif; }
+.vwg-alerts-x { width: 40px; height: 40px; margin: -8px -10px -8px 0; border: 0; background: none; color: inherit; font-size: 26px; line-height: 1; cursor: pointer; }
+.vwg-alerts-empty { margin: 0; padding: 22px; color: rgba(232, 228, 218, 0.7); }
+.vwg-alerts-list { list-style: none; margin: 0; padding: 8px 0; overflow-y: auto; flex: 1; }
+.vwg-alerts-list a { display: grid; gap: 3px; padding: 14px 22px; color: inherit; text-decoration: none; border-left: 2px solid transparent; }
+.vwg-alerts-list li.is-new a { border-left-color: #C9A84C; }
+.vwg-alerts-list b { font-weight: 600; }
+.vwg-alerts-list span { font-size: 13.5px; color: rgba(232, 228, 218, 0.7); }
+.vwg-alerts-foot { padding: 16px 22px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid rgba(232, 228, 218, 0.12); }
+.vwg-alerts-foot a { color: inherit; font: 600 11px/1 "Manrope", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; text-underline-offset: 5px; }
+.vwg-alerts :focus-visible { outline: 2px solid #C9B99B; outline-offset: -2px; }
+@media (hover: hover) { .vwg-alerts-list a:hover { background: rgba(232, 228, 218, 0.04); } }
+@keyframes vwg-alerts-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .vwg-alerts-panel { animation: none; } }
+.vwg-alerts .vwg-alerts-panel:focus, .vwg-alerts .vwg-alerts-panel:focus-visible { outline: none; }

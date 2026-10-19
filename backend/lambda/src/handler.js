@@ -129,7 +129,8 @@ export async function handler(event) {
 
     if (error instanceof ApiError) {
       logWarn("Request failed with ApiError", { requestId, method, route, statusCode: error.statusCode, error });
-      return jsonResponse(error.statusCode, { error: error.message }, {}, event);
+      // unavailable: a feature whose database migration hasn't run yet (the page hides it)
+      return jsonResponse(error.statusCode, { error: error.message, ...(error.unavailable ? { unavailable: true } : {}) }, {}, event);
     }
 
     logError("Unhandled request error", { requestId, method, route, error });

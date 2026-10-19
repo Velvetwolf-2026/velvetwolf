@@ -103,14 +103,17 @@ export default function AiFashionAssistant() {
       {/* Chat bubble button */}
       {!isOpen && (
         <button
+          className="vw-ai-fab"
+          aria-label="Ask the VelvetWolf stylist"
           onClick={() => setIsOpen(true)}
           style={{
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "var(--gold)",
-            color: "var(--obsidian)",
-            border: "none",
+            // quiet: dark glass with a fine edge, so it never outshines the page
+            background: "rgba(17, 17, 19, 0.92)",
+            color: "var(--ivory)",
+            border: "1px solid var(--smoke)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -121,7 +124,7 @@ export default function AiFashionAssistant() {
           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.06)"}
           onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
         >
-          <Icon name="wolf" size={24} color="var(--obsidian)" />
+          <Icon name="wolf" size={24} color="var(--ivory)" />
         </button>
       )}
 

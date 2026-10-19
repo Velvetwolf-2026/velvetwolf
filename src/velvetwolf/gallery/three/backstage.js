@@ -13,16 +13,16 @@
 //   shipping the dispatch runway a floor ruler in business days; Express pulls past Standard
 //   returns  the loop            a dark ring with five markers; the box moves to the step, and
 //                                outside the window the ring shows a calm gap
-//   privacy  the vitrine         a glass case on a steel table, one object per kind of data we
+//   privacy  the vitrine         a glass case on a dark plinth, one object per kind of data we
 //                                keep; pointing at a row lights its object
-//   terms    the stack           a ream on a plinth; sheets drift down and settle as you read
+//   terms    the stack           a pile on a plinth; printed sheets drift down onto it as you read
 //
 // Palette only: concrete, paper, dark metal, glass, white light, gold as an accent (parcels use the
 // Sand colourway). update(t, dt, motion): with motion off (reduced motion, low-end phones)
 // everything jumps to its final state and the loops hold still.
 import * as THREE from 'three';
 import { damp, clamp, lerp } from './util.js';
-import { radialTexture, exhibitTag, dayRuler, paperEdgeTexture } from './textures.js';
+import { radialTexture, exhibitTag, dayRuler, printedSheetTexture, plinthLine } from './textures.js';
 
 export const BACKSTAGE_X = { contact: 102, faq: 116, track: 132, shipping: 152, returns: 170, privacy: 186, terms: 200 };
 
@@ -484,74 +484,95 @@ export function buildBackstage(scene, { shadows = true } = {}) {
   })();
 
   // =====================================================================================
-  // Privacy: the vitrine (a glass case on a steel table)
+  // Privacy: the vitrine (a glass case on a dark plinth, one object per kind of data)
   // =====================================================================================
   const privacy = (() => {
     const g = station('privacy');
     g.add(pool(3.6, 3, 0.12));
-    const W = 1.5, D = 0.72, TOP = 0.86, CH = 0.56;
-    const leg = new THREE.BoxGeometry(0.04, TOP, 0.04);
-    const railX = new THREE.BoxGeometry(W, 0.04, 0.04);
-    const railZ = new THREE.BoxGeometry(0.04, 0.04, D);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(at(mesh(leg, metalDark), sx * (W / 2 - 0.02), TOP / 2, sz * (D / 2 - 0.02)));
-    for (const y of [0.22, TOP - 0.02]) {
-      for (const sz of [-1, 1]) g.add(at(mesh(railX, metalDark), 0, y, sz * (D / 2 - 0.02)));
-      for (const sx of [-1, 1]) g.add(at(mesh(railZ, metalDark), sx * (W / 2 - 0.02), y, 0));
-    }
-    // the white display base and the glass, framed in dark metal
-    g.add(at(mesh(new THREE.BoxGeometry(W - 0.04, 0.03, D - 0.04), new THREE.MeshStandardMaterial({ color: BONE, roughness: 0.95 }), { receive: true }), 0, TOP + 0.015, 0));
-    const caseGeo = new THREE.BoxGeometry(W, CH, D);
-    g.add(at(new THREE.Mesh(caseGeo, glass), 0, TOP + CH / 2, 0));
-    const t = 0.016;
+    const W = 1.5, D = 0.72, TOP = 0.98, CH = 0.6;
+    const plinthMat = new THREE.MeshStandardMaterial({ color: '#232323', roughness: 0.55, metalness: 0.25 });
+    g.add(at(mesh(new THREE.BoxGeometry(W + 0.12, TOP, D + 0.12), plinthMat, { receive: true }), 0, TOP / 2, 0));
+    // one quiet line set into the plinth's face
+    const line = plinthLine('“this is everything we hold, on display.”');
+    const lineW = 1.0;
+    const quote = new THREE.Mesh(new THREE.PlaneGeometry(lineW, lineW / line.aspect), new THREE.MeshBasicMaterial({ map: line.texture, transparent: true, opacity: 0.5, depthWrite: false }));
+    quote.position.set(0, TOP - 0.2, (D + 0.12) / 2 + 0.002);
+    quote.userData.tag = line;
+    g.add(quote);
+    // a dark, glossy floor inside the case
+    g.add(at(mesh(new THREE.BoxGeometry(W - 0.01, 0.004, D - 0.01), new THREE.MeshStandardMaterial({ color: '#0e0e0e', roughness: 0.28, metalness: 0.45 }), { receive: true }), 0, TOP + 0.002, 0));
+    // the glass, with its edges catching the light
+    g.add(at(new THREE.Mesh(new THREE.BoxGeometry(W, CH, D), glass), 0, TOP + CH / 2, 0));
+    const edgeMat = new THREE.MeshBasicMaterial({ color: LIGHT, transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false });
+    const t = 0.007;
     const eX = new THREE.BoxGeometry(W, t, t), eY = new THREE.BoxGeometry(t, CH, t), eZ = new THREE.BoxGeometry(t, t, D);
-    for (const y of [TOP, TOP + CH]) for (const sz of [-1, 1]) g.add(at(mesh(eX, metalDark, { cast: false }), 0, y, sz * D / 2));
-    for (const y of [TOP, TOP + CH]) for (const sx of [-1, 1]) g.add(at(mesh(eZ, metalDark, { cast: false }), sx * W / 2, y, 0));
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(at(mesh(eY, metalDark, { cast: false }), sx * W / 2, TOP + CH / 2, sz * D / 2));
+    for (const y of [TOP + t / 2, TOP + CH]) for (const sz of [-1, 1]) g.add(at(new THREE.Mesh(eX, edgeMat), 0, y, sz * D / 2));
+    for (const y of [TOP + t / 2, TOP + CH]) for (const sx of [-1, 1]) g.add(at(new THREE.Mesh(eZ, edgeMat), sx * W / 2, y, 0));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(at(new THREE.Mesh(eY, edgeMat), sx * W / 2, TOP + CH / 2, sz * D / 2));
 
-    const pinGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.12, 8);
-    const padGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.006, 24);
-    const shadowGeo = new THREE.CircleGeometry(0.06, 24);
+    // round black pedestals
+    const pedMat = new THREE.MeshStandardMaterial({ color: '#141414', roughness: 0.35, metalness: 0.3 });
+    const pedGeo = new THREE.CylinderGeometry(0.15, 0.156, 0.045, 48);
+    const capGeo = new THREE.CylinderGeometry(0.136, 0.14, 0.012, 48);
+    const PED = 0.061;
+    const lamp = role(new THREE.PointLight(LIGHT, 0, 1.4, 2), 'vitrineLight');
+    g.add(lamp);
     const things = {};
     const place = (id, obj, x) => {
-      const pin = at(mesh(pinGeo, metal), x, TOP + 0.03 + 0.06, 0);
-      const pad = at(mesh(padGeo, metal), x, TOP + 0.153, 0);
-      const sh = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.35, depthWrite: false }));
-      sh.rotation.x = -Math.PI / 2; sh.position.set(x, TOP + 0.031, 0);
+      g.add(at(mesh(pedGeo, pedMat, { receive: true }), x, TOP + 0.0265, 0));
+      g.add(at(mesh(capGeo, metal, { receive: true }), x, TOP + 0.055, 0));
+      // each object gets its own materials so it can light on its own
+      const mats = [];
+      obj.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); mats.push(o.material); } });
       const holder = new THREE.Group();
-      holder.position.set(x, TOP + 0.156, 0);
-      holder.userData.y = TOP + 0.156;
+      holder.position.set(x, TOP + PED, 0);
+      holder.userData.y = TOP + PED;
+      obj.scale.multiplyScalar(1.2);
       holder.add(obj);
-      const halo = glow(0.42, 0); halo.position.set(x, TOP + 0.24, 0);
+      const halo = glow(0.55, 0); halo.position.set(x, TOP + PED + 0.1, 0.02);
+      // a soft shaft of light from above, as in the panel
+      const beam = glow(1, 0); beam.scale.set(0.3, 1.0, 1); beam.position.set(x, TOP + CH * 0.62, -0.02);
       role(holder, `thing:${id}`);
       role(halo, `glow:${id}`);
-      g.add(pin, pad, sh, holder, halo);
-      things[id] = { holder, halo, lit: 0 };
+      g.add(holder, halo, beam);
+      things[id] = { holder, halo, beam, mats, x, lit: 0 };
     };
-    // email: an open envelope with the letter showing
+    const standUp = (o) => { o.rotation.x = -0.2; return o; };
+    const crease = new THREE.MeshStandardMaterial({ color: '#b3ad9f', roughness: 0.9 });
+    // email: an envelope standing on its edge, the flap drawn as a V
     const env = new THREE.Group();
-    env.add(at(mesh(new THREE.BoxGeometry(0.2, 0.13, 0.008), paper), 0, 0.065, 0));
-    const letter = at(mesh(new THREE.BoxGeometry(0.17, 0.12, 0.003), paper), 0, 0.11, -0.004); letter.rotation.x = -0.1;
-    const flapShape = new THREE.Shape([new THREE.Vector2(-0.1, 0), new THREE.Vector2(0.1, 0), new THREE.Vector2(0, 0.08)]);
-    const flap = at(mesh(new THREE.ShapeGeometry(flapShape), paper), 0, 0.13, -0.006); flap.rotation.x = -0.5;
-    env.add(letter, flap); env.rotation.y = 0.35;
+    env.add(at(mesh(new THREE.BoxGeometry(0.24, 0.16, 0.014), paper), 0, 0.08, 0));
+    for (const s of [-1, 1]) {
+      const c = at(mesh(new THREE.BoxGeometry(0.142, 0.005, 0.002), crease, { cast: false }), s * 0.058, 0.122, 0.008);
+      c.rotation.z = s * -0.62;
+      env.add(c);
+    }
+    standUp(env); env.rotation.y = 0.18;
     place('contact', env, -0.54);
-    // address: a small house
+    // address: a small house with a chimney
     const house = new THREE.Group();
-    house.add(at(mesh(new THREE.BoxGeometry(0.15, 0.1, 0.13), paper), 0, 0.05, 0));
-    const roof = mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.15, 3), paper);
-    roof.rotation.set(0, 0, Math.PI / 2); roof.rotation.order = 'ZXY'; roof.position.y = 0.14; roof.scale.set(0.7, 1, 1);
-    const door = at(mesh(new THREE.BoxGeometry(0.035, 0.05, 0.004), metalDark), 0, 0.025, 0.067);
-    house.add(roof, door); house.rotation.y = -0.3;
+    house.add(at(mesh(new THREE.BoxGeometry(0.16, 0.12, 0.15), paper), 0, 0.06, 0));
+    // the gable faces front: a triangle extruded front to back
+    const gable = new THREE.Shape([new THREE.Vector2(-0.095, 0), new THREE.Vector2(0.095, 0), new THREE.Vector2(0, 0.085)]);
+    const roofGeo = new THREE.ExtrudeGeometry(gable, { depth: 0.17, bevelEnabled: false });
+    roofGeo.translate(0, 0, -0.085);
+    const roof = at(mesh(roofGeo, paper), 0, 0.12, 0);
+    const chimney = at(mesh(new THREE.BoxGeometry(0.026, 0.06, 0.026), paper), 0.05, 0.17, -0.04);
+    const door = at(mesh(new THREE.BoxGeometry(0.036, 0.06, 0.004), metalDark), 0, 0.03, 0.076);
+    house.add(roof, chimney, door);
+    house.rotation.y = -0.35;
     place('address', house, -0.18);
     // orders: a parcel
-    place('order', makeParcel(0.42), 0.18);
-    // payment reference: a curled receipt
-    const receipt = new THREE.Group();
-    const curl = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 20, 1, true, 0, Math.PI * 1.6), paper);
-    curl.rotation.z = Math.PI / 2; curl.position.y = 0.16;
-    const tail = at(mesh(new THREE.PlaneGeometry(0.12, 0.13), paper), 0, 0.085, 0.03); tail.rotation.x = -0.25;
-    receipt.add(curl, tail); receipt.rotation.y = -0.4;
-    place('payment', receipt, 0.54);
+    const box = makeParcel(0.62); box.rotation.y = 0.12;
+    place('order', box, 0.18);
+    // payment reference: a card with a gold chip
+    const card = new THREE.Group();
+    card.add(at(mesh(new THREE.BoxGeometry(0.22, 0.14, 0.01), paper), 0, 0.07, 0));
+    card.add(at(mesh(new THREE.BoxGeometry(0.036, 0.028, 0.004), gold, { cast: false }), -0.058, 0.08, 0.006));
+    for (const k of [0, 1]) card.add(at(mesh(new THREE.BoxGeometry(0.11 - k * 0.04, 0.006, 0.002), crease, { cast: false }), -0.02 - k * 0.02, 0.035 - k * 0.014, 0.006));
+    standUp(card); card.rotation.y = -0.18;
+    place('payment', card, 0.54);
+
     let focus = null, intro = 0;
     return {
       group: g,
@@ -559,64 +580,77 @@ export function buildBackstage(scene, { shadows = true } = {}) {
       update(t, dt, motion) {
         // after a short intro the case holds still; it only moves when a row is pointed at
         intro = motion ? Math.min(1, intro + dt / 1.6) : 1;
+        let best = null;
         for (const [id, th] of Object.entries(things)) {
           const on = focus === id ? 1 : 0;
           th.lit = motion ? damp(th.lit, on, 6, dt) : on;
           th.holder.position.y = th.holder.userData.y + (1 - intro) * -0.05 + th.lit * 0.05;
           th.halo.material.opacity = th.lit * 0.6;
+          th.beam.material.opacity = th.lit * 0.22;
+          for (const m of th.mats) if (m.emissive) { m.emissive.set(LIGHT); m.emissiveIntensity = th.lit * 0.85; }
+          if (!best || th.lit > best.lit) best = th;
         }
+        lamp.position.set(best.x, TOP + PED + 0.16, 0.12);
+        lamp.intensity = best.lit * 1.6;
       },
     };
   })();
 
   // =====================================================================================
-  // Terms: the stack (a ream on a plinth; sheets drift down and settle as you read)
+  // Terms: the stack (printed sheets drift down onto a pile on a plinth as you read)
   // =====================================================================================
   const terms = (() => {
     const g = station('terms');
     g.add(pool(3.4, 3.4, 0.12));
-    const PH = 0.95;
-    g.add(at(mesh(new THREE.BoxGeometry(1.05, PH, 1.05), concrete, { receive: true }), 0, PH / 2, 0));
-    const edge = paperEdgeTexture();
-    const sideMat = new THREE.MeshStandardMaterial({ map: edge, roughness: 0.9 });
-    const topMat = new THREE.MeshStandardMaterial({ color: BONE, roughness: 0.9 });
-    const REAM = 0.3;
-    const ream = mesh(new THREE.BoxGeometry(0.62, REAM, 0.84), [sideMat, sideMat, topMat, topMat, sideMat, sideMat], { receive: true });
-    ream.position.y = PH + REAM / 2;
-    ream.rotation.y = 0.04;
-    g.add(ream);
-    // sheets curl a little as they fall
-    const sheetGeo = new THREE.PlaneGeometry(0.62, 0.84, 10, 1);
+    const PH = 1.0, PW = 0.95;
+    g.add(at(mesh(new THREE.BoxGeometry(PW, PH, PW), concrete, { receive: true }), 0, PH / 2, 0));
+    // the pile already there: loose sheets, each a little out of true, so the edges show
+    const SW = 0.6, SD = 0.8, STEP = 0.0085, BASE = 28;
+    const pileGeo = new THREE.BoxGeometry(SW, STEP * 0.8, SD);
+    for (let i = 0; i < BASE; i++) {
+      const s = mesh(pileGeo, paper, { receive: true });
+      s.position.set(Math.sin(i * 7.3) * 0.014, PH + STEP * (i + 0.5), Math.cos(i * 5.1) * 0.014);
+      s.rotation.y = Math.sin(i * 3.1) * 0.045;
+      g.add(s);
+    }
+    const PILE = PH + STEP * BASE;
+    // the sheets still to come down: printed pages, curled a little
+    const sheetGeo = new THREE.PlaneGeometry(SW, SD, 12, 1);
     const pos = sheetGeo.attributes.position;
-    for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin((pos.getX(i) / 0.62 + 0.5) * Math.PI) * 0.035);
+    for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin((pos.getX(i) / SW + 0.5) * Math.PI) * 0.05);
     sheetGeo.computeVertexNormals();
-    const N = 13;
+    const printed = [5, 9, 14].map((seed) => new THREE.MeshStandardMaterial({ map: printedSheetTexture(seed), roughness: 0.9, side: THREE.DoubleSide }));
+    const N = 14;
+    // where sheet i rests on the pile, and where it hangs in the column (j-th from the bottom) while unread
+    const restOf = (i) => ({ x: Math.sin(i * 4.3) * 0.016, y: PILE + STEP * (i + 0.5), z: Math.cos(i * 6.7) * 0.016, rx: -Math.PI / 2, ry: Math.sin(i * 2.9) * 0.06, rz: 0, curl: 0.1 });
+    const airOf = (i, j) => ({
+      x: 0.03 + j * 0.022 + Math.sin(i * 2.1) * 0.07, y: PILE + 0.2 + j * 0.22 + j * j * 0.006, z: Math.cos(i * 1.7) * 0.06,
+      rx: -Math.PI / 2 + Math.sin(i * 1.3 + 0.4) * 0.5, ry: Math.cos(i * 2.3) * 0.32, rz: Math.sin(i * 0.9) * 0.9, curl: 1,
+    });
     const sheets = Array.from({ length: N }, (_, i) => {
-      const s = role(mesh(sheetGeo, paper), 'sheet');
-      const rest = new THREE.Vector3(Math.sin(i * 7.3) * 0.015, PH + REAM + 0.004 + i * 0.006, Math.cos(i * 5.1) * 0.015);
-      s.userData = { ...s.userData, rest, restRot: Math.sin(i * 3.7) * 0.05, k: 0, phase: i * 1.7 };
-      s.position.set(rest.x, 4.6, rest.z);
-      s.visible = false;
+      const s = role(mesh(sheetGeo, printed[i % printed.length]), 'sheet');
+      const a = airOf(i, i);
+      s.position.set(a.x, a.y + 1.4, a.z); // the intro: they drift in from above
+      s.rotation.set(a.rx, a.ry, a.rz);
+      s.userData.phase = i * 1.7;
       g.add(s);
       return s;
     });
-    let goal = 1;
+    let settled = 0;
     return {
       group: g,
-      // progress 0..1 through the document: that share of sheets has settled
-      set({ progress = 0 } = {}) { goal = Math.max(1, Math.round(clamp(progress, 0, 1) * N)); },
+      // progress 0..1 through the document: that share of the sheets has come down onto the pile
+      set({ progress = 0 } = {}) { settled = Math.round(clamp(progress, 0, 1) * N); },
       update(t, dt, motion) {
+        const k = (v, to) => (motion ? damp(v, to, 2.4, dt) : to);
         sheets.forEach((s, i) => {
-          const u = s.userData;
-          const target = i < goal ? 1 : 0;
-          // sheets drift down (and back up out of frame when you scroll back), then hold still
-          u.k = motion ? damp(u.k, target, 1.6, dt) : target;
-          s.visible = u.k > 0.002;
-          const fall = 1 - u.k;
-          s.position.set(u.rest.x + Math.sin(u.phase + fall * 5) * fall * 0.5, lerp(u.rest.y, 4.6, fall * fall), u.rest.z + Math.cos(u.phase + fall * 4) * fall * 0.3);
-          // flat when settled: the curl is lost as the sheet lies down
-          s.rotation.set(-Math.PI / 2 + Math.sin(u.phase + fall * 3) * fall * 0.6, Math.cos(u.phase + fall * 4) * fall * 0.5, u.restRot + fall * 1.2);
-          s.scale.z = 0.15 + fall * 0.85;
+          const goal = i < settled ? restOf(i) : airOf(i, i - settled);
+          s.position.set(k(s.position.x, goal.x), k(s.position.y, goal.y), k(s.position.z, goal.z));
+          // a sheet on its way flutters a little; once it arrives it holds still
+          const away = motion ? Math.min(1, Math.abs(s.position.y - goal.y) * 2.5) : 0;
+          const flutter = Math.sin(t * 2.6 + s.userData.phase) * away;
+          s.rotation.set(k(s.rotation.x, goal.rx) + flutter * 0.014, k(s.rotation.y, goal.ry), k(s.rotation.z, goal.rz) + flutter * 0.007);
+          s.scale.z = k(s.scale.z, goal.curl);
         });
       },
     };

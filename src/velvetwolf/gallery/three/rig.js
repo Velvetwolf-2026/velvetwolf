@@ -40,6 +40,11 @@ export const STATIONS = {
   studio:    { target: [72, 1.5, 0],     dir: [0.0, 0.1, 1],    frame: [2.5, 2.9], focus: [72, 1.62, 0],  spot: 0.42, area: area('panel', [0.04, 0.075, 0.96, 0.43], [0.1, 0.07, 0.9, 0.48]) },
   // payment status: the ordered tee on the product stage, the status card beside it
   payment:   { target: [60, 1.5, 0],     dir: [0.18, 0.1, 1],   frame: [3.6, 3.6], focus: [60, 1.62, 0],  spot: 0.48, area: area([0.04, 0.1, 0.52, 0.94], [0.2, 0.075, 0.8, 0.34], [0.28, 0.07, 0.72, 0.36]) },
+  // the account page: the room in the top band (rail, framed wall, card on its plinth), and the fit twin's form
+  den:       { target: [223.9, 1.55, 0],  dir: [0.12, 0.2, 1],   frame: [6.6, 3.4], focus: [224.6, 1.5, -0.3], spot: 0.75, area: area([0.02, 0.085, 0.98, 0.44], [0.0, 0.07, 1.0, 0.255], [0.02, 0.08, 0.98, 0.4]) },
+  denFit:    { target: [228.8, 1.66, 0],  dir: [0.22, 0.06, 1],  frame: [2.4, 2.35], focus: [228.8, 1.7, 0],   spot: 0.42, area: area([0.02, 0.085, 0.98, 0.44], [0.0, 0.07, 1.0, 0.255], [0.02, 0.08, 0.98, 0.4]) },
+  // several tees ordered: the cards fan out, so the frame is wider
+  paymentMany: { target: [60, 1.55, 0],  dir: [0.1, 0.08, 1],   frame: [4.3, 2.7], focus: [60, 1.62, 0],  spot: 0.7,  area: area([0.02, 0.1, 0.56, 0.94], [0.0, 0.075, 1.0, 0.34], [0.1, 0.07, 0.9, 0.36]) },
   // size guide: the line-up of sizes; the camera centres on the chosen tee (the engine moves
   // target/focus x) and frames its neighbours either side for comparison
   sizeGuide: { target: [84, 1.95, 0.0],  dir: [0.0, 0.06, 1],   frame: [5.4, 3.35], focus: [84, 1.62, 0.1], spot: 0.42, area: 'panel', areaStack: true },
@@ -49,8 +54,8 @@ export const STATIONS = {
   track:     { target: [131.9, 1.0, -1.4], dir: [0.6, 0.34, 1], frame: [5.2, 4.0], focus: [132, 0.4, -0.8], spot: 1.0, area: area([0.46, 0.1, 0.99, 0.66], [0.0, 0.07, 1.0, 0.36], [0.04, 0.06, 0.96, 0.4]) },
   shipping:  { target: [152.1, 0.3, 0], dir: [-0.22, 0.75, 1], frame: [10.2, 2.6], focus: [152, 0.3, 0],   spot: 1.0, area: area([0.46, 0.1, 0.99, 0.66], [0.0, 0.07, 1.0, 0.36], [0.04, 0.06, 0.96, 0.4]) },
   returns:   { target: [170, 0.15, 0.1], dir: [0.0, 0.8, 1],    frame: [4.0, 3.0],  focus: [170, 0.2, 0],   spot: 0.8, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
-  privacy:   { target: [186, 0.8, 0],    dir: [0.3, 0.2, 1],    frame: [2.0, 1.75], focus: [186, 1.1, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
-  terms:     { target: [200, 1.3, 0],    dir: [-0.25, 0.22, 1], frame: [1.6, 2.7],  focus: [200, 1.2, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  privacy:   { target: [186, 1.2, 0],    dir: [0.3, 0.16, 1],   frame: [1.85, 1.3], focus: [186, 1.25, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
+  terms:     { target: [200, 1.72, 0],   dir: [-0.22, 0.16, 1], frame: [1.25, 2.45],  focus: [200, 1.25, 0],   spot: 0.48, area: area([0.5, 0.1, 0.98, 0.66], [0.06, 0.07, 0.94, 0.36], [0.16, 0.06, 0.84, 0.4]) },
   // help pages: the hall as a dim backdrop behind the page header
   route:     { target: [26, 1.7, -0.5],  dir: [-0.85, 0.16, 0.5], frame: [5, 3.4], focus: [26, 1.62, 0], spot: 0.6,  area: area([0.42, 0.06, 1.0, 0.62], [0.0, 0.04, 1.0, 0.4]) },
   frames:    { target: [12, 1.7, 0],     dir: [0.42, 0.1, 1],   frame: [10, 3.6], focus: [12, 1.6, 0],  spot: 0.66, area: area([0.42, 0.06, 1.0, 0.62], [0.0, 0.04, 1.0, 0.4]) },

@@ -7,7 +7,7 @@ import { useGallery } from "../gallery/galleryContext";
 import { RETURNS, BUSINESS } from "../gallery/help/content";
 
 export function meta() {
-  return [{ title: "Returns · VelvetWolf" }, { name: "description", content: "10 days to change your mind. Damaged or faulty is always on us." }];
+  return [{ title: "Returns · VelvetWolf" }, { name: "description", content: "7 days to change your mind. Damaged or faulty is always on us." }];
 }
 
 const E = BUSINESS.emails;

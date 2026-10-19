@@ -1,0 +1,281 @@
+/* The account page ("The Den"). Gallery tokens only (gallery.css): hall, panel, bone, lines,
+   gold as an accent. The top band is a window onto the room in the hall; everything below it
+   sits on the hall colour so it reads cleanly over the canvas. */
+
+.vwg.view-den { min-height: 100vh; }
+.vwg .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- the band and the body ---------- */
+.vwg .den-band { height: clamp(260px, 44vh, 500px); }
+.vwg .den-body { position: relative; background: var(--hall); padding: 0 var(--gutter) 96px; }
+.vwg .den-body::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -90px; height: 90px; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(10, 10, 11, 0), var(--hall));
+}
+.vwg .den-wrap { max-width: 1120px; margin: 0 auto; }
+.vwg .den-head { display: flex; align-items: baseline; gap: 18px; padding-top: 18px; }
+.vwg .den-title { margin: 0; font: 300 clamp(26px, 3vw, 40px)/1.1 var(--g-display); letter-spacing: -0.02em; }
+.vwg .den-out { display: grid; gap: 16px; justify-items: start; max-width: 520px; padding: 24px 0 64px; }
+
+/* ---------- tabs: a row on wide screens, a bottom bar on phones ---------- */
+.vwg .den-tabs {
+  position: sticky; top: var(--nav-h); z-index: 5; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  margin: 14px 0 28px; border-bottom: 1px solid var(--line); background: var(--hall);
+}
+.vwg .den-tabs::-webkit-scrollbar { display: none; }
+.vwg .den-tabs a {
+  display: inline-flex; align-items: center; gap: 8px; padding: 15px 16px; margin-bottom: -1px; white-space: nowrap;
+  border-bottom: 1px solid transparent; color: var(--bone-3); text-decoration: none;
+  font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.18em; text-transform: uppercase;
+  transition: color 0.2s, border-color 0.2s;
+}
+.vwg .den-tabs a[aria-current="page"] { color: var(--bone); border-bottom-color: var(--bone); }
+.vwg .den-tabs .den-icon { display: none; }
+@media (hover: hover) { .vwg .den-tabs a:hover { color: var(--bone); } }
+
+/* ---------- shared bits ---------- */
+.vwg .den-loading { margin: 0; color: var(--bone-3); font-size: 14px; }
+.vwg .den-calm { margin: 0; color: var(--bone-2); }
+.vwg .den-calm a { color: var(--bone); text-underline-offset: 3px; }
+.vwg .den-empty { display: grid; gap: 12px; justify-items: start; padding: 24px 0 8px; }
+.vwg .den-empty p { margin: 0; }
+.vwg .den-empty-h { font: 300 22px/1.2 var(--g-display); }
+.vwg .den-inline-error { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: #EE9A80; }
+.vwg .den-inline-error p { margin: 0; }
+.vwg .den-wait { font-size: 13px; color: var(--bone-2); }
+.vwg .den-chip {
+  min-height: 34px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 2px; background: transparent;
+  color: var(--bone); font: 600 12px/1 var(--g-body); letter-spacing: 0.04em; cursor: pointer;
+}
+.vwg .den-chip:disabled { cursor: default; color: var(--bone-3); }
+@media (hover: hover) { .vwg .den-chip:hover:not(:disabled) { border-color: var(--bone); } }
+
+/* ---------- Den: the member card and what needs you ---------- */
+.vwg .den-home { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 44px; align-items: start; }
+.vwg .den-card-wrap { display: grid; justify-items: start; gap: 10px; perspective: 1000px; }
+.vwg .den-card {
+  --rx: 0deg; --ry: 0deg; --sx: 30%; --sy: 20%;
+  position: relative; width: min(440px, 100%); aspect-ratio: 1.586; margin: 0; padding: 22px 24px;
+  display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; border-radius: 16px;
+  border: 1px solid rgba(232, 228, 218, 0.2);
+  /* dark brushed metal */
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
+    linear-gradient(135deg, #2b2b2e 0%, #161618 46%, #202023 100%);
+  box-shadow: 0 34px 60px -34px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.45s var(--ease);
+}
+/* the glass over it */
+.vwg .den-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 38%, transparent 60%);
+}
+.vwg .den-card-sheen {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(circle at var(--sx) var(--sy), rgba(255, 248, 236, 0.16), transparent 46%);
+}
+.vwg .den-card-top { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.vwg .den-card-brand { font: 600 11px/1 var(--g-body); letter-spacing: 0.34em; color: var(--bone-2); }
+.vwg .den-card-no { font: 300 15px/1 var(--g-display); letter-spacing: 0.08em; color: var(--gold); }
+.vwg .den-card-name { position: relative; align-self: end; margin: 0 0 14px; font: 300 clamp(20px, 2.3vw, 28px)/1.15 var(--g-display); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.vwg .den-card-meta { position: relative; display: flex; flex-wrap: wrap; gap: 8px 30px; margin: 0; }
+.vwg .den-card-meta dt { font: 600 9.5px/1.3 var(--g-body); letter-spacing: 0.22em; text-transform: uppercase; color: var(--bone-3); }
+.vwg .den-card-meta dd { margin: 3px 0 0; font-size: 14px; color: var(--bone); }
+.vwg .den-card-meta a { color: var(--bone); text-underline-offset: 3px; }
+.vwg .den-card-gyro { font-size: 12.5px; }
+
+.vwg .den-needs { display: grid; gap: 14px; }
+.vwg .den-needs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.vwg .den-need {
+  display: grid; gap: 8px; width: 100%; padding: 16px 18px; text-align: left; text-decoration: none; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 2px; background: var(--panel); color: inherit; font: inherit;
+  transition: border-color 0.2s;
+}
+.vwg .den-need-h { font-weight: 600; color: var(--bone); }
+@media (hover: hover) { .vwg .den-need:hover { border-color: var(--line-2); } }
+.vwg .den-admin { margin-top: 6px; }
+
+/* ---------- the route: seven stages, the real one marked ---------- */
+.vwg .den-route { display: grid; gap: 6px; }
+.vwg .den-route ol { --p: 0; position: relative; display: flex; justify-content: space-between; list-style: none; margin: 4px 0; padding: 0; max-width: 360px; }
+.vwg .den-route ol::before, .vwg .den-route ol::after { content: ""; position: absolute; top: 50%; left: 4px; height: 1px; transform: translateY(-50%); }
+.vwg .den-route ol::before { right: 4px; background: var(--line-2); }
+.vwg .den-route ol::after { width: calc((100% - 8px) * var(--p)); background: var(--bone); }
+.vwg .den-route li { position: relative; z-index: 1; width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--hall); }
+.vwg .den-route li.is-done { background: var(--bone); border-color: var(--bone); }
+.vwg .den-route li.is-now { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.16); }
+.vwg .den-route-now { margin: 0; font-size: 13px; color: var(--bone-2); }
+.vwg .den-route.is-compact ol { max-width: 260px; }
+.vwg .den-route-off { margin: 0; font-size: 13px; color: var(--bone-3); }
+
+/* ---------- Orders ---------- */
+.vwg .den-orders { display: grid; gap: 16px; }
+.vwg .den-order { display: grid; gap: 16px; padding: 22px; border: 1px solid var(--line); background: var(--panel); }
+.vwg .den-order-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 14px; }
+.vwg .den-order-head h3 { margin: 0; font: 400 18px/1.2 var(--g-display); }
+.vwg .den-order-note { margin: 0; font-size: 14px; color: var(--bone-2); }
+.vwg .den-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.vwg .den-line { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding-top: 12px; border-top: 1px solid var(--line); }
+.vwg .den-line-photo { display: block; width: 64px; aspect-ratio: 4 / 5; overflow: hidden; background: var(--raise); }
+.vwg .den-line-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vwg .den-line-info { display: grid; gap: 4px; min-width: 0; }
+.vwg .den-line-info .muted { font-size: 13px; }
+.vwg .den-line-name { font-weight: 600; color: var(--bone); text-decoration: none; overflow-wrap: anywhere; }
+.vwg a.den-line-name { text-underline-offset: 3px; }
+@media (hover: hover) { .vwg a.den-line-name:hover { text-decoration: underline; } }
+.vwg .den-line-end { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.vwg .den-line-price { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vwg .den-fit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--bone-2); }
+.vwg .den-fit-done { margin: 4px 0 0; font-size: 13px; color: var(--bone-2); }
+.vwg .den-order-foot { padding-top: 4px; }
+
+/* ---------- Saved ---------- */
+.vwg .den-saved-wrap { display: grid; gap: 18px; }
+.vwg .den-saved-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 16px; }
+.vwg .den-saved { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 16px; padding: 14px; border: 1px solid var(--line); background: var(--panel); }
+.vwg .den-saved-photo { display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--raise); }
+.vwg .den-saved-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vwg .den-saved-body { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.vwg .den-saved-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.vwg .den-sizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.vwg .den-size {
+  min-width: 44px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 2px;
+  background: transparent; color: var(--bone); font: 600 12px/1 var(--g-body); letter-spacing: 0.06em; cursor: pointer;
+}
+.vwg .den-size.is-out { color: var(--bone-3); text-decoration: line-through; }
+.vwg .den-size[aria-checked="true"] { background: var(--bone); color: var(--noir); border-color: var(--bone); }
+.vwg .den-back { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.vwg .den-back a { color: var(--bone); text-underline-offset: 3px; }
+.vwg .den-share { max-width: 640px; }
+.vwg .den-share-url { width: 100%; font-size: 14px !important; }
+
+/* ---------- Fit & style ---------- */
+.vwg .den-fit-wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.vwg .den-twin-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.vwg .den-twin-out { display: grid; gap: 14px; }
+.vwg .den-twin-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vwg .den-twin-size {
+  display: grid; gap: 6px; align-content: start; padding: 14px; text-align: left; cursor: pointer;
+  border: 1px solid var(--line-2); border-radius: 2px; background: transparent; color: var(--bone-2); font: 400 13px/1.45 var(--g-body);
+}
+.vwg .den-twin-size b { font: 300 26px/1 var(--g-display); color: var(--bone); }
+.vwg .den-twin-size[aria-checked="true"] { border-color: var(--bone); background: rgba(232, 228, 218, 0.04); }
+.vwg .den-twin-verdict { margin: 0; font: 400 18px/1.3 var(--g-display); }
+.vwg .den-twin-verdict b { font-weight: 400; color: var(--gold); }
+.vwg .den-wt-name { margin: 0; font: 300 clamp(26px, 3vw, 38px)/1.1 var(--g-display); letter-spacing: -0.02em; }
+.vwg .den-wt-line { margin: 0; font-size: 17px; color: var(--bone); }
+.vwg .den-wt .muted b { color: var(--bone-2); font-weight: 600; }
+
+/* ---------- Settings ---------- */
+.vwg .den-settings { display: grid; max-width: 780px; }
+.vwg .den-set { display: grid; gap: 14px; padding: 28px 0; border-top: 1px solid var(--line); }
+.vwg .den-set:first-child { border-top: 0; padding-top: 0; }
+.vwg .den-set-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 38px; }
+.vwg .den-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.vwg .den-span-2 { grid-column: 1 / -1; }
+.vwg .den-email { display: grid; gap: 6px; justify-items: start; padding-top: 6px; }
+.vwg .den-email p { margin: 0; }
+.vwg .den-email-form { display: grid; gap: 12px; width: min(100%, 440px); margin-top: 6px; }
+.vwg .den-addr-form { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--line); background: var(--panel); }
+.vwg .den-check { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--bone-2); cursor: pointer; }
+.vwg .den-check input { accent-color: var(--bone); width: 16px; height: 16px; margin: 0; }
+.vwg .den-addrs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.vwg .den-addrs li { display: grid; gap: 8px; align-content: start; padding: 16px; border: 1px solid var(--line); background: var(--panel); }
+.vwg .den-addrs li.is-default { border-color: var(--line-2); }
+.vwg .den-addrs p { margin: 0; font-size: 14px; line-height: 1.55; }
+.vwg .den-prefs { list-style: none; margin: 0; padding: 0; display: grid; }
+.vwg .den-prefs li { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.vwg .den-prefs li > :first-child { display: grid; gap: 4px; cursor: pointer; }
+.vwg .den-prefs .muted { font-size: 13px; }
+.vwg .den-pref-fixed { flex: none; font-size: 12px; color: var(--bone-3); }
+.vwg .den-switch {
+  appearance: none; position: relative; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 13px; cursor: pointer;
+  border: 1px solid var(--line-2); background: rgba(232, 228, 218, 0.08); transition: background 0.2s, border-color 0.2s;
+}
+.vwg .den-switch::before {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bone-2); transition: transform 0.2s var(--ease), background 0.2s;
+}
+.vwg .den-switch:checked { background: var(--bone); border-color: var(--bone); }
+.vwg .den-switch:checked::before { transform: translateX(18px); background: var(--noir); }
+.vwg .den-switch:disabled { opacity: 0.6; cursor: default; }
+.vwg .den-del-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.vwg .den-del-row input { flex: 1 1 160px; letter-spacing: 0.3em; }
+.vwg .den-delete .info-h { color: #EE9A80; }
+
+/* ---------- a shared list ---------- */
+.vwg .den-band.is-short { height: clamp(140px, 24vh, 260px); }
+.vwg .den-shared-head { padding-bottom: 8px; }
+.vwg .den-shared-note { margin: 0 0 24px; }
+.vwg .den-shared-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 18px; }
+.vwg .den-shared-grid a { display: grid; gap: 8px; color: inherit; text-decoration: none; }
+.vwg .den-shared-grid .den-saved-photo { aspect-ratio: 4 / 5; }
+
+/* headings that take focus when a step changes (for screen readers) don't need a ring */
+.vwg .den-title:focus, .vwg .quiz-type:focus { outline: none; }
+
+/* ---------- the style quiz ---------- */
+.vwg .quiz-wrap { max-width: 980px; padding-top: 18px; }
+.vwg .quiz-head { display: grid; gap: 10px; margin-bottom: 22px; }
+.vwg .quiz-head .den-title { font-size: clamp(22px, 2.6vw, 34px); }
+.vwg .quiz-progress { height: 1px; background: var(--line-2); overflow: hidden; }
+.vwg .quiz-progress span { display: block; height: 100%; background: var(--bone); transform-origin: left; transition: transform 0.4s var(--ease); }
+.vwg .quiz-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.vwg .quiz-pick {
+  display: block; width: 100%; aspect-ratio: 4 / 5; padding: 0; overflow: hidden; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 2px; background: var(--raise);
+  transition: border-color 0.2s, transform 0.3s var(--ease);
+}
+.vwg .quiz-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (hover: hover) { .vwg .quiz-pick:hover { border-color: var(--bone); transform: translateY(-3px); } }
+.vwg .quiz-back { margin-top: 16px; }
+.vwg .quiz-intro, .vwg .quiz-result { display: grid; gap: 14px; justify-items: start; max-width: 560px; padding: 12px 0 40px; }
+.vwg .quiz-type { margin: 0; font: 300 clamp(34px, 5vw, 64px)/1.02 var(--g-display); letter-spacing: -0.03em; }
+.vwg .quiz-result .muted b { color: var(--bone-2); font-weight: 600; }
+@media (max-width: 720px) {
+  .vwg .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .vwg .den-card { transform: none !important; transition: none; }
+  .vwg .den-card-sheen { display: none; }
+}
+
+/* ---------- tablets ---------- */
+@media (max-width: 1024px) {
+  .vwg .den-home { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .vwg .den-fit-wrap { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- phones: the band becomes a strip, the tabs a bar at the bottom ---------- */
+@media (max-width: 720px) {
+  .vwg .den-band { height: clamp(150px, 26vh, 230px); }
+  .vwg .den-body { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .vwg .den-tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 950; margin: 0; gap: 0; justify-content: space-around; overflow: visible;
+    padding: 4px max(4px, env(safe-area-inset-left, 0px)) calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line); border-bottom: 0;
+    background: rgba(10, 10, 11, 0.96); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+  .vwg .den-tabs a {
+    flex: 1 1 0; min-width: 0; min-height: 56px; flex-direction: column; justify-content: center; gap: 5px; padding: 6px 2px; margin: 0;
+    border: 0; font-size: 10.5px; letter-spacing: 0.04em; text-transform: none;
+  }
+  .vwg .den-tabs a[aria-current="page"] { box-shadow: inset 0 2px 0 var(--bone); }
+  .vwg .den-tabs .den-icon { display: block; }
+  .vwg .den-head { padding-top: 10px; }
+  .vwg .den-panel { padding-top: 18px; }
+  .vwg .den-line { grid-template-columns: 56px minmax(0, 1fr); }
+  .vwg .den-line-photo { width: 56px; }
+  .vwg .den-line-end { grid-column: 2; justify-items: start; text-align: left; }
+  .vwg .den-saved { grid-template-columns: 92px minmax(0, 1fr); }
+  .vwg .den-grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .vwg .den-twin-compare { grid-template-columns: minmax(0, 1fr); }
+  .vwg .den-order { padding: 18px; }
+  .vwg .den-shared-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  /* the stylist button and the footer clear the bar */
+  body:has(.view-den) .vw-ai { bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
+  body:has(.view-den) .vwg-foot { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+}
