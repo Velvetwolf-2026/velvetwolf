@@ -2,6 +2,7 @@ import { useContext, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
+import { isValidEmail, isValidName } from "../utils/validate";
 import Icon from "../components/Icon";
 import { HeroHeader } from "../styles/shared";
 
@@ -28,8 +29,7 @@ export default function BulkOrderPage() {
     }
   }, [user]);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const nameRegex = /^[a-zA-Z\s.'-]{2,}$/;
+  // shared checks (utils/validate.js), the same ones the backend runs
   const orgRegex = /^[a-zA-Z0-9&().,\s'-]{2,}$/;
 
   const updateField = (key, value) => {
@@ -67,9 +67,9 @@ export default function BulkOrderPage() {
     if (!form.org.trim())                            return "Please enter organization name.";
     if (!orgRegex.test(form.org.trim()))             return "Please enter a valid organization name.";
     if (!form.contact.trim())                        return "Please enter contact person name.";
-    if (!nameRegex.test(form.contact.trim()))        return "Please enter a valid contact person name.";
+    if (!isValidName(form.contact))        return "Please enter a valid contact person name.";
     if (!form.email.trim())                          return "Please enter email address.";
-    if (!emailRegex.test(form.email.trim()))         return "Please enter a valid email address.";
+    if (!isValidEmail(form.email))         return "Please enter a valid email address.";
     if (form.qty === "" || form.qty === null)         return "Please enter quantity.";
     if (Number(form.qty) < 5)                        return "Minimum quantity should be 5.";
     if (!form.message.trim())                        return "Please enter product requirements.";

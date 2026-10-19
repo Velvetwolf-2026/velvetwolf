@@ -726,3 +726,18 @@
 
 /* full-screen tools (Studio, size guide): no footer while the panel is pinned beside the stage */
 @media (min-width: 1025px) { .vwg-foot.is-tool { display: none; } }
+
+/* footer: the brand's social pages */
+.vwg-foot .foot-social { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; }
+.vwg-foot .foot-social a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--bone-2); }
+.vwg-foot .foot-social svg { flex: none; }
+@media (hover: hover) { .vwg-foot .foot-social a:hover { color: var(--bone); } }
+
+/* product page: save for later (Account > Saved) */
+.vwg .vwg-save {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  background: none; border: 0; cursor: pointer; color: var(--bone-2); font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.14em; text-transform: uppercase;
+}
+.vwg .vwg-save:disabled { opacity: 0.6; cursor: default; }
+@media (hover: hover) { .vwg .vwg-save:hover { color: var(--bone); } }
+.vwg .vwg-save[aria-pressed="true"] { color: var(--sand); }

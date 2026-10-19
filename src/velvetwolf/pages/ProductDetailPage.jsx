@@ -83,7 +83,8 @@ export default function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const loaderData = useLoaderData();
-  const { addToCart, products, showToast } = useContext(AppContext);
+  const { addToCart, products, showToast, wishlist = [], toggleWishlist } = useContext(AppContext);
+  const [saving, setSaving] = useState(false);
 
   const [product, setProduct] = useState(loaderData?.product || null);
   const [color, setColor] = useState("");
@@ -143,6 +144,8 @@ export default function ProductDetailPage() {
     .filter((p) => p.id !== product.id && p.isActive !== false)
     .sort((a, b) => Number(b.collection === product.collection) - Number(a.collection === product.collection))
     .slice(0, 4);
+
+  const isSaved = wishlist.some((w) => w.id === product.id);
 
   const step = (d) => setIndex((i) => (photos.length ? (i + d + photos.length) % photos.length : 0));
 
@@ -260,6 +263,12 @@ export default function ProductDetailPage() {
                 onClick={async () => { if (await add()) navigate("/checkout"); }}
               >
                 Buy now
+              </button>
+              {/* Saved tees live in Account > Saved (sign-in needed, so the list follows you) */}
+              <button type="button" className="text-btn vwg-save" aria-pressed={isSaved} disabled={saving}
+                onClick={async () => { setSaving(true); try { await toggleWishlist(product); } finally { setSaving(false); } }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>
+                <span>{isSaved ? "Saved to your list" : "Save for later"}</span>
               </button>
             </div>
             <p className="fine" style={{ textAlign: "center" }}>Free standard delivery across India. Express at checkout. Prepaid only.</p>

@@ -1,31 +1,19 @@
 import { z } from "zod";
+import { emailField, nameField } from "./fields.js";
 
 export const signupSchema = z.object({
-  name: z
-    .string({ required_error: "Name is required" })
-    .min(1, "Name is required")
-    .max(100, "Name must be 100 characters or fewer")
-    .trim(),
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  name: nameField(),
+  email: emailField(),
   recaptchaToken: z.string().optional(),
 });
 
 export const loginSchema = z.object({
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  email: emailField(),
   recaptchaToken: z.string().optional(),
 });
 
 export const verifyOtpSchema = z.object({
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  email: emailField(),
   otp: z
     .union([z.string(), z.number()])
     .transform(String)
@@ -34,10 +22,7 @@ export const verifyOtpSchema = z.object({
 });
 
 export const resendOtpSchema = z.object({
-  email: z
-    .string({ required_error: "Email is required" })
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
+  email: emailField(),
   kind: z.string().optional(),
   type: z.string().optional(),
 });

@@ -595,3 +595,30 @@ CREATE TABLE IF NOT EXISTS public.account_settings (
 ALTER TABLE public.account_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow service role all account_settings" ON public.account_settings;
 CREATE POLICY "Allow service role all account_settings" ON public.account_settings FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- MIGRATION: VERIFIED MOBILE NUMBERS
+-- ==========================================
+-- A mobile number counts as the account's own only once it has been proved
+-- with an SMS code (signing in with it, or confirming it in Settings). Phone
+-- sign-in then opens that account instead of creating a second, mobile-only
+-- one. Until this runs, phone sign-in behaves as before and changing a number
+-- in Settings says it isn't available yet.
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMP WITH TIME ZONE;
+
+-- Mobile-only accounts proved their number when they signed in with it.
+UPDATE public.profiles p
+SET phone = split_part(u.email, '@', 1), phone_verified_at = timezone('utc'::text, now())
+FROM public.users u
+WHERE u.id = p.id
+  AND u.email LIKE '%@mobile.velvetwolf.in'
+  AND p.phone_verified_at IS NULL;
+INSERT INTO public.profiles (id, phone, phone_verified_at)
+SELECT u.id, split_part(u.email, '@', 1), timezone('utc'::text, now())
+FROM public.users u
+WHERE u.email LIKE '%@mobile.velvetwolf.in'
+  AND NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id);
+
+-- One account per confirmed number.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_verified_phone
+    ON public.profiles(phone) WHERE phone_verified_at IS NOT NULL;

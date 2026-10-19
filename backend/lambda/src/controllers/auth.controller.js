@@ -8,6 +8,7 @@ import { validate } from "../middleware/validate.js";
 import { jsonResponse, redirectResponse, ApiError, getClientIp } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
 import { requireAuth } from "../middleware/auth.js";
+import { getProfileById } from "../services/profile.service.js";
 import { verifyRecaptcha } from "../services/recaptcha.service.js";
 import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 
@@ -114,7 +115,24 @@ export async function logout(body, event) {
 
 export async function getSession(body, event) {
   try {
-    const user = await requireAuth(event);
+    const session = await requireAuth(event);
+    // The token only carries id, email, name and role; the page also needs the
+    // saved name and mobile number (Settings shows them after a reload).
+    let user = session;
+    try {
+      const profile = await getProfileById(session.id);
+      if (profile) {
+        user = {
+          ...session,
+          email: profile.email || session.email,
+          name: profile.name || session.name,
+          full_name: profile.full_name || null,
+          phone: profile.phone || null,
+        };
+      }
+    } catch {
+      // the profile is extra; the session itself is valid
+    }
     // Refresh the CSRF cookie; the JWT itself is never echoed back (it stays
     // in the HttpOnly cookie).
     const headers = {

@@ -34,3 +34,36 @@
 @keyframes vwg-alerts-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .vwg-alerts-panel { animation: none; } }
 .vwg-alerts .vwg-alerts-panel:focus, .vwg-alerts .vwg-alerts-panel:focus-visible { outline: none; }
+
+/* The account menu (AccountMenu.jsx): the Account item opens it when signed in. */
+.vwg-nav .vwg-acct { position: relative; }
+.vwg-nav .vwg-acct-btn {
+  font: 600 var(--t-label)/1 var(--g-body); letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--bone-2); padding-block: 10px; background: none; border: 0; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
+.vwg-nav .vwg-acct-btn[aria-current], .vwg-nav .vwg-acct-btn[aria-expanded="true"] { color: var(--bone); }
+.vwg-nav .vwg-acct-btn[aria-current] .nav-label { text-decoration: underline; text-underline-offset: 7px; text-decoration-thickness: 1px; }
+.vwg-acct-menu {
+  position: absolute; top: calc(100% + 10px); right: -8px; z-index: 900; width: min(280px, calc(100vw - 32px));
+  background: #111113; border: 1px solid rgba(232, 228, 218, 0.14); border-radius: 2px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  color: #E8E4DA; text-transform: none; letter-spacing: normal; font: 400 14px/1.5 "Manrope", "Helvetica Neue", Arial, system-ui, sans-serif;
+  animation: vwg-acct-in 0.18s ease-out;
+}
+.vwg-acct-who { margin: 0; padding: 14px 16px; border-bottom: 1px solid rgba(232, 228, 218, 0.12); display: grid; gap: 2px; }
+.vwg-acct-who span { font-size: 12px; color: rgba(232, 228, 218, 0.6); }
+.vwg-acct-who b { font-weight: 600; overflow-wrap: anywhere; }
+.vwg-acct-menu ul { list-style: none; margin: 0; padding: 6px 0; }
+.vwg-nav .vwg-acct-menu a {
+  display: flex; align-items: center; min-height: 44px; padding: 0 16px; color: inherit; text-decoration: none;
+  font: 400 14px/1.4 "Manrope", "Helvetica Neue", Arial, sans-serif; letter-spacing: normal; text-transform: none;
+}
+.vwg-acct-out {
+  display: block; width: 100%; min-height: 46px; padding: 0 16px; text-align: left; cursor: pointer;
+  background: none; border: 0; border-top: 1px solid rgba(232, 228, 218, 0.12); color: inherit; font: 600 14px/1 "Manrope", sans-serif;
+}
+.vwg-acct-menu :focus-visible { outline: 2px solid #C9B99B; outline-offset: -2px; }
+@media (hover: hover) { .vwg-nav .vwg-acct-menu a:hover, .vwg-acct-out:hover { background: rgba(232, 228, 218, 0.05); } }
+@media (pointer: coarse) { .vwg-nav .vwg-acct-btn { min-height: 44px; padding-block: 0; } }
+@keyframes vwg-acct-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .vwg-acct-menu { animation: none; } }

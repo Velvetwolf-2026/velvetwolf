@@ -4,12 +4,15 @@ import { verifyWebhookSignature } from "../services/cashfree.js";
 import { getOptionalAuth } from "../middleware/auth.js";
 import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 import * as studioService from "../services/studio.service.js";
+import { checkoutAddressSchema } from "../schemas/common.schema.js";
+import { validate } from "../middleware/validate.js";
 
 export async function createSession(body, event) {
   // Can be called by guest or logged in user. The order owner comes from the
   // verified session token only — never from the request body, otherwise
   // anyone could attach an order to another customer's account.
-  const { cart, address, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with } = body;
+  const { cart, total_amount, subtotal, payment_method, couponCode, meta, delivery, pay_with, checkout_key } = body;
+  const address = validate(checkoutAddressSchema)(body?.address || {});
   const authUser = await getOptionalAuth(event);
 
   // Meta CAPI matching data. The IP comes from getClientIp (API Gateway's
@@ -30,6 +33,7 @@ export async function createSession(body, event) {
     couponCode,
     delivery,
     pay_with,
+    checkout_key,
     meta: {
       ...(meta || {}),
       ip,

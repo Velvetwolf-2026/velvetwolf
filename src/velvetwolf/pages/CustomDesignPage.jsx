@@ -18,6 +18,8 @@ const INKS = ["bone", "noir", "sand", "forest", "crimson"];
 const MARKS = ["wordmark", "monogram", "horizon", "contour", "nocturne"];
 const ACCEPT = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 const MAX_MB = 8;
+// longest the cart waits for the print proofs (they are optional)
+const PROOF_WAIT_MS = 12000;
 
 export default function CustomDesignPage() {
   const [searchParams] = useSearchParams();
@@ -39,6 +41,7 @@ export default function CustomDesignPage() {
   const [size, setSize] = useState("");
   const [guide, setGuide] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyText, setBusyText] = useState("");
 
   const [sides, setSides] = useState({
     front: {
@@ -231,40 +234,55 @@ export default function CustomDesignPage() {
 
     setBusy(true);
     try {
-      const metaSides = {};
-      let thumb = "";
+      // 1. The customer's own artwork has to reach the printer, so it must upload.
+      const artworkOf = {};
       for (const name of used) {
         const sd = sides[name];
-        let artwork = null;
-        if (sd.mode === "image") {
-          artwork = sd.artworkPath || (sd.imageFile ? await uploadStudioFile(sd.imageFile, "artwork") : null);
-          if (!artwork) throw new Error("Upload your artwork again: the file is no longer available.");
-          if (!sd.artworkPath) setSides((prev) => ({ ...prev, [name]: { ...prev[name], artworkPath: artwork } }));
-        }
-        // The proof is the print area exactly as designed, without the guide lines.
+        if (sd.mode !== "image") continue;
+        setBusyText("Uploading your artwork…");
+        const artwork = sd.artworkPath || (sd.imageFile ? await uploadStudioFile(sd.imageFile, "artwork") : null);
+        if (!artwork) throw new Error("Upload your artwork again: the file is no longer available.");
+        if (!sd.artworkPath) setSides((prev) => ({ ...prev, [name]: { ...prev[name], artworkPath: artwork } }));
+        artworkOf[name] = artwork;
+      }
+
+      // 2. A proof of each side: the print area exactly as designed, without the guide lines.
+      setBusyText("Saving your design…");
+      let thumb = "";
+      const proofBlobs = {};
+      for (const name of used) {
+        const sd = sides[name];
         const print = printsRef.current[name];
         drawCustom(print, { ...sd, guide: false });
-        let proof = null;
-        try {
-          proof = await uploadStudioFile(await canvasToBlob(print.canvas), "proof");
-        } catch (err) {
-          console.warn("[studio] proof upload failed", err);
-        }
+        try { proofBlobs[name] = await canvasToBlob(print.canvas); } catch (err) { console.warn("[studio] proof render failed", err); }
         if (!thumb) thumb = thumbnailOf(print.canvas);
         drawCustom(print, { ...sd, guide: guide && name === side });
+      }
+      // Proofs help the printer but the design itself (text, mark, artwork) is
+      // what's ordered, so they upload side by side and never hold up the cart.
+      const proofs = await Promise.race([
+        Promise.all(used.map((name) => (proofBlobs[name]
+          ? uploadStudioFile(proofBlobs[name], "proof").catch((err) => { console.warn("[studio] proof upload failed", err); return null; })
+          : null))),
+        new Promise((resolve) => setTimeout(() => resolve(used.map(() => null)), PROOF_WAIT_MS)),
+      ]);
+
+      const metaSides = {};
+      used.forEach((name, i) => {
+        const sd = sides[name];
         metaSides[name] = {
           mode: sd.mode,
           text: sd.mode === "text" ? sd.text.trim() : "",
           font: sd.font,
           mark: sd.mode === "mark" ? sd.mark : null,
-          artwork,
+          artwork: artworkOf[name] || null,
           artworkName: sd.mode === "image" ? sd.imageName : "",
           oneInk: sd.oneInk,
           scale: sd.scale,
           offset: sd.offset,
-          proof,
+          proof: proofs[i] || null,
         };
-      }
+      });
 
       const summary = used.map((name) => {
         const sd = sides[name];
@@ -293,6 +311,7 @@ export default function CustomDesignPage() {
       return false;
     } finally {
       setBusy(false);
+      setBusyText("");
     }
   };
 
@@ -672,7 +691,7 @@ export default function CustomDesignPage() {
               disabled={busy || !size || (!isUsed("front") && !isUsed("back"))}
             >
               {busy
-                ? "Uploading your design…"
+                ? busyText || "Saving your design…"
                 : !isUsed("front") && !isUsed("back")
                 ? "Add some artwork first"
                 : !size

@@ -11,6 +11,7 @@ import { RecaptchaVerifier, signInWithPhoneNumber, GoogleAuthProvider, signInWit
 import { executeRecaptcha } from "../utils/recaptcha";
 import { updateProfile } from "../utils/profile";
 import { useGallery } from "../gallery/galleryContext";
+import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
 
 const MOBILE_DOMAIN = "@mobile.velvetwolf.in";
 const RESEND_SECONDS = 60;
@@ -22,9 +23,10 @@ function isSignedInResponse(data) {
   return Boolean(data?.authenticated || data?.token);
 }
 
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(v);
-const isMobile = (v) => /^[6-9]\d{9}$/.test(v);
-const cleanMobile = (v) => String(v).replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=\d{10}$)/, "");
+const isEmail = isValidEmail;
+const isMobile = isValidMobile;
+// letters in any script, spaces, dots, apostrophes and hyphens
+const nameChars = (v) => v.replace(/[^\p{L}\p{M}\s.'-]/gu, "");
 
 function GoogleMark() {
   return (
@@ -190,8 +192,13 @@ export function Login() {
     const raw = identifier.trim().toLowerCase();
     const mobile = cleanMobile(raw);
     const errs = {};
-    if (!isEmail(raw) && !isMobile(mobile)) errs.identifier = "Enter an email like name@example.com, or a 10-digit mobile number.";
+    if (!isEmail(raw) && !isMobile(mobile)) {
+      errs.identifier = /^[\d\s+()-]+$/.test(raw)
+        ? "Enter a valid 10-digit Indian mobile number."
+        : raw.includes("@") ? EMAIL_ERROR : "Enter an email like name@example.com, or a 10-digit mobile number.";
+    }
     if (mode === "signup" && !name.trim()) errs.name = "Enter your name.";
+    else if (mode === "signup" && !isValidName(name)) errs.name = NAME_ERROR;
     setFieldErr(errs);
     if (Object.keys(errs).length) return;
 
@@ -216,14 +223,15 @@ export function Login() {
         if (mode === "signup") setNote("You already have an account with this email, so we sent you a sign-in code.");
         await sendEmailLoginCode(email);
       } else if (!name.trim()) {
-        // New email on the sign-in form: ask for a name and create the account.
+        // New email on the sign-in form: say so plainly (it may be a typo), and
+        // offer to create the account.
         setMode("signup");
-        setNote("There's no account for that email yet. Add your name and we'll create one.");
+        setNote(`No account uses ${email}. Check it for a typo, or add your name below to create one.`);
         setFieldErr({});
         setTimeout(() => document.getElementById("auth-name")?.focus(), 30);
         return;
       } else {
-        await sendEmailSignupCode(email, name.trim());
+        await sendEmailSignupCode(email, cleanName(name));
       }
       setCode("");
       setStep("code");
@@ -275,8 +283,8 @@ export function Login() {
 
       if (mobileFlow && !isExistingUser) {
         // New mobile account: it needs a name (asked up front on "Create an account").
-        if (name.trim()) {
-          await saveName(data.user, name.trim());
+        if (isValidName(name)) {
+          await saveName(data.user, cleanName(name));
           return;
         }
         setPendingUser(data.user);
@@ -332,9 +340,10 @@ export function Login() {
   const onNameSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) { setFieldErr({ name2: "Enter your name." }); return; }
+    if (!isValidName(name)) { setFieldErr({ name2: NAME_ERROR }); return; }
     setLoading(true);
     try {
-      await saveName(pendingUser, name.trim());
+      await saveName(pendingUser, cleanName(name));
     } catch (err) {
       setMsg(err.message || "We couldn't save your name. Try again.");
     } finally {
@@ -399,7 +408,7 @@ export function Login() {
                   <label htmlFor="auth-name">Name</label>
                   <input
                     id="auth-name" type="text" autoComplete="name" value={name} disabled={loading}
-                    onChange={(e) => { setName(e.target.value.replace(/[^a-zA-Z\s.'-]/g, "")); setFieldErr((f) => ({ ...f, name: "" })); }}
+                    onChange={(e) => { setName(nameChars(e.target.value)); setFieldErr((f) => ({ ...f, name: "" })); }}
                     aria-invalid={fieldErr.name ? "true" : undefined} aria-describedby={fieldErr.name ? "name-err" : undefined}
                   />
                   {errorFor("name")}
@@ -408,7 +417,7 @@ export function Login() {
               <div className="form-row">
                 <label htmlFor="auth-id">Email or mobile number</label>
                 <input
-                  id="auth-id" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off"
+                  id="auth-id" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off" maxLength={254}
                   value={identifier} disabled={loading} placeholder="name@example.com or 98765 43210"
                   onChange={(e) => { setIdentifier(e.target.value); setFieldErr((f) => ({ ...f, identifier: "" })); }}
                   aria-invalid={fieldErr.identifier ? "true" : undefined} aria-describedby={fieldErr.identifier ? "identifier-err" : undefined}
@@ -474,7 +483,7 @@ export function Login() {
                 <label htmlFor="auth-name2">Name</label>
                 <input
                   id="auth-name2" type="text" autoComplete="name" value={name} disabled={loading}
-                  onChange={(e) => { setName(e.target.value.replace(/[^a-zA-Z\s.'-]/g, "")); setFieldErr({}); }}
+                  onChange={(e) => { setName(nameChars(e.target.value)); setFieldErr({}); }}
                   aria-invalid={fieldErr.name2 ? "true" : undefined} aria-describedby={fieldErr.name2 ? "name2-err" : undefined}
                 />
                 {errorFor("name2")}

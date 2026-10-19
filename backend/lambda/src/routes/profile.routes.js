@@ -11,6 +11,9 @@ export async function handleProfileRoutes(method, route, body, query, event) {
   if (method === "POST" && route === "/profile/update")
     return profileController.updateProfile(body, event);
 
+  if (method === "POST" && route === "/profile/phone/verify")
+    return profileController.verifyPhone(body, event);
+
   if (method === "POST" && route === "/profile/email/send-otp")
     return profileController.sendEmailOtp(body, event);
 

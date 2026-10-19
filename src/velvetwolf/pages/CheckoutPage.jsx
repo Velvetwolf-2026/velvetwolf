@@ -3,12 +3,13 @@
 // session; Cashfree returns to /payment-status, which confirms the payment.
 // Guest checkout by default; signing in only fills in saved addresses.
 import { useState, useContext, useEffect, useMemo, useRef } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { trackBeginCheckout } from "../utils/analytics";
 import { getMetaTrackingData } from "../utils/metaPixel";
 import { money, cartThumb } from "../gallery/galleryProducts";
+import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, EMAIL_ERROR, MOBILE_ERROR, NAME_ERROR } from "../utils/validate";
 
 // Must match DELIVERY_OPTIONS in the backend checkout service, which is what
 // actually charges the customer.
@@ -30,12 +31,31 @@ const STATES = ["Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Prad
   "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
   "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
 
+// the same checks the backend runs on the address (checkoutAddressSchema)
 const valid = {
-  email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v).trim()),
-  phone: (v) => /^[6-9]\d{9}$/.test(cleanPhone(v)),
+  email: isValidEmail,
+  phone: (v) => isValidMobile(cleanPhone(v)),
+  name: isValidName,
   pin: (v) => /^[1-9]\d{5}$/.test(String(v).trim()),
 };
-const cleanPhone = (v) => String(v || "").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+const cleanPhone = (v) => cleanMobile(String(v || "").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, ""));
+
+// One key per checkout attempt, kept while the cart stays the same. The
+// backend refuses to start a second payment for a key whose order is paid
+// (someone pressing Back after paying), so nobody is charged twice.
+const cartSignature = (cart) => cart.map((i) => `${i.id}|${i.size}|${i.color}|${i.qty}`).sort().join(",");
+function checkoutKeyFor(cart) {
+  const sig = cartSignature(cart);
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("vw_checkout_key") || "null");
+    if (saved?.sig === sig && saved.key) return saved.key;
+    const key = crypto.randomUUID();
+    sessionStorage.setItem("vw_checkout_key", JSON.stringify({ sig, key }));
+    return key;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
 
 function loadCashfreeScript() {
   return new Promise((resolve, reject) => {
@@ -81,8 +101,9 @@ const blankForm = () => ({
 });
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, user, showToast, setCartOpen } = useContext(AppContext);
+  const { cart, cartTotal, user, showToast, setCartOpen, clearCart } = useContext(AppContext);
   const location = useLocation();
+  const navigate = useNavigate();
   const [form, setForm] = useState(blankForm);
   const [errors, setErrors] = useState({});
   const [banner, setBanner] = useState("");
@@ -99,6 +120,39 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (cart.length > 0) trackBeginCheckout(cart, cartTotal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Coming back to this page with the browser's Back button after leaving for
+  // Cashfree: the browser may show the page exactly as it was (cart and all),
+  // so load it fresh. And if the order started here was paid meanwhile, go to
+  // its payment page instead of offering to pay again.
+  useEffect(() => {
+    const onShow = (e) => { if (e.persisted) window.location.reload(); };
+    addEventListener("pageshow", onShow);
+    let pending = "";
+    try { pending = sessionStorage.getItem("vw_checkout_pending") || ""; } catch { /* storage unavailable */ }
+    let cancelled = false;
+    if (pending) {
+      fetch(apiUrl("/checkout/verify"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: pending }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          if (data.state === "paid" || data.status === "SUCCESS") {
+            clearCart();
+            navigate(`/payment-status?order_id=${encodeURIComponent(pending)}`, { replace: true });
+          } else if (data.state === "failed") {
+            try { sessionStorage.removeItem("vw_checkout_pending"); } catch { /* storage unavailable */ }
+          }
+        })
+        .catch(() => {});
+    }
+    return () => { cancelled = true; removeEventListener("pageshow", onShow); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -189,10 +243,11 @@ export default function CheckoutPage() {
 
   const validate = () => {
     const e = {};
-    if (!accountEmail && !valid.email(form.email)) e["co-email"] = "Enter an email address like name@example.com.";
-    if (!valid.phone(form.phone)) e["co-phone"] = "Enter a 10-digit Indian mobile number.";
+    if (!accountEmail && !valid.email(form.email)) e["co-email"] = EMAIL_ERROR;
+    if (!valid.phone(form.phone)) e["co-phone"] = MOBILE_ERROR;
     if (useNew) {
-      if (form.name.trim().length < 2) e["co-name"] = "Enter the name for the delivery label.";
+      if (!form.name.trim()) e["co-name"] = "Enter the name for the delivery label.";
+      else if (!valid.name(form.name)) e["co-name"] = NAME_ERROR;
       if (!valid.pin(form.pincode)) e["co-pin"] = "Enter a 6-digit PIN code.";
       if (!form.city.trim()) e["co-city"] = "Enter your city or town.";
       if (!form.state) e["co-state"] = "Choose a state.";
@@ -208,7 +263,7 @@ export default function CheckoutPage() {
       return { name: chosenSaved.name, phone: phone || chosenSaved.phone, email, address: chosenSaved.address, city: chosenSaved.city, district: chosenSaved.district || chosenSaved.city, state: chosenSaved.state, pincode: chosenSaved.pincode };
     }
     const line = [form.line1.trim(), form.line2.trim()].filter(Boolean).join(", ");
-    return { name: form.name.trim(), phone, email, address: line, city: form.city.trim(), district: form.district.trim() || form.city.trim(), state: form.state, pincode: form.pincode };
+    return { name: cleanName(form.name), phone, email, address: line, city: form.city.trim(), district: form.district.trim() || form.city.trim(), state: form.state, pincode: form.pincode };
   };
 
   const onSubmit = async (ev) => {
@@ -259,14 +314,22 @@ export default function CheckoutPage() {
           pay_with: form.method,
           delivery: form.delivery,
           couponCode: coupon?.code || null,
+          checkout_key: checkoutKeyFor(cart),
           whatsappUpdates: form.whatsapp,
           meta: { fbp: metaCookies.fbp, fbc: metaCookies.fbc },
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.alreadyPaid && data.orderId) {
+        // this exact checkout was paid already: show that order, don't charge again
+        clearCart();
+        navigate(`/payment-status?order_id=${encodeURIComponent(data.orderId)}`, { replace: true });
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "We couldn't start the payment. Nothing was charged. Try again.");
       if (!data.paymentSessionId) throw new Error("We couldn't start the payment. Nothing was charged. Try again.");
 
+      try { sessionStorage.setItem("vw_checkout_pending", data.orderId || ""); } catch { /* storage unavailable */ }
       const Cashfree = await loadCashfreeScript();
       // The backend says which Cashfree environment created this session.
       const cashfree = Cashfree({ mode: data.cashfreeMode === "production" ? "production" : "sandbox" });
@@ -364,7 +427,7 @@ export default function CheckoutPage() {
                   <p className="co-signed">
                     {user ? "Signed in. Add an email for your receipt." : <>Checking out as a guest. <Link to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>Sign in</Link> to use saved addresses.</>}
                   </p>
-                  <Field id="co-email" label="Email" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off"
+                  <Field id="co-email" label="Email" type="email" inputMode="email" autoComplete="email" spellCheck="false" autoCapitalize="off" maxLength={254}
                     value={form.email} error={errors["co-email"]} hint="For your receipt and delivery updates."
                     onChange={(e) => { set({ email: e.target.value }); clearErr("co-email"); }} />
                 </>
@@ -396,7 +459,7 @@ export default function CheckoutPage() {
               )}
               {useNew && (
                 <div className="addr-fields">
-                  <Field id="co-name" label="Full name" autoComplete="shipping name" value={form.name} error={errors["co-name"]}
+                  <Field id="co-name" label="Full name" autoComplete="shipping name" maxLength={80} value={form.name} error={errors["co-name"]}
                     onChange={(e) => { set({ name: e.target.value }); clearErr("co-name"); }} />
                   <div className="form-pair">
                     <Field id="co-pin" label={pinBusy ? "PIN code (checking…)" : "PIN code"} autoComplete="shipping postal-code" inputMode="numeric" maxLength={6}
