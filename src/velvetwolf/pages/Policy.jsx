@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import HelpLayout, { DocBody } from "../gallery/help/HelpLayout";
 import { useGallery } from "../gallery/galleryContext";
 import { PRIVACY } from "../gallery/help/content";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Privacy policy · VelvetWolf" }, { name: "description", content: "What VelvetWolf collects, why, and who sees it. We don't sell your data." }];
+  const title = "Privacy policy · VelvetWolf";
+  const description = "What VelvetWolf collects when you shop, why, who sees it and how long we keep it. We don't sell your data, and card details stay with Cashfree.";
+  return pageMeta({ title, description, path: "/privacy-policy", schema: [webPageLd({ name: title, description, path: "/privacy-policy" }), breadcrumbLd([["Home", "/"], ["Privacy policy", "/privacy-policy"]])] });
 }
 
 // what we keep (one object each in the vitrine)

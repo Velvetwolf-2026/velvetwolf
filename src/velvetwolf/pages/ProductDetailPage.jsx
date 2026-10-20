@@ -5,11 +5,12 @@ import { useContext, useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate, useLoaderData } from "react-router";
 import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
-import { INITIAL_COLLECTION_PRODUCTS } from "../utils/collectionsData";
+import { INITIAL_COLLECTION_PRODUCTS, getCollectionById } from "../utils/collectionsData";
 import { trackViewItem } from "../utils/analytics";
 import { COLORWAYS, SIZES } from "../gallery/data";
 import { money, allPhotos } from "../gallery/galleryProducts";
 import PhotoViewerModal from "../components/PhotoViewerModal";
+import { pageMeta, productLd, breadcrumbLd } from "../utils/seo";
 
 const findFallback = (slug) =>
   INITIAL_COLLECTION_PRODUCTS.find((p) => p.id === slug || p.name.toLowerCase().replace(/\s+/g, "-") === slug) || null;
@@ -17,30 +18,47 @@ const findFallback = (slug) =>
 export async function loader({ params }) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    // long enough for a Lambda cold start; the page still works if it runs out
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(`${apiUrl("/products")}/${params.slug}`, { signal: controller.signal })
       .finally(() => clearTimeout(timeoutId));
+    // only a real 404 means the tee is gone (and the page is noindex); a slow
+    // or failing API must never tell search engines to drop a product
+    if (res.status === 404) return { product: findFallback(params.slug), missing: !findFallback(params.slug) };
     if (!res.ok) return { product: findFallback(params.slug) };
     const data = await res.json();
-    return { product: data.product || null };
+    return { product: data.product || null, missing: !data.product };
   } catch {
     return { product: findFallback(params.slug) };
   }
 }
 
-export function meta({ loaderData }) {
-  const product = loaderData?.product;
-  if (!product) return [{ title: "Product — VelvetWolf" }];
-  const title = `${product.name} — VelvetWolf`;
-  const description = product.description ? String(product.description).slice(0, 160) : "Heavyweight tees from VelvetWolf.";
-  const image = allPhotos(product)[0]?.src;
-  return [
-    { title },
-    { name: "description", content: description },
-    { property: "og:title", content: title },
-    { property: "og:description", content: description },
-    ...(image ? [{ property: "og:image", content: image }] : []),
-  ];
+export function meta({ loaderData, data, params }) {
+  const loaded = loaderData ?? data;
+  const product = loaded?.product;
+  if (!product && loaded?.missing) return pageMeta({ title: "Tee not found · VelvetWolf", description: "This VelvetWolf tee isn't available any more. See every heavyweight oversized tee in the VelvetWolf shop.", path: `/product/${params.slug}`, noindex: true });
+  if (!product) {
+    // the catalogue didn't answer in time: a plain, indexable page (the tee loads in the browser)
+    const name = String(params.slug || "").replace(/-[a-z0-9]{4}$/i, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return pageMeta({ title: `${name || "Tee"} · VelvetWolf`, description: `${name || "This tee"}: a heavyweight oversized cotton tee from VelvetWolf, 220 to 240 GSM, sizes S to XXL. Free delivery across India.`, path: `/product/${params.slug}`, type: "product" });
+  }
+  const path = `/product/${product.slug || params.slug}`;
+  const title = `${product.name} · VelvetWolf`;
+  const plain = String(product.description || "").replace(/\s+/g, " ").trim();
+  const description = (plain.length >= 70 ? plain : `${product.name}: a heavyweight oversized cotton tee from VelvetWolf, 220 to 240 GSM, sizes S to XXL. ${plain}`).slice(0, 158).trim();
+  const images = allPhotos(product).map((p) => p.src).filter(Boolean);
+  const collection = product.collection ? getCollectionById(product.collection) : null;
+  return pageMeta({
+    title,
+    description,
+    path,
+    image: images[0],
+    type: "product",
+    schema: [
+      productLd(product, { path, images }),
+      breadcrumbLd([["Home", "/"], ["Shop", "/shop"], ...(collection ? [[collection.name, `/shop/${collection.id}`]] : []), [product.name, path]]),
+    ],
+  });
 }
 
 // Swatch colour for a colour name from the admin ("Black", "Forest Green"...)

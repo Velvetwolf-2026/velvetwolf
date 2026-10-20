@@ -3,7 +3,7 @@
 import { Navigate } from "react-router";
 
 export function meta() {
-  return [{ title: "Saved · VelvetWolf" }, { name: "robots", content: "noindex" }];
+  return [{ title: "Saved · VelvetWolf" }, { name: "description", content: "Your saved VelvetWolf tees, in Account › Saved." }, { name: "robots", content: "noindex" }];
 }
 
 export default function WishlistRedirect() {

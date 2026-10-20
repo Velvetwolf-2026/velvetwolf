@@ -6,9 +6,12 @@ import { Link } from "react-router";
 import HelpLayout from "../gallery/help/HelpLayout";
 import { useGallery } from "../gallery/galleryContext";
 import { FAQ, BUSINESS } from "../gallery/help/content";
+import { pageMeta, faqLd, breadcrumbLd, SITE_FAQ } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "FAQ · VelvetWolf" }, { name: "description", content: "Short answers about orders, shipping, sizes, the Studio, returns and your account." }];
+  const title = "FAQ · VelvetWolf";
+  const description = "Short answers about VelvetWolf orders, delivery times, sizes, the cloth, the Studio, returns and refunds, and your account.";
+  return pageMeta({ title, description, path: "/faq", schema: [faqLd(SITE_FAQ), breadcrumbLd([["Home", "/"], ["FAQ", "/faq"]])] });
 }
 
 const CATS = [...new Set(FAQ.map((f) => f.cat))];

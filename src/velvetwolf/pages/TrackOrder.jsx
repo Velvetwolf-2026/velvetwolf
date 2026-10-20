@@ -12,9 +12,12 @@ import { AppContext } from "./AppContext";
 import { apiUrl } from "../utils/api";
 import { getUserOrders } from "../utils/order";
 import { money } from "../gallery/galleryProducts";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Track order · VelvetWolf" }, { name: "description", content: "Enter your order number and the email you used. No account needed." }];
+  const title = "Track order · VelvetWolf";
+  const description = "Track a VelvetWolf order with your order number and the email you used. No account needed. See each stage, from paid to delivered.";
+  return pageMeta({ title, description, path: "/track-order", schema: [webPageLd({ name: title, description, path: "/track-order" }), breadcrumbLd([["Home", "/"], ["Track order", "/track-order"]])] });
 }
 
 const E = BUSINESS.emails;

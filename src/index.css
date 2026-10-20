@@ -84,6 +84,11 @@ body {
   overflow-x: hidden;
 }
 
+/* No sideways scrolling on any page: nothing may be wider than the screen.
+   (clip, unlike hidden, keeps position: sticky working.) */
+html, body { max-width: 100%; overflow-x: clip; }
+img, video, canvas, svg { max-width: 100%; }
+
 /* Ambient silk cloth — fixed decorative backdrop behind all content. */
 .vw-silk-host {
   position: fixed;

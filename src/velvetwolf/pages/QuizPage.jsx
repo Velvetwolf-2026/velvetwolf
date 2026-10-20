@@ -12,12 +12,12 @@ import { drawStoryCard } from "../account/storyCard";
 import { useAccountStore } from "../account/store";
 import "../gallery/gallery-help.css";
 import "../account/account.css";
+import { pageMeta, webPageLd } from "../utils/seo";
 
 export function meta() {
-  return [
-    { title: "Find your Wolf Type · VelvetWolf" },
-    { name: "description", content: "Five quick picks from real tees. Find your Wolf Type, and a card to post if you like it." },
-  ];
+  const title = "Find your Wolf Type · VelvetWolf";
+  const description = "Five quick picks from real VelvetWolf tees tell you your Wolf Type, with tees that suit it and a card to post if you like it.";
+  return pageMeta({ title, description, path: "/quiz", schema: [webPageLd({ name: title, description, path: "/quiz" })] });
 }
 
 const GUEST_KEY = "vw_guest_style_profile";

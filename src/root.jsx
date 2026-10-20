@@ -8,6 +8,8 @@ import {
   useNavigate,
   useLocation,
   useNavigationType,
+  useRouteError,
+  isRouteErrorResponse,
 } from "react-router";
 import { AppContext } from "./velvetwolf/pages/AppContext";
 import { LanguageProvider } from "./velvetwolf/pages/LanguageContext";
@@ -39,22 +41,32 @@ export function headers() {
   };
 }
 
+// Fallback title and description for any page that doesn't set its own.
+export function meta() {
+  return [
+    { title: "VelvetWolf · Heavyweight oversized tees" },
+    { name: "description", content: "Heavyweight oversized tees in five colours, made in Tirupur. Shop the drops or design your own in the VelvetWolf Studio." },
+  ];
+}
+
 let productsLoadPromise = null;
 
 // The document shell. React Router's framework mode renders this around every
 // route on both the server and the client — this replaces index.html.
 export function Layout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#0a0a0a" />
-        <meta name="msapplication-TileImage" content="/logo.png" />
+        <meta name="msapplication-TileImage" content="/icon-192.png" />
         <meta name="msapplication-TileColor" content="#0a0a0a" />
-        <meta property="og:image" content="/logo.png" />
-        <meta name="twitter:image" content="/logo.png" />
-        <link rel="icon" type="image/png" href="/logo.png" />
+        {/* canonical, social cards and structured data come from each page (utils/seo.js) */}
+        {/* the wolf head from the logo, light on the site's dark ground */}
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -93,18 +105,28 @@ export function Layout({ children }) {
         {children}
         <ScrollRestoration />
         <Scripts />
-        <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
       </body>
     </html>
   );
 }
 
+// Something broke while rendering (or a loader threw). Kept self-contained:
+// the app's own layout may be what failed.
 export function ErrorBoundary() {
+  const error = useRouteError();
+  const notFound = isRouteErrorResponse(error) && error.status === 404;
+  const link = { color: "#E8E4DA", textDecoration: "underline", textUnderlineOffset: 5, padding: "10px 4px", display: "inline-block" };
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#ececea", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, fontFamily: "sans-serif" }}>
-      <h1 style={{ margin: 0 }}>Something went wrong</h1>
-      <a href="/" style={{ color: "#c9a84c" }}>Return home</a>
-    </div>
+    <main style={{ minHeight: "100vh", background: "#0a0a0b", color: "#E8E4DA", display: "grid", placeItems: "center", padding: "32px 20px", fontFamily: "Manrope, 'Helvetica Neue', Arial, sans-serif", textAlign: "center" }}>
+      <div style={{ maxWidth: 440, display: "grid", gap: 14 }}>
+        <p style={{ margin: 0, letterSpacing: "0.2em", textTransform: "uppercase", fontSize: 11, color: "rgba(232,228,218,0.6)" }}>{notFound ? "Error 404" : "Something went wrong"}</p>
+        <h1 style={{ margin: 0, fontWeight: 300, fontSize: "clamp(28px, 7vw, 40px)", lineHeight: 1.1 }}>{notFound ? "This page isn't here" : "This page didn't load"}</h1>
+        <p style={{ margin: 0, color: "rgba(232,228,218,0.7)" }}>{notFound ? "It may have moved, or the link has a typo." : "Reload the page, or try again in a minute. Your cart is safe."}</p>
+        <p style={{ margin: 0, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          <a href="/" style={link}>Home</a><a href="/shop" style={link}>Shop</a><a href="/contact" style={link}>Contact us</a>
+        </p>
+      </div>
+    </main>
   );
 }
 

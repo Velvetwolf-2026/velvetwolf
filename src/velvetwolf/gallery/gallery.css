@@ -741,3 +741,5 @@
 .vwg .vwg-save:disabled { opacity: 0.6; cursor: default; }
 @media (hover: hover) { .vwg .vwg-save:hover { color: var(--bone); } }
 .vwg .vwg-save[aria-pressed="true"] { color: var(--sand); }
+.vwg-foot .foot-h2 { margin-top: 28px; }
+.vwg-foot ul a { display: inline-block; padding-block: 4px; overflow-wrap: anywhere; }

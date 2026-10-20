@@ -19,7 +19,6 @@ const SOCIAL = [
   ["Instagram", BUSINESS.instagram],
   ["WhatsApp", BUSINESS.whatsapp],
   ["Facebook", BUSINESS.facebook],
-  ["X", BUSINESS.x],
 ].filter(([, link]) => link?.href);
 
 // toolView: full-screen tools (Studio, size guide) pin their panel to the screen on desktop, so the
@@ -43,13 +42,21 @@ export default function GalleryFooter({ toolView = false }) {
         <ul>
           <li><Link to="/shop">Shop all tees</Link></li>
           <li><Link to="/#drop">Drop 01: Quiet Hours</Link></li>
-          <li><Link to="/#colors">Colorways</Link></li>
+          <li><Link to="/#colors">Colourways</Link></li>
           <li><Link to="/custom">Studio</Link></li>
-          <li><Link to="/custom">Upload your artwork</Link></li>
+          <li><Link to="/custom?upload=1">Upload your artwork</Link></li>
+          <li><Link to="/quiz">Find your Wolf Type</Link></li>
+          <li><Link to="/bulk">Bulk and corporate orders</Link></li>
         </ul>
       </nav>
       <div>
-        <h2 className="eyebrow">The cloth</h2>
+        <h2 className="eyebrow">Talk to us</h2>
+        <ul>
+          <li><a href={`mailto:${BUSINESS.emails.info}`}>{BUSINESS.emails.info}</a></li>
+          <li><a href={BUSINESS.phone.href}>{BUSINESS.phone.label}</a></li>
+          <li>{BUSINESS.hours.label.replace(" Closed on Sunday.", "")}</li>
+        </ul>
+        <h2 className="eyebrow foot-h2">The cloth</h2>
         <ul>
           <li>Combed cotton, 220&ndash;240 GSM</li>
           <li>Oversized fit, S to XXL</li>
@@ -57,7 +64,7 @@ export default function GalleryFooter({ toolView = false }) {
         </ul>
       </div>
       <div className="foot-small">
-        <span>Velvetwolf &middot; velvetwolf.in</span>
+        <span>&copy; {new Date().getFullYear()} VelvetWolf &middot; velvetwolf.in</span>
         <nav className="foot-support" aria-label="Help and policies">
           {SUPPORT_LINKS.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}
         </nav>

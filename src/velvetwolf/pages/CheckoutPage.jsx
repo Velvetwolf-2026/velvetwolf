@@ -11,6 +11,14 @@ import { getMetaTrackingData } from "../utils/metaPixel";
 import { money, cartThumb } from "../gallery/galleryProducts";
 import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, EMAIL_ERROR, MOBILE_ERROR, NAME_ERROR } from "../utils/validate";
 
+export function meta() {
+  return [
+    { title: "Checkout · VelvetWolf" },
+    { name: "description", content: "Delivery details and payment for your VelvetWolf order. UPI, cards, netbanking and wallets through Cashfree." },
+    { name: "robots", content: "noindex" },
+  ];
+}
+
 // Must match DELIVERY_OPTIONS in the backend checkout service, which is what
 // actually charges the customer.
 const DELIVERY = [

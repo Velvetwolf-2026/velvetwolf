@@ -15,7 +15,7 @@ import { BUSINESS } from "../gallery/help/content";
 import "../gallery/gallery-help.css";
 
 export function meta() {
-  return [{ title: "Payment · VelvetWolf" }, { name: "robots", content: "noindex" }];
+  return [{ title: "Payment · VelvetWolf" }, { name: "description", content: "Whether your VelvetWolf payment went through, checked with Cashfree." }, { name: "robots", content: "noindex" }];
 }
 
 const POLL_S = 5;

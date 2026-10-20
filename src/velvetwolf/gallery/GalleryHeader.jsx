@@ -1,11 +1,12 @@
-// Site header from the VelvetWolf Gallery (2027): the wordmark, Shop, Drop 01,
+// Site header from the VelvetWolf Gallery (2027): the wordmark (home), Shop, Drop 01,
 // Studio, sign in / the account menu (with Sign out), the alerts bell (signed in) and the cart. Used on every public page
-// (PublicLayout).
+// (PublicLayout). On phones the links move into the menu (MobileMenu).
 import { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { AppContext } from "../pages/AppContext";
 import AlertsBell from "./AlertsBell";
 import AccountMenu from "./AccountMenu";
+import MobileMenu from "./MobileMenu";
 import { TabIcon } from "../account/icons";
 
 export default function GalleryHeader() {
@@ -26,11 +27,14 @@ export default function GalleryHeader() {
 
   return (
     <header className={`vwg-nav${scrolled ? " is-scrolled" : ""}`}>
-      <Link className="brand" to="/">VELVETWOLF</Link>
+      <div className="nav-start">
+        <MobileMenu />
+        <Link className="brand" to="/" aria-label="VelvetWolf, home">VELVETWOLF</Link>
+      </div>
       <nav className="nav-links" aria-label="Primary">
-        <Link to="/shop" aria-current={current(pathname === "/shop" || pathname.startsWith("/shop/"))}>Shop</Link>
+        <Link to="/shop" className="hide-sm" aria-current={current(pathname === "/shop" || pathname.startsWith("/shop/"))}>Shop</Link>
         <Link to="/#drop" className="hide-sm" aria-current={current(pathname === "/" && hash === "#drop")}>Drop 01</Link>
-        <Link to="/custom" aria-current={current(pathname === "/custom")}>Studio</Link>
+        <Link to="/custom" className="hide-sm" aria-current={current(pathname === "/custom")}>Studio</Link>
         <AccountMenu />
         <AlertsBell />
         <button className="cart-btn" type="button" aria-haspopup="dialog" onClick={() => setCartOpen?.(true)}>

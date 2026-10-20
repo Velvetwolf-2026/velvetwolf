@@ -12,6 +12,18 @@ import { executeRecaptcha } from "../utils/recaptcha";
 import { updateProfile } from "../utils/profile";
 import { useGallery } from "../gallery/galleryContext";
 import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, EMAIL_ERROR, NAME_ERROR } from "../utils/validate";
+import { pageMeta } from "../utils/seo";
+
+export function meta({ location }) {
+  const signup = location?.pathname === "/signup";
+  return pageMeta({
+    title: `${signup ? "Create an account" : "Sign in"} · VelvetWolf`,
+    description: signup
+      ? "Create a VelvetWolf account to save addresses, see every order and keep a list of tees. No password: we send you a code."
+      : "Sign in to VelvetWolf with a code sent to your email or mobile, or with Google. No password to remember.",
+    path: signup ? "/signup" : "/login",
+  });
+}
 
 const MOBILE_DOMAIN = "@mobile.velvetwolf.in";
 const RESEND_SECONDS = 60;

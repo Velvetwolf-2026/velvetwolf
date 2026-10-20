@@ -8,9 +8,12 @@ import { SIZE_GUIDE, CARE } from "../gallery/help/content";
 import { HelpNav } from "../gallery/help/HelpLayout";
 import { useInAppLinks } from "../gallery/help/links";
 import "../gallery/gallery-help.css";
+import { pageMeta, webPageLd, breadcrumbLd } from "../utils/seo";
 
 export function meta() {
-  return [{ title: "Size guide · VelvetWolf" }, { name: "description", content: "Flat measurements for every size, how we measure, and a quick size finder." }];
+  const title = "Size guide · VelvetWolf";
+  const description = "Flat measurements in cm for every VelvetWolf tee from S to XXL: chest, length and sleeve, how we measure, and a quick size finder.";
+  return pageMeta({ title, description, path: "/size-guide", schema: [webPageLd({ name: title, description, path: "/size-guide" }), breadcrumbLd([["Home", "/"], ["Size guide", "/size-guide"]])] });
 }
 
 const IN = 2.54;

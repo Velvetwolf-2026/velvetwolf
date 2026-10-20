@@ -19,10 +19,12 @@ export const BUSINESS = {
     bulk: "bulk@velvetwolf.in",
   },
   whatsapp: { label: "+91 93422 45724", href: "https://wa.me/919342245724" },
+  // the same number, for calls (tel: opens the dialler on phones)
+  phone: { label: "+91 93422 45724", href: "tel:+919342245724" },
   instagram: { label: "@velvetwolfofficial", href: "https://www.instagram.com/velvetwolfofficial" },
-  // the brand's pages, as linked from the earlier site footer
+  // the brand's Facebook page, as linked from the earlier site footer (its X
+  // account, @velvetwolf_in, doesn't exist, so it isn't linked)
   facebook: { label: "VelvetWolf on Facebook", href: "https://www.facebook.com/profile.php?id=61577839378533" },
-  x: { label: "@velvetwolf_in", href: "https://twitter.com/velvetwolf_in" },
   // Mon to Sat, 10:00 to 19:00 IST
   hours: { days: [1, 2, 3, 4, 5, 6], open: 10, close: 19, label: "Monday to Saturday, 10 AM to 7 PM IST. Closed on Sunday." },
   processor: "Cashfree",
