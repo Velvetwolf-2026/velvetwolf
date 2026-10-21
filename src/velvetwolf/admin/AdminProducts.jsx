@@ -28,7 +28,11 @@ const getCleanImageUrl = (img) => {
   return url;
 };
 
-const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", fit: "Oversized" };
+const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", gender: "Unisex", fit: "Oversized" };
+
+// Who the product is cut for (products.gender). Shown with a visible label.
+const GENDERS = [["Unisex", "Unisex"], ["Men", "Men"], ["Women", "Women"]];
+const genderOf = (p) => p?.gender || ({ "Men's Fit": "Men", "Women's Fit": "Women" }[p?.style]) || "Unisex";
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
 
@@ -232,6 +236,7 @@ export default function AdminProducts() {
         name: editProduct.name,
         collection: editProduct.collection,
         style: editProduct.style || "Unisex",
+        gender: genderOf(editProduct),
         fit: editProduct.fit || "Oversized",
         price: Number(editProduct.price),
         original_price: editProduct.original_price ? Number(editProduct.original_price) : Number(editProduct.price),
@@ -342,12 +347,18 @@ export default function AdminProducts() {
             <input className="input-dark" placeholder="SALE PRICE (₹) *" type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             <input className="input-dark" placeholder="ORIGINAL PRICE (₹)" type="number" value={form.original_price} onChange={(e) => setForm((f) => ({ ...f, original_price: e.target.value }))} />
             <input className="input-dark" placeholder="STOCK QTY" type="number" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
-            <select className="input-dark" value={form.style} onChange={(e) => setForm((f) => ({ ...f, style: e.target.value }))}>
-              {["Unisex", "Men's Fit", "Women's Fit"].map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select className="input-dark" value={form.fit} onChange={(e) => setForm((f) => ({ ...f, fit: e.target.value }))}>
-              {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
+            <label className="vw-admin-field">
+              <span>GENDER *</span>
+              <select className="input-dark" value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} required>
+                {GENDERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+            <label className="vw-admin-field">
+              <span>FIT</span>
+              <select className="input-dark" value={form.fit} onChange={(e) => setForm((f) => ({ ...f, fit: e.target.value }))}>
+                {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </label>
             <div style={{ gridColumn: "1/-1" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
                 <input 
@@ -456,8 +467,8 @@ export default function AdminProducts() {
                               {COLLECTIONS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                             <input className="input-dark" placeholder="TAG" value={editProduct.tag || ""} onChange={(e) => setEditProduct((ep) => ({ ...ep, tag: e.target.value || null }))} style={{ padding: "4px 8px", fontSize: 10, width: 80 }} />
-                            <select className="input-dark" value={editProduct.style || "Unisex"} onChange={(e) => setEditProduct((ep) => ({ ...ep, style: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
-                              {["Unisex", "Men's Fit", "Women's Fit"].map((s) => <option key={s} value={s}>{s}</option>)}
+                            <select className="input-dark" aria-label="Gender" title="Gender" value={genderOf(editProduct)} onChange={(e) => setEditProduct((ep) => ({ ...ep, gender: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
+                              {GENDERS.map(([v, l]) => <option key={v} value={v}>Gender: {l}</option>)}
                             </select>
                             <select className="input-dark" value={editProduct.fit || "Oversized"} onChange={(e) => setEditProduct((ep) => ({ ...ep, fit: e.target.value }))} style={{ padding: "4px 8px", fontSize: 10 }}>
                               {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}

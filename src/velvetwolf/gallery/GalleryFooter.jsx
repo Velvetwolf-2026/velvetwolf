@@ -53,7 +53,7 @@ export default function GalleryFooter({ toolView = false }) {
         <h2 className="eyebrow">Talk to us</h2>
         <ul>
           <li><a href={`mailto:${BUSINESS.emails.info}`}>{BUSINESS.emails.info}</a></li>
-          <li><a href={BUSINESS.phone.href}>{BUSINESS.phone.label}</a></li>
+          <li><a href={BUSINESS.whatsapp.href} target="_blank" rel="noopener noreferrer" aria-label={`Message VelvetWolf on WhatsApp, ${BUSINESS.whatsapp.label} (opens in a new tab)`}>Message us on WhatsApp</a></li>
           <li>{BUSINESS.hours.label.replace(" Closed on Sunday.", "")}</li>
         </ul>
         <h2 className="eyebrow foot-h2">The cloth</h2>

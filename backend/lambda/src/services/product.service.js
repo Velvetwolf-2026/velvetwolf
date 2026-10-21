@@ -47,6 +47,7 @@ function mapProduct(row) {
     isActive: row.is_active ?? true,
     isLimited: row.is_limited ?? false,
     style: row.style ?? 'Unisex',
+    gender: row.gender ?? ({ "Men's Fit": "Men", "Women's Fit": "Women" }[row.style] || 'Unisex'),
     fit: row.fit ?? 'Oversized',
   };
 }

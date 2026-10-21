@@ -743,3 +743,19 @@
 .vwg .vwg-save[aria-pressed="true"] { color: var(--sand); }
 .vwg-foot .foot-h2 { margin-top: 28px; }
 .vwg-foot ul a { display: inline-block; padding-block: 4px; overflow-wrap: anywhere; }
+
+/* Tool pages with a side panel (Studio, size guide). */
+/* Labels clear the swatch ring below them (the selected ring reaches 5px out; a fieldset's
+   grid gap doesn't apply to its legend). */
+.vwg-pdp-form fieldset > legend { padding: 0; margin-bottom: 12px; }
+/* the help tabs wrap inside the panel instead of running off its edge */
+.vwg .vwg-panel .info-subnav { flex-wrap: wrap; overflow: visible; height: auto; }
+/* the floating stylist button moves to the stage's empty bottom-left corner, clear of the
+   panel's controls and the "drag to turn" hint */
+@media (min-width: 1025px) {
+  body:has(.vwg-panel) .vw-ai { right: auto !important; left: 24px; }
+}
+/* stacked (phones, tablets): room at the end of the panel for that button */
+@media (max-width: 1024px) {
+  .vwg-panel { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+}

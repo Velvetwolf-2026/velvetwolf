@@ -101,7 +101,7 @@ export default function MobileMenu() {
             </div>
             <footer className="vwg-alerts-foot vwg-menu-foot">
               <a href={`mailto:${BUSINESS.emails.info}`}>{BUSINESS.emails.info}</a>
-              <a href={BUSINESS.phone.href}>{BUSINESS.phone.label}</a>
+              <a href={BUSINESS.whatsapp.href} target="_blank" rel="noopener noreferrer">WhatsApp {BUSINESS.whatsapp.label}</a>
             </footer>
           </nav>
         </div>,
