@@ -7,6 +7,7 @@ import { AppContext } from "../pages/AppContext";
 import AlertsBell from "./AlertsBell";
 import AccountMenu from "./AccountMenu";
 import MobileMenu from "./MobileMenu";
+import GenderToggle from "./GenderToggle";
 import { TabIcon } from "../account/icons";
 
 export default function GalleryHeader() {
@@ -31,6 +32,8 @@ export default function GalleryHeader() {
         <MobileMenu />
         <Link className="brand" to="/" aria-label="VelvetWolf, home">VELVETWOLF</Link>
       </div>
+      {/* ALL · MEN · WOMEN, centred on the header (wide screens; the shop shows it below that) */}
+      <GenderToggle className="vwg-gender-nav" />
       <nav className="nav-links" aria-label="Primary">
         <Link to="/shop" className="hide-sm" aria-current={current(pathname === "/shop" || pathname.startsWith("/shop/"))}>Shop</Link>
         <Link to="/#drop" className="hide-sm" aria-current={current(pathname === "/" && hash === "#drop")}>Drop 01</Link>

@@ -759,3 +759,34 @@
 @media (max-width: 1024px) {
   .vwg-panel { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* ---------- shop by gender: ALL · MEN · WOMEN (GenderToggle.jsx) ----------
+   One framed box divided into three; the chosen side is filled bone-white with black
+   text, the others transparent. Centred on the header on wide screens; below that the
+   header has no free centre, so it sits centred at the top of the shop. */
+.vwg-gender {
+  display: inline-flex; align-items: stretch;
+  border: 1px solid rgba(232, 228, 218, 0.3); border-radius: 0;
+}
+.vwg-gender a {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 76px; padding: 9px 16px;
+  font: 600 var(--t-label, 11px)/1 var(--g-body, "Manrope", sans-serif); letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--bone-2, rgba(232, 228, 218, 0.72)); text-decoration: none; background: transparent; white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+}
+.vwg-gender a + a { border-left: 1px solid rgba(232, 228, 218, 0.3); }
+.vwg-gender a[aria-current] { background: var(--bone, #E8E4DA); color: #0a0a0b; }
+.vwg-gender a:focus-visible { outline: 2px solid var(--sand, #C9B99B); outline-offset: 2px; position: relative; z-index: 1; }
+@media (hover: hover) { .vwg-gender a:not([aria-current]):hover { color: var(--bone, #E8E4DA); background: rgba(232, 228, 218, 0.06); } }
+@media (pointer: coarse) { .vwg-gender a { min-height: 44px; } }
+
+/* in the header: on the centre line, between the wordmark and the links */
+.vwg-nav .vwg-gender-nav { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + var(--nav-h, 64px) / 2); transform: translate(-50%, -50%); }
+/* on the shop: centred above the collections */
+.vwg .vwg-gender-shop { display: flex; width: max-content; max-width: 100%; margin: 0 auto 22px; }
+.vwg .vwg-gender-shop a { flex: 1 1 0; }
+@media (max-width: 1199px) { .vwg-nav .vwg-gender-nav { display: none; } }
+@media (min-width: 1200px) { .vwg .vwg-gender-shop { display: none; } }
+@media (max-width: 380px) { .vwg-gender a { min-width: 0; padding-inline: 14px; } }
+/* over the 3D hall the unselected sides get a faint backing, so the labels stay legible */
+.vwg .vwg-gender-shop { background: rgba(10, 10, 11, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }

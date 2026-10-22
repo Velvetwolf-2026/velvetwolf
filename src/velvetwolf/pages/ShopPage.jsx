@@ -11,6 +11,8 @@ import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
 import { money, photoFor, colorwaysOf, productHref, allPhotos } from "../gallery/galleryProducts";
 import { pageMeta, breadcrumbLd, itemListLd } from "../utils/seo";
+import GenderToggle from "../gallery/GenderToggle";
+import { parseGender, matchesGender } from "../gallery/genderFilter";
 
 export async function loader({ params }) {
   try {
@@ -21,10 +23,23 @@ export async function loader({ params }) {
   }
 }
 
-export function meta({ params, loaderData, data }) {
+// ALL · MEN · WOMEN and ?q= only filter the tees already loaded, so changing them
+// mustn't refetch the catalogue (that held the toggle back for a second or more).
+export function shouldRevalidate({ currentUrl, nextUrl, formMethod, defaultShouldRevalidate }) {
+  if (!formMethod && currentUrl.pathname === nextUrl.pathname) return false;
+  return defaultShouldRevalidate;
+}
+
+const GENDER_WORD = { men: "Men's", women: "Women's" };
+
+export function meta({ params, loaderData, data, location }) {
   const collection = params.collection ? getCollectionById(params.collection) : null;
   const path = collection ? `/shop/${collection.id}` : "/shop";
-  const title = collection ? `${collection.name} tees · VelvetWolf` : "Shop all tees · VelvetWolf";
+  // ?gender=men|women is a filtered view of the same page (the canonical stays the plain URL)
+  const who = GENDER_WORD[parseGender(new URLSearchParams(location?.search || "").get("gender"))];
+  const title = collection
+    ? `${who ? `${who} ` : ""}${collection.name} tees · VelvetWolf`
+    : who ? `${who} tees · VelvetWolf` : "Shop all tees · VelvetWolf";
   const description = collection
     ? `${collection.name}: heavyweight oversized VelvetWolf tees in 220 to 240 GSM cotton, five colours, sizes S to XXL. Free delivery across India.`
     : "Every VelvetWolf tee: heavyweight oversized cotton in five colours, sizes S to XXL, made in Tirupur. Free standard delivery across India.";
@@ -240,14 +255,19 @@ export default function ShopPage() {
   // /shop?q=... searches (search engines and AI assistants link here: see the
   // WebSite schema in utils/seo.js)
   const urlQuery = params.get("q");
+  // ALL · MEN · WOMEN (GenderToggle): Unisex tees show under both
+  const gender = parseGender(params.get("gender"));
+  const genderQs = gender === "all" ? "" : `?gender=${gender}`;
   useEffect(() => {
     if (urlQuery !== null) setSearchQuery?.(urlQuery.slice(0, 80));
   }, [urlQuery, setSearchQuery]);
   const loaderData = useLoaderData();
-  const products = useMemo(
-    () => (ctxProducts.length > 0 ? ctxProducts : loaderData?.products || []),
-    [ctxProducts, loaderData]
-  );
+  // The catalogue the page shows: the app's copy, unless the server's is fuller (if the
+  // browser's own fetch timed out, the app holds only the small offline sample list).
+  const products = useMemo(() => {
+    const fromServer = loaderData?.products || [];
+    return ctxProducts.length >= fromServer.length && ctxProducts.length > 0 ? ctxProducts : fromServer;
+  }, [ctxProducts, loaderData]);
   const { collection: routeCollection } = useParams();
   const navigate = useNavigate();
   const { engine } = useGallery();
@@ -300,6 +320,7 @@ export default function ShopPage() {
     const filtered = base
       .filter((p) => p && p.isActive !== false)
       .filter((p) => !routeCollection || p.collection === routeCollection)
+      .filter((p) => matchesGender(p, gender))
       .filter((p) => {
         if (!q || (Array.isArray(aiProducts) && aiProducts.length > 0)) return true;
         return [p.name, p.description, p.collection, p.tag].some((v) => String(v || "").toLowerCase().includes(q));
@@ -307,7 +328,7 @@ export default function ShopPage() {
     if (sort === "low") return [...filtered].sort((a, b) => Number(a.price) - Number(b.price));
     if (sort === "high") return [...filtered].sort((a, b) => Number(b.price) - Number(a.price));
     return filtered; // featured: newest first, as the API returns them
-  }, [aiProducts, products, routeCollection, searchQuery, sort]);
+  }, [aiProducts, products, routeCollection, searchQuery, sort, gender]);
 
   // Only collections that actually have tees (plus the open one), in menu order.
   const shownCollections = useMemo(() => {
@@ -316,12 +337,13 @@ export default function ShopPage() {
   }, [products, routeCollection]);
 
   const collection = routeCollection ? getCollectionById(routeCollection) : null;
-  const heading = collection ? collection.name : "All tees";
+  const genderWord = GENDER_WORD[gender];
+  const heading = collection ? collection.name : genderWord ? `${genderWord} tees` : "All tees";
 
   return (
     <main className="vwg vwg-shop">
       <header className="shop-head">
-        <p className="eyebrow">{collection ? "Collection" : "Shop"}</p>
+        <p className="eyebrow">{collection ? (genderWord ? `Collection · ${genderWord}` : "Collection") : "Shop"}</p>
         <h1 className="display">{heading}</h1>
         <p className="shop-sub">
           {aiLoading ? "Searching…" : `${list.length} ${list.length === 1 ? "tee" : "tees"}`}
@@ -329,10 +351,13 @@ export default function ShopPage() {
         </p>
       </header>
 
+      {/* phones, tablets, small laptops: the header has no room, so it sits here */}
+      <GenderToggle className="vwg-gender-shop" />
+
       <nav className="collections" aria-label="Collections">
-        <Link className="coll-link" to="/shop" aria-current={!routeCollection ? "page" : undefined}>All</Link>
+        <Link className="coll-link" to={`/shop${genderQs}`} aria-current={!routeCollection ? "page" : undefined}>All</Link>
         {shownCollections.map((c) => (
-          <Link key={c.id} className="coll-link" to={`/shop/${c.id}`} aria-current={routeCollection === c.id ? "page" : undefined}>
+          <Link key={c.id} className="coll-link" to={`/shop/${c.id}${genderQs}`} aria-current={routeCollection === c.id ? "page" : undefined}>
             {c.name}
           </Link>
         ))}
@@ -368,7 +393,7 @@ export default function ShopPage() {
         <ul className="grid">
           {list.map((p, i) => {
             // the newest tee takes a double tile, but only in the default view
-            const feature = i === 0 && colorView === "all" && sort === "featured" && !routeCollection;
+            const feature = i === 0 && colorView === "all" && sort === "featured" && !routeCollection && gender === "all";
             return (
               <li key={p.id} className={feature ? "is-feature" : undefined}>
                 <ProductTile product={p} colorId={colorView === "all" ? null : colorView} feature={feature} eager={i < 4} />
@@ -378,8 +403,8 @@ export default function ShopPage() {
         </ul>
       ) : (
         <div className="shop-empty">
-          <p>No tees match that yet.</p>
-          <Link className="btn" to="/shop">See all tees</Link>
+          <p>{gender !== "all" ? `No ${gender === "men" ? "men's" : "women's"} tees${collection ? ` in ${collection.name}` : ""} yet.` : "No tees match that yet."}</p>
+          <Link className="btn" to={gender !== "all" && collection ? `/shop/${collection.id}` : "/shop"}>See all tees</Link>
         </div>
       )}
 
