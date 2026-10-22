@@ -18,9 +18,9 @@ export const BUSINESS = {
     returns: "returns@velvetwolf.in",
     bulk: "bulk@velvetwolf.in",
   },
-  whatsapp: { label: "+91 93422 45724", href: "https://wa.me/919342245724" },
+  whatsapp: { label: "+91 73388 16732", href: "https://wa.me/917338816732" },
   // the same number, for calls (tel: opens the dialler on phones)
-  phone: { label: "+91 93422 45724", href: "tel:+919342245724" },
+  phone: { label: "+91 73388 16732", href: "tel:+917338816732" },
   instagram: { label: "@velvetwolfofficial", href: "https://www.instagram.com/velvetwolfofficial" },
   // the brand's Facebook page, as linked from the earlier site footer (its X
   // account, @velvetwolf_in, doesn't exist, so it isn't linked)

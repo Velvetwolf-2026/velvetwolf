@@ -179,8 +179,28 @@ async function uploadInlinePhoto(file) {
   return file.color ? `${file.color}::${data.publicUrl}` : data.publicUrl;
 }
 
+// Gender <-> the older style labels, so both columns always agree.
+const STYLE_OF_GENDER = { Unisex: "Unisex", Men: "Men's Fit", Women: "Women's Fit" };
+const GENDER_OF_STYLE = { "Unisex": "Unisex", "Men's Fit": "Men", "Women's Fit": "Women" };
+
+// The products.gender column comes from a migration in schema.sql. If it hasn't
+// been run, save the product without it rather than failing the upload.
+const isMissingColumn = (error, column) =>
+  ["42703", "PGRST204"].includes(error?.code) && String(error?.message || "").includes(column);
+
+async function writeProduct(run, row) {
+  let result = await run(row);
+  if (result.error && "gender" in row && isMissingColumn(result.error, "gender")) {
+    logWarn("products.gender missing: saving without it (run the SMART FILTERS migration in schema.sql)", adminLogContext());
+    const { gender: _skip, ...rest } = row;
+    result = await run(rest);
+  }
+  return result;
+}
+
 export async function createAdminProduct(productData, adminId) {
   const { name, collection, price, original_price, description, tag, sizes, colors, stock, image, images = [], newImages = [], style, fit } = productData;
+  const gender = productData.gender || GENDER_OF_STYLE[style] || "Unisex";
 
   logInfo("Creating product", adminLogContext({ name, collection, adminId }));
 
@@ -207,7 +227,7 @@ export async function createAdminProduct(productData, adminId) {
   const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
 
-  const { data, error } = await supabaseAdmin.from("products").insert({
+  const { data, error } = await writeProduct((row) => supabaseAdmin.from("products").insert(row).select().single(), {
     name: name.trim(),
     collection: collection.trim(),
     sku,
@@ -221,9 +241,10 @@ export async function createAdminProduct(productData, adminId) {
     stock: Number(stock ?? 0),
     image: finalImageUrl,
     images: finalImagesArray,
-    style: style || "Unisex",
+    gender,
+    style: STYLE_OF_GENDER[gender],
     fit: fit || "Oversized",
-  }).select().single();
+  });
 
   if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, `Couldn't save the product${error.message ? `: ${error.message}` : ""}.`); }
 
@@ -262,11 +283,14 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   logInfo("Updating product", adminLogContext({ productId, adminId }));
 
-  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images", "style", "fit"];
+  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images", "style", "fit", "gender"];
   const updates = {};
   for (const key of allowed) {
     if (productData[key] !== undefined) updates[key] = productData[key];
   }
+  // keep gender and the older style label in step
+  if (updates.gender) updates.style = STYLE_OF_GENDER[updates.gender];
+  else if (updates.style && GENDER_OF_STYLE[updates.style]) updates.gender = GENDER_OF_STYLE[updates.style];
 
   // Ensure images is an array if we are updating it
   if (updates.images && !Array.isArray(updates.images)) {
@@ -292,7 +316,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   if (Object.keys(updates).length === 0) throw new ApiError(400, "No valid fields to update.");
 
-  const { data, error } = await supabaseAdmin.from("products").update(updates).eq("id", productId).select().single();
+  const { data, error } = await writeProduct((row) => supabaseAdmin.from("products").update(row).eq("id", productId).select().single(), updates);
   if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, `Couldn't update the product${error.message ? `: ${error.message}` : ""}.`); }
   if (!data) throw new ApiError(404, "Product not found.");
 

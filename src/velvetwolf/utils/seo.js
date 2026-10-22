@@ -181,6 +181,7 @@ export function productLd(product, { path, images = [] } = {}) {
     brand: { "@type": "Brand", name: SITE_NAME },
     ...(product.collection ? { category: `Apparel > T-shirts > ${product.collection}` } : { category: "Apparel > T-shirts" }),
     material: "Combed cotton jersey, 220 to 240 GSM",
+    audience: { "@type": "PeopleAudience", suggestedGender: { Men: "male", Women: "female" }[product.gender] || "unisex" },
     countryOfOrigin: "IN",
     ...(Array.isArray(product.sizes) && product.sizes.length ? { size: product.sizes } : {}),
     ...(Array.isArray(product.colors) && product.colors.length ? { color: product.colors.join(", ") } : {}),

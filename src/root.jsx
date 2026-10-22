@@ -28,6 +28,7 @@ import SilkBackground from "./velvetwolf/components/SilkBackground";
 import { isGalleryPath } from "./velvetwolf/gallery/galleryContext";
 import SmoothScroll from "./velvetwolf/components/SmoothScroll";
 import MetaPixel from "./velvetwolf/components/MetaPixel";
+import EmailChooser from "./velvetwolf/components/EmailChooser";
 
 import "./index.css";
 
@@ -506,22 +507,6 @@ export default function VelvetWolfRoot() {
     };
   }, [location.pathname, navType]);
 
-  // Email links (contact details, FAQ answers): a computer with no mail app
-  // set up does nothing on mailto:, so also copy the address and say so.
-  useEffect(() => {
-    const onClick = (e) => {
-      const a = e.target?.closest?.('a[href^="mailto:"]');
-      if (!a || e.defaultPrevented || e.button !== 0) return;
-      const address = decodeURIComponent(a.getAttribute("href").slice(7).split("?")[0]);
-      if (!address) return;
-      const done = () => showToast(`Opening your email app. ${address} is copied too, in case it doesn't open.`, "info");
-      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(address).then(done, () => showToast(`Write to us at ${address}`, "info"));
-      else showToast(`Write to us at ${address}`, "info");
-    };
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
-  }, [showToast]);
-
   // Handle global unauthorized API calls
   useEffect(() => {
     const handleUnauthorized = () => {
@@ -679,6 +664,7 @@ export default function VelvetWolfRoot() {
         <SmoothScroll />
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        <EmailChooser />
 
         <Outlet />
 

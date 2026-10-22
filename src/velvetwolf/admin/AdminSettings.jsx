@@ -9,7 +9,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export default function AdminSettings() {
   const { showToast } = useContext(AppContext);
   const DEFAULT_SETTINGS = {
-    storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 93422 45724",
+    storeName: "VelvetWolf", tagline: "Luxury Streetwear", storeEmail: "hello@velvetwolf.in", storePhone: "+91 73388 16732",
     freeShipping: "1999", flatRate: "149", dispatchDays: "2", returnDays: "7",
     razorpayKey: "", upiHandle: "", gstNumber: "", pan: "",
     orderEmail: "orders@velvetwolf.in", alertEmail: "alerts@velvetwolf.in", smsProvider: "", whatsapp: "",

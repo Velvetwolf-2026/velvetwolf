@@ -32,7 +32,7 @@ describe("seo", () => {
 
   it("states the business's contact details and hours, and the FAQ as plain text", () => {
     const org = organizationLd();
-    expect(org.contactPoint[0]).toMatchObject({ email: "info@velvetwolf.in", telephone: "+919342245724" });
+    expect(org.contactPoint[0]).toMatchObject({ email: "info@velvetwolf.in", telephone: "+917338816732" });
     expect(org.openingHoursSpecification[0].dayOfWeek).toHaveLength(6);
     const faq = faqLd(FAQ);
     expect(faq.mainEntity).toHaveLength(FAQ.length);

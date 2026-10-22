@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Who a product is cut for. Stored in products.gender (and mirrored to the older
+// products.style, which the site already reads).
+export const GENDERS = ["Unisex", "Men", "Women"];
+const genderField = z.enum(GENDERS, { errorMap: () => ({ message: "Gender must be Unisex, Men or Women." }) });
+
 const VALID_ORDER_STATUSES = [
   "pending", "confirmed", "processing", "in_production",
   "dispatched", "delivered", "cancelled",
@@ -43,6 +48,7 @@ export const createProductSchema = z.object({
     color: z.string().optional(),
   })).optional().default([]),
   style: z.string().optional().default("Unisex"),
+  gender: genderField.optional(),
   fit: z.string().optional().default("Oversized"),
 });
 
@@ -66,6 +72,7 @@ export const updateProductSchema = z.object({
     color: z.string().optional(),
   })).optional(),
   style: z.string().optional(),
+  gender: genderField.optional(),
   fit: z.string().optional(),
 });
 
