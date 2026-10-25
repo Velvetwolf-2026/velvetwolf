@@ -38,8 +38,57 @@ export function maskEmail(email) {
 
 export function serializeError(error) {
   if (!error) return null;
-  return { name: error.name, message: error.message, stack: error.stack, statusCode: error.statusCode, code: error.code };
+  const cause = error.cause && typeof error.cause === "object"
+    ? { message: error.cause.message, code: error.cause.code, details: error.cause.details, hint: error.cause.hint }
+    : undefined;
+  return { name: error.name, message: error.message, stack: error.stack, statusCode: error.statusCode, code: error.code, ...(cause ? { cause } : {}) };
 }
+
+// What people see when the database or a provider fails. Raw errors ("duplicate
+// key value violates unique constraint ...") read as gibberish and give away
+// table and column names, so they stay in the logs (as the ApiError's cause,
+// which serializeError writes out) and the response says what happened in
+// plain words.
+export const TRY_AGAIN = "Something went wrong on our side. Please try again.";
+
+const DB_ERROR_REASONS = {
+  23505: "That name or code is already in use.", // unique_violation
+  23503: "Other records still depend on it.", // foreign_key_violation
+  23502: "Some details are missing.", // not_null_violation
+  23514: "Some details aren't valid.", // check_violation
+  "22P02": "Some details aren't valid.", // invalid_text_representation
+  22001: "Some details are too long.", // string_data_right_truncation
+};
+
+// Admins also get the reasons only they can act on.
+const ADMIN_DB_ERROR_REASONS = {
+  ...DB_ERROR_REASONS,
+  42703: "The database needs its latest update (run the newest migration in schema.sql).", // undefined_column
+  PGRST204: "The database needs its latest update (run the newest migration in schema.sql).", // column not in schema cache
+  42883: "The database needs its latest update (run the newest migration in schema.sql).", // undefined_function
+};
+
+function adminReason(error) {
+  if (ADMIN_DB_ERROR_REASONS[error?.code]) return ADMIN_DB_ERROR_REASONS[error.code];
+  // Storage errors carry no Postgres code.
+  if (/already exists/i.test(String(error?.message || ""))) return "A file with that name already exists.";
+  return "";
+}
+
+export function dbErrorMessage(error, action = "", { forAdmin = false } = {}) {
+  const reason = forAdmin ? adminReason(error) : DB_ERROR_REASONS[error?.code];
+  if (!action) return reason ? `${reason} Please check and try again.` : TRY_AGAIN;
+  return `${action} ${reason || "Please try again."}`;
+}
+
+// An ApiError for a failed query: a readable message, with the raw error kept for the logs.
+export function dbFailure(statusCode, error, action = "", options) {
+  const err = new ApiError(statusCode, dbErrorMessage(error, action, options));
+  err.cause = error;
+  return err;
+}
+
+export const adminDbFailure = (statusCode, error, action) => dbFailure(statusCode, error, action, { forAdmin: true });
 
 export function sanitizeForLog(value, depth = 0) {
   if (value === null || value === undefined) return value;

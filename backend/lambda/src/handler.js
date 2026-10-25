@@ -1,5 +1,5 @@
 import { loadBackendEnv } from "./config/env.js";
-import { ApiError, jsonResponse, logError, logInfo, logWarn, sanitizeForLog } from "./utils/http.js";
+import { ApiError, jsonResponse, logError, logInfo, logWarn, sanitizeForLog, TRY_AGAIN } from "./utils/http.js";
 import { handleAuthRoutes } from "./routes/auth.routes.js";
 import { handleProductRoutes } from "./routes/product.routes.js";
 import { handleCartRoutes } from "./routes/cart.routes.js";
@@ -124,7 +124,7 @@ export async function handler(event) {
   } catch (error) {
     if (error instanceof SyntaxError) {
       logWarn("Invalid JSON body received", { requestId, method, route, error });
-      return jsonResponse(400, { error: "Invalid JSON body" }, {}, event);
+      return jsonResponse(400, { error: "We couldn't read that request. Please reload the page and try again." }, {}, event);
     }
 
     if (error instanceof ApiError) {
@@ -135,6 +135,6 @@ export async function handler(event) {
     }
 
     logError("Unhandled request error", { requestId, method, route, error });
-    return jsonResponse(500, { error: "Internal server error" }, {}, event);
+    return jsonResponse(500, { error: TRY_AGAIN }, {}, event);
   }
 }

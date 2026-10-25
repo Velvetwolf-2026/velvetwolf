@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
 import { signDesignFiles } from "./studio.service.js";
 import { notifyRestock } from "./account.service.js";
-import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
+import { ApiError, adminDbFailure, logError, logInfo, logWarn } from "../utils/http.js";
 import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 const VALID_ORDER_STATUSES = [
@@ -28,9 +28,9 @@ export async function getAdminDashboardStats() {
     supabaseAdmin.from("products").select("id, stock", { count: "exact" }),
   ]);
 
-  if (ordersResult.error) { logError("Dashboard orders query failed", adminLogContext({ error: ordersResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${ordersResult.error.message}`); }
-  if (customersResult.error) { logError("Dashboard customers query failed", adminLogContext({ error: customersResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${customersResult.error.message}`); }
-  if (productsResult.error) { logError("Dashboard products query failed", adminLogContext({ error: productsResult.error })); throw new ApiError(500, `Failed to load dashboard data: ${productsResult.error.message}`); }
+  if (ordersResult.error) { logError("Dashboard orders query failed", adminLogContext({ error: ordersResult.error })); throw adminDbFailure(500, ordersResult.error, "Couldn't load the dashboard."); }
+  if (customersResult.error) { logError("Dashboard customers query failed", adminLogContext({ error: customersResult.error })); throw adminDbFailure(500, customersResult.error, "Couldn't load the dashboard."); }
+  if (productsResult.error) { logError("Dashboard products query failed", adminLogContext({ error: productsResult.error })); throw adminDbFailure(500, productsResult.error, "Couldn't load the dashboard."); }
 
   const orders = ordersResult.data || [];
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
@@ -157,7 +157,7 @@ export async function createProductPhotoUploadUrl({ contentType } = {}) {
   const { data, error } = await supabaseAdmin.storage.from(PRODUCT_BUCKET).createSignedUploadUrl(path);
   if (error || !data?.signedUrl) {
     logError("Could not create product photo upload URL", adminLogContext({ path, error }));
-    throw new ApiError(502, `Couldn't prepare the photo upload${error?.message ? `: ${error.message}` : ""}.`);
+    throw adminDbFailure(502, error, "Couldn't prepare the photo upload.");
   }
   const { data: pub } = supabaseAdmin.storage.from(PRODUCT_BUCKET).getPublicUrl(path);
   return { path, uploadUrl: data.signedUrl, publicUrl: pub.publicUrl };
@@ -173,7 +173,7 @@ async function uploadInlinePhoto(file) {
   });
   if (error) {
     logError("Failed to upload product image", adminLogContext({ originalName: file.fileName, key, error }));
-    throw new ApiError(502, `Couldn't save a product photo${error.message ? `: ${error.message}` : ""}.`);
+    throw adminDbFailure(502, error, "Couldn't save a product photo.");
   }
   const { data } = supabaseAdmin.storage.from(PRODUCT_BUCKET).getPublicUrl(key);
   return file.color ? `${file.color}::${data.publicUrl}` : data.publicUrl;
@@ -264,7 +264,7 @@ export async function createAdminProduct(productData, adminId) {
     ...(productData.print_image !== undefined ? { print_image: productData.print_image } : {}),
   });
 
-  if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, `Couldn't save the product${error.message ? `: ${error.message}` : ""}.`); }
+  if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw adminDbFailure(500, error, "Couldn't save the product."); }
   if (data?.id && productData.top_rank) await freeTopRank(productData.top_rank, data.id);
 
   // Create variants for all size/color combinations
@@ -337,7 +337,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   if (updates.top_rank) await freeTopRank(updates.top_rank, productId);
   const { data, error } = await writeProduct((row) => supabaseAdmin.from("products").update(row).eq("id", productId).select().single(), updates);
-  if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, `Couldn't update the product${error.message ? `: ${error.message}` : ""}.`); }
+  if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw adminDbFailure(500, error, "Couldn't update the product."); }
   if (!data) throw new ApiError(404, "Product not found.");
 
   return { success: true, product: data };
@@ -454,7 +454,7 @@ export async function getAdminAnalytics() {
 
 export async function getAdminCoupons() {
   const { data, error } = await supabaseAdmin.from("coupons").select("*").order("created_at", { ascending: false });
-  if (error) throw new ApiError(500, `Failed to load coupons: ${error.message}`);
+  if (error) throw adminDbFailure(500, error, "Couldn't load coupons.");
   return (data || []).map(d => ({
     id: d.code,
     code: d.code,
@@ -476,7 +476,7 @@ export async function createAdminCoupon(couponData) {
     })
     .select()
     .single();
-  if (error) throw new ApiError(400, `Failed to create coupon: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't create the coupon.");
   return {
     id: data.code,
     code: data.code,
@@ -499,7 +499,7 @@ export async function updateAdminCoupon(couponId, couponData) {
     .eq("code", couponId)
     .select()
     .single();
-  if (error) throw new ApiError(400, `Failed to update coupon: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't update the coupon.");
   return {
     id: data.code,
     code: data.code,
@@ -511,7 +511,7 @@ export async function updateAdminCoupon(couponId, couponData) {
 
 export async function deleteAdminCoupon(couponId) {
   const { error } = await supabaseAdmin.from("coupons").delete().eq("code", couponId);
-  if (error) throw new ApiError(400, `Failed to delete coupon: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't delete the coupon.");
   return { success: true };
 }
 
@@ -539,13 +539,13 @@ export async function createAdminCategory(catData) {
     .insert({ id: id.trim().toLowerCase(), name: name.trim(), description: description?.trim() || null, icon: icon?.trim() || null })
     .select()
     .single();
-  if (error) throw new ApiError(400, `Failed to create collection: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't create the collection.");
   return data;
 }
 
 export async function deleteAdminCategory(catId) {
   const { error } = await supabaseAdmin.from("collections").delete().eq("id", catId);
-  if (error) throw new ApiError(400, `Failed to delete collection: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't delete the collection.");
   return { success: true };
 }
 
@@ -564,7 +564,7 @@ export async function updateAdminOrderShiprocket(orderId, trackingData) {
     .eq("id", orderId)
     .select()
     .single();
-  if (error) throw new ApiError(400, `Failed to update tracking info: ${error.message}`);
+  if (error) throw adminDbFailure(400, error, "Couldn't update the tracking details.");
   return data;
 }
 
@@ -604,7 +604,7 @@ export async function updateAdminProductInventory(productId, inventoryData) {
     .select("*, product_variants(*)")
     .single();
 
-  if (prodError) throw new ApiError(400, `Failed to update product stock: ${prodError.message}`);
+  if (prodError) throw adminDbFailure(400, prodError, "Couldn't update the stock.");
   // back in stock: email anyone waiting on this size (never fails the update)
   if (!varError && Number(stock) > 0) await notifyRestock(productId, size);
   return { success: true, product };

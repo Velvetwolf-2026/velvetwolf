@@ -21,7 +21,7 @@ export async function updateProfile(userId, updates) {
     })
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Failed to update profile');
   }
@@ -40,7 +40,7 @@ export async function sendEmailUpdateOtp(newEmail) {
     body: JSON.stringify({ newEmail })
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Failed to send verification code.');
   }
@@ -57,9 +57,9 @@ export async function verifyEmailUpdateOtp(newEmail, otp) {
     body: JSON.stringify({ newEmail, otp })
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || 'Failed to verify verification code.');
+    throw new Error(data.error || "We couldn't check that code. Please try again.");
   }
   return data;
 }

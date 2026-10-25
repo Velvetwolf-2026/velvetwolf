@@ -29,7 +29,7 @@ async function adminFetch(method, path, body) {
     }
     const fallback = res.status === 413
       ? "That's too much to send in one go. Try fewer or smaller photos."
-      : data?.message || `Request failed (${res.status})`;
+      : data?.message || `Something went wrong (error ${res.status}). Please try again.`;
     const err = new Error(data?.error || fallback);
     err.status = res.status;
     throw err;

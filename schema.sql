@@ -656,3 +656,23 @@ END $$;
 -- Coupons: the HARDENING section above drops the public read policy; re-stated
 -- here because the live database still let the public key read coupons.
 DROP POLICY IF EXISTS "Allow select coupons" ON public.coupons;
+
+-- ==========================================
+-- MIGRATION: SIGN-OUT ENDS THE SESSION
+-- ==========================================
+-- Signing out records the session (a SHA-256 hash of its token, never the token
+-- itself) here, and the backend refuses recorded sessions, so a copied cookie
+-- stops working at sign-out instead of lasting its full 7 days. Rows are removed
+-- once the token has expired anyway. Until this runs, signing out only clears
+-- the browser, as before.
+CREATE TABLE IF NOT EXISTS public.ended_sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id UUID,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ended_sessions_expires_at ON public.ended_sessions(expires_at);
+
+ALTER TABLE public.ended_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow service role all ended_sessions" ON public.ended_sessions;
+CREATE POLICY "Allow service role all ended_sessions" ON public.ended_sessions FOR ALL TO service_role USING (true) WITH CHECK (true);

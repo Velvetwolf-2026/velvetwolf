@@ -1,7 +1,7 @@
 import { StrictMode, startTransition } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
-import { isBackendUrl } from "./velvetwolf/utils/api";
+import { isBackendUrl, toReadableNetworkError } from "./velvetwolf/utils/api";
 
 // Helper to extract csrf_token value from cookies
 function getCsrfTokenFromCookie() {
@@ -33,6 +33,7 @@ window.fetch = function (url, options) {
         options.headers = headers;
       }
     }
+    return originalFetch(url, options).catch(toReadableNetworkError);
   }
   return originalFetch(url, options);
 };

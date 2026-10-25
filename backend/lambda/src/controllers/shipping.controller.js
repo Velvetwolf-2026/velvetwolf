@@ -1,5 +1,13 @@
 import * as shiprocketService from "../services/shiprocket.service.js";
-import { jsonResponse } from "../utils/http.js";
+import { ApiError, jsonResponse, logError, TRY_AGAIN } from "../utils/http.js";
+
+// Our own errors (order not found, bad PIN code) are written for people; anything
+// else is logged and answered with a plain sentence.
+function failure(err, event) {
+  if (err instanceof ApiError) return jsonResponse(err.statusCode, { error: err.message }, {}, event);
+  logError("Shipping request failed", { service: "shipping", error: err });
+  return jsonResponse(500, { error: TRY_AGAIN }, {}, event);
+}
 
 export async function trackShipment(orderId, event, query = {}) {
   if (!orderId) {
@@ -10,7 +18,7 @@ export async function trackShipment(orderId, event, query = {}) {
     const result = await shiprocketService.getShipmentTracking(decodeURIComponent(orderId).trim(), query?.email || "");
     return jsonResponse(200, result, {}, event);
   } catch (err) {
-    return jsonResponse(err.statusCode || 500, { error: err.message || "Internal server error" }, {}, event);
+    return failure(err, event);
   }
 }
 
@@ -24,6 +32,6 @@ export async function checkServiceability(query, event) {
     const result = await shiprocketService.checkServiceability(pincode);
     return jsonResponse(200, result, {}, event);
   } catch (err) {
-    return jsonResponse(err.statusCode || 500, { error: err.message || "Internal server error" }, {}, event);
+    return failure(err, event);
   }
 }

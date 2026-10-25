@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { supabaseAdmin } from "../config/supabase.js";
-import { ApiError, logError, logInfo } from "../utils/http.js";
+import { ApiError, dbFailure, logError, logInfo } from "../utils/http.js";
 import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 function parseCommentAndImages(rawComment) {
@@ -74,7 +74,7 @@ export async function getProductBySlug(slug) {
       throw new ApiError(404, "Product not found.");
     }
     logError("Product fetch by slug failed", productLogContext({ slug, error }));
-    throw new ApiError(500, error.message || "Failed to load product.");
+    throw dbFailure(500, error, "We couldn't load this product.");
   }
 
   return mapProduct(data);
@@ -98,7 +98,7 @@ export async function getProducts({ collection, search, limit = 100, offset = 0 
   const { data, error } = await query;
   if (error) {
     logError("Products fetch failed", productLogContext({ collection, search, error }));
-    throw new ApiError(500, error.message || "Failed to load products.");
+    throw dbFailure(500, error, "We couldn't load the products.");
   }
 
   return (data || []).map(mapProduct);

@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { loadBackendEnv } from "../config/env.js";
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, logError, logWarn } from "../utils/http.js";
+import { isSessionEnded } from "../services/session.service.js";
 
 loadBackendEnv();
 
@@ -64,8 +65,33 @@ async function loadSessionUser(payload, event) {
  * current role. Throws ApiError(401/403) when not authenticated.
  */
 export async function requireAuth(event) {
-  const payload = verifyRequestToken(event);
-  return loadSessionUser(payload, event);
+  const { token, payload } = verifyRequestToken(event);
+  const [user, ended] = await Promise.all([loadSessionUser(payload, event), isSessionEnded(token)]);
+  if (ended) {
+    logWarn("Signed-out session token used", { service: "auth-middleware", userId: payload.id, route: event.rawPath || event.path });
+    throw new ApiError(401, "Your session has ended. Please sign in again.");
+  }
+  return user;
+}
+
+function getBearerToken(event) {
+  const authHeader =
+    event.headers?.authorization ||
+    event.headers?.Authorization ||
+    "";
+  return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+}
+
+function getCookieToken(event) {
+  const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
+  const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="))
+    || (Array.isArray(event.cookies) ? event.cookies.find((c) => c.trim().startsWith("token=")) : undefined);
+  return match ? match.split("=")[1]?.trim() || "" : "";
+}
+
+/** The session token the request carries (Bearer header or cookie), unverified. */
+export function getSessionToken(event) {
+  return getBearerToken(event) || getCookieToken(event);
 }
 
 /**
@@ -73,28 +99,10 @@ export async function requireAuth(event) {
  * Authorization: Bearer header (signature, expiry and CSRF only — no DB).
  */
 function verifyRequestToken(event) {
-  const authHeader =
-    event.headers?.authorization ||
-    event.headers?.Authorization ||
-    "";
-  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const bearerToken = getBearerToken(event);
 
   const cookieHeader = event.headers?.cookie || event.headers?.Cookie || "";
-  let cookieToken = "";
-
-  if (cookieHeader) {
-    const match = cookieHeader.split(";").find((c) => c.trim().startsWith("token="));
-    if (match) {
-      cookieToken = match.split("=")[1]?.trim();
-    }
-  }
-
-  if (!cookieToken && event.cookies && Array.isArray(event.cookies)) {
-    const match = event.cookies.find((c) => c.trim().startsWith("token="));
-    if (match) {
-      cookieToken = match.split("=")[1]?.trim();
-    }
-  }
+  const cookieToken = getCookieToken(event);
 
   const token = bearerToken || cookieToken;
 
@@ -133,12 +141,12 @@ function verifyRequestToken(event) {
         hasCookie: !!csrfCookieToken,
         hasHeader: !!csrfHeaderToken,
       });
-      throw new ApiError(403, "CSRF verification failed.");
+      throw new ApiError(403, "Your session needs a refresh. Reload the page and try again.");
     }
   }
 
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return { token, payload: jwt.verify(token, process.env.JWT_SECRET) };
   } catch (err) {
     logWarn("Invalid or expired JWT", {
       service: "auth-middleware",

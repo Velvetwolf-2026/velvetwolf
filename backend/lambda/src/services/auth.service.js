@@ -5,7 +5,7 @@ import { loadBackendEnv, isLocalDevelopment } from "../config/env.js";
 import { normalizeOtpKind } from "../config/otp-template.js";
 import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
-import { ApiError, jsonResponse, logError, logInfo, logWarn } from "../utils/http.js";
+import { ApiError, dbFailure, jsonResponse, logError, logInfo, logWarn, TRY_AGAIN } from "../utils/http.js";
 import { findUserByVerifiedPhone, mobileEmail } from "./phone.service.js";
 import { claimOtpTry, MAX_OTP_ATTEMPTS } from "./otp-attempts.js";
 
@@ -50,7 +50,7 @@ function authLogContext(context = {}) { return { service: "auth", ...context }; 
 export function createJwt(user) {
   if (!process.env.JWT_SECRET) {
     logError("JWT secret missing while creating token", authLogContext({ userId: user?.id }));
-    throw new ApiError(500, "JWT_SECRET is missing in backend environment.");
+    throw new ApiError(500, TRY_AGAIN);
   }
   return jwt.sign(
     { id: user.id, email: user.email, name: user.name, role: user.role || "customer" },
@@ -110,7 +110,7 @@ async function checkRateLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_
     p_window_seconds: windowSecs,
     p_block_seconds: RATE_LIMIT_BLOCK_SECS,
   });
-  if (error) { logError("Rate limit check failed", authLogContext({ key, error })); throw new ApiError(400, error.message); }
+  if (error) { logError("Rate limit check failed", authLogContext({ key, error })); throw dbFailure(400, error); }
 
   const row = Array.isArray(data) ? data[0] : data;
   if (row?.blocked) {
@@ -122,7 +122,7 @@ async function checkRateLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_
 
 async function recordRateAttempt(key) {
   const { error } = await supabaseAdmin.rpc("record_rate_attempt", { p_key: key });
-  if (error) { logError("Failed to record rate limit attempt", authLogContext({ key, error })); throw new ApiError(400, error.message); }
+  if (error) { logError("Failed to record rate limit attempt", authLogContext({ key, error })); throw dbFailure(400, error); }
 }
 
 function createOtpMetadata(type) {
@@ -189,7 +189,7 @@ async function exchangeGoogleCodeForTokens(code) {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     logError("Google OAuth credentials missing", authLogContext({ hasClientId: Boolean(clientId) }));
-    throw new ApiError(500, "Google OAuth credentials are missing.");
+    throw new ApiError(500, "Google sign-in isn't available right now. Please sign in with your email.");
   }
 
   const tokenParams = new URLSearchParams({
@@ -205,8 +205,8 @@ async function exchangeGoogleCodeForTokens(code) {
 
   const tokenData = await tokenRes.json();
   if (!tokenRes.ok || !tokenData.access_token) {
-    logError("Google token exchange failed", authLogContext({ status: tokenRes.status }));
-    throw new ApiError(401, tokenData.error_description || tokenData.error || "Google token exchange failed.");
+    logError("Google token exchange failed", authLogContext({ status: tokenRes.status, error: tokenData.error, errorDescription: tokenData.error_description }));
+    throw new ApiError(401, "Google sign-in could not be completed.");
   }
   return tokenData;
 }
@@ -218,7 +218,7 @@ async function fetchGoogleProfile(accessToken) {
   const profile = await profileRes.json();
   if (!profileRes.ok || !profile.email) {
     logError("Google profile fetch failed", authLogContext({ status: profileRes.status }));
-    throw new ApiError(401, "Unable to fetch Google user profile.");
+    throw new ApiError(401, "Google sign-in could not be completed.");
   }
   // Google sign-in opens the account with this email, so the email must be
   // one Google has verified (the Firebase sign-in checks the same).
@@ -236,7 +236,7 @@ async function upsertGoogleUser(profile) {
   const { data: existingUser, error: existingUserError } = await supabaseAdmin
     .from("users").select("id, email, name, role, type").eq("email", email).maybeSingle();
 
-  if (existingUserError) throw new ApiError(400, existingUserError.message);
+  if (existingUserError) throw dbFailure(400, existingUserError, "We couldn't sign you in right now.");
 
   if (existingUser) {
     // Google has verified this email, so it signs in the existing account
@@ -252,7 +252,7 @@ async function upsertGoogleUser(profile) {
     type: "Google", last_login: new Date().toISOString(),
   }).select("id, email, name, role").limit(1);
 
-  if (insertError) { logError("Google user insert failed", authLogContext({ email, error: insertError })); throw new ApiError(400, insertError.message); }
+  if (insertError) { logError("Google user insert failed", authLogContext({ email, error: insertError })); throw dbFailure(400, insertError, "We couldn't sign you in right now."); }
   const insertedUser = insertedRows?.[0];
   if (!insertedUser) throw new ApiError(500, "Google user creation failed.");
   return insertedUser;
@@ -260,7 +260,10 @@ async function upsertGoogleUser(profile) {
 
 export function getGoogleAuthRedirect({ mode, nonce } = {}) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId) throw new ApiError(500, "GOOGLE_CLIENT_ID is missing in backend environment.");
+  if (!clientId) {
+    logError("GOOGLE_CLIENT_ID missing", authLogContext());
+    throw new ApiError(500, "Google sign-in isn't available right now. Please sign in with your email.");
+  }
 
   const query = new URLSearchParams({
     client_id: clientId, redirect_uri: getGoogleCallbackUrl(),
@@ -278,7 +281,10 @@ export async function googleCallback({ code, state, error, errorDescription, sta
 
   try {
     if (error) {
-      const message = error === "access_denied" ? "Google sign-in was cancelled." : (errorDescription || "Google sign-in could not be completed.");
+      // Google's own error text arrives in the link, so anyone could write it:
+      // the page shows one of these instead.
+      if (errorDescription) logWarn("Google sign-in returned an error", authLogContext({ error, errorDescription: String(errorDescription).slice(0, 200) }));
+      const message = error === "access_denied" ? "Google sign-in was cancelled." : "Google sign-in could not be completed.";
       return { redirect: buildGoogleErrorRedirect(mode, message) };
     }
     if (!code || !nonceMatches(stateData.nonce, stateNonce)) {
@@ -316,7 +322,7 @@ export async function signup({ name, email }, ip) {
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users").select("id, is_verified").eq("email", normalizedEmail).single();
 
-    if (existingUserError && existingUserError.code !== "PGRST116") throw new ApiError(400, existingUserError.message);
+    if (existingUserError && existingUserError.code !== "PGRST116") throw dbFailure(400, existingUserError, "We couldn't create your account right now.");
 
     if (existingUser) {
       if (existingUser.is_verified) throw new ApiError(409, "Account with this email already exists. Please login or use a different email.");
@@ -333,11 +339,11 @@ export async function signup({ name, email }, ip) {
       name: String(name || "").trim(), email: normalizedEmail,
       password_hash: hashedPassword, role: "customer", type: "Signup",
     });
-    if (userInsertError) throw new ApiError(400, userInsertError.message);
+    if (userInsertError) throw dbFailure(400, userInsertError, "We couldn't create your account right now.");
     userCreated = true;
 
     const { error: otpInsertError } = await supabaseAdmin.from("otps").insert({ email: normalizedEmail, otp, expires_at: expiresAt, type });
-    if (otpInsertError) throw new ApiError(400, otpInsertError.message);
+    if (otpInsertError) throw dbFailure(400, otpInsertError, "We couldn't send your code right now.");
 
     await sendOTP(normalizedEmail, otp, "signup", buildVerifyUrl(normalizedEmail, otp, "signup"));
     await recordRateAttempt(`signup:${normalizedEmail}`);
@@ -373,7 +379,7 @@ export async function login({ email }, ip) {
       .from("users").select("id, email, name, role, is_verified, type")
       .eq("email", normalizedEmail).single();
 
-    if (userError && userError.code !== "PGRST116") throw new ApiError(400, userError.message);
+    if (userError && userError.code !== "PGRST116") throw dbFailure(400, userError, "We couldn't sign you in right now.");
     // Every code request counts toward the limit (not only failures): sending
     // emails is the cost being limited.
     await recordRateAttempt(`login:${normalizedEmail}`);
@@ -383,7 +389,7 @@ export async function login({ email }, ip) {
     const { otp, expiresAt, type } = createOtpMetadata("Login-OTP");
     await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
     const { error: otpInsertError } = await supabaseAdmin.from("otps").insert({ email: normalizedEmail, otp, expires_at: expiresAt, type });
-    if (otpInsertError) throw new ApiError(400, otpInsertError.message);
+    if (otpInsertError) throw dbFailure(400, otpInsertError, "We couldn't send your code right now.");
 
     await sendOTP(normalizedEmail, otp, "login", buildVerifyUrl(normalizedEmail, otp, "login"));
     logInfo("Login code sent", authLogContext({ email: normalizedEmail, userId: user.id }));
@@ -410,7 +416,7 @@ export async function resendOtp({ email, kind, type }, ip) {
     const { otp, expiresAt, type: otpType } = createOtpMetadata(getOtpMetadataType(otpKind));
     await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
     const { error: otpInsertError } = await supabaseAdmin.from("otps").insert({ email: normalizedEmail, otp, expires_at: expiresAt, type: otpType });
-    if (otpInsertError) throw new ApiError(400, otpInsertError.message);
+    if (otpInsertError) throw dbFailure(400, otpInsertError, "We couldn't send your code right now.");
 
     await sendOTP(normalizedEmail, otp, otpKind, buildVerifyUrl(normalizedEmail, otp, otpKind));
     await recordRateAttempt(`resend:${normalizedEmail}`);
@@ -467,7 +473,7 @@ export async function verifyOtp({ email, otp, type }, ip) {
     // the account whichever way it was started.
     const { error: updateError } = await supabaseAdmin.from("users")
       .update({ is_verified: true, last_login: new Date().toISOString() }).eq("id", user.id);
-    if (updateError) throw new ApiError(400, updateError.message);
+    if (updateError) throw dbFailure(400, updateError, "We couldn't sign you in right now.");
 
     return { success: true, token: createJwt(user), user: { id: user.id, email: user.email, name: user.name, role: user.role || "customer" } };
   } catch (error) {
@@ -528,7 +534,7 @@ export async function discoverUser({ email }) {
 
   if (error) {
     logError("Discover user query failed", authLogContext({ email, error }));
-    throw new ApiError(400, error.message);
+    throw dbFailure(400, error, "We couldn't sign you in right now.");
   }
 
   // A mobile number confirmed on an email or Google account signs in to that
@@ -545,13 +551,14 @@ export async function discoverUser({ email }) {
 export async function verifyFirebaseIdToken(idToken) {
   const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GOOGLE_PROJECT_ID;
   if (!projectId) {
-    throw new ApiError(500, "VITE_FIREBASE_PROJECT_ID is not configured in the backend environment.");
+    logError("VITE_FIREBASE_PROJECT_ID / GOOGLE_PROJECT_ID missing", authLogContext());
+    throw new ApiError(500, "Phone sign-in isn't available right now. Please try again later.");
   }
 
   // 1. Decode token header to get kid
   const decoded = jwt.decode(idToken, { complete: true });
   if (!decoded || !decoded.header || !decoded.header.kid) {
-    throw new ApiError(401, "Invalid Firebase ID token format.");
+    throw new ApiError(401, "Your sign-in has expired. Please try again.");
   }
 
   // 2. Fetch Firebase Auth public certificates
@@ -562,13 +569,13 @@ export async function verifyFirebaseIdToken(idToken) {
     publicKeys = await res.json();
   } catch (err) {
     logError("Failed to fetch Firebase public keys", authLogContext({ error: err }));
-    throw new ApiError(502, "Failed to verify identity with Firebase.");
+    throw new ApiError(502, "We couldn't confirm your sign-in right now. Please try again.");
   }
 
   const kid = decoded.header.kid;
   const cert = publicKeys[kid];
   if (!cert) {
-    throw new ApiError(401, "Firebase signature verification failed (unknown kid).");
+    throw new ApiError(401, "Your sign-in has expired. Please try again.");
   }
 
   // 3. Verify signature, audience, and issuer
@@ -581,7 +588,7 @@ export async function verifyFirebaseIdToken(idToken) {
     return payload;
   } catch (err) {
     logError("Firebase ID token verification failed", authLogContext({ error: err }));
-    throw new ApiError(401, `Firebase token validation failed: ${err.message}`);
+    throw new ApiError(401, "Your sign-in has expired. Please try again.");
   }
 }
 
@@ -633,14 +640,14 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
     name = payload.name || finalEmail.split("@")[0] || "User";
     type = "Google";
   } else {
-    throw new ApiError(400, "Firebase ID token must contain an email or phone number.");
+    throw new ApiError(400, "We couldn't confirm your sign-in. Please try again.");
   }
 
   // 2. Discover or upsert the user in users table
   const { data: existingUser, error: lookupError } = await supabaseAdmin
     .from("users").select("id, email, name, role, type").eq("email", finalEmail).maybeSingle();
 
-  if (lookupError) throw new ApiError(400, lookupError.message);
+  if (lookupError) throw dbFailure(400, lookupError, "We couldn't sign you in right now.");
 
   // Accounts created with an email code sign in here too: the token proves the
   // same verified email (or phone).
@@ -668,10 +675,10 @@ export async function firebaseLogin({ identifier, phone, token }, ip) {
 
     if (insertError) {
       logError("Firebase user insert failed", authLogContext({ email: finalEmail, error: insertError }));
-      throw new ApiError(400, insertError.message);
+      throw dbFailure(400, insertError, "We couldn't sign you in right now.");
     }
     user = insertedRows?.[0];
-    if (!user) throw new ApiError(500, "Firebase user signup failed.");
+    if (!user) throw new ApiError(500, "We couldn't create your account right now. Please try again.");
     if (isPhone) await markOwnMobileVerified(user.id, finalEmail.split("@")[0]);
   } else {
     // Login existing user: update last login (and finish verifying it)

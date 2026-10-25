@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "../config/supabase.js";
 import { revokeUserSessions } from "./session.service.js";
 import { isLocalDevelopment } from "../config/env.js";
-import { ApiError, logError, logInfo, logWarn } from "../utils/http.js";
+import { ApiError, dbFailure, logError, logInfo, logWarn, TRY_AGAIN } from "../utils/http.js";
 import { sendOTP } from "../config/smtp.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -28,7 +28,7 @@ export async function getProfileById(userId) {
 
   if (userError) {
     logError("Profile lookup failed", profileLogContext({ userId: normalizedUserId, error: userError }));
-    throw new ApiError(400, userError.message || "Failed to load profile.");
+    throw dbFailure(400, userError, "We couldn't load your profile.");
   }
 
   if (!user) return null;
@@ -102,7 +102,7 @@ export async function updateProfile(userId, updates) {
 
   if (error) {
     logError("Profile update failed", profileLogContext({ userId: normalizedUserId, error }));
-    throw new ApiError(400, error.message || "Failed to update profile.");
+    throw dbFailure(400, error, "We couldn't save your profile.");
   }
 
   if (fullName) {
@@ -343,7 +343,7 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
 
   if (!process.env.JWT_SECRET) {
     logError("JWT secret missing while creating token", profileLogContext({ userId: normalizedUserId }));
-    throw new ApiError(500, "JWT_SECRET is missing in backend environment.");
+    throw new ApiError(500, TRY_AGAIN);
   }
 
   // Sessions carry the old email: end them all, then issue this device a new
@@ -414,7 +414,7 @@ export async function saveStyleProfile(userId, { personalityType, quizScore }) {
 
   if (error) {
     logError("Failed to save style profile", profileLogContext({ userId: normalizedUserId, error }));
-    throw new ApiError(500, `Failed to save style profile: ${error.message}`);
+    throw dbFailure(500, error, "We couldn't save your style profile.");
   }
 
   // Update primary users table
