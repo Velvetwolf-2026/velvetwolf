@@ -790,3 +790,11 @@
 @media (max-width: 380px) { .vwg-gender a { min-width: 0; padding-inline: 14px; } }
 /* over the 3D hall the unselected sides get a faint backing, so the labels stay legible */
 .vwg .vwg-gender-shop { background: rgba(10, 10, 11, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+/* the wolf head before the wordmark */
+.vwg-nav .brand { display: inline-flex; align-items: center; gap: 10px; }
+.vwg-nav .brand-mark { display: block; height: 24px; width: auto; flex: none; }
+@media (max-width: 599px) and (min-height: 500px), (max-width: 599px) and (orientation: portrait) {
+  .vwg-nav .brand { gap: 8px; }
+  .vwg-nav .brand-mark { height: 20px; }
+}
