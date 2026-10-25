@@ -116,7 +116,9 @@ export function Login() {
 
   // Already signed in (or just signed in): go on.
   const userId = user ? (user.id || user.email || "authed") : null;
-  const target = (u) => (redirect ? (redirect.startsWith("/") ? redirect : `/${redirect}`) : (u?.isAdmin ? "/admin" : "/account"));
+  // ?redirect= only ever leads to a page on this site ("//other.site" or "/\\other.site" would leave it)
+  const safeRedirect = redirect && /^\/(?![/\\])/.test(redirect) ? redirect : null;
+  const target = (u) => safeRedirect || (u?.isAdmin ? "/admin" : "/account");
   useEffect(() => {
     if (userId && step !== "name") navigate(target(user), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps

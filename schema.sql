@@ -634,3 +634,25 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_verified_phone
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS top_rank SMALLINT CHECK (top_rank BETWEEN 1 AND 5);
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS print_image TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_products_top_rank ON public.products(top_rank) WHERE top_rank IS NOT NULL;
+
+-- ==========================================
+-- MIGRATION: PRIVATE PRODUCT COLUMNS
+-- ==========================================
+-- products is readable with the public (anon) key, which ships in the site's
+-- JavaScript, so every column was public, including cost_price. The site reads
+-- products only through the backend (service role), so the public roles keep
+-- every column except cost_price. Columns added later stay private until
+-- granted here.
+DO $$
+DECLARE cols text;
+BEGIN
+  SELECT string_agg(quote_ident(column_name), ', ') INTO cols
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'products' AND column_name <> 'cost_price';
+  EXECUTE 'REVOKE SELECT ON public.products FROM anon, authenticated';
+  EXECUTE format('GRANT SELECT (%s) ON public.products TO anon, authenticated', cols);
+END $$;
+
+-- Coupons: the HARDENING section above drops the public read policy; re-stated
+-- here because the live database still let the public key read coupons.
+DROP POLICY IF EXISTS "Allow select coupons" ON public.coupons;

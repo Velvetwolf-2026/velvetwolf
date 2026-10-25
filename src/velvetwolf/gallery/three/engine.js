@@ -52,7 +52,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = tier !== 'low';
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // PCFSoftShadowMap is deprecated in current three.js; PCFShadowMap now filters softly too
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false; // counted per frame across all passes (see debug())
 
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());

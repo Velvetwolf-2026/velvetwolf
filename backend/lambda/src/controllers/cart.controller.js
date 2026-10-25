@@ -1,6 +1,6 @@
 import * as cartService from "../services/cart.service.js";
 import { cartAddSchema, cartUpdateSchema, cartRemoveSchema } from "../schemas/common.schema.js";
-import { validate } from "../middleware/validate.js";
+import { validate, assertReasonableInput } from "../middleware/validate.js";
 import { ApiError, jsonResponse } from "../utils/http.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -34,7 +34,10 @@ export async function removeItem(body, event) {
 
 export async function mergeCart(body, event) {
   const user = await requireAuth(event);
+  // each item is a database write: a guest cart is small, so keep the list bounded
   const items = Array.isArray(body?.items) ? body.items : [];
+  assertReasonableInput(items);
+  if (items.length > 50) throw new ApiError(400, "Too many items to merge (the limit is 50).");
   const updatedItems = await cartService.mergeCartItemsByUserId(user.id, items);
   return jsonResponse(200, { success: true, items: updatedItems }, {}, event);
 }

@@ -23,6 +23,11 @@ function productLogContext(context = {}) {
   return { service: "product", ...context };
 }
 
+// The shop's public shape of a product (never cost price or other internal columns).
+export function toPublicProduct(row) {
+  return mapProduct(row);
+}
+
 function mapProduct(row) {
   if (!row) return null;
   return {

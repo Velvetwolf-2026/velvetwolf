@@ -39,6 +39,15 @@ import "./index.css";
 export function headers() {
   return {
     "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    // Baseline hardening that doesn't depend on which scripts a page loads:
+    // no framing by other sites (clickjacking), no MIME sniffing, no plugins, no <base> hijack.
+    "Content-Security-Policy": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    // the site never uses these (motion sensors stay allowed: the member card tilts with the phone)
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), usb=(), serial=(), hid=()",
   };
 }
 
@@ -142,9 +151,9 @@ export default function VelvetWolfRoot() {
   const [user, setUser] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // PWA install prompt and saved preferences. (Alerts come from real orders and restock alerts:
-  // see account/store.js and the bell in the header.)
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  // Saved preferences. (Alerts come from real orders and restock alerts: see account/store.js
+  // and the bell in the header.) The browser's own "Install app" prompt is left alone: the site
+  // used to hold it back for a button that no page shows, so it never appeared.
   const [userPreferences, setUserPreferences] = useState({
     sizes: [],
     fits: [],
@@ -157,26 +166,10 @@ export default function VelvetWolfRoot() {
     // the old sample alerts (made-up restocks and price drops) were kept here; clear them out
     localStorage.removeItem("vw_notifications");
     const savedPreferences = localStorage.getItem("vw_user_preferences");
-    if (savedPreferences) setUserPreferences(JSON.parse(savedPreferences));
-  }, []);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-  }, []);
-
-  const triggerPwaInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      setDeferredPrompt(null);
+    if (savedPreferences) {
+      try { setUserPreferences(JSON.parse(savedPreferences)); } catch { localStorage.removeItem("vw_user_preferences"); }
     }
-  };
+  }, []);
 
   const saveUserPreferences = (prefs) => {
     setUserPreferences(prefs);
@@ -476,7 +469,6 @@ export default function VelvetWolfRoot() {
     activeCollection, setActiveCollection, searchQuery, setSearchQuery,
     orders, customers, cartTotal, cartCount,
     addToCart, removeFromCart, updateCartQty, toggleWishlist, signOutUser, showToast, openShop, clearCart,
-    deferredPrompt, triggerPwaInstall,
     userPreferences, saveUserPreferences
   };
 
