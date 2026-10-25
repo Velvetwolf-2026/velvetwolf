@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { typeErrors } from "./fields.js";
 
 // Who a product is cut for. Stored in products.gender (and mirrored to the older
 // products.style, which the site already reads).
 export const GENDERS = ["Unisex", "Men", "Women"];
-const genderField = z.enum(GENDERS, { errorMap: () => ({ message: "Gender must be Unisex, Men or Women." }) });
+const genderField = z.enum(GENDERS, { error: "Gender must be Unisex, Men or Women." });
 
 // The home page's "Top 5 designs": a product's place in it (1 to 5, or none), and the flat
 // print artwork the 3D tee wears there (a transparent PNG, uploaded to product storage).
@@ -17,32 +18,32 @@ const VALID_ORDER_STATUSES = [
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(VALID_ORDER_STATUSES, {
-    errorMap: () => ({ message: `Status must be one of: ${VALID_ORDER_STATUSES.join(", ")}` }),
+    error: `Status must be one of: ${VALID_ORDER_STATUSES.join(", ")}`,
   }),
 });
 
 export const createProductSchema = z.object({
   name: z
-    .string({ required_error: "Product name is required" })
+    .string(typeErrors({ required: "Product name is required" }))
     .min(1, "Product name is required")
     .max(200, "Name must be 200 characters or fewer")
     .trim(),
   collection: z
-    .string({ required_error: "Collection is required" })
+    .string(typeErrors({ required: "Collection is required" }))
     .min(1, "Collection is required")
     .trim(),
   price: z
-    .number({ required_error: "Price is required", invalid_type_error: "Price must be a number" })
+    .number(typeErrors({ required: "Price is required", invalid: "Price must be a number" }))
     .positive("Price must be greater than 0"),
   original_price: z
-    .number({ invalid_type_error: "Original price must be a number" })
+    .number(typeErrors({ invalid: "Original price must be a number" }))
     .positive("Original price must be greater than 0")
     .optional(),
   description: z.string().max(2000).trim().optional().nullable(),
   tag: z.string().max(50).trim().optional().nullable(),
   sizes: z.array(z.string()).default([]),
   colors: z.array(z.string()).default([]),
-  stock: z.number({ invalid_type_error: "Stock must be a number" }).int().min(0, "Stock cannot be negative").default(0),
+  stock: z.number(typeErrors({ invalid: "Stock must be a number" })).int().min(0, "Stock cannot be negative").default(0),
   image: z.string().optional().nullable(),
   images: z.array(z.string()).optional().default([]),
   newImages: z.array(z.object({
