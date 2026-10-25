@@ -49,6 +49,9 @@ function mapProduct(row) {
     style: row.style ?? 'Unisex',
     gender: row.gender ?? ({ "Men's Fit": "Men", "Women's Fit": "Women" }[row.style] || 'Unisex'),
     fit: row.fit ?? 'Oversized',
+    // the home page's Top 5 designs: position (1-5) and the print the 3D tee wears
+    topRank: row.top_rank ?? null,
+    printImage: row.print_image ?? null,
   };
 }
 

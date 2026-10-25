@@ -622,3 +622,15 @@ WHERE u.email LIKE '%@mobile.velvetwolf.in'
 -- One account per confirmed number.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_verified_phone
     ON public.profiles(phone) WHERE phone_verified_at IS NOT NULL;
+
+-- ==========================================
+-- MIGRATION: TOP 5 DESIGNS
+-- ==========================================
+-- The home page's "Top 5 designs" room. top_rank is a product's place in it
+-- (1 to 5; one product per place), print_image the flat print artwork (a
+-- transparent PNG) the 3D tee wears there. Set both in the admin panel. Until
+-- this runs, the room shows the newest tees with VelvetWolf marks, and the
+-- admin panel saves products without these two fields.
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS top_rank SMALLINT CHECK (top_rank BETWEEN 1 AND 5);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS print_image TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_products_top_rank ON public.products(top_rank) WHERE top_rank IS NOT NULL;

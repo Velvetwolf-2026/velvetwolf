@@ -5,6 +5,11 @@ import { z } from "zod";
 export const GENDERS = ["Unisex", "Men", "Women"];
 const genderField = z.enum(GENDERS, { errorMap: () => ({ message: "Gender must be Unisex, Men or Women." }) });
 
+// The home page's "Top 5 designs": a product's place in it (1 to 5, or none), and the flat
+// print artwork the 3D tee wears there (a transparent PNG, uploaded to product storage).
+const topRankField = z.number().int().min(1, "Top 5 position is 1 to 5.").max(5, "Top 5 position is 1 to 5.").nullable();
+const printImageField = z.string().trim().max(1000).regex(/^https:\/\//, "Print artwork must be an https URL.").nullable();
+
 const VALID_ORDER_STATUSES = [
   "pending", "confirmed", "processing", "in_production",
   "dispatched", "delivered", "cancelled",
@@ -50,6 +55,8 @@ export const createProductSchema = z.object({
   style: z.string().optional().default("Unisex"),
   gender: genderField.optional(),
   fit: z.string().optional().default("Oversized"),
+  top_rank: topRankField.optional(),
+  print_image: printImageField.optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -74,6 +81,8 @@ export const updateProductSchema = z.object({
   style: z.string().optional(),
   gender: genderField.optional(),
   fit: z.string().optional(),
+  top_rank: topRankField.optional(),
+  print_image: printImageField.optional(),
 });
 
 export const getOrdersSchema = z.object({

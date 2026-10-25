@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../pages/AppContext";
-import { fetchAdminProducts, createProduct, updateProduct, deleteProduct } from "../utils/adminApi";
+import { fetchAdminProducts, createProduct, updateProduct, deleteProduct, uploadPrintArtwork } from "../utils/adminApi";
 import { COLLECTIONS } from "../utils/collectionsData";
 import Icon from "../components/Icon";
 import { TAG_COLORS } from "../utils/constants";
@@ -28,10 +28,59 @@ const getCleanImageUrl = (img) => {
   return url;
 };
 
-const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", gender: "Unisex", fit: "Oversized" };
+const EMPTY_FORM = { name: "", collection: "ai-tech", price: "", original_price: "", sizes: ["S","M","L","XL"], colors: ["#0a0a0a"], tag: "NEW", description: "", stock: 50, image: "", images: [], newImages: [], style: "Unisex", gender: "Unisex", fit: "Oversized", top_rank: null, print_image: null };
 
 // Who the product is cut for (products.gender). Shown with a visible label.
 const GENDERS = [["Unisex", "Unisex"], ["Men", "Men"], ["Women", "Women"]];
+// The home page's "Top 5 designs": the product's place (1 to 5, or none) and the flat print
+// artwork the 3D tee wears there. The artwork uploads as soon as it's picked.
+function TopFields({ value, onChange, compact = false, showToast }) {
+  const [busy, setBusy] = useState(false);
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      onChange({ print_image: await uploadPrintArtwork(file) });
+      showToast?.("Print artwork uploaded.");
+    } catch (err) {
+      showToast?.(err.message || "The artwork didn't upload.", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const size = compact ? 10 : 12;
+  return (
+    <div className="vw-admin-top" style={{ gridColumn: "1/-1" }}>
+      <label className="vw-admin-field">
+        <span>TOP 5 ON THE HOME PAGE</span>
+        <select className="input-dark" value={value.top_rank ?? ""} style={{ fontSize: size }}
+          onChange={(e) => onChange({ top_rank: e.target.value ? Number(e.target.value) : null })}>
+          <option value="">Not in the Top 5</option>
+          {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Position {String(n).padStart(2, "0")}</option>)}
+        </select>
+      </label>
+      <div className="vw-admin-field">
+        <span>PRINT ARTWORK (FOR THE 3D TEE)</span>
+        <div className="vw-admin-print">
+          {value.print_image
+            ? <img src={value.print_image} alt="Print artwork" />
+            : <span className="vw-admin-print-empty">No artwork</span>}
+          <label className="btn-ghost" style={{ padding: "8px 12px", fontSize: 11, cursor: busy ? "wait" : "pointer" }}>
+            {busy ? "Uploading…" : value.print_image ? "Replace" : "Upload PNG"}
+            <input type="file" accept="image/png,image/webp" style={{ display: "none" }} disabled={busy} onChange={pick} />
+          </label>
+          {value.print_image && !busy && (
+            <button type="button" className="btn-ghost" style={{ padding: "8px 12px", fontSize: 11 }} onClick={() => onChange({ print_image: null })}>Remove</button>
+          )}
+        </div>
+        <small style={{ color: "var(--ash)", fontSize: 11 }}>The design alone, on a transparent background (PNG or WebP). Without it, the tee shows a VelvetWolf mark.</small>
+      </div>
+    </div>
+  );
+}
+
 const genderOf = (p) => p?.gender || ({ "Men's Fit": "Men", "Women's Fit": "Women" }[p?.style]) || "Unisex";
 
 const TAG_OPTIONS = ["BESTSELLER","LIMITED","NEW","TRENDING","HOT","MOST LOVED","SIGNATURE"];
@@ -238,6 +287,8 @@ export default function AdminProducts() {
         style: editProduct.style || "Unisex",
         gender: genderOf(editProduct),
         fit: editProduct.fit || "Oversized",
+        top_rank: editProduct.top_rank ?? null,
+        print_image: editProduct.print_image ?? null,
         price: Number(editProduct.price),
         original_price: editProduct.original_price ? Number(editProduct.original_price) : Number(editProduct.price),
         stock: Number(editProduct.stock ?? 0),
@@ -359,6 +410,7 @@ export default function AdminProducts() {
                 {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
               </select>
             </label>
+            <TopFields value={form} onChange={(patch) => setForm((f) => ({ ...f, ...patch }))} showToast={showToast} />
             <div style={{ gridColumn: "1/-1" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--silver)", cursor: "pointer" }}>
                 <input 
@@ -474,6 +526,7 @@ export default function AdminProducts() {
                               {["Oversized", "Regular Fit", "Relaxed Fit"].map((f) => <option key={f} value={f}>{f}</option>)}
                             </select>
                           </div>
+                          <TopFields compact value={editProduct} onChange={(patch) => setEditProduct((ep) => ({ ...ep, ...patch }))} showToast={showToast} />
 
                           <label style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4, marginTop: 4, fontFamily: "var(--font-mono)", cursor: "pointer" }}>
                             <input 
