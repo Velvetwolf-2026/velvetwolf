@@ -551,12 +551,19 @@ export async function deleteAdminCategory(catId) {
 
 // ─── SHIPROCKET DETAILS ────────────────────────────────────────────────────────
 
-export async function updateAdminOrderShiprocket(orderId, trackingData) {
+// A courier tracking number (AWB): letters, digits and dashes. It becomes part
+// of the Shiprocket tracking address, so nothing else may get in.
+const AWB_RE = /^[A-Za-z0-9-]{4,40}$/;
+const trimmedText = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "") || null;
+
+export async function updateAdminOrderShiprocket(orderId, trackingData = {}) {
   const { awb_number, courier_name, shipping_status } = trackingData;
+  const awb = trimmedText(awb_number, Infinity);
+  if (awb && !AWB_RE.test(awb)) throw new ApiError(400, "A tracking number uses only letters, numbers and dashes.");
   const updates = {
-    awb_number: awb_number?.trim() || null,
-    courier_name: courier_name?.trim() || null,
-    shipping_status: shipping_status?.trim() || null
+    awb_number: awb,
+    courier_name: trimmedText(courier_name, 100),
+    shipping_status: trimmedText(shipping_status, 100),
   };
   const { data, error } = await supabaseAdmin
     .from("orders")

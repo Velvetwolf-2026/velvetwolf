@@ -2,7 +2,7 @@ import * as checkoutService from "../services/checkout.service.js";
 import { jsonResponse, getClientIp, logInfo, logWarn } from "../utils/http.js";
 import { verifyWebhookSignature } from "../services/cashfree.js";
 import { getOptionalAuth } from "../middleware/auth.js";
-import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
+import { assertNotRateLimited, hitRateLimit, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 import * as studioService from "../services/studio.service.js";
 import { checkoutAddressSchema } from "../schemas/common.schema.js";
 import { validate } from "../middleware/validate.js";
@@ -131,8 +131,7 @@ const COUPON_RATE_LIMIT = { max: 20, windowSecs: 15 * 60, blockSecs: 15 * 60 };
 // so the bucket can't be filled by a script.
 export async function studioUploadUrl(body, event) {
   const rateKey = `studio-upload:${getClientIp(event) || "unknown"}`;
-  await assertNotRateLimited(rateKey, STUDIO_UPLOAD_RATE_LIMIT);
-  await recordRateLimitedAttempt(rateKey);
+  await hitRateLimit(rateKey, STUDIO_UPLOAD_RATE_LIMIT);
   const result = await studioService.createUploadUrl({ kind: body?.kind, contentType: body?.contentType });
   return jsonResponse(200, result, {}, event);
 }

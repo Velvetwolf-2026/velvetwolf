@@ -676,3 +676,55 @@ CREATE INDEX IF NOT EXISTS idx_ended_sessions_expires_at ON public.ended_session
 ALTER TABLE public.ended_sessions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow service role all ended_sessions" ON public.ended_sessions;
 CREATE POLICY "Allow service role all ended_sessions" ON public.ended_sessions FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- MIGRATION: ONE-STEP RATE LIMITS
+-- ==========================================
+-- Counts a request and says whether it is over the limit in one call. The
+-- separate check_rate_limit_gate + record_rate_attempt let requests sent at
+-- the same moment all pass the check before any was counted. The row lock
+-- makes concurrent calls for one key take turns. Until this runs, the backend
+-- keeps using the two separate functions.
+CREATE OR REPLACE FUNCTION public.hit_rate_limit(
+    p_key TEXT,
+    p_max INT,
+    p_window_seconds INT,
+    p_block_seconds INT DEFAULT 1800
+)
+RETURNS TABLE(blocked BOOLEAN, retry_after_seconds INT) AS $$
+DECLARE
+    v_row public.rate_limits;
+    v_now TIMESTAMPTZ := now();
+BEGIN
+    INSERT INTO public.rate_limits (key, attempts, first_at, blocked_until)
+    VALUES (p_key, 0, v_now, NULL)
+    ON CONFLICT (key) DO NOTHING;
+
+    SELECT * INTO v_row FROM public.rate_limits WHERE key = p_key FOR UPDATE;
+
+    IF v_row.blocked_until IS NOT NULL AND v_row.blocked_until > v_now THEN
+        RETURN QUERY SELECT TRUE, CEIL(EXTRACT(EPOCH FROM (v_row.blocked_until - v_now)))::INT;
+        RETURN;
+    END IF;
+
+    -- a new window (or the end of a block) starts the count again, with this request
+    IF v_row.blocked_until IS NOT NULL OR v_row.first_at < v_now - make_interval(secs => p_window_seconds) THEN
+        UPDATE public.rate_limits SET attempts = 1, first_at = v_now, blocked_until = NULL WHERE key = p_key;
+        RETURN QUERY SELECT FALSE, 0;
+        RETURN;
+    END IF;
+
+    IF v_row.attempts >= p_max THEN
+        UPDATE public.rate_limits SET blocked_until = v_now + make_interval(secs => p_block_seconds) WHERE key = p_key;
+        RETURN QUERY SELECT TRUE, p_block_seconds;
+        RETURN;
+    END IF;
+
+    UPDATE public.rate_limits SET attempts = v_row.attempts + 1 WHERE key = p_key;
+    RETURN QUERY SELECT FALSE, 0;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Only the backend (service role) may count requests.
+REVOKE EXECUTE ON FUNCTION public.hit_rate_limit(TEXT, INT, INT, INT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.hit_rate_limit(TEXT, INT, INT, INT) TO service_role;

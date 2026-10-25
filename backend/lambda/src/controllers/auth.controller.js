@@ -11,7 +11,7 @@ import { requireAuth, getSessionToken } from "../middleware/auth.js";
 import { endSession } from "../services/session.service.js";
 import { getProfileById } from "../services/profile.service.js";
 import { verifyRecaptcha } from "../services/recaptcha.service.js";
-import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
+import { hitRateLimit } from "../utils/rateLimit.js";
 
 export async function signup(body, event) {
   const data = validate(signupSchema)(body);
@@ -96,8 +96,7 @@ export async function discover(body, event) {
   // Every lookup counts: 30 per IP per 15 minutes is plenty for real
   // sign-ins and stops scripted checks of which emails have accounts.
   const rateKey = `discover:${getClientIp(event) || "unknown"}`;
-  await assertNotRateLimited(rateKey, { max: 30, windowSecs: 15 * 60, blockSecs: 15 * 60 });
-  await recordRateLimitedAttempt(rateKey);
+  await hitRateLimit(rateKey, { max: 30, windowSecs: 15 * 60, blockSecs: 15 * 60 });
 
   const result = await authService.discoverUser({ email });
   return jsonResponse(200, result, {}, event);

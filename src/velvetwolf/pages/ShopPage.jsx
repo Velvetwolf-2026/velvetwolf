@@ -264,9 +264,11 @@ export default function ShopPage() {
   const loaderData = useLoaderData();
   // The catalogue the page shows: the app's copy, unless the server's is fuller (if the
   // browser's own fetch timed out, the app holds only the small offline sample list).
+  // Products taken off sale stay in the list (past orders still show them) but not here.
   const products = useMemo(() => {
     const fromServer = loaderData?.products || [];
-    return ctxProducts.length >= fromServer.length && ctxProducts.length > 0 ? ctxProducts : fromServer;
+    const all = ctxProducts.length >= fromServer.length && ctxProducts.length > 0 ? ctxProducts : fromServer;
+    return all.filter((p) => p && p.isActive !== false);
   }, [ctxProducts, loaderData]);
   const { collection: routeCollection } = useParams();
   const navigate = useNavigate();

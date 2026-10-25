@@ -17,7 +17,7 @@ const RAW = { id: "p1", name: "Quiet Tee", slug: "quiet", price: 599, cost_price
 
 beforeEach(() => {
   vi.clearAllMocks();
-  rpc.mockImplementation((fn) => Promise.resolve(fn === "check_rate_limit_gate" ? { data: [{ blocked: false }], error: null } : { data: null, error: null }));
+  rpc.mockImplementation((fn) => Promise.resolve(["check_rate_limit_gate", "hit_rate_limit"].includes(fn) ? { data: [{ blocked: false }], error: null } : { data: null, error: null }));
 });
 
 describe("oversized input", () => {
@@ -38,8 +38,8 @@ describe("stylist endpoints", () => {
   it("are throttled per visitor", async () => {
     searchAiProducts.mockResolvedValue([]);
     await search({ query: "black tee" }, event);
-    expect(rpc).toHaveBeenCalledWith("check_rate_limit_gate", expect.objectContaining({ p_key: "ai:49.36.1.2" }));
-    rpc.mockImplementation((fn) => Promise.resolve(fn === "check_rate_limit_gate" ? { data: [{ blocked: true, retry_after_seconds: 300 }], error: null } : { data: null, error: null }));
+    expect(rpc).toHaveBeenCalledWith("hit_rate_limit", expect.objectContaining({ p_key: "ai:49.36.1.2" }));
+    rpc.mockImplementation((fn) => Promise.resolve(["check_rate_limit_gate", "hit_rate_limit"].includes(fn) ? { data: [{ blocked: true, retry_after_seconds: 300 }], error: null } : { data: null, error: null }));
     await expect(search({ query: "black tee" }, event)).rejects.toMatchObject({ statusCode: 429 });
   });
 
