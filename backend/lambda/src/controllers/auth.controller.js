@@ -5,7 +5,7 @@ import {
   firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
-import { jsonResponse, redirectResponse, ApiError, getClientIp } from "../utils/http.js";
+import { jsonResponse, redirectResponse, ApiError, getClientIp, getCookie } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
 import { requireAuth } from "../middleware/auth.js";
 import { getProfileById } from "../services/profile.service.js";
@@ -39,7 +39,7 @@ export async function login(body, event) {
 
 export async function verifyOtp(body, event) {
   const data = validate(verifyOtpSchema)(body);
-  const result = await authService.verifyOtp(data);
+  const result = await authService.verifyOtp(data, getClientIp(event));
   if (result.token) {
     await auditLog({ action: "user.login", resource: "users", meta: { email: data.email, type: data.type } });
   }
@@ -53,8 +53,9 @@ export async function resendOtp(body, event) {
 }
 
 export function googleRedirect(query, event) {
-  const location = authService.getGoogleAuthRedirect({ mode: query.mode });
-  return redirectResponse(location, 302, {}, event);
+  const nonce = authService.generateCsrfToken();
+  const location = authService.getGoogleAuthRedirect({ mode: query.mode, nonce });
+  return redirectResponse(location, 302, { "Set-Cookie": authService.getOAuthStateCookieHeader(nonce) }, event);
 }
 
 export async function googleCallback(query, event) {
@@ -64,14 +65,15 @@ export async function googleCallback(query, event) {
       state: query.state,
       error: query.error,
       errorDescription: query.error_description,
+      stateNonce: getCookie(event, authService.OAUTH_STATE_COOKIE),
     });
-    const headers = result.token ? { "Set-Cookie": authService.getSessionCookieHeaders(result.token) } : {};
-    return redirectResponse(result.redirect, 302, headers, event);
+    const cookies = [authService.getClearOAuthStateCookieHeader(), ...(result.token ? authService.getSessionCookieHeaders(result.token) : [])];
+    return redirectResponse(result.redirect, 302, { "Set-Cookie": cookies }, event);
   } catch (err) {
     const mode = (query.state && String(query.state).includes("signup")) ? "signup" : "login";
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const redirectUrl = `${frontendUrl.replace(/\/$/, "")}?provider=google&mode=${mode}&auth_error=${encodeURIComponent(err.message)}`;
-    return redirectResponse(redirectUrl, 302, {}, event);
+    return redirectResponse(redirectUrl, 302, { "Set-Cookie": authService.getClearOAuthStateCookieHeader() }, event);
   }
 }
 

@@ -65,7 +65,8 @@ describe("passwordless email sign-in", () => {
 
   it("a correct code signs in and marks the account verified", async () => {
     resetSupabaseMock({
-      otps: [{ data: { id: "o1", otp: 482913, attempts: 0 }, error: null }],
+      // the code, then the claimed try
+      otps: [{ data: { id: "o1", otp: 482913, attempts: 0 }, error: null }, { data: [{ id: "o1" }], error: null }],
       users: [{ data: USER, error: null }, { data: null, error: null }],
     });
 
@@ -78,7 +79,7 @@ describe("passwordless email sign-in", () => {
   });
 
   it("a wrong code counts an attempt and does not sign in", async () => {
-    resetSupabaseMock({ otps: [{ data: { id: "o1", otp: 482913, attempts: 1 }, error: null }] });
+    resetSupabaseMock({ otps: [{ data: { id: "o1", otp: 482913, attempts: 1 }, error: null }, { data: [{ id: "o1" }], error: null }] });
     await expect(verifyOtp({ email: "a@b.com", otp: "000000", type: "login" })).rejects.toMatchObject({ statusCode: 400 });
     expect(calls.find((c) => c.table === "otps" && c.method === "update").payload).toEqual({ attempts: 2 });
   });

@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { isValidEmail, isValidMobile, cleanMobile, isValidName, cleanName, MOBILE_ERROR, NAME_ERROR, EMAIL_ERROR } from "../utils/validators.js";
 import { findUserByVerifiedPhone, isMobileEmail, mobileOfEmail, mobileEmail, UNDEFINED_COLUMN } from "./phone.service.js";
 import { verifyFirebaseIdToken, createJwt } from "./auth.service.js";
+import { claimOtpTry, MAX_OTP_ATTEMPTS } from "./otp-attempts.js";
 
 function profileLogContext(context = {}) {
   return { service: "profile", ...context };
@@ -282,15 +283,11 @@ export async function verifyEmailUpdateOtp({ userId, newEmail, otp }) {
       .gte("expires_at", new Date().toISOString())
       .maybeSingle();
 
-    if (otpError || !otpRecord || otpRecord.attempts >= 5) {
+    if (otpError || !otpRecord || otpRecord.attempts >= MAX_OTP_ATTEMPTS || !(await claimOtpTry(otpRecord))) {
       throw new ApiError(400, "Verification code is invalid or expired.");
     }
 
     if (Number(otpRecord.otp) !== otpNumber) {
-      await supabaseAdmin
-        .from("otps")
-        .update({ attempts: otpRecord.attempts + 1 })
-        .eq("id", otpRecord.id);
       throw new ApiError(400, "Invalid verification code.");
     }
 

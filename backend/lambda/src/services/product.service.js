@@ -132,25 +132,44 @@ export async function getProductReviews(productId) {
   });
 }
 
+// The file type comes from the photo's own first bytes, never from the name
+// or type the browser sent, so nothing but a real JPEG, PNG or WebP image is
+// stored (and served from the public bucket).
+const REVIEW_IMAGE_EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+function sniffImageType(buffer) {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (buffer.length >= 12 && buffer.toString("latin1", 0, 4) === "RIFF" && buffer.toString("latin1", 8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+
+// Input is checked by reviewSchema in the controller.
 export async function createProductReview(productId, { name, rating, comment, images }) {
   logInfo("Creating review for product", productLogContext({ productId, name }));
 
-  let finalComment = comment?.trim() || "";
+  // The photo links are stored after this marker, so a comment can't carry
+  // one of its own (it would show any link as a review photo).
+  let finalComment = (comment?.trim() || "").replace(/\[review_images:/gi, "[");
   const uploadedUrls = [];
 
-  if (Array.isArray(images) && images.length > 0) {
-    for (const img of images) {
-      if (!img.data || !img.name) continue;
-      const buffer = Buffer.from(img.data, 'base64');
-      const fileExt = img.name.split('.').pop() || 'jpg';
-      const fileName = `reviews/${crypto.randomUUID()}.${fileExt}`;
-      const mimeType = img.type || 'image/jpeg';
+  // Every photo is checked before any is stored.
+  const photos = (images || []).map((img) => {
+    const buffer = Buffer.from(img.data, 'base64');
+    const mimeType = sniffImageType(buffer);
+    if (!mimeType) throw new ApiError(400, "Photos must be JPEG, PNG or WebP.");
+    return { buffer, mimeType };
+  });
+
+  if (photos.length > 0) {
+    for (const { buffer, mimeType } of photos) {
+      const fileName = `reviews/${crypto.randomUUID()}.${REVIEW_IMAGE_EXT[mimeType]}`;
 
       const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
         .from('product-images')
         .upload(fileName, buffer, {
           contentType: mimeType,
-          upsert: true
+          upsert: false
         });
 
       if (uploadError) {

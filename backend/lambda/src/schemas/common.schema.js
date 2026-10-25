@@ -107,6 +107,22 @@ export const checkoutAddressSchema = z.object({
     .refine((v) => /^[1-9]\d{5}$/.test(v), "Enter a valid 6-digit PIN code"),
 }).loose();
 
+// A product review (signed-in customers only, see product.controller.js).
+// Photos arrive as base64: up to 3, each at most 2 MB, JPEG, PNG or WebP.
+export const REVIEW_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_REVIEW_IMAGE_BASE64 = Math.ceil((2 * 1024 * 1024) / 3) * 4;
+
+export const reviewSchema = z.object({
+  name: nameField(),
+  rating: z.coerce.number().int("Rating must be 1 to 5.").min(1, "Rating must be 1 to 5.").max(5, "Rating must be 1 to 5."),
+  comment: z.string().trim().max(2000, "Review must be 2000 characters or fewer.").optional().default(""),
+  images: z.array(z.object({
+    data: z.string().min(1).max(MAX_REVIEW_IMAGE_BASE64, "Each photo must be 2 MB or smaller."),
+    name: z.string().max(200).optional(),
+    type: z.enum(REVIEW_IMAGE_TYPES, { error: "Photos must be JPEG, PNG or WebP." }),
+  })).max(3, "Add up to 3 photos.").optional().default([]),
+});
+
 // Deleting an account must be typed out, so a mis-click (or a forged
 // request) can't do it.
 export const deleteAccountSchema = z.object({
