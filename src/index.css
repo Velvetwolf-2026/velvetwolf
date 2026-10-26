@@ -2323,3 +2323,14 @@ p {
 /* Admin form fields with a visible label above the control (e.g. Gender, Fit). */
 .vw-admin-field { display: grid; gap: 6px; }
 .vw-admin-field > span { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: var(--silver); }
+
+/* Admin: Top 5 position and print artwork (AdminProducts TopFields) */
+.vw-admin-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 14px; padding: 12px; border: 1px solid var(--smoke); margin-top: 4px; }
+.vw-admin-print { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.vw-admin-print img, .vw-admin-print-empty {
+  width: 64px; height: 64px; object-fit: contain; flex: none; border: 1px solid var(--smoke);
+  /* a checkerboard shows the artwork's transparency */
+  background: repeating-conic-gradient(#2a2a2c 0% 25%, #1a1a1c 0% 50%) 50% / 12px 12px;
+}
+.vw-admin-print-empty { display: grid; place-items: center; font-size: 10px; color: var(--ash); text-align: center; }
+@media (max-width: 700px) { .vw-admin-top { grid-template-columns: 1fr; } }

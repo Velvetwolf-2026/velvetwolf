@@ -183,19 +183,35 @@ async function uploadInlinePhoto(file) {
 const STYLE_OF_GENDER = { Unisex: "Unisex", Men: "Men's Fit", Women: "Women's Fit" };
 const GENDER_OF_STYLE = { "Unisex": "Unisex", "Men's Fit": "Men", "Women's Fit": "Women" };
 
-// The products.gender column comes from a migration in schema.sql. If it hasn't
-// been run, save the product without it rather than failing the upload.
+// Optional columns that come from migrations in schema.sql. If one hasn't been run, save the
+// product without that field rather than failing the upload.
+const OPTIONAL_COLUMNS = {
+  gender: "SMART FILTERS",
+  print_image: "TOP 5 DESIGNS",
+  top_rank: "TOP 5 DESIGNS",
+};
 const isMissingColumn = (error, column) =>
   ["42703", "PGRST204"].includes(error?.code) && String(error?.message || "").includes(column);
 
 async function writeProduct(run, row) {
-  let result = await run(row);
-  if (result.error && "gender" in row && isMissingColumn(result.error, "gender")) {
-    logWarn("products.gender missing: saving without it (run the SMART FILTERS migration in schema.sql)", adminLogContext());
-    const { gender: _skip, ...rest } = row;
-    result = await run(rest);
+  let current = row;
+  let result = await run(current);
+  for (let tries = 0; result.error && tries < Object.keys(OPTIONAL_COLUMNS).length; tries++) {
+    const column = Object.keys(OPTIONAL_COLUMNS).find((c) => c in current && isMissingColumn(result.error, c));
+    if (!column) break;
+    logWarn(`products.${column} missing: saving without it (run the ${OPTIONAL_COLUMNS[column]} migration in schema.sql)`, adminLogContext());
+    const { [column]: _skip, ...rest } = current;
+    current = rest;
+    result = await run(current);
   }
   return result;
+}
+
+// A Top 5 position belongs to one product: giving it to this one frees it elsewhere.
+async function freeTopRank(rank, productId) {
+  if (!rank) return;
+  const { error } = await supabaseAdmin.from("products").update({ top_rank: null }).eq("top_rank", rank).neq("id", productId);
+  if (error && !isMissingColumn(error, "top_rank")) logWarn("Couldn't free the Top 5 position", adminLogContext({ rank, productId, error }));
 }
 
 export async function createAdminProduct(productData, adminId) {
@@ -244,9 +260,12 @@ export async function createAdminProduct(productData, adminId) {
     gender,
     style: STYLE_OF_GENDER[gender],
     fit: fit || "Oversized",
+    ...(productData.top_rank !== undefined ? { top_rank: productData.top_rank } : {}),
+    ...(productData.print_image !== undefined ? { print_image: productData.print_image } : {}),
   });
 
   if (error) { logError("Product create failed", adminLogContext({ name, adminId, error })); throw new ApiError(500, `Couldn't save the product${error.message ? `: ${error.message}` : ""}.`); }
+  if (data?.id && productData.top_rank) await freeTopRank(productData.top_rank, data.id);
 
   // Create variants for all size/color combinations
   if (data) {
@@ -283,7 +302,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   logInfo("Updating product", adminLogContext({ productId, adminId }));
 
-  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images", "style", "fit", "gender"];
+  const allowed = ["name", "collection", "price", "original_price", "description", "tag", "sizes", "colors", "stock", "image", "images", "style", "fit", "gender", "top_rank", "print_image"];
   const updates = {};
   for (const key of allowed) {
     if (productData[key] !== undefined) updates[key] = productData[key];
@@ -316,6 +335,7 @@ export async function updateAdminProduct(productId, productData, adminId) {
 
   if (Object.keys(updates).length === 0) throw new ApiError(400, "No valid fields to update.");
 
+  if (updates.top_rank) await freeTopRank(updates.top_rank, productId);
   const { data, error } = await writeProduct((row) => supabaseAdmin.from("products").update(row).eq("id", productId).select().single(), updates);
   if (error) { logError("Product update failed", adminLogContext({ productId, adminId, error })); throw new ApiError(500, `Couldn't update the product${error.message ? `: ${error.message}` : ""}.`); }
   if (!data) throw new ApiError(404, "Product not found.");

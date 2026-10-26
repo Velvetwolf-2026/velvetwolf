@@ -790,3 +790,102 @@
 @media (max-width: 380px) { .vwg-gender a { min-width: 0; padding-inline: 14px; } }
 /* over the 3D hall the unselected sides get a faint backing, so the labels stay legible */
 .vwg .vwg-gender-shop { background: rgba(10, 10, 11, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+
+/* the wolf head before the wordmark */
+.vwg-nav .brand { display: inline-flex; align-items: center; gap: 10px; }
+.vwg-nav .brand-mark { display: block; height: 24px; width: auto; flex: none; }
+@media (max-width: 599px) and (min-height: 500px), (max-width: 599px) and (orientation: portrait) {
+  .vwg-nav .brand { gap: 8px; }
+  .vwg-nav .brand-mark { height: 20px; }
+}
+
+/* ---------- Top 5 designs (TopDesigns.jsx) ----------
+   The tee stands still on the left (the camera stop "top" frames it there); the five designs
+   sit on the right, joined to a node beside the tee by branches that light in sand-gold. */
+.vwg .scene-top { height: 420vh; }
+.vwg .scene-top .sticky::before { background: linear-gradient(270deg, rgba(10, 10, 11, 0.82), rgba(10, 10, 11, 0.5) 40%, rgba(10, 10, 11, 0) 62%); }
+.vwg .top-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 1; }
+.vwg .top-line { fill: none; stroke: rgba(232, 228, 218, 0.12); stroke-width: 1; }
+.vwg .top-line-lit { fill: none; stroke: rgba(201, 168, 76, 0.55); stroke-width: 1.2; stroke-linecap: round; }
+.vwg .top-line-lit.is-active { stroke: #D9BD7A; stroke-width: 1.6; filter: drop-shadow(0 0 4px rgba(217, 189, 122, 0.75)); }
+.vwg .top-node {
+  position: absolute; left: -7px; top: -7px; z-index: 2; width: 14px; height: 14px; border-radius: 50%; pointer-events: none;
+  background: #F1E3BE; box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.18), 0 0 18px 6px rgba(217, 189, 122, 0.55);
+}
+.vwg .top-photo { display: none; }
+.vwg:not(.is-gl) .top-photo {
+  display: block; position: absolute; left: var(--gutter); top: 50%; transform: translateY(-50%);
+  width: min(40vw, 460px); max-height: 72vh; aspect-ratio: 4 / 5; object-fit: cover; background: var(--raise);
+}
+.vwg .top-panel {
+  position: absolute; z-index: 3; right: var(--gutter); top: 50%; transform: translateY(-50%);
+  width: min(520px, 44vw); display: grid; gap: 18px;
+}
+.vwg .top-eyebrow {
+  margin: 0 0 6px; display: flex; align-items: center; gap: 18px;
+  font: 400 clamp(15px, 1.25vw, 19px)/1 var(--g-display); letter-spacing: 0.32em; text-transform: uppercase; color: #D9BD7A;
+}
+.vwg .top-eyebrow::after { content: ""; flex: 1; max-width: 180px; height: 1px; background: rgba(201, 168, 76, 0.5); }
+.vwg .top-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.vwg .top-card {
+  position: relative; width: 100%; display: grid; grid-template-columns: 36px 72px minmax(0, 1fr) auto; align-items: center; gap: 16px;
+  padding: 10px 18px 10px 16px; text-align: left; cursor: pointer; color: var(--bone);
+  background: rgba(14, 14, 16, 0.72); border: 1px solid rgba(232, 228, 218, 0.12); border-radius: 8px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: border-color 0.45s ease, box-shadow 0.45s ease, background-color 0.45s ease;
+}
+.vwg .top-card[aria-pressed="true"] {
+  border-color: rgba(217, 189, 122, 0.85); background: rgba(24, 21, 15, 0.82);
+  box-shadow: 0 0 0 1px rgba(217, 189, 122, 0.18), 0 0 28px rgba(201, 168, 76, 0.22), inset 0 0 22px rgba(201, 168, 76, 0.07);
+}
+.vwg .top-dot {
+  position: absolute; left: -5px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%;
+  background: #141416; border: 1px solid rgba(232, 228, 218, 0.35); transition: background-color 0.45s, box-shadow 0.45s, border-color 0.45s;
+}
+.vwg [data-state="past"] .top-dot, .vwg [data-state="active"] .top-dot { background: #D9BD7A; border-color: #D9BD7A; }
+.vwg [data-state="active"] .top-dot { box-shadow: 0 0 10px 3px rgba(217, 189, 122, 0.6); }
+.vwg .top-no { font: 300 22px/1 var(--g-display); color: var(--bone-2); font-variant-numeric: tabular-nums; }
+.vwg .top-card[aria-pressed="true"] .top-no { color: #F1E3BE; }
+.vwg .top-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 4px; background: var(--raise); display: block; }
+.vwg .top-text { display: grid; gap: 6px; min-width: 0; }
+.vwg .top-text b { font: 400 18px/1.15 var(--g-body); letter-spacing: 0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vwg .top-text small { font: 600 10px/1.2 var(--g-body); letter-spacing: 0.24em; text-transform: uppercase; color: var(--bone-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vwg .top-price { font: 500 13px/1 var(--g-body); color: var(--bone-2); font-variant-numeric: tabular-nums; }
+.vwg .top-card:focus-visible { outline: 2px solid var(--sand); outline-offset: 3px; }
+.vwg .top-cta { justify-self: start; margin-top: 2px; }
+@media (hover: hover) { .vwg .top-card:not([aria-pressed="true"]):hover { border-color: rgba(232, 228, 218, 0.32); } }
+@media (max-width: 1279px) {
+  .vwg .top-card { grid-template-columns: 30px 56px minmax(0, 1fr) auto; gap: 12px; padding: 8px 14px 8px 14px; }
+  .vwg .top-thumb { width: 56px; height: 56px; }
+  .vwg .top-text b { font-size: 16px; }
+}
+/* short laptop screens: a tighter list so all five fit */
+@media (min-width: 820px) and (max-height: 700px) {
+  .vwg .top-list { gap: 8px; }
+  .vwg .top-thumb { width: 48px; height: 48px; }
+  .vwg .top-card { padding-block: 6px; }
+}
+/* stacked (phones, upright tablets): the tee above, the five below; no branches, a lit rail instead */
+@media (max-width: 819px) and (min-height: 500px), (max-width: 819px) and (orientation: portrait), (orientation: portrait) and (max-width: 1199px) {
+  .vwg .top-lines, .vwg .top-node { display: none; }
+  .vwg .scene-top .sticky::before { display: none; }
+  .vwg .top-panel {
+    top: auto; transform: none; left: var(--gutter); right: var(--gutter); width: auto;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px)); gap: 12px;
+  }
+  .vwg:not(.is-gl) .top-photo { left: 50%; top: calc(var(--nav-h) + 10px); transform: translateX(-50%); width: auto; height: 32vh; max-height: none; }
+  .vwg .top-eyebrow { font-size: 13px; }
+  .vwg .top-list { gap: 6px; padding-left: 14px; position: relative; }
+  .vwg .top-list::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 1px; background: rgba(232, 228, 218, 0.14); }
+  .vwg .top-dot { left: -15px; }
+  .vwg .top-card { grid-template-columns: 26px 44px minmax(0, 1fr) auto; gap: 10px; padding: 6px 12px 6px 10px; border-radius: 6px; }
+  .vwg .top-thumb { width: 44px; height: 44px; }
+  .vwg .top-no { font-size: 16px; }
+  .vwg .top-text b { font-size: 14px; }
+  .vwg .top-text { gap: 3px; }
+  .vwg .top-text small { font-size: 9px; letter-spacing: 0.18em; }
+  .vwg .top-price { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vwg .top-card, .vwg .top-dot { transition: none; }
+}

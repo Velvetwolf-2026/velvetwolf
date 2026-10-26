@@ -199,6 +199,8 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
   const bays = {
     hero: addBay(0, 0, { rotation: 0.5, color: '#E8E4DA', ink: '#141416' }),
     drop: [addFrame(9, 0, { rotation: 0.2 }), addFrame(12, 0), addFrame(15, 0, { rotation: -0.2 })],
+    // Top 5 designs: faces the visitor and holds still; only its colour and print change
+    top: addBay(20.5, 0, { rotation: 0, color: '#141416' }),
     color: addBay(26, 0, { rotation: -0.35, color: '#141416' }),
     craft: addBay(36, 0, { rotation: -0.28, color: '#E8E4DA', ink: '#141416', light: false }),
     teaser: addBay(46, 0, { rotation: 0.2 }),
@@ -249,6 +251,6 @@ export function buildWorld(scene, kit, prints, { shadows = true, beams = true, l
     aimLights,
     setPdpWall: (t) => wallPdp.draw(t.toUpperCase()),
     redrawLettering: () => { wallDrop.redraw(); wallPdp.redraw(); wallStudio.redraw(); wallFit.redraw(); wallBack.redraw(); wallDen.redraw(); },
-    garments: () => [bays.hero, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, ...fitLineup].map((b) => b.garment),
+    garments: () => [bays.hero, bays.top, bays.color, bays.craft, bays.teaser, bays.pdp, bays.studio, ...fitLineup].map((b) => b.garment),
   };
 }

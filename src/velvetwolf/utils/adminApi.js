@@ -98,6 +98,19 @@ async function uploadNewPhotos(newImages = []) {
   return urls;
 }
 
+// Print artwork for the home page's Top 5 designs: a transparent PNG (or WebP) sent straight to
+// product storage, kept as-is (no JPEG compression, which would fill the transparency white).
+export const PRINT_MAX_MB = 8;
+export async function uploadPrintArtwork(file) {
+  const type = ['image/png', 'image/webp'].includes(file?.type) ? file.type : null;
+  if (!type) throw new Error('Use a PNG or WebP with a transparent background.');
+  if (file.size > PRINT_MAX_MB * 1024 * 1024) throw new Error(`The artwork is over ${PRINT_MAX_MB} MB. Export it smaller.`);
+  const link = await adminFetch('POST', '/admin/products/photo-upload', { contentType: type });
+  const put = await fetch(link.uploadUrl, { method: 'PUT', headers: { 'Content-Type': type, 'x-upsert': 'false' }, body: file });
+  if (!put.ok) throw new Error("The artwork didn't upload. Check your connection and try again.");
+  return link.publicUrl;
+}
+
 async function withUploadedPhotos(data) {
   const pending = (data.newImages || []).filter((img) => img?.base64);
   if (!pending.length) return data;

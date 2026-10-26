@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emailField, nameField } from "./fields.js";
+import { emailField, nameField, typeErrors } from "./fields.js";
 
 export const signupSchema = z.object({
   name: nameField(),
@@ -18,7 +18,7 @@ export const verifyOtpSchema = z.object({
     .union([z.string(), z.number()])
     .transform(String)
     .refine((v) => /^\d{4,8}$/.test(v), "Invalid OTP format"),
-  type: z.string({ required_error: "OTP type is required" }).min(1, "OTP type is required"),
+  type: z.string(typeErrors({ required: "OTP type is required" })).min(1, "OTP type is required"),
 });
 
 export const resendOtpSchema = z.object({
@@ -30,5 +30,5 @@ export const resendOtpSchema = z.object({
 export const firebaseLoginSchema = z.object({
   identifier: z.string().optional(),
   phone: z.string().optional(), // keeping for backward compatibility
-  token: z.string({ required_error: "Firebase token is required" }).min(1, "Firebase token is required"),
+  token: z.string(typeErrors({ required: "Firebase token is required" })).min(1, "Firebase token is required"),
 });

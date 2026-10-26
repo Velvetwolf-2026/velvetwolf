@@ -3,31 +3,25 @@ import { useNavigate } from "react-router";
 import Icon from "./Icon";
 import { apiUrl } from "../utils/api";
 import { useBreakpoint } from "../utils/breakpoints";
+import { photoFor } from "../gallery/galleryProducts";
 
 export default function AiFashionAssistant() {
   const { isMobile } = useBreakpoint();
+  // The stylist gets raw product rows: their photos carry a colour prefix
+  // ("Black::https://..."), so they go through the shop's photo helper.
   const getProductImageUrl = (p) => {
     if (!p) return null;
-    if (p.image) {
-      if (typeof p.image === "string") {
-        if (p.image.trim().startsWith("[")) {
-          try {
-            const parsed = JSON.parse(p.image);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
-          } catch (err) {
-            console.warn("Failed parsing image JSON in AI Assistant", err);
-          }
-        }
-        return p.image;
-      } else if (Array.isArray(p.image) && p.image.length > 0) {
-        return p.image[0];
-      }
+    let images = p.images;
+    if (typeof images === "string" && images.trim().startsWith("[")) {
+      try { images = JSON.parse(images); } catch { images = []; }
     }
-    if (Array.isArray(p.images) && p.images.length > 0) {
-      const firstNonPrefixed = p.images.find(img => typeof img === "string" && !img.includes("::"));
-      return firstNonPrefixed || p.images[0];
+    let image = p.image;
+    if (typeof image === "string" && image.trim().startsWith("[")) {
+      try { image = JSON.parse(image)[0]; } catch { image = null; }
+    } else if (Array.isArray(image)) {
+      image = image[0];
     }
-    return null;
+    return photoFor({ ...p, image, images: Array.isArray(images) ? images : [] }) || null;
   };
 
   const [isOpen, setIsOpen] = useState(false);
@@ -204,6 +198,8 @@ export default function AiFashionAssistant() {
                           <img 
                             src={getProductImageUrl(p)} 
                             alt={p.name} 
+                            decoding="async"
+                            onError={(e) => { if (!e.currentTarget.dataset.fallback) { e.currentTarget.dataset.fallback = "1"; e.currentTarget.src = "/icon-192.png"; } }}
                             style={{ 
                               width: 44, 
                               height: 44, 

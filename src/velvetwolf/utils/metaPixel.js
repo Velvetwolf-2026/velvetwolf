@@ -1,3 +1,8 @@
+// Baked in at build time (Vite); passed to the Docker build in deploy.yml.
+// (Kept here, not in components/MetaPixel.jsx, so that file exports only a
+// component and React fast refresh keeps working.)
+export const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || "";
+
 // metaPixel.js
 // Helpers for Meta Pixel cookie extraction and client-side utilities
 

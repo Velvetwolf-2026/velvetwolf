@@ -30,7 +30,10 @@ export default function GalleryHeader() {
     <header className={`vwg-nav${scrolled ? " is-scrolled" : ""}`}>
       <div className="nav-start">
         <MobileMenu />
-        <Link className="brand" to="/" aria-label="VelvetWolf, home">VELVETWOLF</Link>
+        <Link className="brand" to="/" aria-label="VelvetWolf, home">
+          <img className="brand-mark" src="/wolf-mark.webp" alt="" width="79" height="96" decoding="async" />
+          <span>VELVETWOLF</span>
+        </Link>
       </div>
       {/* ALL · MEN · WOMEN, centred on the header (wide screens; the shop shows it below that) */}
       <GenderToggle className="vwg-gender-nav" />

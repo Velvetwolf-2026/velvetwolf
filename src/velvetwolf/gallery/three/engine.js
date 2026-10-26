@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { buildKit } from './garment.js';
 import { knitTexture } from './textures.js';
-import { createPrintLibrary, DESIGNS } from './prints.js';
+import { createPrintLibrary, createCustomPrint, drawCustom, DESIGNS } from './prints.js';
 import { buildWorld, TEE_Y } from './world.js';
 import { Rig, resolve, lerpPose, dwellEase, layoutOf, STATIONS } from './rig.js';
 import { buildBackstage, BACKSTAGE_X } from './backstage.js';
@@ -14,7 +14,8 @@ import { buildDen, DEN_X, FORM_X } from './den.js';
 import { damp, nearestAngle } from './util.js';
 import { COLORWAYS, productById } from '../data.js';
 
-const HOME_ORDER = ['hero', 'drop', 'color', 'craft', 'teaser'];
+// keep in step with ORDER in pages/HomePage.jsx
+const HOME_ORDER = ['hero', 'drop', 'top', 'color', 'craft', 'teaser'];
 
 export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null } = {}) {
   let renderer;
@@ -51,7 +52,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = tier !== 'low';
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // PCFSoftShadowMap is deprecated in current three.js; PCFShadowMap now filters softly too
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.info.autoReset = false; // counted per frame across all passes (see debug())
 
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -67,7 +69,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   const B = world.bays;
   // lite gold stars drifting through the hall, kept clear of the tees
   const dust = createGoldDust(scene, {
-    bays: [B.hero, ...B.drop, B.color, B.craft, B.teaser, B.pdp, B.studio, ...B.fitLineup, ...Object.values(BACKSTAGE_X).map((x) => ({ x })), { x: DEN_X - 1.5 }, { x: DEN_X + 1.5 }, { x: FORM_X }].map((b) => b.x),
+    bays: [B.hero, ...B.drop, B.top, B.color, B.craft, B.teaser, B.pdp, B.studio, ...B.fitLineup, ...Object.values(BACKSTAGE_X).map((x) => ({ x })), { x: DEN_X - 1.5 }, { x: DEN_X + 1.5 }, { x: FORM_X }].map((b) => b.x),
     count: tier === 'low' ? 600 : tier === 'mid' ? 900 : 1400,
     reduced: reducedMotion,
     pixelRatio: dpr,
@@ -87,6 +89,7 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   }
   dress(B.hero.garment, 'nocturne', 'bone');
   dress(B.color.garment, 'essential', 'noir');
+  dress(B.top.garment, 'essential', 'noir');
   dress(B.craft.garment, 'silence', 'bone');
   B.fitLineup.forEach((b) => dress(b.garment, 'essential', 'bone'));
   // size guide: the chosen size steps forward into the light; the rest wait behind
@@ -100,6 +103,28 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
   // Quiet Hours: framed photographs hang where the drop tees used to float.
   // The page supplies them (the newest products) through setDropPhotos().
   const hungPhotos = [];
+  // Top 5 designs: each product's print artwork, drawn once into a print canvas
+  let topToken = 0;
+  const topPrintCache = new Map();
+  function loadTopPrint(url) {
+    if (!topPrintCache.has(url)) {
+      topPrintCache.set(url, new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // the canvas must stay usable as a texture
+        img.decoding = 'async';
+        img.onload = () => {
+          try {
+            const print = createCustomPrint('front', aniso);
+            drawCustom(print, { mode: 'image', image: img, oneInk: false, scale: 1.25, offset: 0 });
+            resolve(print.texture);
+          } catch { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      }));
+    }
+    return topPrintCache.get(url);
+  }
   // payment page: the ordered tees as photo cards on the product stage (see orderCards.js)
   let wakeLater = () => {};
   const orderCards = createOrderCards(scene, { x: B.pdp.x, y: TEE_Y, aniso, onChange: () => wakeLater() });
@@ -409,6 +434,27 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
       set: (state) => { v.set(state); wake(); },
       ...(v.send ? { send: () => { v.send(); wake(3200); } } : {}),
     }])),
+    // Top 5 designs: put a design on the still tee. printUrl: the product's flat print artwork
+    // (full colour); without it, mark: a VelvetWolf mark in the tee's ink. Only colour and print
+    // change; the tee itself never moves. Loads are cached and a late one never overwrites a
+    // newer choice.
+    dressTop({ colorId = 'noir', printUrl = null, mark = 'wordmark' } = {}) {
+      const cw = COLORWAYS[colorId] || COLORWAYS.noir;
+      const g = B.top.garment;
+      const token = ++topToken;
+      g.setColor(cw.hex);
+      g.setInk(cw.ink);
+      if (!printUrl) { g.setPrint('front', prints.get(mark)); wake(); return; }
+      loadTopPrint(printUrl).then((texture) => {
+        if (token !== topToken) return;
+        g.setPrint('front', texture || prints.get(mark), { fullColor: Boolean(texture) });
+        wake();
+      });
+    },
+    // where the Top 5 branches start: just beside the tee's right shoulder, on screen
+    topAnchor() { return project(B.top.x + 1.2, TEE_Y + 0.38, 0.1); },
+    // the tee's centre on screen (for the halo behind it)
+    topCentre() { return project(B.top.x, TEE_Y + 0.1, 0); },
     dressTeaser(texture, colorId = 'noir') {
       const cw = COLORWAYS[colorId];
       B.teaser.garment.setColor(cw.hex, true);

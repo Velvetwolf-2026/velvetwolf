@@ -10,6 +10,8 @@ import { useGallery } from "../gallery/galleryContext";
 import { COLORWAYS, COLOR_ORDER } from "../gallery/data";
 import { money, photoFor, colorwaysOf, productHref, newestDrops, fromPrice } from "../gallery/galleryProducts";
 import { handOffArtwork } from "../gallery/studioHandoff";
+import TopDesigns from "../gallery/TopDesigns";
+import { pickTopDesigns } from "../gallery/topPicks";
 import { pageMeta, organizationLd, websiteLd } from "../utils/seo";
 
 // Server-rendered on first load so the catalog is present in the HTML for
@@ -32,10 +34,11 @@ export function meta() {
   });
 }
 
-const ORDER = ["hero", "drop", "color", "craft", "teaser"];
+// keep in step with HOME_ORDER in gallery/three/engine.js
+const ORDER = ["hero", "drop", "top", "color", "craft", "teaser"];
 const DROP_COUNT = 3; // one per frame in the Quiet Hours room
 // Hash links from the header/footer to a room.
-const HASH_ROOMS = { "#drop": "drop", "#colors": "color", "#cloth": "craft" };
+const HASH_ROOMS = { "#drop": "drop", "#top5": "top", "#colors": "color", "#cloth": "craft" };
 const reducedMotion = () => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export default function HomePage() {
@@ -46,6 +49,7 @@ export default function HomePage() {
     [ctxProducts, loaderData]
   );
   const drops = useMemo(() => newestDrops(products, DROP_COUNT), [products]);
+  const tops = useMemo(() => pickTopDesigns(products, drops), [products, drops]);
   const lowest = useMemo(() => fromPrice(products), [products]);
   const navigate = useNavigate();
   const { hash } = useLocation();
@@ -250,7 +254,10 @@ export default function HomePage() {
       </section>
 
       {/* ---- colorways ---- */}
-      <section className="scene scene-color" ref={setScene(2)} aria-labelledby="color-h">
+      {/* ---- Top 5 designs: the still tee wears each in turn ---- */}
+      <TopDesigns items={tops} engine={engine} glReady={glReady} sceneRef={setScene(2)} />
+
+      <section className="scene scene-color" ref={setScene(3)} aria-labelledby="color-h">
         <div className="sticky">
           <div className="copy">
             <p className="eyebrow">Colorways</p>
@@ -276,7 +283,7 @@ export default function HomePage() {
       </section>
 
       {/* ---- the cloth ---- */}
-      <section className="scene scene-craft" ref={setScene(3)} aria-labelledby="craft-h">
+      <section className="scene scene-craft" ref={setScene(4)} aria-labelledby="craft-h">
         <div className="sticky">
           <div className="copy">
             <p className="eyebrow">The cloth</p>
@@ -293,7 +300,7 @@ export default function HomePage() {
       </section>
 
       {/* ---- teaser: type, and it prints ---- */}
-      <section className="scene scene-teaser" ref={setScene(4)} aria-labelledby="teaser-h">
+      <section className="scene scene-teaser" ref={setScene(5)} aria-labelledby="teaser-h">
         <div className="sticky">
           <div className="copy">
             <p className="eyebrow">Design your own</p>
