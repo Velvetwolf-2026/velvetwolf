@@ -14,7 +14,7 @@ const { createUploadUrl, signDesignFiles } = await import("../services/studio.se
 const { studioUploadUrl } = await import("../controllers/checkout.controller.js");
 
 const gate = (blocked) => (fn) =>
-  Promise.resolve(fn === "check_rate_limit_gate" ? { data: [{ blocked, retry_after_seconds: 600 }], error: null } : { data: null, error: null });
+  Promise.resolve(["check_rate_limit_gate", "hit_rate_limit"].includes(fn) ? { data: [{ blocked, retry_after_seconds: 600 }], error: null } : { data: null, error: null });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,8 +61,7 @@ describe("studio uploads", () => {
     const event = { headers: {}, requestContext: { identity: { sourceIp: "49.36.1.2" } } };
     const res = await studioUploadUrl({ kind: "artwork", contentType: "image/png" }, event);
     expect(res.statusCode).toBe(200);
-    expect(rpc).toHaveBeenCalledWith("check_rate_limit_gate", expect.objectContaining({ p_key: "studio-upload:49.36.1.2" }));
-    expect(rpc).toHaveBeenCalledWith("record_rate_attempt", { p_key: "studio-upload:49.36.1.2" });
+    expect(rpc).toHaveBeenCalledWith("hit_rate_limit", expect.objectContaining({ p_key: "studio-upload:49.36.1.2", p_max: 60 }));
 
     rpc.mockImplementation(gate(true));
     await expect(studioUploadUrl({ kind: "artwork", contentType: "image/png" }, event)).rejects.toMatchObject({ statusCode: 429 });

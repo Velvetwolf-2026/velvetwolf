@@ -380,7 +380,7 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
     if (isCatalogItem) {
       const { data: dbProduct, error: productError } = await supabaseAdmin
         .from("products")
-        .select("price")
+        .select("price, is_active")
         .eq("id", item.id)
         .maybeSingle();
 
@@ -388,7 +388,8 @@ export async function initiateCheckout({ user_id, cart, address, total_amount, s
         logError("Product price lookup failed", logContext({ productId: item.id, error: productError }));
         throw new ApiError(500, "Failed to verify product prices");
       }
-      if (!dbProduct || !(Number(dbProduct.price) > 0)) {
+      // a product taken off sale can't be bought, even from an old cart
+      if (!dbProduct || dbProduct.is_active === false || !(Number(dbProduct.price) > 0)) {
         throw new ApiError(400, `Item ${item.name} is no longer available. Please remove it from your cart.`);
       }
       unitPrice = Number(dbProduct.price);

@@ -19,8 +19,8 @@ const { discover } = await import("../controllers/auth.controller.js");
 const { sendMessage } = await import("../controllers/contact.controller.js");
 
 const event = { headers: {}, requestContext: { identity: { sourceIp: "49.36.1.2" } } };
-const allow = (fn) => Promise.resolve(fn === "check_rate_limit_gate" ? { data: [{ blocked: false }], error: null } : { data: null, error: null });
-const block = (fn) => Promise.resolve(fn === "check_rate_limit_gate" ? { data: [{ blocked: true, retry_after_seconds: 900 }], error: null } : { data: null, error: null });
+const allow = (fn) => Promise.resolve(["check_rate_limit_gate", "hit_rate_limit"].includes(fn) ? { data: [{ blocked: false }], error: null } : { data: null, error: null });
+const block = (fn) => Promise.resolve(["check_rate_limit_gate", "hit_rate_limit"].includes(fn) ? { data: [{ blocked: true, retry_after_seconds: 900 }], error: null } : { data: null, error: null });
 
 describe("sanitizeFilterValue (PostgREST filter injection)", () => {
   it("removes the characters that would add or close filter conditions", () => {
@@ -66,7 +66,7 @@ describe("POST /contact/send", () => {
     rpc.mockImplementation(allow);
     const res = await sendMessage(valid, event);
     expect(res.statusCode).toBe(200);
-    expect(rpc).toHaveBeenCalledWith("record_rate_attempt", { p_key: "contact:49.36.1.2" });
+    expect(rpc).toHaveBeenCalledWith("hit_rate_limit", expect.objectContaining({ p_key: "contact:49.36.1.2", p_max: 5 }));
   });
 
   it("blocks with 429 after the hourly limit, without sending", async () => {

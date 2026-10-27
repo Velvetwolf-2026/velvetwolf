@@ -114,18 +114,34 @@ export function checkStudioDesign(customMeta) {
   return { design, price };
 }
 
+// An SVG is a document that can carry script, so its link always downloads the
+// file instead of opening it in the browser. PNG, JPG and WebP open as before.
+const isSvg = (path) => /\.svg$/i.test(path);
+
+async function signPaths(paths, expiresIn, options) {
+  if (!paths.length) return [];
+  const { data, error } = await supabaseAdmin.storage.from(STUDIO_BUCKET).createSignedUrls(paths, expiresIn, options);
+  if (error) throw error;
+  return data || [];
+}
+
 // Short-lived links to a design's files, for the admin order view.
 export async function signDesignFiles(design, expiresIn = 60 * 60 * 24) {
   const out = {};
   for (const [name, side] of Object.entries(design?.sides || {})) {
     const paths = [side.artwork, side.proof].filter(Boolean);
     if (!paths.length) continue;
-    const { data, error } = await supabaseAdmin.storage.from(STUDIO_BUCKET).createSignedUrls(paths, expiresIn);
-    if (error) {
+    let data;
+    try {
+      data = [
+        ...(await signPaths(paths.filter((p) => !isSvg(p)), expiresIn)),
+        ...(await signPaths(paths.filter(isSvg), expiresIn, { download: true })),
+      ];
+    } catch (error) {
       logError("Could not sign studio files", logContext({ error }));
       continue;
     }
-    const byPath = Object.fromEntries((data || []).map((d) => [d.path, d.signedUrl]));
+    const byPath = Object.fromEntries(data.map((d) => [d.path, d.signedUrl]));
     out[name] = { artworkUrl: side.artwork ? byPath[side.artwork] || null : null, proofUrl: side.proof ? byPath[side.proof] || null : null };
   }
   return out;

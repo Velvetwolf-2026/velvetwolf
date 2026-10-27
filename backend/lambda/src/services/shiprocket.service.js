@@ -293,7 +293,7 @@ export async function getShipmentTracking(orderId, email = "") {
   }
 
   try {
-    const res = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/track/awb/${order.awb_number}`, {
+    const res = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/track/awb/${encodeURIComponent(order.awb_number)}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

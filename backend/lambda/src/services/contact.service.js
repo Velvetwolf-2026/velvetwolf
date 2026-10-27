@@ -2,6 +2,7 @@ import { sendEmail } from "../config/smtp.js";
 import { ApiError, logError, logInfo } from "../utils/http.js";
 
 const CONTACT_TO = process.env.CONTACT_TO || "hello@velvetwolf.in";
+const BULK_TO = process.env.BULK_TO || "info@velvetwolf.in";
 
 function escapeHtml(value) {
   return String(value || "")
@@ -44,7 +45,30 @@ export async function sendContactMessage({ name, email, subject, message }) {
   }
 }
 
-export async function sendBulkOrderMessage({ type, org, contact, email, qty, message, images }) {
+// The confirmation goes to whatever address was typed in, which may not be the
+// sender's, so it carries none of the sender's text or files: the form can't be
+// used to send someone else a message (or an image) from VelvetWolf.
+function bulkConfirmation() {
+  return {
+    subject: "[VelvetWolf] We've received your quote request",
+    html: `
+        <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd;">
+          <h2 style="border-bottom: 2px solid #c9a84c; padding-bottom: 10px; color: #c9a84c;">Bulk Order Quote Request</h2>
+          <p>Thank you for contacting VelvetWolf. We have received your request and will get back to you within 24 hours.</p>
+          <p>If you didn't ask for a quote, you can ignore this email.</p>
+        </div>
+      `,
+    text: [
+      "Bulk Order Quote Request",
+      "Thank you for contacting VelvetWolf. We have received your request and will get back to you within 24 hours.",
+      "If you didn't ask for a quote, you can ignore this email.",
+    ].join("\n"),
+  };
+}
+
+// confirm: send the customer a confirmation (the controller limits how many
+// one address gets).
+export async function sendBulkOrderMessage({ type, org, contact, email, qty, message, images }, { confirm = true } = {}) {
   const safeType = escapeHtml(type);
   const safeOrg = escapeHtml(org);
   const safeContact = escapeHtml(contact);
@@ -71,13 +95,13 @@ export async function sendBulkOrderMessage({ type, org, contact, email, qty, mes
       .filter(Boolean);
 
     await sendEmail({
-      to: email,
-      cc: "info@velvetwolf.in",
+      to: BULK_TO,
+      replyTo: email,
       subject: `[VelvetWolf] Bulk & Corporate Quote Request - ${safeOrg}`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd;">
           <h2 style="border-bottom: 2px solid #c9a84c; padding-bottom: 10px; color: #c9a84c;">Bulk Order Quote Request</h2>
-          <p>Thank you for contacting VelvetWolf. We have received your request and will get back to you within 24 hours.</p>
+          <p>A new quote request from the website. Reply to this email to answer the customer.</p>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
           <p><strong>Order Type:</strong> ${safeType.toUpperCase()}</p>
           <p><strong>Organization Name:</strong> ${safeOrg}</p>
@@ -106,9 +130,18 @@ export async function sendBulkOrderMessage({ type, org, contact, email, qty, mes
     });
 
     logInfo("Bulk order email sent", { email, org });
-    return { ok: true, message: "Your quote request has been sent successfully." };
   } catch (error) {
     logError("Bulk order email failed", { email, org, error });
     throw new ApiError(500, "We could not send your quote request right now. Please try again shortly.");
   }
+
+  // The request has reached the team, so a failed confirmation is only logged.
+  if (confirm) {
+    try {
+      await sendEmail({ to: email, ...bulkConfirmation() });
+    } catch (error) {
+      logError("Bulk order confirmation email failed", { email, error });
+    }
+  }
+  return { ok: true, message: "Your quote request has been sent successfully." };
 }

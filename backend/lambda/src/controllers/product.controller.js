@@ -3,7 +3,7 @@ import { jsonResponse } from "../utils/http.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { reviewSchema } from "../schemas/common.schema.js";
-import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
+import { hitRateLimit } from "../utils/rateLimit.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,8 +44,7 @@ export async function createProductReview(productId, body, event) {
   }
   const data = validate(reviewSchema)(body || {});
   const rateKey = `review:${user.id}`;
-  await assertNotRateLimited(rateKey, REVIEW_RATE_LIMIT);
-  await recordRateLimitedAttempt(rateKey);
+  await hitRateLimit(rateKey, REVIEW_RATE_LIMIT);
   const review = await productService.createProductReview(productId, data);
   return jsonResponse(201, { review }, {}, event);
 }

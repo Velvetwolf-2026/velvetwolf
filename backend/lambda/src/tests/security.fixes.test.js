@@ -201,6 +201,6 @@ describe("product reviews", () => {
   it("are limited per customer", async () => {
     fakeDb();
     await createProductReview(PRODUCT, review(), signedIn());
-    expect(db.rpc).toHaveBeenCalledWith("record_rate_attempt", { p_key: `review:${USER.id}` });
+    expect(db.rpc).toHaveBeenCalledWith("hit_rate_limit", expect.objectContaining({ p_key: `review:${USER.id}`, p_max: 5 }));
   });
 });

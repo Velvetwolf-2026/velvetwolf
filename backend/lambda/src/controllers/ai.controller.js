@@ -1,8 +1,9 @@
 import * as aiService from "../services/ai.service.js";
 import { jsonResponse, getClientIp } from "../utils/http.js";
-import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
+import { hitRateLimit } from "../utils/rateLimit.js";
 import { assertReasonableInput } from "../middleware/validate.js";
 import { toPublicProduct } from "../services/product.service.js";
+import { getOptionalAuth } from "../middleware/auth.js";
 
 // The stylist is public and every call reads the whole catalogue, so it is throttled
 // per visitor, and its input is bounded.
@@ -12,8 +13,7 @@ const MAX_MESSAGES = 20;
 
 async function throttle(event) {
   const key = `ai:${getClientIp(event) || "unknown"}`;
-  await assertNotRateLimited(key, AI_RATE_LIMIT);
-  await recordRateLimitedAttempt(key);
+  await hitRateLimit(key, AI_RATE_LIMIT);
 }
 
 const clip = (v) => String(v ?? "").slice(0, MAX_TEXT);
@@ -41,8 +41,11 @@ export async function recommendSize(body, event) {
 
 export async function getRecommendations(body, event) {
   assertReasonableInput(body);
-  const { history, wishlist, cart, userId } = body || {};
+  const { history, wishlist, cart } = body || {};
   await throttle(event);
+  // The style quiz result used for ranking is the signed-in customer's own,
+  // never one named in the request.
+  const userId = (await getOptionalAuth(event))?.id || null;
   const recommendations = await aiService.getPersonalizedRecommendations({
     history: history || [],
     wishlist: wishlist || [],

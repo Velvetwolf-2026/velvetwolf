@@ -53,7 +53,7 @@ describe("passwordless email sign-in", () => {
   it("counts every code request toward the rate limit", async () => {
     resetSupabaseMock({ users: [{ data: USER, error: null }] });
     await login({ email: "a@b.com" }, "49.36.1.2");
-    const recorded = supabaseAdmin.rpc.mock.calls.filter(([fn]) => fn === "record_rate_attempt").map(([, a]) => a.p_key);
+    const recorded = supabaseAdmin.rpc.mock.calls.filter(([fn]) => fn === "hit_rate_limit").map(([, a]) => a.p_key);
     expect(recorded).toEqual(["login:a@b.com", "ip:login:49.36.1.2"]);
   });
 

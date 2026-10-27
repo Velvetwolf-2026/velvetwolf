@@ -8,6 +8,7 @@ import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, dbFailure, jsonResponse, logError, logInfo, logWarn, TRY_AGAIN } from "../utils/http.js";
 import { findUserByVerifiedPhone, mobileEmail } from "./phone.service.js";
 import { claimOtpTry, MAX_OTP_ATTEMPTS } from "./otp-attempts.js";
+import { assertNotRateLimited, hitRateLimit, recordRateLimitedAttempt } from "../utils/rateLimit.js";
 
 loadBackendEnv();
 
@@ -101,28 +102,22 @@ export function buildSessionResponse(result, event) {
 }
 
 
-async function checkRateLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_SECS) {
-  logInfo("Checking rate limit", authLogContext({ key, max, windowSecs }));
+// Sign-in limits fail closed: if the rate-limit store errors, the request is
+// refused rather than let through unlimited.
+const AUTH_LIMIT_OPTIONS = { failOpen: false, verb: "requests" };
 
-  const { data, error } = await supabaseAdmin.rpc("check_rate_limit_gate", {
-    p_key: key,
-    p_max: max,
-    p_window_seconds: windowSecs,
-    p_block_seconds: RATE_LIMIT_BLOCK_SECS,
-  });
-  if (error) { logError("Rate limit check failed", authLogContext({ key, error })); throw dbFailure(400, error); }
-
-  const row = Array.isArray(data) ? data[0] : data;
-  if (row?.blocked) {
-    const mins = Math.max(1, Math.ceil(row.retry_after_seconds / 60));
-    logWarn("Rate limit currently blocked", authLogContext({ key, retryAfterSeconds: row.retry_after_seconds }));
-    throw new ApiError(429, `Too many requests. Try again in ${mins} min.`);
-  }
+// Counts this request and refuses it past the limit, in one step.
+function hitLimit(key, max = RESEND_MAX, windowSecs = RESEND_WINDOW_SECS) {
+  return hitRateLimit(key, { max, windowSecs, blockSecs: RATE_LIMIT_BLOCK_SECS }, AUTH_LIMIT_OPTIONS);
 }
 
-async function recordRateAttempt(key) {
-  const { error } = await supabaseAdmin.rpc("record_rate_attempt", { p_key: key });
-  if (error) { logError("Failed to record rate limit attempt", authLogContext({ key, error })); throw dbFailure(400, error); }
+// For limits that count only failures (wrong codes): check first, record a failure later.
+function checkRateLimit(key, max, windowSecs) {
+  return assertNotRateLimited(key, { max, windowSecs, blockSecs: RATE_LIMIT_BLOCK_SECS }, AUTH_LIMIT_OPTIONS);
+}
+
+function recordRateAttempt(key) {
+  return recordRateLimitedAttempt(key, AUTH_LIMIT_OPTIONS);
 }
 
 function createOtpMetadata(type) {
@@ -316,8 +311,8 @@ export async function signup({ name, email }, ip) {
   logInfo("Signup requested", authLogContext({ email: normalizedEmail }));
 
   try {
-    await checkRateLimit(`signup:${normalizedEmail}`);
-    if (ip) await checkRateLimit(`ip:signup:${ip}`, IP_SIGNUP_MAX, IP_WINDOW_SECS);
+    await hitLimit(`signup:${normalizedEmail}`);
+    if (ip) await hitLimit(`ip:signup:${ip}`, IP_SIGNUP_MAX, IP_WINDOW_SECS);
 
     const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users").select("id, is_verified").eq("email", normalizedEmail).single();
@@ -346,8 +341,6 @@ export async function signup({ name, email }, ip) {
     if (otpInsertError) throw dbFailure(400, otpInsertError, "We couldn't send your code right now.");
 
     await sendOTP(normalizedEmail, otp, "signup", buildVerifyUrl(normalizedEmail, otp, "signup"));
-    await recordRateAttempt(`signup:${normalizedEmail}`);
-    if (ip) await recordRateAttempt(`ip:signup:${ip}`);
 
     logInfo("Signup completed", authLogContext({ email: normalizedEmail }));
     return { message: "OTP sent" };
@@ -372,18 +365,16 @@ export async function login({ email }, ip) {
   logInfo("Login code requested", authLogContext({ email: normalizedEmail }));
 
   try {
-    await checkRateLimit(`login:${normalizedEmail}`, 5, 900);
-    if (ip) await checkRateLimit(`ip:login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
+    // Every code request counts toward the limit (not only failures): sending
+    // emails is the cost being limited.
+    await hitLimit(`login:${normalizedEmail}`, 5, 900);
+    if (ip) await hitLimit(`ip:login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
 
     const { data: user, error: userError } = await supabaseAdmin
       .from("users").select("id, email, name, role, is_verified, type")
       .eq("email", normalizedEmail).single();
 
     if (userError && userError.code !== "PGRST116") throw dbFailure(400, userError, "We couldn't sign you in right now.");
-    // Every code request counts toward the limit (not only failures): sending
-    // emails is the cost being limited.
-    await recordRateAttempt(`login:${normalizedEmail}`);
-    if (ip) await recordRateAttempt(`ip:login:${ip}`);
     if (!user) throw new ApiError(401, "User not registered. Please complete registration.");
 
     const { otp, expiresAt, type } = createOtpMetadata("Login-OTP");
@@ -407,8 +398,8 @@ export async function resendOtp({ email, kind, type }, ip) {
   const otpKind = normalizeOtpKind(kind || type);
 
   try {
-    await checkRateLimit(`resend:${normalizedEmail}`);
-    if (ip) await checkRateLimit(`ip:resend:${ip}`, IP_OTP_MAX, IP_WINDOW_SECS);
+    await hitLimit(`resend:${normalizedEmail}`);
+    if (ip) await hitLimit(`ip:resend:${ip}`, IP_OTP_MAX, IP_WINDOW_SECS);
 
     const { data: user, error: userError } = await supabaseAdmin.from("users").select("id").eq("email", normalizedEmail).single();
     if (userError || !user) throw new ApiError(404, "User not registered. Please complete registration first.");
@@ -419,8 +410,6 @@ export async function resendOtp({ email, kind, type }, ip) {
     if (otpInsertError) throw dbFailure(400, otpInsertError, "We couldn't send your code right now.");
 
     await sendOTP(normalizedEmail, otp, otpKind, buildVerifyUrl(normalizedEmail, otp, otpKind));
-    await recordRateAttempt(`resend:${normalizedEmail}`);
-    if (ip) await recordRateAttempt(`ip:resend:${ip}`);
 
     logInfo("Resend OTP completed", authLogContext({ email: normalizedEmail, otpKind }));
     return { message: "New OTP sent" };
@@ -602,10 +591,10 @@ async function markOwnMobileVerified(userId, mobile) {
 
 export async function firebaseLogin({ identifier, phone, token }, ip) {
   // Firebase already verifies the token's signature, so this endpoint can't
-  // be brute-forced the way a password can — but it was completely
-  // unthrottled, so a flat per-IP cap still guards against hammering it with
-  // garbage/replayed tokens.
-  if (ip) await checkRateLimit(`ip:firebase-login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
+  // be brute-forced the way a password can, but a flat per-IP cap still guards
+  // against hammering it with garbage/replayed tokens. (It used to only check
+  // the count without adding to it, so the cap never filled up.)
+  if (ip) await hitLimit(`ip:firebase-login:${ip}`, IP_LOGIN_MAX, IP_LOGIN_WINDOW_SECS);
 
   // 1. Verify the Firebase ID Token
   const payload = await verifyFirebaseIdToken(token);
