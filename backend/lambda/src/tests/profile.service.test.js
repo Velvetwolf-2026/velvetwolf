@@ -76,6 +76,7 @@ describe("profile.service", () => {
         ],
         otps: [
           { data: { id: "otp-id-123", email: "oldemail@gmail.com", otp: 654321, attempts: 0 }, error: null }, // lookup
+          { data: [{ id: "otp-id-123" }], error: null }, // claim a try
           { data: null, error: null } // delete verified OTP
         ]
       });

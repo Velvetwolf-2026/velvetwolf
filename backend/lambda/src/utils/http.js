@@ -126,6 +126,17 @@ function getHeader(event, name) {
   return key ? String(headers[key] || "") : "";
 }
 
+// One cookie's value: REST API (v1) events carry a Cookie header, HTTP API
+// (v2) events a cookies array.
+export function getCookie(event, name) {
+  const parts = [...getHeader(event, "cookie").split(";"), ...(Array.isArray(event?.cookies) ? event.cookies : [])];
+  for (const part of parts) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) return value.join("=").trim();
+  }
+  return "";
+}
+
 function getTrustedProxyClientIp(event) {
   const expected = process.env.PROXY_SHARED_SECRET || "";
   const provided = getHeader(event, PROXY_SECRET_HEADER);

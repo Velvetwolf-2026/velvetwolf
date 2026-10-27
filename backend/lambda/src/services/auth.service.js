@@ -7,11 +7,11 @@ import { sendOTP } from "../config/smtp.js";
 import { supabaseAdmin } from "../config/supabase.js";
 import { ApiError, jsonResponse, logError, logInfo, logWarn } from "../utils/http.js";
 import { findUserByVerifiedPhone, mobileEmail } from "./phone.service.js";
+import { claimOtpTry, MAX_OTP_ATTEMPTS } from "./otp-attempts.js";
 
 loadBackendEnv();
 
 const OTP_EXPIRES_MIN = 10;
-const MAX_OTP_ATTEMPTS = 5;
 const RESEND_MAX = 3;
 const RESEND_WINDOW_SECS = 3600;
 const RATE_LIMIT_BLOCK_SECS = 1800;
@@ -24,6 +24,9 @@ const IP_LOGIN_WINDOW_SECS = 900;
 const IP_SIGNUP_MAX = 15;
 const IP_OTP_MAX = 15;
 const IP_WINDOW_SECS = 3600;
+// Wrong codes entered from one IP (right ones don't count, so customers
+// sharing a mobile network's IP aren't locked out by each other's sign-ins).
+const IP_VERIFY_MAX = 30;
 
 function getLinkSecret() { return `${process.env.JWT_SECRET}:link`; }
 
@@ -146,9 +149,34 @@ function decodeState(stateRaw) {
   }
 }
 
-function createState(mode = "login") {
+function createState(mode = "login", nonce = "") {
   const safeMode = mode === "signup" ? "signup" : "login";
-  return Buffer.from(JSON.stringify({ mode: safeMode, ts: Date.now() }), "utf8").toString("base64url");
+  return Buffer.from(JSON.stringify({ mode: safeMode, ts: Date.now(), nonce }), "utf8").toString("base64url");
+}
+
+// Google sign-in is tied to the browser that started it: /auth/google puts a
+// random nonce in both the state sent to Google and an HttpOnly cookie, and the
+// callback only signs in when they match. Without it, someone could send a
+// visitor a callback link carrying their own Google code and sign the visitor
+// into the sender's account (anything saved there, like an address, is the
+// sender's to read).
+export const OAUTH_STATE_COOKIE = "vw_oauth_state";
+
+export function getOAuthStateCookieHeader(nonce) {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${OAUTH_STATE_COOKIE}=${nonce}; HttpOnly; Path=/; SameSite=Lax; Max-Age=600${secure}`;
+}
+
+export function getClearOAuthStateCookieHeader() {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${OAUTH_STATE_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT${secure}`;
+}
+
+function nonceMatches(fromState, fromCookie) {
+  if (typeof fromState !== "string" || !fromState || !fromCookie) return false;
+  const a = Buffer.from(fromState);
+  const b = Buffer.from(String(fromCookie));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function buildGoogleErrorRedirect(mode, message) {
@@ -192,6 +220,12 @@ async function fetchGoogleProfile(accessToken) {
     logError("Google profile fetch failed", authLogContext({ status: profileRes.status }));
     throw new ApiError(401, "Unable to fetch Google user profile.");
   }
+  // Google sign-in opens the account with this email, so the email must be
+  // one Google has verified (the Firebase sign-in checks the same).
+  if (profile.email_verified !== true) {
+    logWarn("Rejected Google sign-in with unverified email", authLogContext({ email: profile.email }));
+    throw new ApiError(401, "Please verify your email address before signing in.");
+  }
   return profile;
 }
 
@@ -224,21 +258,21 @@ async function upsertGoogleUser(profile) {
   return insertedUser;
 }
 
-export function getGoogleAuthRedirect({ mode } = {}) {
+export function getGoogleAuthRedirect({ mode, nonce } = {}) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) throw new ApiError(500, "GOOGLE_CLIENT_ID is missing in backend environment.");
 
   const query = new URLSearchParams({
     client_id: clientId, redirect_uri: getGoogleCallbackUrl(),
     response_type: "code", scope: "openid email profile",
-    access_type: "offline", prompt: "consent", state: createState(mode),
+    access_type: "offline", prompt: "consent", state: createState(mode, nonce),
   });
 
   logInfo("Generated Google auth redirect", authLogContext({ mode: mode || "login" }));
   return `https://accounts.google.com/o/oauth2/v2/auth?${query.toString()}`;
 }
 
-export async function googleCallback({ code, state, error, errorDescription }) {
+export async function googleCallback({ code, state, error, errorDescription, stateNonce }) {
   const stateData = decodeState(state);
   const mode = stateData.mode === "signup" ? "signup" : "login";
 
@@ -247,7 +281,10 @@ export async function googleCallback({ code, state, error, errorDescription }) {
       const message = error === "access_denied" ? "Google sign-in was cancelled." : (errorDescription || "Google sign-in could not be completed.");
       return { redirect: buildGoogleErrorRedirect(mode, message) };
     }
-    if (!code) return { redirect: buildGoogleErrorRedirect(mode, "Google sign-in could not be completed.") };
+    if (!code || !nonceMatches(stateData.nonce, stateNonce)) {
+      if (code) logWarn("Google callback without this browser's sign-in nonce", authLogContext({ mode, hasCookie: Boolean(stateNonce) }));
+      return { redirect: buildGoogleErrorRedirect(mode, "Google sign-in could not be completed.") };
+    }
 
     const tokenData = await exchangeGoogleCodeForTokens(code);
     const profile = await fetchGoogleProfile(tokenData.access_token);
@@ -387,7 +424,7 @@ export async function resendOtp({ email, kind, type }, ip) {
   }
 }
 
-export async function verifyOtp({ email, otp, type }) {
+export async function verifyOtp({ email, otp, type }, ip) {
   const normalizedEmail = normalizeEmail(email);
   const otpNumber = Number.parseInt(otp, 10);
   const normalizedType = normalizeOtpKind(type);
@@ -406,10 +443,12 @@ export async function verifyOtp({ email, otp, type }) {
       otpRecord = data;
       otpError = error;
 
+      if (ip) await checkRateLimit(`ip:verify:${ip}`, IP_VERIFY_MAX, IP_LOGIN_WINDOW_SECS);
       if (otpError || !otpRecord || otpRecord.attempts >= MAX_OTP_ATTEMPTS) throw new ApiError(400, "Invalid or expired OTP");
+      if (!(await claimOtpTry(otpRecord))) throw new ApiError(400, "Invalid or expired OTP");
 
       if (Number(otpRecord.otp) !== otpNumber) {
-        await supabaseAdmin.from("otps").update({ attempts: otpRecord.attempts + 1 }).eq("id", otpRecord.id);
+        if (ip) await recordRateAttempt(`ip:verify:${ip}`);
         throw new ApiError(400, "Invalid OTP");
       }
 
@@ -458,10 +497,8 @@ export async function verifyOtpLink(token) {
     .gte("expires_at", new Date().toISOString()).single();
 
   if (otpError || !otpRecord || otpRecord.attempts >= MAX_OTP_ATTEMPTS) throw new ApiError(400, "OTP has expired. Please request a new one.");
-  if (Number(otpRecord.otp) !== otpNumber) {
-    await supabaseAdmin.from("otps").update({ attempts: otpRecord.attempts + 1 }).eq("id", otpRecord.id);
-    throw new ApiError(400, "Invalid verification link.");
-  }
+  if (!(await claimOtpTry(otpRecord))) throw new ApiError(400, "OTP has expired. Please request a new one.");
+  if (Number(otpRecord.otp) !== otpNumber) throw new ApiError(400, "Invalid verification link.");
 
   await supabaseAdmin.from("otps").delete().eq("email", normalizedEmail);
 
