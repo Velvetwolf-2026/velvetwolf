@@ -41,6 +41,17 @@ export function isBackendUrl(url) {
   return value === DIRECT_API_BASE_URL || value.startsWith(`${DIRECT_API_BASE_URL}/`) || value.startsWith(`${DIRECT_API_BASE_URL}?`);
 }
 
+// A dropped connection rejects fetch() with the browser's own wording ("Failed
+// to fetch", "Load failed", "NetworkError when attempting to fetch resource"),
+// which pages would otherwise show as is. The replacement stays a TypeError, so
+// code that checks for one still works; deliberate aborts pass through untouched.
+export const OFFLINE_MESSAGE = "We couldn't reach VelvetWolf. Check your connection and try again.";
+
+export function toReadableNetworkError(err) {
+  if (err?.name === "AbortError" || !(err instanceof TypeError)) throw err;
+  throw new TypeError(OFFLINE_MESSAGE, { cause: err });
+}
+
 export function googleAuthUrl(mode = "login") {
   const safeMode = mode === "signup" ? "signup" : "login";
   return `${apiUrl("/auth/google")}?mode=${encodeURIComponent(safeMode)}`;

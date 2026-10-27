@@ -5,9 +5,10 @@ import {
   firebaseLoginSchema,
 } from "../schemas/auth.schema.js";
 import { validate } from "../middleware/validate.js";
-import { jsonResponse, redirectResponse, ApiError, getClientIp, getCookie } from "../utils/http.js";
+import { jsonResponse, redirectResponse, ApiError, getClientIp, getCookie, logError } from "../utils/http.js";
 import { auditLog } from "../utils/audit.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, getSessionToken } from "../middleware/auth.js";
+import { endSession } from "../services/session.service.js";
 import { getProfileById } from "../services/profile.service.js";
 import { verifyRecaptcha } from "../services/recaptcha.service.js";
 import { assertNotRateLimited, recordRateLimitedAttempt } from "../utils/rateLimit.js";
@@ -70,9 +71,13 @@ export async function googleCallback(query, event) {
     const cookies = [authService.getClearOAuthStateCookieHeader(), ...(result.token ? authService.getSessionCookieHeaders(result.token) : [])];
     return redirectResponse(result.redirect, 302, { "Set-Cookie": cookies }, event);
   } catch (err) {
+    // Only our own messages reach the page; anything unexpected (a network
+    // failure talking to Google) is logged and shown as a plain sentence.
+    if (!(err instanceof ApiError)) logError("Google callback failed unexpectedly", { service: "auth", error: err });
+    const message = err instanceof ApiError ? err.message : "Google sign-in could not be completed.";
     const mode = (query.state && String(query.state).includes("signup")) ? "signup" : "login";
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const redirectUrl = `${frontendUrl.replace(/\/$/, "")}?provider=google&mode=${mode}&auth_error=${encodeURIComponent(err.message)}`;
+    const redirectUrl = `${frontendUrl.replace(/\/$/, "")}?provider=google&mode=${mode}&auth_error=${encodeURIComponent(message)}`;
     return redirectResponse(redirectUrl, 302, { "Set-Cookie": authService.getClearOAuthStateCookieHeader() }, event);
   }
 }
@@ -106,6 +111,10 @@ export async function firebaseLogin(body, event) {
 }
 
 export async function logout(body, event) {
+  // End the session on the server as well, so the token stops working even
+  // where a copy of it survives.
+  const token = getSessionToken(event);
+  if (token) await endSession(token);
   const headers = {
     "Set-Cookie": [
       authService.getLogoutCookieHeader(),

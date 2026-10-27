@@ -39,3 +39,23 @@ describe("api base URL (browser)", () => {
     expect(isBackendUrl("https://sdk.cashfree.com/js/v3/cashfree.js")).toBe(false);
   });
 });
+
+describe("network failures", () => {
+  it("read as a plain sentence and stay TypeErrors", async () => {
+    const { toReadableNetworkError, OFFLINE_MESSAGE } = await loadApi();
+    const raw = new TypeError("Failed to fetch");
+    let thrown;
+    try { toReadableNetworkError(raw); } catch (err) { thrown = err; }
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect(thrown.message).toBe(OFFLINE_MESSAGE);
+    expect(thrown.cause).toBe(raw);
+  });
+
+  it("leave aborts and other errors alone", async () => {
+    const { toReadableNetworkError } = await loadApi();
+    const abort = new DOMException("The operation was aborted.", "AbortError");
+    expect(() => toReadableNetworkError(abort)).toThrow(abort);
+    const other = new Error("Something else");
+    expect(() => toReadableNetworkError(other)).toThrow(other);
+  });
+});

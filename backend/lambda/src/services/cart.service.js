@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "../config/supabase.js";
-import { ApiError, logError, logInfo } from "../utils/http.js";
+import { ApiError, dbFailure, logError, logInfo } from "../utils/http.js";
 import { sanitizeFilterValue } from "../utils/postgrest.js";
 
 function cartLogContext(context = {}) {
@@ -27,7 +27,7 @@ async function getVariantByProductSizeColor(productId, size, color) {
 
   if (error) {
     logError("Product variant lookup failed", cartLogContext({ productId, size, color, error }));
-    throw new ApiError(400, error.message || "Failed to load product variant.");
+    throw dbFailure(400, error, "We couldn't check that size and colour.");
   }
 
   if (!data || data.length === 0) {
@@ -60,7 +60,7 @@ export async function getCartByUserId(userId) {
 
   if (error) {
     logError("Cart lookup failed", cartLogContext({ userId, error }));
-    throw new ApiError(400, error.message || "Failed to load cart.");
+    throw dbFailure(400, error, "We couldn't load your cart.");
   }
 
   return (data || []).map(mapCartItem);
@@ -80,7 +80,7 @@ export async function addCartItemByUserId(userId, productId, quantity, size = nu
 
   if (existingError) {
     logError("Cart lookup before upsert failed", cartLogContext({ userId, productId, variantId: variant.id, error: existingError }));
-    throw new ApiError(400, existingError.message || "Failed to check cart item.");
+    throw dbFailure(400, existingError, "We couldn't add that to your cart.");
   }
 
   let existingItem = null;
@@ -110,7 +110,7 @@ export async function addCartItemByUserId(userId, productId, quantity, size = nu
 
     if (updateError) {
       logError("Cart quantity increment failed", cartLogContext({ userId, productId, error: updateError }));
-      throw new ApiError(400, updateError.message || "Failed to add cart item.");
+      throw dbFailure(400, updateError, "We couldn't add that to your cart.");
     }
     return { success: true };
   }
@@ -124,7 +124,7 @@ export async function addCartItemByUserId(userId, productId, quantity, size = nu
 
   if (error) {
     logError("Cart insert failed", cartLogContext({ userId, productId, error }));
-    throw new ApiError(400, error.message || "Failed to add cart item.");
+    throw dbFailure(400, error, "We couldn't add that to your cart.");
   }
 
   return { success: true };
@@ -157,7 +157,7 @@ export async function updateCartItemQuantity(userId, cartItemId, quantity) {
   const { error } = await supabaseAdmin.from("cart_items").update({ quantity }).eq("id", cartItemId);
   if (error) {
     logError("Cart quantity update failed", cartLogContext({ cartItemId, quantity, error }));
-    throw new ApiError(400, error.message || "Failed to update cart item.");
+    throw dbFailure(400, error, "We couldn't update your cart.");
   }
 
   return { success: true };
@@ -183,7 +183,7 @@ export async function removeCartItemById(userId, cartItemId) {
   const { error } = await supabaseAdmin.from("cart_items").delete().eq("id", cartItemId);
   if (error) {
     logError("Cart delete failed", cartLogContext({ cartItemId, error }));
-    throw new ApiError(400, error.message || "Failed to remove cart item.");
+    throw dbFailure(400, error, "We couldn't remove that from your cart.");
   }
 
   return { success: true };

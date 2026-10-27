@@ -44,6 +44,7 @@ export function createSupabaseMock(responseQueues = {}, calls = []) {
       like: vi.fn(() => builder),
       or: vi.fn(() => builder),
       gte: vi.fn(() => builder),
+      lt: vi.fn(() => builder),
       order: vi.fn(() => builder),
       limit: vi.fn(() => builder),
       single: vi.fn(() => builder),

@@ -46,15 +46,19 @@ describe("admin product photos", () => {
     expect(getPublicUrl).toHaveBeenCalled();
   });
 
-  it("says why a photo failed to save instead of a bare 500", async () => {
-    upload.mockResolvedValue({ error: { message: "The resource already exists" } });
+  it("says in plain words why a photo failed to save, keeping the raw error for the logs", async () => {
+    const raw = { message: "The resource already exists" };
+    upload.mockResolvedValue({ error: raw });
     await expect(createAdminProduct({ ...BASE, newImages: [{ base64: "aGk=", fileName: "x.jpg", contentType: "image/jpeg" }] }, "admin-1"))
-      .rejects.toMatchObject({ statusCode: 502, message: expect.stringContaining("The resource already exists") });
+      .rejects.toMatchObject({ statusCode: 502, message: "Couldn't save a product photo. A file with that name already exists.", cause: raw });
   });
 
-  it("says why the product failed to save", async () => {
-    insertResult.current = { data: null, error: { message: 'column "fit" does not exist' } };
-    await expect(createAdminProduct(BASE, "admin-1")).rejects.toMatchObject({ statusCode: 500, message: expect.stringContaining('column "fit" does not exist') });
+  it("says in plain words why the product failed to save", async () => {
+    insertResult.current = { data: null, error: { code: "42703", message: 'column "fit" does not exist' } };
+    await expect(createAdminProduct(BASE, "admin-1")).rejects.toMatchObject({
+      statusCode: 500,
+      message: "Couldn't save the product. The database needs its latest update (run the newest migration in schema.sql).",
+    });
   });
 
   it("issues a one-time upload link for a direct photo upload", async () => {
