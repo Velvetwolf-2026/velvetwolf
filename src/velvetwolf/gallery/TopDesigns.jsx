@@ -1,7 +1,7 @@
 // "Top 5 designs" (home page, after Quiet Hours). The tee stands still in the hall; scrolling
 // through the room steps through five designs, and only the tee's colour and print change.
-// Branches (SVG) run from a node beside the tee to each design's card: as each design becomes
-// active its branch lights up in sand-gold, and the card glows. Clicking a card (or its node)
+// Square-cornered branches (SVG) run from a node beside the tee to each design's card: as each
+// design becomes active its branch lights up in bone, and the card glows. Clicking a card (or its node)
 // scrolls the room to that design. Scroll progress comes from GSAP ScrollTrigger; the branches
 // are redrawn each frame from where the tee and cards are on screen.
 import { useEffect, useRef, useState } from "react";
@@ -78,8 +78,9 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
         if (!card || !base || !lit) return;
         const r = card.getBoundingClientRect();
         const cx = r.left - box.left, cy = r.top + r.height / 2 - box.top;
-        const dx = Math.max(36, (cx - nx) * 0.48);
-        const d = `M${nx.toFixed(1)},${ny.toFixed(1)} C${(nx + dx).toFixed(1)},${ny.toFixed(1)} ${(cx - dx).toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${cy.toFixed(1)}`;
+        // right angles off one trunk halfway across (every card shares the same left edge)
+        const tx = nx + Math.max(36, (cx - nx) * 0.5);
+        const d = `M${nx.toFixed(1)},${ny.toFixed(1)} H${tx.toFixed(1)} V${cy.toFixed(1)} H${cx.toFixed(1)}`;
         if (base.getAttribute("d") !== d) { base.setAttribute("d", d); lit.setAttribute("d", d); }
         const length = lit.getTotalLength();
         const shown = i < a ? 1 : i === a ? draw : 0;
