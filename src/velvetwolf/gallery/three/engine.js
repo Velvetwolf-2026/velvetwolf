@@ -451,6 +451,8 @@ export function createEngine(canvas, { reducedMotion = false, kit: glbKit = null
         wake();
       });
     },
+    // Top 5 designs: hide the still tee while a product photo stands in its place
+    showTop(on) { B.top.group.visible = on; wake(); },
     // where the Top 5 branches start: just beside the tee's right shoulder, on screen
     topAnchor() { return project(B.top.x + 1.2, TEE_Y + 0.38, 0.1); },
     // the tee's centre on screen (for the halo behind it)

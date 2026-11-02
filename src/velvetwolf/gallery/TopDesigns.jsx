@@ -1,14 +1,15 @@
 // "Top 5 designs" (home page, after Quiet Hours). The tee stands still in the hall; scrolling
-// through the room steps through five designs, and only the tee's colour and print change.
-// Square-cornered branches (SVG) run from a node beside the tee to each design's card: as each
-// design becomes active its branch lights up in bone, and the card glows. Clicking a card (or its node)
+// through the room steps through five designs, and only the tee's colour and print change. A
+// design with no print artwork shows its product photo in the tee's place.
+// Straight branches with 45° turns (SVG) run from a node beside the tee to each design's card: as
+// each design becomes active its branch lights up in bone, and the card glows. Clicking a card (or its node)
 // scrolls the room to that design. Scroll progress comes from GSAP ScrollTrigger; the branches
 // are redrawn each frame from where the tee and cards are on screen.
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { photoFor, colorwaysOf, productHref, money } from "./galleryProducts";
 import { getCollectionById } from "../utils/collectionsData";
-import { stepOf, progressFor, fallbackMark } from "./topPicks";
+import { stepOf, progressFor, fallbackMark, branchPath, showsPhoto } from "./topPicks";
 
 const reducedMotion = () => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pad = (n) => String(n).padStart(2, "0");
@@ -24,6 +25,9 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
   const progress = useRef(0);
   const [active, setActive] = useState(0);
   const count = items.length;
+  const current = items[active] || items[0];
+  const currentPhoto = current ? photoFor(current, colorwaysOf(current)[0]) : null;
+  const onPhoto = showsPhoto(current, currentPhoto, glReady);
 
   const setSection = (el) => { sectionRef.current = el; sceneRef?.(el); };
 
@@ -53,6 +57,13 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
     engine.dressTop({ colorId: colorwaysOf(p)[0], printUrl: p.printImage || null, mark: fallbackMark(active) });
   }, [engine, active, items]);
 
+  // the photo takes the tee's place; the tee is back whenever this room isn't showing a photo
+  useEffect(() => {
+    if (!engine) return undefined;
+    engine.showTop(!onPhoto);
+    return () => engine.showTop(true);
+  }, [engine, onPhoto]);
+
   // the branches: from the node beside the tee to each card, lit up to the active one
   useEffect(() => {
     let raf = 0;
@@ -63,14 +74,13 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
       const box = sticky.getBoundingClientRect();
       if (box.bottom < 0 || box.top > innerHeight || getComputedStyle(node).display === "none") return;
       let nx, ny;
-      if (glReady && engine) {
+      const r = photoRef.current?.getBoundingClientRect();
+      if (r?.width) {
+        nx = r.right - box.left + 18; ny = r.top + r.height * 0.42 - box.top;
+      } else if (glReady && engine) {
         const [x, y] = engine.topAnchor();
         nx = x - box.left; ny = y - box.top;
-      } else {
-        const r = photoRef.current?.getBoundingClientRect();
-        if (!r || !r.width) return;
-        nx = r.right - box.left + 18; ny = r.top + r.height * 0.42 - box.top;
-      }
+      } else return;
       node.style.transform = `translate(${nx.toFixed(1)}px, ${ny.toFixed(1)}px)`;
       const { active: a, draw } = stepOf(progress.current, count);
       cardRefs.current.forEach((card, i) => {
@@ -78,9 +88,7 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
         if (!card || !base || !lit) return;
         const r = card.getBoundingClientRect();
         const cx = r.left - box.left, cy = r.top + r.height / 2 - box.top;
-        // right angles off one trunk halfway across (every card shares the same left edge)
-        const tx = nx + Math.max(36, (cx - nx) * 0.5);
-        const d = `M${nx.toFixed(1)},${ny.toFixed(1)} H${tx.toFixed(1)} V${cy.toFixed(1)} H${cx.toFixed(1)}`;
+        const d = branchPath(nx, ny, cx, cy);
         if (base.getAttribute("d") !== d) { base.setAttribute("d", d); lit.setAttribute("d", d); }
         const length = lit.getTotalLength();
         const shown = i < a ? 1 : i === a ? draw : 0;
@@ -104,8 +112,6 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
   };
 
   if (!count) return null;
-  const current = items[active] || items[0];
-  const currentPhoto = photoFor(current, colorwaysOf(current)[0]);
 
   return (
     <section className="scene scene-top" ref={setSection} aria-labelledby="top-h">
@@ -115,8 +121,7 @@ export default function TopDesigns({ items, engine, glReady, sceneRef }) {
           {items.map((p, i) => <path key={`l-${p.id}`} className="top-line-lit" ref={(el) => { litRefs.current[i] = el; }} />)}
         </svg>
         <span className="top-node" ref={nodeRef} aria-hidden="true" />
-        {/* without the 3D hall (no WebGL), the active tee's photo stands in for it */}
-        {currentPhoto && <img className="top-photo" ref={photoRef} src={currentPhoto} alt="" loading="lazy" decoding="async" />}
+        {onPhoto && <img className="top-photo" ref={photoRef} src={currentPhoto} alt="" loading="lazy" decoding="async" />}
 
         <div className="top-panel">
           <h2 className="top-eyebrow" id="top-h"><span>Top 5 designs</span></h2>

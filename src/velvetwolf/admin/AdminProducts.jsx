@@ -75,7 +75,7 @@ function TopFields({ value, onChange, compact = false, showToast }) {
             <button type="button" className="btn-ghost" style={{ padding: "8px 12px", fontSize: 11 }} onClick={() => onChange({ print_image: null })}>Remove</button>
           )}
         </div>
-        <small style={{ color: "var(--ash)", fontSize: 11 }}>The design alone, on a transparent background (PNG or WebP). Without it, the tee shows a VelvetWolf mark.</small>
+        <small style={{ color: "var(--ash)", fontSize: 11 }}>The design alone, on a transparent background (PNG or WebP). Without it, the room shows the product photo instead of the 3D tee.</small>
       </div>
     </div>
   );
